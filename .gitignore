@@ -13,3 +13,7 @@ database/codex_clean.sqlite
 .phpunit.result.cache
 composer.phar
 tmp_*
+
+# Veri cekici (Python) calisma zamani/test artefaktlari
+tools/veri-cekici/__pycache__/
+tools/veri-cekici/*.xlsx
