@@ -1,0 +1,17 @@
+KULLANIM
+
+1. Veri cekmek icin:
+   BASLAT.bat dosyasini ac.
+   Google Maps veri cekici ile aramayi yap.
+   Sonucu Excel olarak kaydet.
+
+2. Laravel ortak admin paneline aktarmak icin:
+   http://127.0.0.1:8000/admin/veri-cekici ekranini ac.
+   Kaydedilen Excel dosyasini sec.
+   Kurum kategorisi, il ve ilce bilgisini gir.
+   Sistem kayitlari yerel veritabanina on kayitli kurum olarak aktarir.
+
+Notlar:
+- Canli API aktarimi devre disidir.
+- Web adresi import edilmez.
+- Ayni isim/telefon/il/ilce icin benzer kayitlar atlanir.

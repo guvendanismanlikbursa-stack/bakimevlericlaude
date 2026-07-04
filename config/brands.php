@@ -1,0 +1,92 @@
+﻿<?php
+
+$allCategoryScopes = ['yasli-bakim', 'cocuk-bakim', 'ozel-egitim', 'rehabilitasyon', 'fizik-tedavi'];
+
+return [
+    'default' => env('BRAND_DEFAULT', 'bakimevibul'),
+
+    'service_sections' => [
+        'yasli-bakim' => [
+            'slug' => 'yasli-bakim',
+            'title' => 'Yaşlı Bakım',
+            'short_title' => 'Yaşlı',
+            'icon' => 'elderly-care',
+            'scopes' => ['yasli-bakim'],
+            'hero_title' => 'Yaşlı bakım ve huzurevi seçeneklerini güvenle karşılaştırın',
+            'hero_subtitle' => 'Bakımevi, huzurevi, Alzheimer bakımı ve yaşlı yaşam merkezlerini tek ekranda inceleyin; aile ihtiyacınıza uygun kurumlardan teklif alın.',
+            'search_label' => 'Bakımevi, huzurevi veya yaşlı bakım merkezi ara',
+            'hero_image' => '/images/hero-yasli-bakim.jpg',
+            'theme' => ['primary' => '#1e6f5c', 'secondary' => '#f4a259', 'soft' => '#ecfdf5'],
+            'features' => ['7/24 hemşire', 'Doktor kontrolü', 'Alzheimer bakımı', 'Demans bakımı', 'Palyatif bakım', 'Gündüz bakım', 'Tam zamanlı bakım', 'Fizik tedavi', 'Fiziksel aktivite', 'Diyetisyen', 'Sosyal etkinlik', 'Özel oda', 'Bahçe alanı'],
+            'profile_fields' => ['Kapasite', 'Oda tipleri', 'Hemşire/doktor desteği', 'Demans/Alzheimer bakımı', 'Ziyaret saatleri', 'Beslenme planı'],
+        ],
+        'cocuk' => [
+            'slug' => 'cocuk',
+            'title' => 'Çocuk',
+            'short_title' => 'Çocuk',
+            'icon' => 'child-care',
+            'scopes' => ['cocuk-bakim', 'ozel-egitim'],
+            'hero_title' => 'Çocuk bakımı, kreş, anaokulu ve özel eğitim kurumlarını bulun',
+            'hero_subtitle' => 'Kreş, gündüz bakım evi, anaokulu ve özel eğitim merkezlerini yaş grubu, şehir ve hizmetlere göre karşılaştırın.',
+            'search_label' => 'Kreş, anaokulu veya özel eğitim merkezi ara',
+            'hero_image' => '/images/hero-cocuk.jpg',
+            'theme' => ['primary' => '#5b3a8e', 'secondary' => '#ffd166', 'soft' => '#faf5ff'],
+            'features' => ['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı'],
+            'profile_fields' => ['Yaş aralığı', 'Sınıf mevcudu', 'Eğitim programı', 'Rehberlik/psikolog', 'Servis güzergahı', 'Yemek/uyku düzeni'],
+        ],
+        'rehabilitasyon' => [
+            'slug' => 'rehabilitasyon',
+            'title' => 'Rehabilitasyon',
+            'short_title' => 'Rehab',
+            'icon' => 'rehab-care',
+            'scopes' => ['rehabilitasyon', 'fizik-tedavi'],
+            'hero_title' => 'Rehabilitasyon ve fizik tedavi merkezlerini karşılaştırın',
+            'hero_subtitle' => 'Fizik tedavi, nörolojik rehabilitasyon, özel terapi ve bakım desteklerini şehir/kategori bazında bulun.',
+            'search_label' => 'Rehabilitasyon veya fizik tedavi merkezi ara',
+            'hero_image' => '/images/hero-rehabilitasyon.jpg',
+            'theme' => ['primary' => '#0b5d8c', 'secondary' => '#e63946', 'soft' => '#eaf4fb'],
+            'features' => ['Fizyoterapist', 'Nörolojik rehabilitasyon', 'Ortopedik rehabilitasyon', 'Hidroterapi', 'Ergoterapi', 'Konuşma terapisi', 'Evde takip', 'Cihaz desteği'],
+            'profile_fields' => ['Terapi branşları', 'Uzman kadro', 'Seans süresi', 'Cihaz/ekipman', 'Raporlama', 'Evde hizmet'],
+        ],
+    ],
+
+    'brands' => [
+        'bakimevibul' => [
+            'slug' => 'bakimevibul',
+            'name' => 'bakimevibul.com',
+            'tagline' => 'Bakım kurumlarını güvenle bul',
+            'theme' => 'bakimevibul',
+            'domains' => ['bakimevibul.com', 'www.bakimevibul.com', 'bakimevibul.test', 'bakimevibul.local', 'localhost:8000'],
+            'primary_color' => '#1e6f5c',
+            'secondary_color' => '#f4a259',
+            'category_scope' => $allCategoryScopes,
+            'default_section' => 'yasli-bakim',
+            'logo_text' => 'bakimevibul.com',
+        ],
+        'bakimeviara' => [
+            'slug' => 'bakimeviara',
+            'name' => 'bakimeviara.com',
+            'tagline' => 'Doğru bakım ve eğitim kurumunu karşılaştır',
+            'theme' => 'bakimeviara',
+            'domains' => ['bakimeviara.com', 'www.bakimeviara.com', 'bakimeviara.test', 'bakimeviara.local'],
+            'primary_color' => '#5b3a8e',
+            'secondary_color' => '#ffd166',
+            'category_scope' => $allCategoryScopes,
+            'default_section' => 'cocuk',
+            'logo_text' => 'bakimeviara.com',
+        ],
+        'bakimevleri' => [
+            'slug' => 'bakimevleri',
+            'name' => 'bakimevleri.com',
+            'tagline' => 'Bakım ve rehabilitasyon merkezleri için kapsamlı rehber',
+            'theme' => 'bakimevleri',
+            'domains' => ['bakimevleri.com', 'www.bakimevleri.com', 'bakimevleri.test', 'bakimevleri.local'],
+            'primary_color' => '#0b5d8c',
+            'secondary_color' => '#e63946',
+            'category_scope' => $allCategoryScopes,
+            'default_section' => 'rehabilitasyon',
+            'logo_text' => 'bakimevleri.com',
+        ],
+    ],
+];
+

@@ -1,0 +1,14 @@
+@extends('layouts.brand')
+
+@section('content')
+<div class="max-w-md mx-auto px-4 py-12">
+  <h1 class="text-2xl font-bold mb-2">Kurum Girişi</h1>
+  <p class="text-gray-500 text-sm mb-6">Hesabınız yoksa, ilgili kurum sayfasından "Kurumu Sahiplen" başvurusu yapabilirsiniz.</p>
+  <form method="POST" action="{{ brand_route('facility.login.attempt') }}" class="bg-white p-6 rounded-xl shadow-sm space-y-4">
+    @csrf
+    <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
+    <input type="password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
+    <button class="btn-primary w-full py-2 rounded-lg font-semibold">Giriş Yap</button>
+  </form>
+</div>
+@endsection

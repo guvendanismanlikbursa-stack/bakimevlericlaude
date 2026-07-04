@@ -1,0 +1,213 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\City;
+use App\Models\Facility;
+use App\Models\FacilityCategory;
+use App\Models\FacilityImage;
+use App\Services\FacilityArchiveService;
+use App\Services\ImageCompressionService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class FacilityController extends Controller
+{
+    private const MAX_GALLERY_IMAGES = 10;
+    public function index(Request $request)
+    {
+        $query = Facility::with(['city', 'category', 'images']);
+
+        if ($request->filled('brand')) {
+            $scope = config("brands.brands.{$request->brand}.category_scope", []);
+            $query->forBrand($scope);
+        }
+
+        if ($request->filled('claim_status')) {
+            $query->where('is_claimed', $request->claim_status === 'claimed');
+        }
+
+        $facilities = $query->latest()->paginate(15)->withQueryString();
+        $brands = config('brands.brands');
+
+        return view('admin.facilities.index', compact('facilities', 'brands'));
+    }
+
+    public function create(Request $request)
+    {
+        $cities = City::orderBy('name')->get();
+        $categories = FacilityCategory::orderBy('name')->get();
+        $serviceSections = service_sections();
+
+        $facility = new Facility($request->only([
+            'name',
+            'city_id',
+            'district',
+            'address',
+            'lat',
+            'lng',
+            'phone',
+            'email',
+            'description',
+            'capacity',
+            'price_min',
+            'price_max',
+            'cover_image',
+            'facility_category_id',
+        ]));
+
+        return view('admin.facilities.form', [
+            'facility' => $facility,
+            'cities' => $cities,
+            'categories' => $categories,
+            'serviceSections' => $serviceSections,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $this->validateData($request);
+        $data['slug'] = $this->uniqueSlug($data['name']);
+        $data['services'] = $this->parseServices($request->input('services_raw'), $request->input('services', []));
+        $data['is_published'] = $request->boolean('is_published');
+        $data['is_featured'] = $request->boolean('is_featured');
+        $data['is_claimed'] = false;
+
+        $facility = Facility::create($data);
+
+        $this->storeUploadedImages($request, $facility);
+
+        return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum ön kayıt olarak eklendi. Şimdi demo görseller ekleyebilirsiniz.');
+    }
+
+    public function edit(Facility $facility)
+    {
+        $cities = City::orderBy('name')->get();
+        $categories = FacilityCategory::orderBy('name')->get();
+        $serviceSections = service_sections();
+        $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category']);
+
+        return view('admin.facilities.form', compact('facility', 'cities', 'categories', 'serviceSections'));
+    }
+
+    public function update(Request $request, Facility $facility)
+    {
+        $data = $this->validateData($request, $facility->id);
+
+        if ($data['name'] !== $facility->name) {
+            $data['slug'] = $this->uniqueSlug($data['name'], $facility->id);
+        }
+
+        $data['services'] = $this->parseServices($request->input('services_raw'), $request->input('services', []));
+        $data['is_published'] = $request->boolean('is_published');
+        $data['is_featured'] = $request->boolean('is_featured');
+
+        $facility->update($data);
+
+        $this->storeUploadedImages($request, $facility);
+
+        return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum güncellendi.');
+    }
+
+    public function destroy(Facility $facility, FacilityArchiveService $archiveService)
+    {
+        $archivePath = $archiveService->archiveBeforeDelete($facility);
+        $facility->delete();
+
+        return back()->with('success', 'Kurum silindi ve silinenler arşivine taşındı: '.$archivePath);
+    }
+
+    public function revertToPreRegistered(Facility $facility)
+    {
+        $facility->update([
+            'is_claimed' => false,
+            'claimed_at' => null,
+            'source' => 'google_maps_veri_cekici',
+        ]);
+
+        return back()->with('success', 'Kurum ön kayıtlı hale getirildi.');
+    }
+
+    public function deleteImage(FacilityImage $image)
+    {
+        Storage::disk('public')->delete($image->path);
+        $image->delete();
+
+        return back()->with('success', 'Görsel silindi.');
+    }
+
+    private function storeUploadedImages(Request $request, Facility $facility): void
+    {
+        if (! $request->hasFile('images')) {
+            return;
+        }
+
+        $files = collect($request->file('images', []));
+        $start = $facility->images()->count();
+
+        if ($start + $files->count() > self::MAX_GALLERY_IMAGES) {
+            $remaining = max(0, self::MAX_GALLERY_IMAGES - $start);
+            throw ValidationException::withMessages(['images' => "Bir kurum için en fazla 10 görsel eklenebilir. Kalan yükleme hakkı: {$remaining}."]);
+        }
+
+        foreach ($files as $i => $file) {
+            $path = app(ImageCompressionService::class)->store($file, 'facilities');
+            FacilityImage::create([
+                'facility_id' => $facility->id,
+                'path' => $path,
+                'sort_order' => $start + $i,
+            ]);
+        }
+    }
+
+    private function validateData(Request $request, ?int $ignoreId = null): array
+    {
+        return $request->validate([
+            'name' => 'required|string|max:180',
+            'city_id' => 'required|exists:cities,id',
+            'facility_category_id' => 'required|exists:facility_categories,id',
+            'district' => 'nullable|string|max:120',
+            'address' => 'nullable|string|max:500',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
+            'phone' => 'nullable|string|max:30',
+            'description' => 'nullable|string|max:5000',
+            'capacity' => 'nullable|integer|min:0',
+            'price_min' => 'nullable|numeric|min:0',
+            'price_max' => 'nullable|numeric|min:0|gte:price_min',
+            'cover_image' => 'nullable|string|max:255',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'services_raw' => 'nullable|string',
+            'services' => 'nullable|array',
+            'services.*' => 'nullable|string|max:120',
+        ]);
+    }
+
+    private function parseServices(?string $raw, array $selected = []): array
+    {
+        return collect(array_merge(explode(',', $raw ?? ''), $selected))
+            ->map(fn ($s) => trim($s))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function uniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name);
+        $slug = $base;
+        $i = 1;
+
+        while (Facility::where('slug', $slug)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
+            $slug = "{$base}-{$i}";
+            $i++;
+        }
+
+        return $slug;
+    }
+}
