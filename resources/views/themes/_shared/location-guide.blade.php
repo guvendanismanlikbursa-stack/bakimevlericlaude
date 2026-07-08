@@ -4,10 +4,26 @@
   $theme = $brand['theme'];
   $colors = $section['theme'];
   $placeTitle = $districtName ? $city->name . ' / ' . $districtName : $city->name;
-  $title = $placeTitle . ' ' . $section['title'] . ' kurumları';
+  $topicTitle = $category->name ?? $section['title'];
+  $title = $placeTitle . ' ' . $topicTitle . ' kurumları';
+  $breadcrumbItems = [
+      ['name' => $brand['name'], 'url' => brand_route('home')],
+      ['name' => $section['title'], 'url' => brand_route('location-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug])],
+  ];
+  if ($category) {
+      $breadcrumbItems[] = ['name' => $category->name, 'url' => brand_route('location-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug])];
+  }
+  if ($districtName) {
+      $breadcrumbItems[] = ['name' => $districtName, 'url' => url()->current()];
+  }
 @endphp
 @section('title', $title)
-@section('meta_description', $brand['name'].' ile '.$placeTitle.' bölgesindeki '.$section['title'].' kurumlarını karşılaştırın, ücretsiz teklif alın.')
+@section('og_title', $title)
+@section('meta_description', $brand['name'].' ile '.$placeTitle.' bölgesindeki '.$topicTitle.' kurumlarını karşılaştırın, ücretsiz teklif alın.')
+@section('og_image', seo_og_image($section))
+@section('breadcrumb_jsonld')
+  @include('themes._shared.partials.breadcrumb-jsonld', ['items' => $breadcrumbItems])
+@endsection
 
 <section class="{{ $theme === 'bakimevleri' ? 'bg-gray-950 text-white' : ($theme === 'bakimeviara' ? 'bg-white' : 'bg-gray-50') }} border-b border-gray-100">
   <div class="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-[1fr_340px] gap-8 items-start">
@@ -18,7 +34,7 @@
         <span>İl / ilçe rehberi</span>
       </div>
       <h1 class="text-4xl md:text-5xl font-black leading-tight {{ $theme === 'bakimevleri' ? 'text-white' : 'text-gray-950' }}">{{ $title }}</h1>
-      <p class="mt-4 text-lg leading-relaxed {{ $theme === 'bakimevleri' ? 'text-white/70' : 'text-gray-600' }}">{{ $placeTitle }} bölgesinde {{ $section['title'] }} arayan ziyaretçiler için kurum seçme kriterleri, filtre önerileri ve öne çıkan seçenekler.</p>
+      <p class="mt-4 text-lg leading-relaxed {{ $theme === 'bakimevleri' ? 'text-white/70' : 'text-gray-600' }}">{{ $placeTitle }} bölgesinde {{ $topicTitle }} arayan ziyaretçiler için kurum seçme kriterleri, filtre önerileri ve öne çıkan seçenekler.</p>
     </div>
     <div class="{{ $theme === 'bakimevleri' ? 'bg-white/10 border-white/15 text-white' : 'bg-white border-gray-100 text-gray-800' }} rounded-xl border p-5 shadow-sm">
       <div class="text-sm font-black mb-3" style="color: {{ $theme === 'bakimevleri' ? '#fff' : $colors['primary'] }};">Hızlı aksiyon</div>
@@ -36,9 +52,18 @@
       <div class="font-black text-gray-950 mb-3">Yakın ilçe bağlantıları</div>
       <div class="flex flex-wrap gap-2">
         @foreach($nearDistricts as $district)
-          <a href="{{ brand_route('location-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => Str::slug($district)]) }}" class="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:shadow-sm">{{ $district }}</a>
+          <a href="{{ $category ? brand_route('location-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug, 'districtSlug' => Str::slug($district)]) : brand_route('location-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => Str::slug($district)]) }}" class="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:shadow-sm">{{ $district }}</a>
         @endforeach
       </div>
+      @if($sectionCategories->isNotEmpty())
+        <div class="font-black text-gray-950 mb-3 mt-6">Kategoriye göre keşfet</div>
+        <div class="flex flex-wrap gap-2">
+          <a href="{{ brand_route('location-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold hover:shadow-sm {{ ! $category ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">Tümü</a>
+          @foreach($sectionCategories as $sectionCategory)
+            <a href="{{ brand_route('location-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $sectionCategory->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold hover:shadow-sm {{ $category?->id === $sectionCategory->id ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">{{ $sectionCategory->name }}</a>
+          @endforeach
+        </div>
+      @endif
     </aside>
     <div>
       <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-6">

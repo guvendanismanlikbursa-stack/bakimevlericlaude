@@ -175,7 +175,13 @@ class DataExtractorController extends Controller
 
     public function approve(Request $request, DataImportRow $row, DataImportRowApprovalService $rowService)
     {
-        $facility = $rowService->approve($row, $request->boolean('is_published', true));
+        try {
+            $facility = $rowService->approve($row, $request->boolean('is_published', true));
+        } catch (\RuntimeException $e) {
+            // Mukerrer kayit veya eksik veri gibi beklenen durumlar: 500 hatasi
+            // yerine anlasilir bir mesajla listeye geri don.
+            return back()->withErrors(['row' => $e->getMessage()]);
+        }
 
         if ($request->boolean('edit')) {
             return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum oluşturuldu. Şimdi manuel revize yapabilirsiniz.');

@@ -181,11 +181,16 @@ def scrape_google_maps(query: str, max_results: int, log_fn, stop_event,
                     page.goto(href, wait_until="domcontentloaded", timeout=20000)
                     time.sleep(2)
 
-                    # Koordinat: Google Maps yer sayfasina gidince adres cubugu
-                    # "/@enlem,boylam,zoom" formatina donusur — "Yakinimdaki
-                    # Kurumlar" ozelliginin gercek mesafe hesabi icin gerekli.
+                    # Koordinat: sonuc listesinden dogrudan href ile bir yer
+                    # sayfasina gidince URL "/@enlem,boylam,zoom" DEGIL,
+                    # "...!3d<enlem>!4d<boylam>!..." (data= parametresi
+                    # icinde, Google'in kendi kisa-kod formati) seklinde
+                    # geliyor. Once bunu dene, olmazsa eski /@ formatina
+                    # (kullanici haritada gezinirken olusan URL'ler icin) dus.
                     lat, lng = "", ""
-                    coord_match = re.search(r'/@(-?\d+\.\d+),(-?\d+\.\d+)', page.url)
+                    coord_match = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', page.url)
+                    if not coord_match:
+                        coord_match = re.search(r'/@(-?\d+\.\d+),(-?\d+\.\d+)', page.url)
                     if coord_match:
                         lat, lng = coord_match.group(1), coord_match.group(2)
 

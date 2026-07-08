@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Faq;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 
 class FaqController extends Controller
 {
@@ -26,7 +27,7 @@ class FaqController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'brand' => 'required|string',
+            'brand' => ['required', 'string', Rule::in(array_keys(config('brands.brands')))],
             'question' => 'required|string|max:300',
             'answer' => 'required|string',
             'sort_order' => 'nullable|integer|min:0',

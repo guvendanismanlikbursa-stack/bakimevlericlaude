@@ -14,7 +14,7 @@
     <div>
       <p class="text-sm text-gray-500">Kurum Paneli</p>
       <h1 class="text-2xl font-bold">{{ $facility->name }}</h1>
-      <p class="text-sm text-gray-500 mt-1">{{ $user->name }} · {{ $facility->category->name ? 'Kategori yok' }} · {{ $facility->city->name ? 'Şehir yok' }}</p>
+      <p class="text-sm text-gray-500 mt-1">{{ $user->name }} · {{ $facility->category->name ?: 'Kategori yok' }} · {{ $facility->city->name ?: 'Şehir yok' }}</p>
     </div>
     <div class="flex items-center gap-3">
       <a href="{{ brand_route('facility.profile.edit') }}" class="border border-primary text-primary px-4 py-2 rounded-lg text-sm font-semibold">Profili Düzenle</a>

@@ -37,9 +37,9 @@
     </label>
 
     <div class="grid sm:grid-cols-3 gap-3">
-      <label class="flex items-center gap-2 text-sm font-semibold bg-gray-50 rounded-xl px-3 py-3"><input type="checkbox" name="has_dementia" value="1"> Demans/Alzheimer var</label>
-      <label class="flex items-center gap-2 text-sm font-semibold bg-gray-50 rounded-xl px-3 py-3"><input type="checkbox" name="is_bedridden" value="1"> Yatalak</label>
-      <label class="flex items-center gap-2 text-sm font-semibold bg-gray-50 rounded-xl px-3 py-3"><input type="checkbox" name="needs_physio" value="1"> Fizik tedavi gerekiyor</label>
+      @foreach($activeSection['advisor_concerns'] ?? [] as $concern)
+        <label class="flex items-center gap-2 text-sm font-semibold bg-gray-50 rounded-xl px-3 py-3"><input type="checkbox" name="concerns[]" value="{{ $concern['key'] }}"> {{ $concern['label'] }}</label>
+      @endforeach
     </div>
 
     <div class="grid sm:grid-cols-3 gap-4">
@@ -49,13 +49,12 @@
       <label class="block"><span class="text-xs font-black text-gray-500">Kurum türü</span>
         <select name="category" class="mt-1 w-full border border-gray-200 rounded-xl px-3 py-3 bg-white"><option value="">Farketmez</option>@foreach($categories as $category)<option value="{{ $category->slug }}">{{ $category->name }}</option>@endforeach</select>
       </label>
-      <label class="block"><span class="text-xs font-black text-gray-500">Aylık bütçe (üst sınır)</span>
+      <label class="block"><span class="text-xs font-black text-gray-500">Bütçe segmenti (üst sınır)</span>
         <select name="budget_max" class="mt-1 w-full border border-gray-200 rounded-xl px-3 py-3 bg-white">
           <option value="">Belirtmek istemiyorum</option>
-          <option value="15000">15.000 TL</option>
-          <option value="30000">30.000 TL</option>
-          <option value="50000">50.000 TL</option>
-          <option value="100000">100.000 TL</option>
+          @foreach($priceTiers as $tier)
+            <option value="{{ $tier['value'] }}">{{ $tier['label'] }}</option>
+          @endforeach
         </select>
       </label>
     </div>

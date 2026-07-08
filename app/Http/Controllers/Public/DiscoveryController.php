@@ -14,88 +14,115 @@ use Illuminate\Support\Facades\DB;
 // En Cok Goruntulenen, Son Eklenen Fotograflar.
 class DiscoveryController extends Controller
 {
+    /**
+     * Vitrin sayfalari brand genelinde degil, o an secili "bolum" (yasli-bakim/
+     * cocuk/rehabilitasyon) kapsaminda filtrelenir; boylece "Yeni Eklenen
+     * Kurumlar" gibi listeler baska bolumlerin kurumlarini karistirmaz.
+     */
+    private function activeScopes(Request $request, array $brand): array
+    {
+        $activeSection = $request->query('bolum') ? active_service_section($request->query('bolum'), $brand) : null;
+
+        return [$activeSection, $activeSection['scopes'] ?? $brand['category_scope']];
+    }
+
     public function verified(Request $request)
     {
         $brand = current_brand();
+        [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::published()->claimed()
-            ->forBrand($brand['category_scope'])
+            ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('claimed_at')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Doğrulanmış Kurumlar',
             'subtitle' => 'Sahiplenme başvurusu admin tarafından onaylanmış, yetkilisi doğrulanmış kurumlar.',
             'facilities' => $facilities,
             'badges' => [],
+            'activeSection' => $activeSection,
+            'sections' => service_sections(),
         ]);
     }
 
     public function recentlyUpdated(Request $request)
     {
         $brand = current_brand();
+        [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::published()
-            ->forBrand($brand['category_scope'])
+            ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('updated_at')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Son Güncellenen Kurumlar',
             'subtitle' => 'Bilgileri en yakın zamanda güncellenmiş kurumlar.',
             'facilities' => $facilities,
             'badges' => $facilities->mapWithKeys(fn ($f) => [$f->id => '<span class="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">'.$f->updated_at->diffForHumans().'</span>']),
+            'activeSection' => $activeSection,
+            'sections' => service_sections(),
         ]);
     }
 
     public function newlyAdded(Request $request)
     {
         $brand = current_brand();
+        [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::published()
-            ->forBrand($brand['category_scope'])
+            ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('created_at')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Yeni Eklenen Kurumlar',
             'subtitle' => 'Platforma en son eklenen kurum profilleri.',
             'facilities' => $facilities,
             'badges' => [],
+            'activeSection' => $activeSection,
+            'sections' => service_sections(),
         ]);
     }
 
     public function recentlyClaimed(Request $request)
     {
         $brand = current_brand();
+        [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::published()->claimed()
-            ->forBrand($brand['category_scope'])
+            ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('claimed_at')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Son Sahiplenilen Kurumlar',
             'subtitle' => 'Bugün ve son günlerde yetkilisi tarafından sahiplenilip doğrulanan kurumlar.',
             'facilities' => $facilities,
             'badges' => [],
+            'activeSection' => $activeSection,
+            'sections' => service_sections(),
         ]);
     }
 
     public function mostViewed(Request $request)
     {
         $brand = current_brand();
+        [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::published()
-            ->forBrand($brand['category_scope'])
+            ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('views_count')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'En Çok Görüntülenen Kurumlar',
             'subtitle' => 'Ziyaretçilerin profil sayfasını en çok açtığı kurumlar.',
             'facilities' => $facilities,
             'badges' => $facilities->mapWithKeys(fn ($f) => [$f->id => '<span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">'.number_format($f->views_count).' görüntülenme</span>']),
+            'activeSection' => $activeSection,
+            'sections' => service_sections(),
         ]);
     }
 
@@ -134,13 +161,16 @@ class DiscoveryController extends Controller
     public function recentPhotos(Request $request)
     {
         $brand = current_brand();
-        $images = FacilityImage::whereHas('facility', function ($q) use ($brand) {
-                $q->published()->forBrand($brand['category_scope']);
+        [$activeSection, $scopes] = $this->activeScopes($request, $brand);
+        $images = FacilityImage::whereHas('facility', function ($q) use ($scopes) {
+                $q->published()->forBrand($scopes);
             })
             ->with('facility.city')
             ->latest()
-            ->paginate(24);
+            ->paginate(24)->withQueryString();
 
-        return view("themes.{$brand['theme']}.facilities.recent-photos", compact('images', 'brand'));
+        $sections = service_sections();
+
+        return view("themes.{$brand['theme']}.facilities.recent-photos", compact('images', 'brand', 'activeSection', 'sections'));
     }
 }

@@ -19,6 +19,11 @@ return [
             'theme' => ['primary' => '#1e6f5c', 'secondary' => '#f4a259', 'soft' => '#ecfdf5'],
             'features' => ['7/24 hemşire', 'Doktor kontrolü', 'Alzheimer bakımı', 'Demans bakımı', 'Palyatif bakım', 'Gündüz bakım', 'Tam zamanlı bakım', 'Fizik tedavi', 'Fiziksel aktivite', 'Diyetisyen', 'Sosyal etkinlik', 'Özel oda', 'Bahçe alanı'],
             'profile_fields' => ['Kapasite', 'Oda tipleri', 'Hemşire/doktor desteği', 'Demans/Alzheimer bakımı', 'Ziyaret saatleri', 'Beslenme planı'],
+            'advisor_concerns' => [
+                ['key' => 'has_dementia', 'label' => 'Demans/Alzheimer var', 'keywords' => ['demans' => 'Demans/Alzheimer bakımı', 'alzheimer' => 'Demans/Alzheimer bakımı']],
+                ['key' => 'is_bedridden', 'label' => 'Yatalak', 'keywords' => ['yatalak' => 'Yatalak hasta bakımı', '7/24' => '7/24 hemşire desteği', 'hemşire' => '7/24 hemşire desteği']],
+                ['key' => 'needs_physio', 'label' => 'Fizik tedavi gerekiyor', 'keywords' => ['fizik tedavi' => 'Fizik tedavi', 'fizyoterap' => 'Fizik tedavi']],
+            ],
         ],
         'cocuk' => [
             'slug' => 'cocuk',
@@ -33,6 +38,11 @@ return [
             'theme' => ['primary' => '#5b3a8e', 'secondary' => '#ffd166', 'soft' => '#faf5ff'],
             'features' => ['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı'],
             'profile_fields' => ['Yaş aralığı', 'Sınıf mevcudu', 'Eğitim programı', 'Rehberlik/psikolog', 'Servis güzergahı', 'Yemek/uyku düzeni'],
+            'advisor_concerns' => [
+                ['key' => 'needs_special_education', 'label' => 'Özel eğitim ihtiyacı var', 'keywords' => ['özel eğitim' => 'Özel eğitim', 'otizm' => 'Otizm/gelişimsel destek', 'gelişim' => 'Gelişimsel destek']],
+                ['key' => 'needs_daycare', 'label' => 'Kreş/gündüz bakım gerekiyor', 'keywords' => ['kreş' => 'Kreş hizmeti', 'gündüz bakım' => 'Gündüz bakım']],
+                ['key' => 'needs_guidance', 'label' => 'Rehberlik/psikolog desteği gerekiyor', 'keywords' => ['rehberlik' => 'Rehberlik servisi', 'psikolog' => 'Psikolog desteği']],
+            ],
         ],
         'rehabilitasyon' => [
             'slug' => 'rehabilitasyon',
@@ -47,6 +57,11 @@ return [
             'theme' => ['primary' => '#0b5d8c', 'secondary' => '#e63946', 'soft' => '#eaf4fb'],
             'features' => ['Fizyoterapist', 'Nörolojik rehabilitasyon', 'Ortopedik rehabilitasyon', 'Hidroterapi', 'Ergoterapi', 'Konuşma terapisi', 'Evde takip', 'Cihaz desteği'],
             'profile_fields' => ['Terapi branşları', 'Uzman kadro', 'Seans süresi', 'Cihaz/ekipman', 'Raporlama', 'Evde hizmet'],
+            'advisor_concerns' => [
+                ['key' => 'needs_physio', 'label' => 'Fizik tedavi gerekiyor', 'keywords' => ['fizik tedavi' => 'Fizik tedavi', 'fizyoterap' => 'Fizik tedavi']],
+                ['key' => 'needs_neuro_rehab', 'label' => 'Nörolojik rehabilitasyon gerekiyor', 'keywords' => ['nörolojik' => 'Nörolojik rehabilitasyon', 'inme' => 'İnme sonrası rehabilitasyon', 'felç' => 'Felç sonrası rehabilitasyon']],
+                ['key' => 'needs_speech_therapy', 'label' => 'Konuşma/dil terapisi gerekiyor', 'keywords' => ['konuşma terapisi' => 'Konuşma terapisi', 'dil terapisi' => 'Dil terapisi']],
+            ],
         ],
     ],
 

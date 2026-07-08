@@ -19,13 +19,14 @@ class WalletController extends Controller
         $topups = $facility->walletTopups()->latest()->get();
         $logs = $facility->balanceLogs()->limit(30)->get();
 
+        $slug = $brand['slug'];
         $bankInfo = [
-            'bank_name' => Setting::get('bank_name', config('platform.default_bank_info.bank_name')),
-            'account_holder' => Setting::get('bank_account_holder', config('platform.default_bank_info.account_holder')),
-            'iban' => Setting::get('bank_iban', config('platform.default_bank_info.iban')),
+            'bank_name' => Setting::get("bank_name_{$slug}", config("platform.default_bank_info.{$slug}.bank_name")),
+            'account_holder' => Setting::get("bank_account_holder_{$slug}", config("platform.default_bank_info.{$slug}.account_holder")),
+            'iban' => Setting::get("bank_iban_{$slug}", config("platform.default_bank_info.{$slug}.iban")),
         ];
 
-        $quotePrice = Setting::get('quote_price', config('platform.default_quote_price'));
+        $quotePrice = $facility->effectiveQuotePrice();
 
         return view("themes.{$brand['theme']}.facility.wallet", compact('facility', 'topups', 'logs', 'bankInfo', 'quotePrice'));
     }
@@ -37,7 +38,7 @@ class WalletController extends Controller
         $data = $request->validate([
             'amount' => 'required|numeric|min:1',
             'note' => 'nullable|string|max:500',
-            'receipt' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'receipt' => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:8192',
         ]);
 
         $path = $request->file('receipt')->store('topups', 'public');

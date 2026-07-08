@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\FacilityClaim;
+use App\Models\FacilityRegistration;
 use App\Models\FacilityUser;
 use App\Models\FamilyUser;
 use App\Models\WalletTopup;
@@ -45,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer('admin.*', function ($view) {
             $view->with('pendingClaimsCount', FacilityClaim::where('status', 'pending')->count());
             $view->with('pendingTopupsCount', WalletTopup::where('status', 'pending')->count());
+            $view->with('pendingRegistrationsCount', FacilityRegistration::where('status', 'pending')->count());
         });
     }
 

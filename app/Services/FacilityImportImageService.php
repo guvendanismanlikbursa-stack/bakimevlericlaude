@@ -13,6 +13,21 @@ class FacilityImportImageService
 {
     private const MAX_IMAGES = 10;
 
+    // Bu havuzdaki gorseller gercek kurum fotografi degil, stok/ornek
+    // gorsellerdir (bkz. on kayitli kurumlarin dogasi geregi). Yanlislikla
+    // "gercek fotograf" sanilmasin diye her kopyaya bu filigran basilir.
+    private const WATERMARK_TEXT = 'ÖRNEKTİR';
+
+    // Her kurum turu (FacilityCategory) icin SABIT, PAYLASILAN 5 ornek
+    // gorsel: her on kayitli kurum ayni dosyalari referans eder, kurum
+    // basina yeniden uretilip diskte binlerce kopya birikmez (bkz.
+    // storage/app/public/facilities/demo/{category_id}/).
+    private const DEMO_DIRECTORY = 'facilities/demo';
+
+    public function __construct(private ImageCompressionService $imageCompressor)
+    {
+    }
+
     private const SECTION_DIRECTORIES = [
         'yasli-bakim' => ['yasli', 'yaşlı', 'bakim', 'bakım'],
         'cocuk' => ['cocuk', 'çocuk', 'kres', 'kreş', 'anaokul'],
@@ -27,22 +42,16 @@ class FacilityImportImageService
             return 0;
         }
 
-        $pool = $this->imagePool($this->sectionSlug($category));
-        if ($pool === []) {
+        $demoPaths = $this->demoImagesFor($category);
+        if ($demoPaths === []) {
             return 0;
         }
 
-        shuffle($pool);
-        $selected = array_slice($pool, 0, min($count, $remaining, count($pool)));
+        $selected = array_slice($demoPaths, 0, min($count, $remaining, count($demoPaths)));
         $start = $facility->images()->count();
         $attached = 0;
 
-        foreach ($selected as $index => $source) {
-            $extension = strtolower($source->getExtension()) ?: 'jpg';
-            $filename = $facility->id.'-'.Str::slug(pathinfo($source->getFilename(), PATHINFO_FILENAME)).'-'.Str::random(6).'.'.$extension;
-            $path = 'facilities/imported/'.$filename;
-
-            Storage::disk('public')->put($path, File::get($source->getPathname()));
+        foreach ($selected as $index => $path) {
             FacilityImage::create([
                 'facility_id' => $facility->id,
                 'path' => $path,
@@ -52,6 +61,46 @@ class FacilityImportImageService
         }
 
         return $attached;
+    }
+
+    /**
+     * Bu kategori icin sabit paylasilan gorsel havuzunun disk yollarini
+     * dondurur; henuz yoksa (ilk cagrida) stok havuzundan secip bir kere
+     * uretir ve kalici olarak DEMO_DIRECTORY altina yazar. Backfill/temizlik
+     * scriptleri de bu havuzu almak icin bu metodu kullanir.
+     */
+    public function demoImagesFor(FacilityCategory $category): array
+    {
+        $disk = 'public';
+        $directory = self::DEMO_DIRECTORY.'/'.$category->id;
+        $needed = (int) config('platform.import_image_count', 5);
+
+        $existing = collect(Storage::disk($disk)->files($directory))->sort()->values();
+        if ($existing->count() >= $needed) {
+            return $existing->take($needed)->all();
+        }
+
+        $pool = $this->imagePool($this->sectionSlug($category));
+        if ($pool === []) {
+            return $existing->all();
+        }
+
+        shuffle($pool);
+        $missing = $needed - $existing->count();
+        $created = [];
+
+        for ($i = 0; $i < $missing && $i < count($pool); $i++) {
+            $filename = (string) ($existing->count() + $i + 1);
+            $created[] = $this->imageCompressor->storeFromLocalFile(
+                $pool[$i]->getPathname(),
+                $directory,
+                $disk,
+                self::WATERMARK_TEXT,
+                $filename
+            );
+        }
+
+        return $existing->concat($created)->all();
     }
 
     private function imagePool(string $sectionSlug): array
@@ -76,7 +125,9 @@ class FacilityImportImageService
         $searchDirectories = $matched ?: $directories->all();
         $files = [];
         foreach ($searchDirectories as $directory) {
-            foreach (File::files($directory) as $file) {
+            // allFiles: gorseller alt klasorlere (orn. "bakimevi/1/", "bakimevi/2/")
+            // dagitilmis olabilir, tek seviye File::files() bunlari atlardi.
+            foreach (File::allFiles($directory) as $file) {
                 if (in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png', 'webp'], true)) {
                     $files[] = $file;
                 }

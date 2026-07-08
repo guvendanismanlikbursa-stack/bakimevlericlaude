@@ -179,6 +179,20 @@
         <div class="flex-1 min-w-[160px]"><label class="text-xs text-gray-500 block">Not</label><input type="text" name="note" placeholder="Sebep" class="border rounded-lg px-3 py-1.5 text-sm w-full"></div>
         <button class="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold">Uygula</button>
       </form>
+
+      <div class="border-t border-gray-100 mt-4 pt-4">
+        <p class="text-sm text-gray-600 mb-2">Bu kurum i&ccedil;in &ouml;zel teklif &uuml;creti:
+          <strong>{{ $facility->quote_price_override !== null ? number_format($facility->quote_price_override,2,',','.').' TL' : 'Yok (genel ücret geçerli)' }}</strong>
+        </p>
+        <form method="POST" action="{{ route('admin.facilities.balance.adjust', $facility) }}" class="flex flex-wrap gap-2 items-end">
+          @csrf
+          <div><label class="text-xs text-gray-500 block">&Ouml;zel Teklif &Uuml;creti (TL)</label><input type="number" step="0.01" min="0" name="quote_price_override" placeholder="&ouml;rn: 150" class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
+          <button class="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold">Kaydet</button>
+          @if($facility->quote_price_override !== null)
+            <button type="submit" name="clear_quote_price_override" value="1" class="bg-white border border-gray-300 text-gray-600 px-4 py-1.5 rounded-lg text-sm font-semibold">Genel &uuml;crete d&ouml;n</button>
+          @endif
+        </form>
+      </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm p-6">

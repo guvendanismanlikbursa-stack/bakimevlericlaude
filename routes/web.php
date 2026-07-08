@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\DataExtractorController as AdminDataExtractorCont
 use App\Http\Controllers\Admin\FacilityCategoryController as AdminFacilityCategoryController;
 use App\Http\Controllers\Admin\FacilityClaimController as AdminFacilityClaimController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
+use App\Http\Controllers\Admin\FacilityInvitationController as AdminFacilityInvitationController;
+use App\Http\Controllers\Admin\FacilityRegistrationController as AdminFacilityRegistrationController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\FacilityQuestionController as AdminFacilityQuestionController;
 use App\Http\Controllers\Admin\OfferRequestController as AdminOfferRequestController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptio
 use App\Http\Controllers\Admin\TrashController as AdminTrashController;
 use App\Http\Controllers\Admin\WalletTopupController as AdminWalletTopupController;
 use App\Http\Controllers\Facility\AuthController as FacilityAuthController;
+use App\Http\Controllers\Facility\PasswordResetController as FacilityPasswordResetController;
 use App\Http\Controllers\Facility\DashboardController as FacilityDashboardController;
 use App\Http\Controllers\Facility\MessageController as FacilityMessageController;
 use App\Http\Controllers\Facility\NotificationController as FacilityNotificationController;
@@ -29,6 +32,7 @@ use App\Http\Controllers\Facility\QuoteController as FacilityQuoteController;
 use App\Http\Controllers\Facility\SubscriptionController as FacilitySubscriptionController;
 use App\Http\Controllers\Facility\WalletController as FacilityWalletController;
 use App\Http\Controllers\Family\AuthController as FamilyAuthController;
+use App\Http\Controllers\Family\PasswordResetController as FamilyPasswordResetController;
 use App\Http\Controllers\Family\DashboardController as FamilyDashboardController;
 use App\Http\Controllers\Family\EmailVerificationController as FamilyEmailVerificationController;
 use App\Http\Controllers\Family\MessageController as FamilyMessageController;
@@ -36,12 +40,14 @@ use App\Http\Controllers\Family\NotificationController as FamilyNotificationCont
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\EngagementController;
 use App\Http\Controllers\Public\FacilityClaimController;
+use App\Http\Controllers\Public\FacilityRegistrationController;
 use App\Http\Controllers\Public\FacilityController;
 use App\Http\Controllers\Public\FaqController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LocationGuideController;
 use App\Http\Controllers\Public\OfferRequestController;
 use App\Http\Controllers\Public\PageController;
+use App\Http\Controllers\Public\RobotsController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Admin\FacilityReviewController as AdminFacilityReviewController;
 use App\Http\Controllers\Admin\VisitRequestController as AdminVisitRequestController;
@@ -71,15 +77,19 @@ $siteRoutes = function () {
     Route::get('/bakim-danismani', [CareAdvisorController::class, 'form'])->name('care-advisor.form');
     Route::get('/bakim-danismani/sonuclar', [CareAdvisorController::class, 'results'])->name('care-advisor.results');
     Route::get('/karsilastir', [EngagementController::class, 'compare'])->name('engagement.compare');
-    Route::get('/favoriler', [EngagementController::class, 'favorites'])->name('engagement.favorites');
+    Route::get('/favoriler', [EngagementController::class, 'favorites'])->middleware('family.auth')->name('engagement.favorites');
+    Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->name('location-guide.category');
     Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->name('location-guide.show');
     Route::get('/kurumlar', [FacilityController::class, 'index'])->name('facilities.index');
+    Route::get('/kurumlar-sayisi', [FacilityController::class, 'count'])->middleware('throttle:public-light')->name('facilities.count');
     Route::get('/kurumlar/{slug}', [FacilityController::class, 'show'])->name('facilities.show');
     Route::post('/kurumlar/{slug}/yorum', [FacilityReviewController::class, 'store'])->middleware('throttle:public-form')->name('reviews.store');
     Route::post('/kurumlar/{slug}/ziyaret-talebi', [VisitRequestController::class, 'store'])->middleware('throttle:public-form')->name('visit-requests.store');
     Route::post('/kurumlar/{slug}/kontenjan-sor', [VisitRequestController::class, 'storeAvailability'])->middleware('throttle:public-form')->name('visit-requests.availability');
     Route::post('/kurumlar/{slug}/favori-say', [EngagementController::class, 'toggleFavoriteCount'])->middleware('throttle:public-light')->name('facilities.favorite-count');
     Route::post('/teklif-talebi', [OfferRequestController::class, 'store'])->middleware('throttle:public-form')->name('offer-requests.store');
+    Route::get('/toplu-fiyat-al', [EngagementController::class, 'bulkQuote'])->name('engagement.bulk-quote');
+    Route::post('/toplu-teklif-talebi', [OfferRequestController::class, 'storeBulk'])->middleware('throttle:public-form')->name('offer-requests.store-bulk');
     Route::get('/iletisim', [ContactController::class, 'create'])->name('contact.create');
     Route::post('/iletisim', [ContactController::class, 'store'])->middleware('throttle:public-form')->name('contact.store');
     Route::get('/sayfa/{slug}', [PageController::class, 'show'])->name('pages.show');
@@ -96,7 +106,8 @@ $siteRoutes = function () {
 
     // Ucret rehberi
     Route::get('/fiyat-rehberi', [PriceGuideController::class, 'index'])->name('price-guide.index');
-    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}', [PriceGuideController::class, 'show'])->name('price-guide.show');
+    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/kategori/{categorySlug}', [PriceGuideController::class, 'showCategory'])->name('price-guide.category');
+    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/{districtSlug?}', [PriceGuideController::class, 'show'])->name('price-guide.show');
 
     // Turkiye istatistikleri
     Route::get('/istatistikler', [StatsController::class, 'index'])->name('stats.index');
@@ -115,6 +126,15 @@ $siteRoutes = function () {
     Route::get('/kurumlar/{slug}/sahiplen', [FacilityClaimController::class, 'create'])->name('facility-claim.create');
     Route::post('/kurumlar/{slug}/sahiplen', [FacilityClaimController::class, 'store'])->middleware('throttle:public-sensitive')->name('facility-claim.store');
 
+    // Kurum kendi kendine kayit basvurusu (herkese acik form, giris gerekmez)
+    Route::get('/kurum-kaydi', [FacilityRegistrationController::class, 'create'])->name('facility-registration.create');
+    Route::post('/kurum-kaydi', [FacilityRegistrationController::class, 'store'])->middleware('throttle:public-sensitive')->name('facility-registration.store');
+    Route::get('/kurum-kaydi/basvuru-alindi', [FacilityRegistrationController::class, 'received'])->name('facility-registration.received');
+    Route::get('/kurum-kaydi/{registration}/duzenle/{hash}', [FacilityRegistrationController::class, 'edit'])
+        ->middleware('signed')->name('facility-registration.edit');
+    Route::post('/kurum-kaydi/{registration}/duzenle/{hash}', [FacilityRegistrationController::class, 'update'])
+        ->middleware(['signed', 'throttle:public-sensitive'])->name('facility-registration.update');
+
     /*
     |--------------------------------------------------------------
     | Aile paneli
@@ -126,6 +146,12 @@ $siteRoutes = function () {
         Route::get('/giris', [FamilyAuthController::class, 'showLogin'])->name('login');
         Route::post('/giris', [FamilyAuthController::class, 'login'])->middleware('throttle:auth-attempt')->name('login.attempt');
         Route::post('/cikis', [FamilyAuthController::class, 'logout'])->name('logout');
+        Route::get('/sifremi-unuttum', [FamilyPasswordResetController::class, 'showRequest'])->name('password.request');
+        Route::post('/sifremi-unuttum', [FamilyPasswordResetController::class, 'sendResetLink'])->middleware('throttle:public-sensitive')->name('password.email');
+        Route::get('/sifre-sifirla/{id}/{hash}', [FamilyPasswordResetController::class, 'showReset'])
+            ->middleware('signed')->name('password.reset');
+        Route::post('/sifre-sifirla/{id}/{hash}', [FamilyPasswordResetController::class, 'reset'])
+            ->middleware(['signed', 'throttle:public-sensitive'])->name('password.reset.update');
         Route::get('/email-dogrula/{id}/{hash}', [FamilyEmailVerificationController::class, 'verify'])
             ->middleware('signed')->name('verify-email');
         Route::get('/email-dogrulama', [FamilyEmailVerificationController::class, 'notice'])
@@ -152,6 +178,12 @@ $siteRoutes = function () {
         Route::get('/giris', [FacilityAuthController::class, 'showLogin'])->name('login');
         Route::post('/giris', [FacilityAuthController::class, 'login'])->middleware('throttle:auth-attempt')->name('login.attempt');
         Route::post('/cikis', [FacilityAuthController::class, 'logout'])->name('logout');
+        Route::get('/sifremi-unuttum', [FacilityPasswordResetController::class, 'showRequest'])->name('password.request');
+        Route::post('/sifremi-unuttum', [FacilityPasswordResetController::class, 'sendResetLink'])->middleware('throttle:public-sensitive')->name('password.email');
+        Route::get('/sifre-sifirla/{id}/{hash}', [FacilityPasswordResetController::class, 'showReset'])
+            ->middleware('signed')->name('password.reset');
+        Route::post('/sifre-sifirla/{id}/{hash}', [FacilityPasswordResetController::class, 'reset'])
+            ->middleware(['signed', 'throttle:public-sensitive'])->name('password.reset.update');
         Route::get('/email-dogrula/{id}/{hash}', [\App\Http\Controllers\Facility\EmailVerificationController::class, 'verify'])
             ->middleware('signed')->name('verify-email');
         Route::get('/email-dogrulama', [\App\Http\Controllers\Facility\EmailVerificationController::class, 'notice'])
@@ -189,6 +221,7 @@ $siteRoutes = function () {
 
 // 1) Gercek domain modu (host eslesirse ResolveBrand brand'i ayarlar)
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+Route::get('/robots.txt', RobotsController::class)->name('robots');
 
 Route::middleware('track.visit')->group($siteRoutes);
 
@@ -214,13 +247,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->except(['show']);
         Route::delete('/kurumlar/gorsel/{image}', [AdminFacilityController::class, 'deleteImage'])->name('facilities.image.destroy');
         Route::post('/kurumlar/{facility}/bakiye-duzenle', [AdminBalanceController::class, 'adjust'])->name('facilities.balance.adjust');
+        Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
+
+        Route::get('/kurum-davetleri', [AdminFacilityInvitationController::class, 'index'])->name('invitations.index');
+        Route::get('/kurum-davetleri/{facility}/whatsapp-ac', [AdminFacilityInvitationController::class, 'openWhatsapp'])->name('invitations.whatsapp');
+        Route::post('/kurum-davetleri/{facility}/durum', [AdminFacilityInvitationController::class, 'updateStatus'])->name('invitations.update-status');
 
         Route::get('/sahiplenme-basvurulari', [AdminFacilityClaimController::class, 'index'])->name('claims.index');
         Route::get('/sahiplenme-basvurulari/{claim}', [AdminFacilityClaimController::class, 'show'])->name('claims.show');
         Route::post('/sahiplenme-basvurulari/{claim}/onayla', [AdminFacilityClaimController::class, 'approve'])->name('claims.approve');
         Route::post('/sahiplenme-basvurulari/{claim}/reddet', [AdminFacilityClaimController::class, 'reject'])->name('claims.reject');
 
+        Route::get('/kurum-kayit-basvurulari', [AdminFacilityRegistrationController::class, 'index'])->name('registrations.index');
+        Route::get('/kurum-kayit-basvurulari/{registration}', [AdminFacilityRegistrationController::class, 'show'])->name('registrations.show');
+        Route::post('/kurum-kayit-basvurulari/{registration}/onayla', [AdminFacilityRegistrationController::class, 'approve'])->name('registrations.approve');
+        Route::post('/kurum-kayit-basvurulari/{registration}/revize-iste', [AdminFacilityRegistrationController::class, 'requestRevision'])->name('registrations.request-revision');
+        Route::delete('/kurum-kayit-basvurulari/{registration}', [AdminFacilityRegistrationController::class, 'destroy'])->name('registrations.destroy');
+
         Route::get('/ayarlar', [AdminSettingController::class, 'edit'])->name('settings.edit');
+        Route::put('/ayarlar', [AdminSettingController::class, 'update'])->name('settings.update');
         Route::get('/bakiye-yuklemeleri', [AdminWalletTopupController::class, 'index'])->name('topups.index');
         Route::post('/bakiye-yuklemeleri/{topup}/onayla', [AdminWalletTopupController::class, 'approve'])->name('topups.approve');
         Route::post('/bakiye-yuklemeleri/{topup}/reddet', [AdminWalletTopupController::class, 'reject'])->name('topups.reject');
@@ -234,19 +279,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/veri-cekici/satir/{row}/onayla', [AdminDataExtractorController::class, 'approve'])->name('data-extractor.rows.approve');
         Route::delete('/veri-cekici/satir/{row}', [AdminDataExtractorController::class, 'destroyRow'])->name('data-extractor.rows.destroy');
 
-        Route::resource('kurumlar', AdminFacilityController::class)
-            ->parameters(['kurumlar' => 'facility'])
-            ->names('facilities')
-            ->except(['show']);
-        Route::delete('/kurumlar/gorsel/{image}', [AdminFacilityController::class, 'deleteImage'])->name('facilities.image.destroy');
-        Route::post('/kurumlar/{facility}/bakiye-duzenle', [AdminFacilityController::class, 'adjust'])->name('facilities.balance.adjust');
-        Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
-
-        Route::get('/sahiplenme-basvurulari', [AdminFacilityClaimController::class, 'index'])->name('claims.index');
-        Route::put('/ayarlar', [AdminSettingController::class, 'update'])->name('settings.update');
-
         Route::get('/teklif-talepleri', [AdminOfferRequestController::class, 'index'])->name('offer-requests.index');
         Route::put('/teklif-talepleri/{offerRequest}', [AdminOfferRequestController::class, 'update'])->name('offer-requests.update');
+        Route::get('/teklif-talepleri/{offerRequest}/mesajlar', [AdminOfferRequestController::class, 'showMessages'])->name('offer-requests.messages');
+        Route::post('/teklif-talepleri/{offerRequest}/aile-durumu', [AdminOfferRequestController::class, 'suspendFamily'])->name('offer-requests.suspend-family');
+        Route::post('/teklif-talepleri/{offerRequest}/kurum-durumu', [AdminOfferRequestController::class, 'suspendFacility'])->name('offer-requests.suspend-facility');
 
         Route::get('/yorumlar', [AdminFacilityReviewController::class, 'index'])->name('reviews.index');
         Route::put('/yorumlar/{review}', [AdminFacilityReviewController::class, 'update'])->name('reviews.update');
@@ -273,6 +310,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/sayfalar', [AdminContentPageController::class, 'index'])->name('content-pages.index');
         Route::post('/sayfalar', [AdminContentPageController::class, 'store'])->name('content-pages.store');
+        Route::put('/sayfalar/{contentPage}', [AdminContentPageController::class, 'update'])->name('content-pages.update');
         Route::delete('/sayfalar/{contentPage}', [AdminContentPageController::class, 'destroy'])->name('content-pages.destroy');
 
         Route::get('/sss', [AdminFaqController::class, 'index'])->name('faqs.index');

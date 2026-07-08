@@ -14,10 +14,12 @@ use App\Models\FacilityImage;
 use App\Models\FacilityReview;
 use App\Models\FacilityUser;
 use App\Models\FamilyUser;
+use App\Models\PlatformNotification;
 use App\Models\Message;
 use App\Models\OfferRequest;
 use App\Models\Quote;
 use App\Models\VisitRequest;
+use App\Mail\FacilityClaimApprovedMail;
 use App\Mail\FacilityEmailVerificationMail;
 use App\Models\WalletTopup;
 use App\Services\FacilityImportImageService;
@@ -39,6 +41,7 @@ class PlatformFeatureTest extends TestCase
     private Facility $elderlyFacility;
     private Facility $childFacility;
     private Facility $rehabFacility;
+    private Facility $rehabFacilityClaimed;
     private FamilyUser $family;
     private FacilityUser $facilityUser;
     private Admin $admin;
@@ -55,6 +58,7 @@ class PlatformFeatureTest extends TestCase
         $this->elderlyFacility = $this->facility('Yasli Kurum', $this->elderlyCategory, true);
         $this->childFacility = $this->facility('Cocuk Kurum', $this->childCategory, true);
         $this->rehabFacility = $this->facility('Rehab Kurum', $this->rehabCategory, false);
+        $this->rehabFacilityClaimed = $this->facility('Rehab Kurum Onayli', $this->rehabCategory, true);
 
         $this->family = FamilyUser::create([
             'registered_brand' => 'bakimevibul',
@@ -185,8 +189,8 @@ class PlatformFeatureTest extends TestCase
     {
         $this->get('/site/bakimevleri/')
             ->assertOk()
-            ->assertDontSee('Aile Girişi')
-            ->assertDontSee('Kurum Girişi')
+            ->assertSee('Aile Girişi')
+            ->assertSee('Kurum Girişi')
             ->assertDontSee('Aile Panelim')
             ->assertDontSee('Kurum Panelim');
 
@@ -230,7 +234,9 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('board-empty', false);
 
-        $this->get('/site/bakimevleri/favoriler')
+        // Favoriler sayfasi artik sadece giris yapmis ailelere acik.
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevleri/favoriler')
             ->assertOk()
             ->assertSee('board-favorites', false);
 
@@ -261,17 +267,7 @@ class PlatformFeatureTest extends TestCase
 
     public function test_reviews_and_visit_requests_can_be_created_and_managed(): void
     {
-        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/yorum', [
-            'reviewer_name' => 'Ziyaretci',
-            'reviewer_phone' => '05554444444',
-            'rating' => 5,
-            'body' => 'Kurumla gorustuk, bilgi aldik.',
-        ])->assertRedirect();
-
-        $review = FacilityReview::firstOrFail();
-        $this->assertSame('pending', $review->status);
-
-        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/ziyaret-talebi', [
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/ziyaret-talebi', [
             'full_name' => 'Ziyaret Talep',
             'phone' => '05555555555',
             'email' => 'ziyaret@test.local',
@@ -282,6 +278,22 @@ class PlatformFeatureTest extends TestCase
 
         $visit = VisitRequest::firstOrFail();
         $this->assertSame('new', $visit->status);
+
+        OfferRequest::create(array_merge(
+            $this->offerData('bakimevleri', $this->rehabCategory, 'Rehab icin bilgi'),
+            ['facility_id' => $this->rehabFacilityClaimed->id]
+        ));
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/yorum', [
+                'rating' => 5,
+                'body' => 'Kurumla gorustuk, bilgi aldik.',
+            ])->assertRedirect();
+
+        $review = FacilityReview::firstOrFail();
+        $this->assertSame('pending', $review->status);
+        $this->assertSame($this->family->id, $review->family_user_id);
+        $this->assertSame($this->family->name, $review->reviewer_name);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/yorumlar')
@@ -305,23 +317,82 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertSame('contacted', $visit->fresh()->status);
 
-        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
             ->assertOk()
             ->assertSee('Veri kalite skoru')
             ->assertSee('Kurum yorumları')
             ->assertSee('Ziyaret / randevu talebi');
     }
 
+    public function test_unclaimed_facility_blocks_offer_visit_question_and_review_requests(): void
+    {
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/ziyaret-talebi', [
+            'full_name' => 'Ziyaret Talep',
+            'phone' => '05555555555',
+        ])->assertNotFound();
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/kontenjan-sor', [
+            'full_name' => 'Soran',
+            'phone' => '05555555556',
+        ])->assertNotFound();
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/soru-sor', [
+            'question' => 'Boş yer var mı?',
+        ])->assertNotFound();
+
+        $this->post('/site/bakimevleri/teklif-talebi', [
+            'facility_id' => $this->rehabFacility->id,
+            'full_name' => 'Talep Eden',
+            'phone' => '05555555557',
+        ])->assertNotFound();
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/yorum', [
+                'rating' => 5,
+                'body' => 'Yorum.',
+            ])->assertNotFound();
+
+        $this->assertSame(0, VisitRequest::count());
+        $this->assertSame(0, FacilityReview::count());
+        $this->assertSame(0, OfferRequest::count());
+
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
+            ->assertOk()
+            ->assertDontSee('data-mode="compare"', false)
+            ->assertDontSee('Ücret / Teklif Bilgisi Al')
+            ->assertSee('Bu kurum henüz sahiplenilmedi');
+    }
+
+    public function test_review_requires_login_and_prior_offer_request_even_for_claimed_facility(): void
+    {
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/yorum', [
+            'rating' => 5,
+            'body' => 'Giris yapmadan yorum.',
+        ])->assertSessionHasErrors('review');
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/yorum', [
+                'rating' => 5,
+                'body' => 'Teklif talebi olmadan yorum.',
+            ])->assertSessionHasErrors('review');
+
+        $this->assertSame(0, FacilityReview::count());
+    }
+
     public function test_sitemap_and_profile_quality_surfaces_are_visible(): void
     {
-        $this->get('/sitemap.xml')
+        // Sitemap artik marka basina uretilir (Host header'a gore); her marka
+        // sadece kendi gercek alan adiyla uretilmis URL'leri icermeli.
+        $this->get('http://bakimevleri.com/sitemap.xml')
             ->assertOk()
             ->assertHeader('content-type', 'application/xml; charset=UTF-8')
-            ->assertSee('/site/bakimevleri', false)
-            // Rehber sayfalari markanin gercek alan adiyla (bakimevleri.com) uretilir,
-            // /site/{brand} prefix'i sadece localhost/test erisimi icindir.
             ->assertSee('bakimevleri.com/rehber/rehabilitasyon/istanbul', false)
-            ->assertSee('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug, false);
+            ->assertSee('bakimevleri.com/kurumlar/'.$this->rehabFacility->slug, false)
+            ->assertDontSee('bakimevibul.com', false);
+
+        $this->get('http://bakimevleri.com/robots.txt')
+            ->assertOk()
+            ->assertSee('Sitemap: http://bakimevleri.com/sitemap.xml', false);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/kurumlar')
@@ -401,8 +472,29 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertSame(1, $attached);
         $image = $this->childFacility->images()->firstOrFail();
-        $this->assertStringStartsWith('facilities/imported/', $image->path);
+        $this->assertStringStartsWith('facilities/demo/'.$this->childCategory->id.'/', $image->path);
         Storage::disk('public')->assertExists($image->path);
+    }
+
+    public function test_import_image_pool_finds_images_nested_in_subfolders(): void
+    {
+        // Gercek gorsel havuzu klasorleri (orn. "kurum gorselleri/bakimevi/1/…")
+        // dosyalari bir alt klasore dagitiyor; havuz taramasi sadece ust
+        // seviyeye bakarsa hicbir gorsel bulunamaz. Bu, tam da o duruma
+        // dair bir regresyon testi.
+        Storage::fake('public');
+
+        $pool = storage_path('framework/testing/nested-images/orn.yasli-bakim/alt-klasor');
+        if (! is_dir($pool)) {
+            mkdir($pool, 0777, true);
+        }
+        file_put_contents($pool.'/nested-demo.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII='));
+
+        config(['platform.import_image_pool_path' => dirname(dirname($pool)), 'platform.import_image_count' => 1]);
+
+        $attached = app(FacilityImportImageService::class)->attachRandomImages($this->elderlyFacility, $this->elderlyCategory);
+
+        $this->assertSame(1, $attached);
     }
 
 
@@ -474,6 +566,49 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('On Kayitli Kurumlar')
             ->assertSee('Veri Cekici Rehab Merkezi');
+    }
+
+    public function test_data_extractor_row_approval_rejects_near_duplicate_facility(): void
+    {
+        // Ayni telefon (farkli bicimde yazilmis) ve ayni isim (farkli
+        // bosluk/buyuk-kucuk harfle) baska bir ilce/kategori aramasindan
+        // tekrar gelirse onaylanmamali — "ayni kurumun birden fazla kaydi
+        // asla olmamali" garantisi.
+        $existing = $this->facility('Ata Huzurevi', $this->elderlyCategory, false);
+        $existing->update(['phone' => '02121234567', 'district' => 'Kadikoy']);
+
+        $batch = DataImportBatch::create([
+            'source' => 'google_maps_veri_cekici_auto',
+            'admin_id' => $this->admin->id,
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->elderlyCategory->id,
+            'file_name' => 'otomatik: mukerrer test',
+            'total_rows' => 1,
+            'status' => 'pending_review',
+        ]);
+
+        // Ayni telefon, sadece format farkli (bosluk/tire), ayni isim farkli bosluklu.
+        $duplicateRow = DataImportRow::create([
+            'data_import_batch_id' => $batch->id,
+            'row_number' => 1,
+            'status' => 'pending_review',
+            'name' => 'ATA  Huzurevi',
+            'phone' => '0212 123 45 67',
+            'payload' => [
+                'name' => 'ATA  Huzurevi',
+                'address' => 'Farkli arama sonucu adresi',
+                'district' => 'Kadikoy',
+                'phone' => '0212 123 45 67',
+            ],
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/veri-cekici/satir/'.$duplicateRow->id.'/onayla', ['is_published' => 1])
+            ->assertRedirect();
+
+        // Reddedilmeli: ayni isimde/telefonda ikinci bir Facility olusmamali.
+        $this->assertSame(1, Facility::where('phone', '02121234567')->count());
+        $this->assertSame('skipped', $duplicateRow->fresh()->status);
     }
 
     public function test_admin_data_extractor_page_is_available(): void
@@ -630,7 +765,16 @@ class PlatformFeatureTest extends TestCase
         $user = FacilityUser::where('email', 'dogrulama@test.local')->firstOrFail();
         $this->assertNull($user->email_verified_at);
 
-        Mail::assertQueued(FacilityEmailVerificationMail::class, fn ($mail) => $mail->user->email === 'dogrulama@test.local');
+        // Admin, kurumun kendi markasiyla ilgisiz bir istekten (admin paneli)
+        // onayladigi icin, mailin marka adi/linki mevcut request baglamindan
+        // degil DOGRUDAN basvurunun kendi $claim->brand alanindan gelmeli.
+        Mail::assertQueued(FacilityEmailVerificationMail::class, function ($mail) {
+            return $mail->user->email === 'dogrulama@test.local'
+                && $mail->brandName === 'bakimevleri.com'
+                && str_contains($mail->verificationUrl, 'bakimevleri');
+        });
+
+        Mail::assertQueued(FacilityClaimApprovedMail::class, fn ($mail) => str_contains($mail->loginUrl, 'bakimevleri'));
 
         $user->update(['password' => Hash::make('Kurum12345!')]);
 
@@ -646,7 +790,7 @@ class PlatformFeatureTest extends TestCase
         $this->childFacility->update(['lat' => 41.0082, 'lng' => 28.9784]);
         // Koordinatsiz kurum (rehabFacility) mesafe hesabina hic girmemeli.
 
-        $this->get('/site/bakimeviara/kurumlar?lat=41.01&lng=28.98')
+        $this->get('/site/bakimeviara/kurumlar?bolum=cocuk&lat=41.01&lng=28.98')
             ->assertOk()
             ->assertSee('Size En Yakın Kurumlar', false)
             ->assertSee($this->childFacility->name);
@@ -668,8 +812,8 @@ class PlatformFeatureTest extends TestCase
 
     public function test_search_filters_are_logged_and_aggregated_on_most_searched_page(): void
     {
-        $this->get('/site/bakimeviara/kurumlar?city=istanbul&category='.$this->childCategory->slug)->assertOk();
-        $this->get('/site/bakimeviara/kurumlar?city=istanbul&category='.$this->childCategory->slug)->assertOk();
+        $this->get('/site/bakimeviara/kurumlar?bolum=cocuk&city=istanbul&category='.$this->childCategory->slug)->assertOk();
+        $this->get('/site/bakimeviara/kurumlar?bolum=cocuk&city=istanbul&category='.$this->childCategory->slug)->assertOk();
 
         $this->assertSame(1, \App\Models\SearchQuery::count());
         $this->assertSame(2, \App\Models\SearchQuery::first()->count);
@@ -686,7 +830,8 @@ class PlatformFeatureTest extends TestCase
         $this->get('/site/bakimevleri/istatistikler')
             ->assertOk()
             ->assertSee('js-turkiye-harita', false)
-            ->assertSee('data-il="istanbul"', false);
+            ->assertSee('<g id="istanbul">', false)
+            ->assertSee('<g id="izmir"', false);
     }
 
     public function test_facility_claim_records_applicant_distance_when_location_shared(): void
@@ -755,18 +900,22 @@ class PlatformFeatureTest extends TestCase
 
     public function test_admin_can_update_whatsapp_settings_and_button_reflects_them(): void
     {
+        $bankFields = [];
+        foreach (array_keys(config('brands.brands')) as $slug) {
+            $bankFields["bank_name_{$slug}"] = 'Test Banka';
+            $bankFields["bank_account_holder_{$slug}"] = 'Test AŞ';
+            $bankFields["bank_iban_{$slug}"] = 'TR000000000000000000000000';
+        }
+
         $this->withSession(['admin_id' => $this->admin->id])
-            ->put('/admin/ayarlar', [
-                'bank_name' => 'Test Banka',
-                'bank_account_holder' => 'Test AŞ',
-                'bank_iban' => 'TR000000000000000000000000',
-                'quote_price' => 50,
+            ->put('/admin/ayarlar', array_merge($bankFields, [
+                'quote_price' => 250,
                 'price_tier_standart_min' => 15000,
                 'price_tier_premium_min' => 30000,
                 'price_tier_ultra_min' => 50000,
                 'whatsapp_number' => '905001234567',
                 'whatsapp_message' => 'TESTMESAJI12345 {marka}',
-            ])->assertRedirect();
+            ]))->assertRedirect();
 
         $this->assertSame('905001234567', \App\Models\Setting::get('whatsapp_number'));
 
@@ -774,6 +923,263 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('905001234567', false)
             ->assertSee('TESTMESAJI12345', false);
+    }
+
+    public function test_pre_registered_facility_full_lifecycle_to_claimed(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+
+        // 1) Veri cekiciden gelmis gibi bir on kayitli kurum.
+        $preRegistered = Facility::create([
+            'name' => 'Uskudar Ornek Huzurevi',
+            'slug' => 'uskudar-ornek-huzurevi',
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->elderlyCategory->id,
+            'district' => 'Uskudar',
+            'address' => 'Test adres',
+            'phone' => '02161112233',
+            'description' => 'Google Maps veri cekiciden on kayit.',
+            'capacity' => 20,
+            'price_min' => null,
+            'price_max' => null,
+            'services' => ['bakim'],
+            'is_published' => true,
+            'is_featured' => false,
+            'is_claimed' => false,
+            'source' => 'google_maps_veri_cekici',
+            'free_quote_credits' => 0,
+            'balance' => 0,
+        ]);
+
+        // 2) Ana sayfada/listede "Ön Kayıtlı" etiketi gorunmeli, "Onaylı" gorunmemeli.
+        $listing = $this->get('/site/bakimevibul/kurumlar?bolum=yasli-bakim');
+        $listing->assertOk()
+            ->assertSee('Uskudar Ornek Huzurevi')
+            ->assertSee('Ön Kayıtlı', false);
+
+        // 3) Admin panelinde "Ön Kayıtlı Kurumlar" filtresinde gorunmeli, "Onaylı Kurumlar" filtresinde gorunmemeli.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?claim_status=unclaimed')
+            ->assertOk()
+            ->assertSee('Uskudar Ornek Huzurevi');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?claim_status=claimed')
+            ->assertOk()
+            ->assertDontSee('Uskudar Ornek Huzurevi');
+
+        // 4) Sahiplenme basvurusu formu acilmali (on kayitli oldugu icin 404 vermemeli).
+        $this->get('/site/bakimevibul/kurumlar/uskudar-ornek-huzurevi/sahiplen')
+            ->assertOk()
+            ->assertSee('Sahiplen');
+
+        // 5) Basvuru gonderilir.
+        $this->post('/site/bakimevibul/kurumlar/uskudar-ornek-huzurevi/sahiplen', [
+            'applicant_name' => 'Yetkili Kisi',
+            'applicant_email' => 'yetkili.uskudar@test.local',
+            'applicant_phone' => '05551119922',
+            'document' => $this->fakePngUpload('ruhsat-uskudar.png'),
+        ])->assertRedirect();
+
+        $claim = FacilityClaim::where('applicant_email', 'yetkili.uskudar@test.local')->firstOrFail();
+        $this->assertSame('pending', $claim->status);
+
+        // 6) Admin basvuruyu onaylar.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/sahiplenme-basvurulari/'.$claim->id.'/onayla')
+            ->assertRedirect();
+
+        // 7) Tek seferlik sifre e-postasi kuyruga alinmis olmali.
+        Mail::assertQueued(FacilityClaimApprovedMail::class, function ($mail) {
+            return $mail->hasTo('yetkili.uskudar@test.local');
+        });
+
+        $facilityUser = FacilityUser::where('email', 'yetkili.uskudar@test.local')->firstOrFail();
+        $this->assertTrue($facilityUser->must_change_password);
+
+        // 8) Kurum artik sahiplenilmis olmali.
+        $preRegistered->refresh();
+        $this->assertTrue($preRegistered->is_claimed);
+        $this->assertSame('approved', $claim->fresh()->status);
+
+        // 9) Admin panelinde artik "Onaylı Kurumlar" filtresinde gorunmeli, "Ön Kayıtlı" filtresinde gorunmemeli.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?claim_status=claimed')
+            ->assertOk()
+            ->assertSee('Uskudar Ornek Huzurevi')
+            ->assertSee('Sahiplenilmiş', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?claim_status=unclaimed')
+            ->assertOk()
+            ->assertDontSee('Uskudar Ornek Huzurevi');
+
+        // 10) Ana sayfada/listede artik "Onaylı" etiketi gorunmeli, "Ön Kayıtlı" gorunmemeli.
+        $updatedListing = $this->get('/site/bakimevibul/kurumlar?bolum=yasli-bakim');
+        $updatedListing->assertOk()
+            ->assertSee('Uskudar Ornek Huzurevi')
+            ->assertSee('Onaylı', false)
+            ->assertDontSee('Ön Kayıtlı');
+    }
+
+    public function test_facility_card_shows_google_attribution_for_scraped_rating(): void
+    {
+        // Veri cekiciden gelen (Google Maps kaynakli) bir puan: kartta "(Google)"
+        // etiketiyle gosterilmeli — aksi halde ziyaretci bunun platform
+        // yorumlarindan mi yoksa Google'dan mi geldigini ayirt edemez.
+        $this->childFacility->update([
+            'rating' => 4.6,
+            'source' => 'google_maps_veri_cekici',
+        ]);
+
+        $this->get('/site/bakimeviara/kurumlar?bolum=cocuk')
+            ->assertOk()
+            ->assertSee('4.6', false)
+            ->assertSee('(Google)', false);
+
+        // Puani olmayan (0) bir kurum icin sahte "★ 0.0" gosterilmemeli.
+        $this->rehabFacility->update(['rating' => 0, 'source' => null]);
+
+        $this->get('/site/bakimevleri/kurumlar?bolum=rehabilitasyon')
+            ->assertOk()
+            ->assertDontSee('★ 0.0', false);
+    }
+
+    public function test_approved_facility_card_shows_incele_fiyat_al_karsilastir_toplu_fiyat_al(): void
+    {
+        $this->get('/site/bakimeviara/kurumlar?bolum=cocuk')
+            ->assertOk()
+            ->assertSee('İncele')
+            ->assertSee('Fiyat Al')
+            ->assertSee('Karşılaştır')
+            ->assertSee('Toplu Fiyat Al')
+            ->assertSee('data-mode="bulk-quote"', false)
+            ->assertSee('#teklif-talebi', false);
+    }
+
+    public function test_facility_gets_notified_when_new_offer_request_is_created(): void
+    {
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimeviara/teklif-talebi', [
+                'facility_id' => $this->childFacility->id,
+                'full_name' => 'Bildirim Testi',
+                'phone' => '05551230000',
+            ])->assertRedirect();
+
+        $notification = PlatformNotification::where('notifiable_type', FacilityUser::class)
+            ->where('notifiable_id', $this->facilityUser->id)
+            ->where('type', 'offer_request')
+            ->first();
+
+        $this->assertNotNull($notification);
+    }
+
+    public function test_admin_sees_offer_request_form_details_and_quoted_price(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Ihtiyac detayi mesaji'));
+        $request->update(['patient_name' => 'Ayse Yenge', 'care_for' => 'anne-baba']);
+
+        Quote::create([
+            'offer_request_id' => $request->id,
+            'facility_id' => $this->childFacility->id,
+            'facility_user_id' => $this->facilityUser->id,
+            'price' => 15750,
+            'price_period' => 'monthly',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/teklif-talepleri');
+        $response->assertOk()
+            ->assertSee('Ayse Yenge')
+            ->assertSee('anne-baba')
+            ->assertSee('15.750 TL', false)
+            ->assertSee($this->childFacility->name);
+    }
+
+    public function test_admin_facilities_index_filters_by_city_district_and_category(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar')
+            ->assertOk()
+            ->assertSee($this->elderlyFacility->name)
+            ->assertSee($this->childFacility->name)
+            ->assertSee('name="city"', false)
+            ->assertSee('name="district"', false)
+            ->assertSee('name="category"', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?category='.$this->childCategory->slug)
+            ->assertOk()
+            ->assertSee($this->childFacility->name)
+            ->assertDontSee($this->elderlyFacility->name);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?city='.$this->city->slug.'&district=Merkez')
+            ->assertOk()
+            ->assertSee($this->childFacility->name)
+            ->assertSee($this->elderlyFacility->name);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?city='.$this->city->slug.'&district=Baska-Bir-Ilce')
+            ->assertOk()
+            ->assertDontSee($this->childFacility->name)
+            ->assertDontSee($this->elderlyFacility->name);
+
+        // "On Kayitli Kurumlar" ekraninda ayni filtreler claim_status ile birlikte calisir.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?claim_status=unclaimed&category='.$this->rehabCategory->slug)
+            ->assertOk()
+            ->assertSee($this->rehabFacility->name);
+    }
+
+    public function test_bulk_quote_request_creates_shared_batch_and_notifies_each_facility(): void
+    {
+        $this->post('/site/bakimeviara/toplu-teklif-talebi', [
+            'facility_ids' => [$this->childFacility->id, $this->elderlyFacility->id],
+            'full_name' => 'Toplu Talep Eden',
+            'phone' => '05559998877',
+        ])->assertRedirect('/site/bakimeviara/aile/kayit');
+
+        // Giris yapilmamis, talep henuz olusmamis olmali.
+        $this->assertSame(0, OfferRequest::where('full_name', 'Toplu Talep Eden')->count());
+
+        $this->post('/site/bakimeviara/aile/kayit', [
+            'name' => 'Toplu Talep Eden',
+            'email' => 'toplutalep@test.local',
+            'phone' => '05559998877',
+            'password' => 'Sifre12345!',
+            'password_confirmation' => 'Sifre12345!',
+            'consent' => '1',
+        ])->assertRedirect();
+
+        $requests = OfferRequest::where('full_name', 'Toplu Talep Eden')->get();
+        $this->assertCount(2, $requests);
+        $this->assertNotNull($requests->first()->batch_id);
+        $this->assertSame(1, $requests->pluck('batch_id')->unique()->count());
+        $this->assertEqualsCanonicalizing(
+            [$this->childFacility->id, $this->elderlyFacility->id],
+            $requests->pluck('facility_id')->all()
+        );
+
+        $notification = PlatformNotification::where('notifiable_type', FacilityUser::class)
+            ->where('notifiable_id', $this->facilityUser->id)
+            ->where('type', 'offer_request')
+            ->first();
+        $this->assertNotNull($notification);
+    }
+
+    public function test_bulk_quote_rejects_more_than_five_facilities(): void
+    {
+        $extra = collect(range(1, 5))->map(fn ($i) => $this->facility('Ekstra Kurum '.$i, $this->childCategory, true));
+        $ids = $extra->pluck('id')->push($this->childFacility->id)->all();
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimeviara/toplu-teklif-talebi', [
+                'facility_ids' => $ids,
+                'full_name' => 'Cok Kurum Secen',
+                'phone' => '05550001122',
+            ])->assertSessionHasErrors('facility_ids');
     }
 
     private function facility(string $name, FacilityCategory $category, bool $claimed): Facility
@@ -813,5 +1219,90 @@ class PlatformFeatureTest extends TestCase
             'message' => $message,
             'status' => 'new',
         ];
+    }
+
+    public function test_admin_message_review_screen_shows_thread_hidden_from_main_list(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Sikayet konusu talep'));
+
+        Message::create([
+            'offer_request_id' => $request->id,
+            'sender_type' => 'family',
+            'sender_id' => $this->family->id,
+            'body' => 'Kurumdan hala cevap alamadim.',
+        ]);
+        Message::create([
+            'offer_request_id' => $request->id,
+            'sender_type' => 'facility',
+            'sender_id' => $this->childFacility->id,
+            'body' => 'Merhaba, hemen donus yapiyoruz.',
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/teklif-talepleri')
+            ->assertOk()
+            ->assertDontSee('Kurumdan hala cevap alamadim.')
+            ->assertSee('Şikayet / Mesajları İncele');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get("/admin/teklif-talepleri/{$request->id}/mesajlar")
+            ->assertOk()
+            ->assertSee('Kurumdan hala cevap alamadim.')
+            ->assertSee('Merhaba, hemen donus yapiyoruz.');
+    }
+
+    public function test_admin_can_suspend_and_reactivate_family_account_from_complaint_review(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Sikayet talebi'));
+
+        $this->assertSame('active', $this->family->fresh()->status);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post("/admin/teklif-talepleri/{$request->id}/aile-durumu")
+            ->assertRedirect();
+
+        $this->assertSame('suspended', $this->family->fresh()->status);
+
+        $this->withSession(['family_user_id' => $this->family->id, 'family_user_name' => $this->family->name])
+            ->get('/site/bakimeviara/aile/panel')
+            ->assertRedirect('/site/bakimeviara/aile/giris');
+
+        $this->post('/site/bakimeviara/aile/giris', [
+            'email' => $this->family->email,
+            'password' => 'Aile12345!',
+        ])->assertSessionHasErrors('email');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post("/admin/teklif-talepleri/{$request->id}/aile-durumu")
+            ->assertRedirect();
+
+        $this->assertSame('active', $this->family->fresh()->status);
+
+        $this->post('/site/bakimeviara/aile/giris', [
+            'email' => $this->family->email,
+            'password' => 'Aile12345!',
+        ])->assertRedirect();
+    }
+
+    public function test_admin_can_suspend_and_reactivate_facility_account_from_complaint_review(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Sikayet talebi'));
+        $request->update(['facility_id' => $this->childFacility->id]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post("/admin/teklif-talepleri/{$request->id}/kurum-durumu")
+            ->assertRedirect();
+
+        $this->assertSame('suspended', $this->facilityUser->fresh()->status);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimeviara/kurum-panel/panel')
+            ->assertRedirect('/site/bakimeviara/kurum-panel/giris');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post("/admin/teklif-talepleri/{$request->id}/kurum-durumu")
+            ->assertRedirect();
+
+        $this->assertSame('active', $this->facilityUser->fresh()->status);
     }
 }

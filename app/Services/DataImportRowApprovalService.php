@@ -33,13 +33,20 @@ class DataImportRowApprovalService
             throw new RuntimeException('Kurum adi bos satir onaylanamaz.');
         }
 
-        if ($this->isDuplicate($item, $city, $item['district'] ?: null)) {
+        if ($this->isDuplicate($item, $city)) {
             $row->update(['status' => 'skipped', 'message' => 'Benzer kayit var, kurum olusturulmadi.']);
             throw new RuntimeException('Benzer kayit var, kurum olusturulmadi.');
         }
 
+        $ownershipType = classify_facility_ownership_type($item['name']);
+        if (in_array($ownershipType, ['kamu', 'belediye'], true)) {
+            $row->update(['status' => 'skipped', 'message' => 'Kamu/belediyeye ait kurum, platform kapsami disinda.']);
+            throw new RuntimeException('Kamu/belediyeye ait kurum, platform kapsami disinda.');
+        }
+
         $districtModel = $this->districtModel($city, $item['district']);
         $description = $item['description'] ?: $this->generatedDescription($item, $category);
+        $phoneType = classify_phone_type($item['phone']);
 
         $facility = Facility::create([
             'name' => $item['name'],
@@ -47,11 +54,14 @@ class DataImportRowApprovalService
             'city_id' => $city->id,
             'district_id' => $districtModel?->id,
             'facility_category_id' => $category->id,
+            'ownership_type' => $ownershipType,
             'district' => $districtModel?->name ?? $item['district'],
             'address' => $item['address'],
             'lat' => $this->coordinate($item['lat']),
             'lng' => $this->coordinate($item['lng']),
             'phone' => $item['phone'],
+            'phone_type' => $phoneType,
+            'invitation_status' => $phoneType === 'mobile' ? 'not_started' : ($phoneType === 'landline' ? 'landline_only' : 'contact_missing'),
             'email' => $item['email'],
             'rating' => $this->rating($item['rating']),
             'description' => $description,
@@ -129,16 +139,16 @@ class DataImportRowApprovalService
         $categoryName = $category?->name ?: ($item['category'] ?: 'Kurum');
         $place = trim(($item['district'] ? $item['district'].' / ' : '').($item['address'] ?: ''));
         $parts = [
-            $item['name'].' icin olusturulan on kayit profilidir.',
-            $categoryName.' alaninda hizmet verdigi Google Maps verilerinden tespit edilmistir.',
+            $item['name'].' için oluşturulan ön kayıt profilidir.',
+            $categoryName.' alanında hizmet verdiği Google Maps verilerinden tespit edilmiştir.',
         ];
         if ($place) {
-            $parts[] = 'Adres/bolge bilgisi: '.$place.'.';
+            $parts[] = 'Adres/bölge bilgisi: '.$place.'.';
         }
         if ($item['phone']) {
-            $parts[] = 'Telefon bilgisi admin tarafindan dogrulanabilir: '.$item['phone'].'.';
+            $parts[] = 'Telefon bilgisi admin tarafından doğrulanabilir: '.$item['phone'].'.';
         }
-        $parts[] = 'Kurum yetkilisi sahiplenme basvurusu yaptiginda profil bilgileri, gorseller ve hizmet detaylari resmi belge kontrolunden sonra guncellenebilir.';
+        $parts[] = 'Kurum yetkilisi sahiplenme başvurusu yaptığında profil bilgileri, görseller ve hizmet detayları resmi belge kontrolünden sonra güncellenebilir.';
 
         return implode(' ', $parts);
     }
@@ -151,20 +161,71 @@ class DataImportRowApprovalService
         return array_values(array_unique(array_filter(array_merge([$category->name], $features))));
     }
 
-    private function isDuplicate(array $item, City $city, ?string $district): bool
+    /**
+     * "Ayni kurumun birden fazla kaydi asla olmamali" garantisi: telefon
+     * sehir genelinde (ilce/kategori farkli olsa da) karsilastirilir.
+     * Telefon yoksa isim+adres sehir genelinde (ilce SINIRLAMASI OLMADAN)
+     * karsilastirilir — ayni isletme farkli ilce aramalarinda (arama
+     * yarıçapı genişleyince kücük ilcelerde de sehir merkezindeki uzman
+     * merkezler cikabiliyor) tekrar bulunup farkli district degeriyle
+     * kaydedilebiliyordu, bu da eski (sadece ilce-bazli) kontrolden
+     * kaciyordu. Adres de eslesme sartina eklendi ki "Zubeyde Hanim
+     * Anaokulu" gibi Turkiye'de cok yaygin, farkli ilcelerde gercekten
+     * ayri fiziksel kurumlar olan isimler yanlislikla mukerrer sayilmasin
+     * — sadece isim VE adres birebir ayniysa mukerrer kabul edilir.
+     */
+    private function isDuplicate(array $item, City $city): bool
     {
-        return Facility::query()
-            ->where('city_id', $city->id)
-            ->where(function ($query) use ($item, $district) {
-                if (filled($item['phone'])) {
-                    $query->orWhere('phone', $item['phone']);
-                }
-                $query->orWhere(function ($q) use ($item, $district) {
-                    $q->whereRaw('LOWER(name) = ?', [mb_strtolower($item['name'])])
-                        ->where('district', $district);
-                });
-            })
-            ->exists();
+        $normalizedPhone = $this->normalizePhone($item['phone'] ?? '');
+
+        if ($normalizedPhone !== '') {
+            $phoneMatch = Facility::where('city_id', $city->id)
+                ->whereNotNull('phone')
+                ->get(['id', 'phone'])
+                ->contains(fn ($f) => $this->normalizePhone($f->phone) === $normalizedPhone);
+
+            if ($phoneMatch) {
+                return true;
+            }
+        }
+
+        $normalizedName = $this->normalizeName($item['name'] ?? '');
+        $normalizedAddress = $this->normalizeAddress($item['address'] ?? '');
+        if ($normalizedName === '' || $normalizedAddress === '') {
+            return false;
+        }
+
+        return Facility::where('city_id', $city->id)
+            ->get(['id', 'name', 'address'])
+            ->contains(fn ($f) => $this->normalizeName($f->name) === $normalizedName
+                && $this->normalizeAddress($f->address) === $normalizedAddress);
+    }
+
+    private function normalizePhone(?string $phone): string
+    {
+        return preg_replace('/\D+/', '', (string) $phone) ?: '';
+    }
+
+    private function normalizeName(?string $name): string
+    {
+        $ascii = Str::of((string) $name)->lower()->ascii()->toString();
+        $clean = preg_replace('/[^a-z0-9]+/', ' ', $ascii);
+
+        return trim(preg_replace('/\s+/', ' ', $clean));
+    }
+
+    /**
+     * Google Maps'in adres alanini bazen dogru cekemedigi, "Adresi kopyala"
+     * (kopyala butonunun etiketi) gibi bir arayuz metnini adres sanip
+     * kaydettigi goruldu — bu placeholder'lar mukerrer kontrolunde
+     * kullanilirsa farkli isletmeleri yanlislikla ayni adrese sahip
+     * gosterip mukerrer sayabilir, bu yuzden bos sayilir.
+     */
+    private function normalizeAddress(?string $address): string
+    {
+        $normalized = $this->normalizeName($address);
+
+        return $normalized === 'adresi kopyala' ? '' : $normalized;
     }
 
     private function districtModel(City $city, ?string $district): ?District

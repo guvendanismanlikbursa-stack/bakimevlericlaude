@@ -71,6 +71,10 @@ class FacilityClaimController extends Controller
             'distance_km' => $distanceKm,
         ]);
 
+        if (! in_array($facility->invitation_status, ['approved'], true)) {
+            $facility->update(['invitation_status' => 'claimed', 'invitation_status_at' => now()]);
+        }
+
         return redirect(brand_route('facilities.show', ['slug' => $facility->slug]))
             ->with('success', 'Sahiplenme basvurunuz alindi. Admin onayindan sonra e-posta ile giris bilgileriniz gonderilecek.');
     }

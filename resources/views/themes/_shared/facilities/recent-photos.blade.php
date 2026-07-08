@@ -4,6 +4,17 @@
   <h1 class="text-3xl font-black text-gray-950 mb-1">Son Eklenen Fotoğraflar</h1>
   <p class="text-sm text-gray-500 mb-6">Kurumların galerilerine en son eklenen görseller.</p>
 
+  @if(isset($sections))
+    <div class="grid sm:grid-cols-4 gap-2 mb-6">
+      <a href="{{ url()->current() }}" class="rounded-xl border px-4 py-3 text-sm font-black {{ ! ($activeSection ?? null) ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700' }}">Tüm Bölümler</a>
+      @foreach($sections as $slug => $section)
+        <a href="{{ request()->fullUrlWithQuery(['bolum' => $slug]) }}" class="inline-flex items-center justify-center rounded-xl border px-4 py-3 text-sm font-black {{ ($activeSection['slug'] ?? null) === $slug ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700' }}">
+          @include('themes._shared.partials.section-icon', ['section' => $section, 'class' => 'w-4 h-4 mr-1'])<span>{{ $section['title'] }}</span>
+        </a>
+      @endforeach
+    </div>
+  @endif
+
   @if($images->isEmpty())
     <div class="text-center py-16 text-gray-500 bg-white rounded-xl border border-dashed">
       <p>Henüz görsel eklenmemiş.</p>

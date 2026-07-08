@@ -66,14 +66,15 @@
     </div>
 
     <div class="-mt-8 relative z-10 max-w-5xl mx-auto">
-      <form method="GET" action="{{ brand_route('facilities.index') }}" data-district-map='@json($districtMap)' class="js-location-filter bg-white rounded-2xl shadow-xl border border-gray-100 p-5 grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
+      <form method="GET" action="{{ brand_route('facilities.index') }}" data-district-map='@json($districtMap)' data-count-url="{{ brand_route('facilities.count') }}" class="js-location-filter bg-white rounded-2xl shadow-xl border border-gray-100 p-5 grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <input type="hidden" name="bolum" value="{{ $section['slug'] }}">
         <select name="city" class="js-city border border-gray-200 rounded-xl px-3 py-3 text-sm bg-white"><option value="">İl seçin</option>@foreach($cities as $city)<option value="{{ $city->slug }}">{{ $city->name }}</option>@endforeach</select>
         <select name="district" class="js-district border border-gray-200 rounded-xl px-3 py-3 text-sm bg-white" disabled><option value="">Önce il seçin</option></select>
         <select name="category" class="border border-gray-200 rounded-xl px-3 py-3 text-sm bg-white"><option value="">Kurum türü</option>@foreach($categories as $cat)<option value="{{ $cat->slug }}">{{ $cat->name }}</option>@endforeach</select>
-        <select name="service" class="border border-gray-200 rounded-xl px-3 py-3 text-sm bg-white"><option value="">Özellik</option>@foreach($sectionServices as $service)<option value="{{ $service }}">{{ $service }}</option>@endforeach</select>
-        <select name="price_max" class="border border-gray-200 rounded-xl px-3 py-3 text-sm bg-white"><option value="">Bütçe</option><option value="10000">10.000 TL altı</option><option value="20000">20.000 TL altı</option><option value="30000">30.000 TL altı</option><option value="50000">50.000 TL altı</option></select>
+        <select name="service" class="border border-gray-200 rounded-xl px-3 py-3 text-sm bg-white"><option value="">Kurumun özellikleri</option>@foreach($sectionServices as $service)<option value="{{ $service }}">{{ $service }}</option>@endforeach</select>
+        <select name="price_tier" class="border border-gray-200 rounded-xl px-3 py-3 text-sm bg-white"><option value="">Tüm segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
         <button class="rounded-xl text-white font-black px-4 py-3" style="background: {{ $colors['primary'] }};">Ara</button>
+        <div class="js-live-count sm:col-span-2 lg:col-span-6 text-xs font-bold text-gray-500 text-center"></div>
       </form>
     </div>
   </div>

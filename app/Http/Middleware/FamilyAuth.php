@@ -21,6 +21,13 @@ class FamilyAuth
                 ->withErrors(['email' => 'Aile panelini görmek için kayıtlı aile hesabıyla giriş yapmalısınız.']);
         }
 
+        if ($family->status !== 'active') {
+            $request->session()->forget(['family_user_id', 'family_user_name']);
+
+            return redirect(brand_route('family.login'))
+                ->withErrors(['email' => 'Hesabınız şu anda aktif değil, lütfen yönetici ile iletişime geçin.']);
+        }
+
         return $next($request);
     }
 }

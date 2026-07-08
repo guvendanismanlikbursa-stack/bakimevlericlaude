@@ -1,10 +1,12 @@
 /vendor
 /node_modules
+/public/build
 .env
 database/database.sqlite
 storage/framework/cache/data/*
 storage/framework/sessions/*
 storage/framework/views/*
+storage/framework/testing/*
 storage/logs/*
 
 .env.codex-backup
@@ -14,6 +16,18 @@ database/codex_clean.sqlite
 composer.phar
 tmp_*
 
+# Kurum gorselleri (scrape/import ile gelen, siki takip edilmesi gereken buyuk
+# medya) ve public/storage symlink hedefi: repo boyutunu sismesin diye
+# versiyon kontrolune alinmiyor, ayri yedeklenmeli. Statik demo-cards haric.
+/public/storage
+storage/app/public/facilities
+storage/app/public/silinenler
+storage/app/public/font_test.png
+
 # Veri cekici (Python) calisma zamani/test artefaktlari
 tools/veri-cekici/__pycache__/
 tools/veri-cekici/*.xlsx
+
+/bootstrap/cache/*.php
+sample_output.txt
+route-list.txt

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\FacilityCategory;
+use App\Models\Setting;
 use App\Services\CareAdvisorMatchService;
 use Illuminate\Http\Request;
 
@@ -21,7 +22,14 @@ class CareAdvisorController extends Controller
         $cities = City::orderBy('name')->get();
         $categories = FacilityCategory::whereIn('brand_scope', $activeSection['scopes'])->orderBy('name')->get();
 
-        return view("themes.{$brand['theme']}.care-advisor.form", compact('brand', 'sections', 'activeSection', 'cities', 'categories'));
+        $defaults = config('platform.default_price_tiers');
+        $priceTiers = [
+            ['value' => Setting::get('price_tier_standart_min', $defaults['standart_min']), 'label' => '🟢 Ekonomik ve altı'],
+            ['value' => Setting::get('price_tier_premium_min', $defaults['premium_min']), 'label' => '🔵 Standart ve altı'],
+            ['value' => Setting::get('price_tier_ultra_min', $defaults['ultra_min']), 'label' => '🟣 Premium ve altı'],
+        ];
+
+        return view("themes.{$brand['theme']}.care-advisor.form", compact('brand', 'sections', 'activeSection', 'cities', 'categories', 'priceTiers'));
     }
 
     public function results(Request $request, CareAdvisorMatchService $matcher)
@@ -36,13 +44,13 @@ class CareAdvisorController extends Controller
             'city' => 'nullable|string|exists:cities,slug',
             'category' => 'nullable|string|exists:facility_categories,slug',
             'budget_max' => 'nullable|integer|min:0',
-            'is_bedridden' => 'nullable|boolean',
-            'has_dementia' => 'nullable|boolean',
-            'needs_physio' => 'nullable|boolean',
+            'concerns' => 'nullable|array',
+            'concerns.*' => 'string',
         ]);
 
         $city = $data['city'] ?? null ? City::where('slug', $data['city'])->first() : null;
         $category = $data['category'] ?? null ? FacilityCategory::where('slug', $data['category'])->first() : null;
+        $selectedConcerns = $data['concerns'] ?? [];
 
         $criteria = [
             'patient_age' => $data['patient_age'] ?? null,
@@ -51,12 +59,22 @@ class CareAdvisorController extends Controller
             'city_id' => $city?->id,
             'facility_category_id' => $category?->id,
             'budget_max' => $data['budget_max'] ?? null,
-            'is_bedridden' => $request->boolean('is_bedridden'),
-            'has_dementia' => $request->boolean('has_dementia'),
-            'needs_physio' => $request->boolean('needs_physio'),
         ];
 
-        $results = $matcher->match($criteria, $activeSection['scopes'])->take(12);
+        // Bölüme (Yaşlı Bakım/Çocuk/Rehabilitasyon) özel "durum" secenekleri
+        // config/brands.php > advisor_concerns icinde tanimli; her biri kurum
+        // 'services' alaninda aranacak anahtar kelime->etiket eslesmesi tasir.
+        $keywordWeights = [];
+        foreach ($activeSection['advisor_concerns'] ?? [] as $concern) {
+            if (in_array($concern['key'], $selectedConcerns, true)) {
+                $keywordWeights = array_merge($keywordWeights, $concern['keywords']);
+            }
+        }
+        if (! empty($data['condition'])) {
+            $keywordWeights[mb_strtolower($data['condition'])] = $data['condition'];
+        }
+
+        $results = $matcher->match($criteria, $activeSection['scopes'], $keywordWeights)->take(12);
 
         return view("themes.{$brand['theme']}.care-advisor.results", compact('brand', 'activeSection', 'results', 'criteria', 'city', 'category'));
     }

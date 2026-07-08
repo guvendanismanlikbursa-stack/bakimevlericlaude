@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class FacilityReview extends Model
 {
     protected $fillable = [
-        'facility_id', 'brand', 'reviewer_name', 'reviewer_phone', 'rating', 'body', 'status', 'approved_at',
+        'facility_id', 'family_user_id', 'brand', 'reviewer_name', 'reviewer_phone', 'rating', 'body', 'status', 'approved_at',
     ];
 
     protected function casts(): array
@@ -21,6 +21,11 @@ class FacilityReview extends Model
     public function facility()
     {
         return $this->belongsTo(Facility::class);
+    }
+
+    public function familyUser()
+    {
+        return $this->belongsTo(FamilyUser::class);
     }
 
     public function scopeApproved($query)

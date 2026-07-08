@@ -13,7 +13,10 @@ class VisitRequestController extends Controller
     public function store(Request $request)
     {
         $brand = current_brand();
-        $facility = Facility::published()->forBrand($brand['category_scope'])->where('slug', $request->route('slug'))->firstOrFail();
+        $facility = Facility::published()->forBrand($brand['category_scope'])
+            ->where('is_claimed', true)
+            ->where('slug', $request->route('slug'))
+            ->firstOrFail();
 
         $validated = $request->validate([
             'full_name' => 'required|string|max:120',
@@ -44,7 +47,10 @@ class VisitRequestController extends Controller
     public function storeAvailability(Request $request)
     {
         $brand = current_brand();
-        $facility = Facility::published()->forBrand($brand['category_scope'])->where('slug', $request->route('slug'))->firstOrFail();
+        $facility = Facility::published()->forBrand($brand['category_scope'])
+            ->where('is_claimed', true)
+            ->where('slug', $request->route('slug'))
+            ->firstOrFail();
 
         $validated = $request->validate([
             'full_name' => 'required|string|max:120',

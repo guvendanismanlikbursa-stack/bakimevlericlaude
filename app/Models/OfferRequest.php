@@ -12,7 +12,7 @@ class OfferRequest extends Model
     protected $fillable = [
         'facility_id', 'brand', 'brand_id', 'family_user_id', 'city_id', 'district_id', 'facility_category_id',
         'full_name', 'phone', 'email', 'message', 'patient_name', 'care_for',
-        'status', 'accepted_quote_id',
+        'status', 'accepted_quote_id', 'batch_id',
     ];
 
     public function brandModel()

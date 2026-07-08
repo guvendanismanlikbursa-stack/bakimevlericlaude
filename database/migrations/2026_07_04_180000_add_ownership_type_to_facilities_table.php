@@ -1,0 +1,22 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('facilities', function (Blueprint $table) {
+            $table->string('ownership_type')->nullable()->after('facility_category_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('facilities', function (Blueprint $table) {
+            $table->dropColumn('ownership_type');
+        });
+    }
+};

@@ -9,11 +9,12 @@ class Facility extends Model
 {
     use SoftDeletes;
     protected $fillable = [
-        'name', 'slug', 'city_id', 'district_id', 'facility_category_id', 'district',
-        'address', 'lat', 'lng', 'phone', 'email', 'source', 'source_payload', 'description', 'capacity', 'price_min',
+        'name', 'slug', 'city_id', 'district_id', 'facility_category_id', 'ownership_type', 'district',
+        'address', 'lat', 'lng', 'phone', 'phone_type', 'email', 'source', 'source_payload', 'description', 'capacity', 'price_min',
         'price_max', 'services', 'cover_image', 'is_published',
-        'is_featured', 'rating', 'is_claimed', 'claimed_at',
-        'free_quote_credits', 'balance', 'views_count', 'favorites_count',
+        'is_featured', 'rating', 'is_claimed', 'claimed_at', 'ministry_verification',
+        'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'favorites_count',
+        'invitation_status', 'invitation_status_at',
     ];
 
     protected function casts(): array
@@ -31,6 +32,8 @@ class Facility extends Model
             'lng' => 'float',
             'rating' => 'float',
             'balance' => 'float',
+            'quote_price_override' => 'float',
+            'invitation_status_at' => 'datetime',
         ];
     }
 
@@ -159,6 +162,15 @@ class Facility extends Model
     }
 
     /**
+     * Bu kurum icin gecerli teklif ucreti: admin bu kurum icin ozel bir ucret
+     * tanimladiysa (quote_price_override) o kullanilir, yoksa genel ayar.
+     */
+    public function effectiveQuotePrice(): float
+    {
+        return (float) ($this->quote_price_override ?? Setting::get('quote_price', config('platform.default_quote_price')));
+    }
+
+    /**
      * Kurum yeni bir teklif (quote) gonderebilir mi? Once ucretsiz hak,
      * bitince bakiyeden teklif basina ucret dusulur.
      */
@@ -168,7 +180,7 @@ class Facility extends Model
             return true;
         }
 
-        return $this->balance >= (float) Setting::get('quote_price', config('platform.default_quote_price'));
+        return $this->balance >= $this->effectiveQuotePrice();
     }
 
     /**
@@ -192,7 +204,7 @@ class Facility extends Model
             return;
         }
 
-        $price = (float) Setting::get('quote_price', config('platform.default_quote_price'));
+        $price = $this->effectiveQuotePrice();
         $this->decrement('balance', $price);
 
         BalanceLog::create([
@@ -296,6 +308,24 @@ class Facility extends Model
             $price >= $premiumMin => ['key' => 'premium', 'label' => 'Premium', 'emoji' => '🟣', 'classes' => 'bg-purple-100 text-purple-800'],
             $price >= $standartMin => ['key' => 'standart', 'label' => 'Standart', 'emoji' => '🔵', 'classes' => 'bg-blue-100 text-blue-800'],
             default => ['key' => 'ekonomik', 'label' => 'Ekonomik', 'emoji' => '🟢', 'classes' => 'bg-green-100 text-green-800'],
+        };
+    }
+
+    /**
+     * Aile ve Sosyal Hizmetler Bakanligi'nin resmi ozel huzurevi sicili ile
+     * yapilan otomatik isim/telefon eslestirmesinin sonucu (bkz. Bakanlik
+     * Kiyaslamasi raporu, 07.07.2026). Sadece bakanlik kaydi bulunan illerin
+     * Huzurevi kategorisi icin dolduruldu; diger kategoriler/iller icin
+     * ministry_verification hep null kalir (karsilastirilacak resmi veri yok).
+     */
+    public function ministryVerificationBadge(): ?array
+    {
+        return match ($this->ministry_verification) {
+            'verified' => ['label' => 'Bakanlık: Doğrulandı (Özel)', 'classes' => 'bg-green-100 text-green-800'],
+            'review' => ['label' => 'Bakanlık: İncelenmeli', 'classes' => 'bg-amber-100 text-amber-800'],
+            'unverified' => ['label' => 'Bakanlık: Doğrulanamadı', 'classes' => 'bg-red-100 text-red-800'],
+            'kamu_vakif' => ['label' => 'Bakanlık: Kamu/Belediye/Vakıf', 'classes' => 'bg-slate-200 text-slate-800'],
+            default => null,
         };
     }
 

@@ -21,13 +21,14 @@
     <h2 class="font-bold mb-3">Banka Hesap Bilgileri</h2>
     <p class="text-sm text-gray-600">{{ $bankInfo['bank_name'] }} — {{ $bankInfo['account_holder'] }}</p>
     <p class="text-sm font-mono mt-1">{{ $bankInfo['iban'] }}</p>
-    <p class="text-xs text-gray-400 mt-2">Bu hesaba havale/EFT yaptıktan sonra dekont görselini aşağıdan yükleyin, admin onayı sonrası bakiyenize işlenir.</p>
+    <p class="text-xs text-gray-400 mt-2">Sadece havale/EFT ile ödeme kabul edilir. Bu hesaba yaptıktan sonra dekontu görsel veya PDF olarak aşağıdan yükleyin, admin onayı sonrası bakiyenize işlenir.</p>
   </div>
 
   <form method="POST" action="{{ brand_route('facility.wallet.store') }}" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm p-6 space-y-3 mb-8">
     @csrf
     <input type="number" step="0.01" name="amount" placeholder="Yatırdığınız Tutar (₺)" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="file" name="receipt" accept="image/*" required class="border rounded-lg px-3 py-2 w-full">
+    <input type="file" name="receipt" accept="image/*,.pdf" required class="border rounded-lg px-3 py-2 w-full">
+    <p class="text-xs text-gray-400">Dekont görseli (jpg/png/webp) veya PDF olarak yüklenebilir.</p>
     <input type="text" name="note" placeholder="Not (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
     <button class="btn-primary px-6 py-2 rounded-lg font-semibold">Dekontu Gönder</button>
   </form>

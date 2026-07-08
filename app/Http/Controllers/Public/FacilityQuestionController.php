@@ -14,7 +14,10 @@ class FacilityQuestionController extends Controller
     public function store(Request $request)
     {
         $brand = current_brand();
-        $facility = Facility::published()->forBrand($brand['category_scope'])->where('slug', $request->route('slug'))->firstOrFail();
+        $facility = Facility::published()->forBrand($brand['category_scope'])
+            ->where('is_claimed', true)
+            ->where('slug', $request->route('slug'))
+            ->firstOrFail();
 
         $data = $request->validate([
             'question' => 'required|string|max:800',

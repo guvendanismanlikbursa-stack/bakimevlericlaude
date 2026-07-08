@@ -68,6 +68,8 @@ class FacilityClaimController extends Controller
                 'is_claimed' => true,
                 'claimed_at' => now(),
                 'free_quote_credits' => (int) $facility->free_quote_credits + $freeCredits,
+                'invitation_status' => 'approved',
+                'invitation_status_at' => now(),
             ]);
 
             BalanceLog::create([
@@ -91,7 +93,7 @@ class FacilityClaimController extends Controller
                 'facility' => $facility,
                 'email' => $claim->applicant_email,
                 'password' => $temporaryPassword,
-                'login_url' => route('brand.facility.login', ['brand' => $claim->brand]),
+                'login_url' => $this->facilityLoginUrl($claim->brand),
             ];
         });
 
@@ -108,7 +110,7 @@ class FacilityClaimController extends Controller
 
         \App\Http\Controllers\Facility\EmailVerificationController::send(
             \App\Models\FacilityUser::where('email', $mailPayload['email'])->firstOrFail(),
-            ['name' => $claim->brand]
+            config("brands.brands.{$claim->brand}")
         );
 
         log_admin_event('facility_claim_approved', $claim, ['facility_id' => $mailPayload['facility']->id]);
@@ -117,6 +119,25 @@ class FacilityClaimController extends Controller
         notify_user($facilityUser, 'claim_approved', 'Sahiplenme başvurunuz onaylandı', 'Kurum hesabınız aktifleşti, giriş bilgileri e-posta ile gönderildi.');
 
         return redirect()->route('admin.claims.index')->with('success', 'Basvuru onaylandi, giris bilgileri e-posta ile gonderildi.');
+    }
+
+    /**
+     * Admin, kurumun kendi gercek marka domain'inden farkli bir domain'den
+     * (admin paneli) basvuru onaylayabilir; bu yuzden giris linki CURRENT
+     * request'in host'una degil, hedef markanin kendi yapilandirilmis
+     * domain'ine gore uretilir. Local/testing'de gercek .com domain'ler DNS'te
+     * cozulmedigi icin (bkz. config/brands.php domains[0]), bu ortamlarda
+     * mevcut /site/{brand} test-modu route'una geri dusulur.
+     */
+    private function facilityLoginUrl(string $brand): string
+    {
+        $domain = config("brands.brands.{$brand}.domains.0");
+
+        if (app()->environment(['local', 'testing']) || ! $domain || ! str_ends_with($domain, '.com')) {
+            return route('brand.facility.login', ['brand' => $brand]);
+        }
+
+        return 'https://'.$domain.'/kurum-panel/giris';
     }
 
     public function reject(Request $request, FacilityClaim $claim)

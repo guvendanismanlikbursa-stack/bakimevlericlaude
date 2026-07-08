@@ -57,7 +57,12 @@ Kapsanan kritik akışlar:
 
 ## Demo Hesaplar
 
-`php artisan migrate --seed` sonrası:
+⚠️ **Bu şifreler herkese açık bir şekilde bu dosyada yazılıdır.** `DatabaseSeeder`
+sadece `APP_ENV=local` veya `testing` iken bu hesapları oluşturur; production/staging'de
+otomatik olarak atlanır (bkz. `database/seeders/DatabaseSeeder.php`). Canlı admin
+hesabını asla bu seeder ile değil, ayrıca ve gerçek/güçlü bir şifreyle oluşturun.
+
+`php artisan migrate --seed` sonrası (sadece local/testing):
 
 | Rol | E-posta | Şifre |
 |---|---|---|

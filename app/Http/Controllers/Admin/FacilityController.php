@@ -19,7 +19,33 @@ class FacilityController extends Controller
     private const MAX_GALLERY_IMAGES = 10;
     public function index(Request $request)
     {
-        $query = Facility::with(['city', 'category', 'images']);
+        $query = $this->filteredQuery($request, includeCategory: true)->with(['city', 'category', 'images']);
+
+        $facilities = $query->latest()->paginate(15)->withQueryString();
+        $brands = config('brands.brands');
+        $cities = City::orderBy('name')->get();
+        $categories = FacilityCategory::orderBy('name')->get();
+        $districtMap = $cities->mapWithKeys(fn ($city) => [$city->slug => districts_for_city($city->name)]);
+        $ownershipTypes = ['ozel' => 'Özel', 'kamu' => 'Kamu', 'belediye' => 'Belediye', 'vakif' => 'Vakıf'];
+
+        // Secilen kategori disindaki tum filtreler uygulanmis haliyle, kategori
+        // bazinda kirilim: admin "Tum Kategoriler" secili iken bile bu filtreye
+        // (il/ilce/marka/kurulus turu/sahiplenme) uyan kurumlarin kategoriye gore
+        // dagilimini gorebilsin.
+        $categoryBreakdown = $this->filteredQuery($request, includeCategory: false)
+            ->selectRaw('facility_category_id, count(*) as total')
+            ->groupBy('facility_category_id')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$categories->firstWhere('id', $row->facility_category_id)?->name ?? 'Diğer' => $row->total])
+            ->sortByDesc(fn ($count) => $count)
+            ->all();
+
+        return view('admin.facilities.index', compact('facilities', 'brands', 'cities', 'categories', 'districtMap', 'ownershipTypes', 'categoryBreakdown'));
+    }
+
+    private function filteredQuery(Request $request, bool $includeCategory)
+    {
+        $query = Facility::query();
 
         if ($request->filled('brand')) {
             $scope = config("brands.brands.{$request->brand}.category_scope", []);
@@ -30,10 +56,23 @@ class FacilityController extends Controller
             $query->where('is_claimed', $request->claim_status === 'claimed');
         }
 
-        $facilities = $query->latest()->paginate(15)->withQueryString();
-        $brands = config('brands.brands');
+        if ($request->filled('city')) {
+            $query->whereHas('city', fn ($q) => $q->where('slug', $request->city));
+        }
 
-        return view('admin.facilities.index', compact('facilities', 'brands'));
+        if ($request->filled('district')) {
+            $query->where('district', $request->district);
+        }
+
+        if ($includeCategory && $request->filled('category')) {
+            $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
+        }
+
+        if ($request->filled('ownership_type')) {
+            $query->where('ownership_type', $request->ownership_type);
+        }
+
+        return $query;
     }
 
     public function create(Request $request)

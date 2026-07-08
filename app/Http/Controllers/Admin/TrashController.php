@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\FacilityClaim;
+use App\Models\FacilityRegistration;
 use App\Models\OfferRequest;
 use App\Models\WalletTopup;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class TrashController extends Controller
         'offer-request' => OfferRequest::class,
         'wallet-topup' => WalletTopup::class,
         'facility-claim' => FacilityClaim::class,
+        'facility-registration' => FacilityRegistration::class,
     ];
 
     private const LABELS = [
@@ -25,6 +27,7 @@ class TrashController extends Controller
         'offer-request' => 'Teklif Talebi',
         'wallet-topup' => 'Bakiye Yuklemesi',
         'facility-claim' => 'Sahiplenme Basvurusu',
+        'facility-registration' => 'Kurum Kayit Basvurusu',
     ];
 
     public function index(Request $request)

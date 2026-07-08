@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@yield('title', 'Panel') - Ortak Admin Panel</title>
-<script src="https://cdn.tailwindcss.com"></script>
+@vite('resources/css/app.css')
 </head>
 <body class="bg-gray-100 text-gray-800 flex min-h-screen">
 
@@ -21,6 +21,8 @@
     <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') && request('claim_status') !== 'unclaimed' ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
     <a href="{{ route('admin.facilities.index', ['claim_status' => 'unclaimed']) }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') && request('claim_status') === 'unclaimed' ? 'bg-gray-700 text-white' : '' }}">Ön Kayıtlı Kurumlar</a>
     <a href="{{ route('admin.claims.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.claims.*') ? 'bg-gray-700 text-white' : '' }}"><span>Sahiplenme Başvuruları</span>@if($pendingClaimsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingClaimsCount }}</span>@endif</a>
+    <a href="{{ route('admin.registrations.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.registrations.*') ? 'bg-gray-700 text-white' : '' }}"><span>Kurum Kayıt Başvuruları</span>@if($pendingRegistrationsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingRegistrationsCount }}</span>@endif</a>
+    <a href="{{ route('admin.invitations.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.invitations.*') ? 'bg-gray-700 text-white' : '' }}">Kurum Davetleri</a>
     <a href="{{ route('admin.categories.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.categories.*') ? 'bg-gray-700 text-white' : '' }}">Kategoriler</a>
     <a href="{{ route('admin.cities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.cities.*') ? 'bg-gray-700 text-white' : '' }}">Şehirler</a>
 
@@ -44,10 +46,12 @@
     <a href="{{ route('admin.audit-log.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.audit-log.*') ? 'bg-gray-700 text-white' : '' }}">İşlem Günlüğü</a>
     <a href="{{ route('admin.settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.settings.*') ? 'bg-gray-700 text-white' : '' }}">Ayarlar</a>
 
-    <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Test Linkleri</div>
-    <a href="/site/bakimevibul" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-emerald-400 text-xs">bakimevibul.com</a>
-    <a href="/site/bakimeviara" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-purple-400 text-xs">bakimeviara.com</a>
-    <a href="/site/bakimevleri" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-blue-400 text-xs">bakimevleri.com</a>
+    @unless(app()->environment('production'))
+      <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Test Linkleri (sadece local/staging)</div>
+      <a href="/site/bakimevibul" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-emerald-400 text-xs">bakimevibul.com</a>
+      <a href="/site/bakimeviara" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-purple-400 text-xs">bakimeviara.com</a>
+      <a href="/site/bakimevleri" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-blue-400 text-xs">bakimevleri.com</a>
+    @endunless
   </nav>
 
   <div class="p-4 border-t border-gray-800">

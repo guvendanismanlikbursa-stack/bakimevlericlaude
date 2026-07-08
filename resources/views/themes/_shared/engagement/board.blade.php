@@ -3,15 +3,16 @@
 @php
   $variant = $engagementStyle['variant'] ?? 'classic';
   $isCompare = $boardMode === 'compare';
-  $storageKey = $brand['slug'] . ':' . ($isCompare ? 'compare' : 'favorites');
+  $isBulkQuote = $boardMode === 'bulk-quote';
+  $storageKey = $brand['slug'] . ':' . $boardMode;
 @endphp
 <section class="{{ $variant === 'dark' ? 'bg-gray-950 text-white' : ($variant === 'warm' ? 'bg-white' : 'bg-gray-50') }} border-b border-gray-100">
   <div class="max-w-6xl mx-auto px-4 py-10">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
       <div>
-        <div class="text-sm font-black mb-2 {{ $variant === 'dark' ? 'text-white/60' : 'text-primary' }}">{{ $isCompare ? 'Karşılaştırma masası' : 'Kısa liste' }}</div>
-        <h1 class="text-3xl md:text-5xl font-black {{ $variant === 'dark' ? 'text-white' : 'text-gray-950' }}">{{ $isCompare ? ($engagementStyle['compare_title'] ?? 'Kurumları karşılaştır') : ($engagementStyle['favorites_title'] ?? 'Favori kurumlar') }}</h1>
-        <p class="mt-3 {{ $variant === 'dark' ? 'text-white/68' : 'text-gray-600' }} max-w-2xl">{{ $isCompare ? 'Liste sayfasında karşılaştırmaya eklediğiniz kurumlar burada yan yana görünür.' : 'Favoriye aldığınız kurumlar bu sayfada saklanır; not ekleyip tekrar değerlendirebilirsiniz.' }}</p>
+        <div class="text-sm font-black mb-2 {{ $variant === 'dark' ? 'text-white/60' : 'text-primary' }}">{{ $isCompare ? 'Karşılaştırma masası' : ($isBulkQuote ? 'Toplu Fiyat Al' : 'Kısa liste') }}</div>
+        <h1 class="text-3xl md:text-5xl font-black {{ $variant === 'dark' ? 'text-white' : 'text-gray-950' }}">{{ $isCompare ? ($engagementStyle['compare_title'] ?? 'Kurumları karşılaştır') : ($isBulkQuote ? 'Seçili kurumlara toplu fiyat iste' : ($engagementStyle['favorites_title'] ?? 'Favori kurumlar')) }}</h1>
+        <p class="mt-3 {{ $variant === 'dark' ? 'text-white/68' : 'text-gray-600' }} max-w-2xl">{{ $isCompare ? 'Liste sayfasında karşılaştırmaya eklediğiniz kurumlar burada yan yana görünür.' : ($isBulkQuote ? 'Kurum listesinden "Toplu Fiyat Al" ile seçtiğiniz en fazla 5 kuruma tek formla aynı anda fiyat talebi gönderin.' : 'Favoriye aldığınız kurumlar bu sayfada saklanır; not ekleyip tekrar değerlendirebilirsiniz.') }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <a href="{{ brand_route('engagement.wizard') }}" class="rounded-xl px-4 py-3 font-black {{ $variant === 'dark' ? 'bg-white text-gray-950' : 'btn-primary' }}">Karar sihirbazı</a>
@@ -24,12 +25,35 @@
 <section class="max-w-6xl mx-auto px-4 py-10">
   <div id="board-empty" class="hidden bg-white border border-dashed border-gray-200 rounded-xl p-8 text-center">
     <div class="text-3xl font-black text-gray-950 mb-2">Henüz kurum eklenmedi</div>
-    <p class="text-gray-500 mb-5">Kurum liste veya detay sayfalarından {{ $isCompare ? 'karşılaştırmaya ekle' : 'favoriye ekle' }} düğmesini kullanın.</p>
+    <p class="text-gray-500 mb-5">Kurum liste veya detay sayfalarından {{ $isCompare ? 'karşılaştırmaya ekle' : ($isBulkQuote ? '"Toplu Fiyat Al"' : 'favoriye ekle') }} düğmesini kullanın.</p>
     <a href="{{ brand_route('facilities.index') }}" class="btn-primary inline-flex rounded-xl px-5 py-3 font-black">Kurumları incele</a>
   </div>
 
   @if($isCompare)
     <div id="board-compare" class="overflow-x-auto bg-white border border-gray-100 rounded-xl shadow-sm"></div>
+  @elseif($isBulkQuote)
+    <div class="grid md:grid-cols-3 gap-4 mb-6" id="board-bulk-quote-list"></div>
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-xl">
+      <h3 class="font-black mb-4 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
+      <form method="POST" action="{{ brand_route('offer-requests.store-bulk') }}" class="space-y-3" id="bulk-quote-form">
+        @csrf
+        <div id="bulk-quote-facility-inputs"></div>
+        <select name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
+          <option value="">Kimin için? (opsiyonel)</option>
+          <option value="kendisi">Kendim için</option>
+          <option value="anne-baba">Anne/Babam için</option>
+          <option value="cocuk">Çocuğum için</option>
+          <option value="yakin">Yakınım için</option>
+        </select>
+        <input type="text" name="patient_name" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+        <input type="text" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+        <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+        <input type="email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
+        <textarea name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea>
+        <button class="btn-primary w-full py-2 rounded-lg font-black">Seçili Kurumlara Gönder</button>
+        <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
+      </form>
+    </div>
   @else
     <div id="board-favorites" class="grid md:grid-cols-3 gap-5"></div>
   @endif
@@ -89,6 +113,26 @@
         + '<div class="flex gap-2"><a href="' + esc(item.url) + '" class="flex-1 text-center btn-primary rounded-lg px-3 py-2 text-sm font-black">Detay</a><button onclick="removeEngagementItem(' + Number(item.id) + ')" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-600">Kaldır</button></div>'
         + '</div></article>';
     }).join('');
+  }
+  const bulkList = document.getElementById('board-bulk-quote-list');
+  const bulkInputs = document.getElementById('bulk-quote-facility-inputs');
+  const bulkForm = document.getElementById('bulk-quote-form');
+  if (bulkList) {
+    bulkList.innerHTML = selected.map(function(item){
+      const image = item.image ? '<img src="' + esc(item.image) + '" class="w-full h-full object-cover" alt="">' : '';
+      return '<article class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">'
+        + '<div class="h-28 bg-gray-100">' + image + '</div>'
+        + '<div class="p-3">'
+        + '<h2 class="font-black text-gray-950 text-sm mb-1">' + esc(item.name) + '</h2>'
+        + '<p class="text-xs text-gray-500 mb-2">' + esc(item.city) + ' · ' + esc(item.district) + '</p>'
+        + '<button type="button" onclick="removeEngagementItem(' + Number(item.id) + ')" class="text-xs font-black text-red-600">Kaldır</button>'
+        + '</div></article>';
+    }).join('');
+    if (bulkInputs) {
+      bulkInputs.innerHTML = selected.map(function(item){
+        return '<input type="hidden" name="facility_ids[]" value="' + Number(item.id) + '">';
+      }).join('');
+    }
   }
 })();
 </script>

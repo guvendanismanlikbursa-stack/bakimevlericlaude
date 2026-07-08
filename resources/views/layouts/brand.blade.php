@@ -6,7 +6,18 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', $brand['tagline']) · {{ $brand['name'] }}</title>
 <meta name="description" content="@yield('meta_description', $brand['tagline'])">
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="canonical" href="@yield('canonical', canonical_url())">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ $brand['name'] }}">
+<meta property="og:title" content="@yield('og_title', $brand['tagline'])">
+<meta property="og:description" content="@yield('meta_description', $brand['tagline'])">
+<meta property="og:url" content="@yield('canonical', canonical_url())">
+<meta property="og:image" content="@yield('og_image', seo_og_image())">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="@yield('og_title', $brand['tagline'])">
+<meta name="twitter:description" content="@yield('meta_description', $brand['tagline'])">
+<meta name="twitter:image" content="@yield('og_image', seo_og_image())">
+@vite('resources/css/app.css')
 <style>
   :root{ --primary: {{ $brand['primary_color'] }}; --secondary: {{ $brand['secondary_color'] }}; }
   body{ font-family: {{ $brand['theme'] === 'bakimeviara' ? "'Poppins', sans-serif" : ($brand['theme'] === 'bakimevleri' ? "'Roboto', sans-serif" : "'Inter', sans-serif") }}; }
@@ -33,13 +44,13 @@
       <a href="{{ brand_route('home') }}" class="hover:text-white">Ana Sayfa</a>
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="hover:text-white">Seçim Asistanı</a>
       <a href="{{ brand_route('engagement.compare') }}" class="hover:text-white">Karşılaştır</a>
-      <a href="{{ brand_route('engagement.favorites') }}" class="hover:text-white">Favoriler</a>
+      @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="hover:text-white">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="hover:text-white">Kurumları Bul</a>
       <a href="{{ brand_route('contact.create') }}" class="hover:text-white">İletişim</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Aile Panelim</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Panelim</a>@endif
+      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Aile Girişi</a>@endif
+      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold text-white/80 hover:text-white hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
       @endif
@@ -55,12 +66,12 @@
       <a href="{{ brand_route('home') }}" class="px-3 py-2 rounded-full hover:bg-white">Ana Sayfa</a>
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="px-3 py-2 rounded-full hover:bg-white">Aile Sihirbazı</a>
       <a href="{{ brand_route('engagement.compare') }}" class="px-3 py-2 rounded-full hover:bg-white">Karşılaştır</a>
-      <a href="{{ brand_route('engagement.favorites') }}" class="px-3 py-2 rounded-full hover:bg-white">Favoriler</a>
+      @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="px-3 py-2 rounded-full hover:bg-white">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="px-3 py-2 rounded-full hover:bg-white">Kurumlar</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Aile Panelim</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Panelim</a>@endif
+      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-bold hover:text-primary hidden sm:inline">Aile Girişi</a>@endif
+      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-bold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
       @endif
@@ -76,13 +87,13 @@
       <a href="{{ brand_route('home') }}" class="hover:text-primary">Ana Sayfa</a>
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="hover:text-primary">Karar Sihirbazı</a>
       <a href="{{ brand_route('engagement.compare') }}" class="hover:text-primary">Karşılaştır</a>
-      <a href="{{ brand_route('engagement.favorites') }}" class="hover:text-primary">Favoriler</a>
+      @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="hover:text-primary">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="hover:text-primary">Kurumları Bul</a>
       <a href="{{ brand_route('contact.create') }}" class="hover:text-primary">İletişim</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Aile Panelim</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Panelim</a>@endif
+      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-semibold hover:text-primary hidden sm:inline">Aile Girişi</a>@endif
+      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
       @endif
@@ -119,7 +130,7 @@
         <li><a href="{{ brand_route('care-advisor.form') }}" class="hover:text-primary">Bakım Danışmanı</a></li>
         <li><a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="hover:text-primary">Karar sihirbazı</a></li>
         <li><a href="{{ brand_route('engagement.compare') }}" class="hover:text-primary">Karşılaştırma</a></li>
-        <li><a href="{{ brand_route('engagement.favorites') }}" class="hover:text-primary">Favoriler</a></li>
+        @if(session('family_user_id'))<li><a href="{{ brand_route('engagement.favorites') }}" class="hover:text-primary">Favoriler</a></li>@endif
         <li><a href="{{ brand_route('price-guide.index') }}" class="hover:text-primary">Ücret Rehberi</a></li>
         <li><a href="{{ brand_route('guides.index') }}" class="hover:text-primary">Bakım Rehberi</a></li>
         <li><a href="{{ brand_route('stats.index') }}" class="hover:text-primary">Türkiye İstatistikleri</a></li>
@@ -159,6 +170,8 @@
 </footer>
 
 @include('themes._shared.partials.whatsapp-button')
+@include('themes._shared.partials.organization-jsonld')
+@yield('breadcrumb_jsonld')
 
 </body>
 </html>

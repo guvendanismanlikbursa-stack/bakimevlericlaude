@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Girişi</title>
-<script src="https://cdn.tailwindcss.com"></script>
+@vite('resources/css/app.css')
 </head>
 <body class="bg-gray-900 min-h-screen flex items-center justify-center">
   <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
@@ -23,7 +23,9 @@
       <input type="password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
       <button class="w-full bg-gray-900 text-white py-2 rounded-lg font-semibold">Giriş Yap</button>
     </form>
-    <p class="text-xs text-gray-400 mt-4">Demo: admin@bakimplatform.test / Admin12345!</p>
+    @if(app()->environment('local'))
+      <p class="text-xs text-gray-400 mt-4">Demo (sadece local ortamda görünür): admin@bakimplatform.test / Admin12345!</p>
+    @endif
   </div>
 </body>
 </html>

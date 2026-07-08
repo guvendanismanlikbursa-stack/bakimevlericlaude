@@ -66,11 +66,20 @@ class DataExtractorImportService
                 continue;
             }
 
-            if ($this->isDuplicate($item, $city, $district)) {
+            if ($this->isDuplicate($item, $city)) {
                 $batch->rows()->create(['row_number' => $line + 2, 'status' => 'skipped', 'name' => $item['name'], 'phone' => $item['phone'], 'message' => 'Benzer kayit var', 'payload' => $item]);
                 $skipped++;
                 continue;
             }
+
+            $ownershipType = classify_facility_ownership_type($item['name']);
+            if (in_array($ownershipType, ['kamu', 'belediye'], true)) {
+                $batch->rows()->create(['row_number' => $line + 2, 'status' => 'skipped', 'name' => $item['name'], 'phone' => $item['phone'], 'message' => 'Kamu/belediyeye ait kurum, platform kapsami disinda', 'payload' => $item]);
+                $skipped++;
+                continue;
+            }
+
+            $phoneType = classify_phone_type($item['phone']);
 
             try {
                 $facility = Facility::create([
@@ -79,11 +88,14 @@ class DataExtractorImportService
                     'city_id' => $city->id,
                     'district_id' => $districtModel?->id,
                     'facility_category_id' => $category->id,
+                    'ownership_type' => $ownershipType,
                     'district' => $districtModel?->name ?? $district,
                     'address' => $item['address'],
                     'lat' => $this->coordinate($item['lat']),
                     'lng' => $this->coordinate($item['lng']),
                     'phone' => $item['phone'],
+                    'phone_type' => $phoneType,
+                    'invitation_status' => $phoneType === 'mobile' ? 'not_started' : ($phoneType === 'landline' ? 'landline_only' : 'contact_missing'),
                     'email' => $item['email'],
                     'rating' => $this->rating($item['rating']),
                     'description' => $this->description($item, $category),
@@ -164,20 +176,65 @@ class DataExtractorImportService
         return $item;
     }
 
-    private function isDuplicate(array $item, City $city, ?string $district): bool
+    /**
+     * "Ayni kurumun birden fazla kaydi asla olmamali" garantisi: telefon
+     * sehir genelinde karsilastirilir. Telefon yoksa isim+adres sehir
+     * genelinde (ilce sinirlamasi olmadan) karsilastirilir — ayni isletme
+     * farkli ilce aramalarinda tekrar bulunup farkli district degeriyle
+     * kaydedilebiliyordu. Adres de sarta eklendi ki Turkiye'de cok yaygin
+     * ayni-isimli ama farkli fiziksel kurumlar (orn. "Zubeyde Hanim
+     * Anaokulu") yanlislikla mukerrer sayilmasin.
+     */
+    private function isDuplicate(array $item, City $city): bool
     {
-        return Facility::query()
-            ->where('city_id', $city->id)
-            ->where(function ($query) use ($item, $district) {
-                if (filled($item['phone'])) {
-                    $query->orWhere('phone', $item['phone']);
-                }
-                $query->orWhere(function ($q) use ($item, $district) {
-                    $q->whereRaw('LOWER(name) = ?', [mb_strtolower($item['name'])])
-                        ->where('district', $district);
-                });
-            })
-            ->exists();
+        $normalizedPhone = $this->normalizePhone($item['phone'] ?? '');
+
+        if ($normalizedPhone !== '') {
+            $phoneMatch = Facility::where('city_id', $city->id)
+                ->whereNotNull('phone')
+                ->get(['id', 'phone'])
+                ->contains(fn ($f) => $this->normalizePhone($f->phone) === $normalizedPhone);
+
+            if ($phoneMatch) {
+                return true;
+            }
+        }
+
+        $normalizedName = $this->normalizeName($item['name'] ?? '');
+        $normalizedAddress = $this->normalizeAddress($item['address'] ?? '');
+        if ($normalizedName === '' || $normalizedAddress === '') {
+            return false;
+        }
+
+        return Facility::where('city_id', $city->id)
+            ->get(['id', 'name', 'address'])
+            ->contains(fn ($f) => $this->normalizeName($f->name) === $normalizedName
+                && $this->normalizeAddress($f->address) === $normalizedAddress);
+    }
+
+    private function normalizePhone(?string $phone): string
+    {
+        return preg_replace('/\D+/', '', (string) $phone) ?: '';
+    }
+
+    /**
+     * "Adresi kopyala" gibi Google Maps arayuz metinlerinin adres sanilip
+     * kaydedildigi durumlarda mukerrer kontrolunu yanlis yonlendirmemesi
+     * icin bu placeholder bos sayilir.
+     */
+    private function normalizeAddress(?string $address): string
+    {
+        $normalized = $this->normalizeName($address);
+
+        return $normalized === 'adresi kopyala' ? '' : $normalized;
+    }
+
+    private function normalizeName(?string $name): string
+    {
+        $ascii = Str::of((string) $name)->lower()->ascii()->toString();
+        $clean = preg_replace('/[^a-z0-9]+/', ' ', $ascii);
+
+        return trim(preg_replace('/\s+/', ' ', $clean));
     }
 
     private function createSectionDetail(Facility $facility, FacilityCategory $category, array $item): void

@@ -19,13 +19,26 @@ class BalanceController extends Controller
             'balance_delta' => 'nullable|numeric|min:-999999|max:999999',
             'credits_delta' => 'nullable|integer|min:-100000|max:100000',
             'note' => 'nullable|string|max:500',
+            'quote_price_override' => 'nullable|numeric|min:0',
+            'clear_quote_price_override' => 'nullable|boolean',
         ]);
 
         $balanceDelta = (float) ($data['balance_delta'] ?? 0);
         $creditsDelta = (int) ($data['credits_delta'] ?? 0);
+        $overrideChanged = false;
+
+        if ($request->boolean('clear_quote_price_override')) {
+            $facility->update(['quote_price_override' => null]);
+            $overrideChanged = true;
+        } elseif ($request->filled('quote_price_override')) {
+            $facility->update(['quote_price_override' => $data['quote_price_override']]);
+            $overrideChanged = true;
+        }
 
         if ($balanceDelta == 0 && $creditsDelta == 0) {
-            return back()->withErrors(['balance' => 'Bir tutar veya hak sayisi giriniz.']);
+            return $overrideChanged
+                ? back()->with('success', 'Kuruma özel teklif ücreti güncellendi.')
+                : back()->withErrors(['balance' => 'Bir tutar veya hak sayisi giriniz.']);
         }
 
         $result = DB::transaction(function () use ($facility, $balanceDelta, $creditsDelta, $data) {

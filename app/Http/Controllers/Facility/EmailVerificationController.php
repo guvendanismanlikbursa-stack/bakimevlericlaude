@@ -60,18 +60,39 @@ class EmailVerificationController extends Controller
         return back()->with('success', 'Doğrulama e-postası tekrar gönderildi.');
     }
 
+    /**
+     * $brand normalde current_brand() dizisidir (kurum panelinden tetiklenen
+     * bir istekte "brand" route parametresi guvenilir baglam verir). Ancak
+     * admin panelinden (Admin\FacilityClaimController::approve gibi) tetiklendiginde
+     * mevcut istegin KENDI host'u/route'u hedef markayla ilgisiz olabilir; bu
+     * yuzden $brand['slug'] doluysa o TEK gecerli kaynak olarak kullanilir,
+     * request()->route('brand') sadece slug verilmemisse (geriye donuk
+     * uyumluluk icin) baglam olarak kullanilir.
+     */
     public static function send(FacilityUser $user, array $brand): void
     {
         $params = ['id' => $user->id, 'hash' => sha1($user->email)];
-        $routeName = 'facility.verify-email';
+        $slug = $brand['slug'] ?? request()->route('brand');
+        $domain = $slug ? config("brands.brands.{$slug}.domains.0") : null;
+        $brandName = $brand['name'] ?? ($slug ? (config("brands.brands.{$slug}.name") ?? $slug) : 'Platform');
 
-        if (request()->route('brand')) {
-            $routeName = 'brand.facility.verify-email';
-            $params['brand'] = request()->route('brand');
+        if ($slug && ! app()->environment(['local', 'testing']) && $domain && str_ends_with($domain, '.com')) {
+            // Hedef markanin gercek domain'ini KULLANARAK imzali link uretiyoruz;
+            // aksi halde admin baska bir domain'den onayladiginda link o
+            // (yanlis) domain'e cikardi.
+            $previousRoot = URL::to('/');
+            URL::forceRootUrl('https://'.$domain);
+            $verificationUrl = URL::temporarySignedRoute('facility.verify-email', now()->addMinutes(60), $params);
+            URL::forceRootUrl($previousRoot);
+        } else {
+            $routeName = 'facility.verify-email';
+            if ($slug) {
+                $routeName = 'brand.facility.verify-email';
+                $params['brand'] = $slug;
+            }
+            $verificationUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
         }
 
-        $verificationUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
-
-        Mail::to($user->email)->queue(new FacilityEmailVerificationMail($user, $verificationUrl, $brand['name']));
+        Mail::to($user->email)->queue(new FacilityEmailVerificationMail($user, $verificationUrl, $brandName));
     }
 }

@@ -15,7 +15,16 @@
 <div class="space-y-4">
   @forelse($topups as $topup)
     <div class="bg-white rounded-xl shadow-sm p-5 flex gap-6">
-      <img src="{{ asset('storage/'.$topup->receipt_path) }}" class="w-40 h-32 object-cover rounded-lg">
+      @if(str_ends_with(strtolower($topup->receipt_path), '.pdf'))
+        <a href="{{ asset('storage/'.$topup->receipt_path) }}" target="_blank" class="w-40 h-32 rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-red-600 hover:bg-gray-100">
+          <span class="text-3xl">📄</span>
+          <span class="text-xs font-semibold mt-1">PDF'i Aç</span>
+        </a>
+      @else
+        <a href="{{ asset('storage/'.$topup->receipt_path) }}" target="_blank">
+          <img src="{{ asset('storage/'.$topup->receipt_path) }}" class="w-40 h-32 object-cover rounded-lg">
+        </a>
+      @endif
       <div class="flex-1">
         <h2 class="font-bold">{{ $topup->facility->name }}</h2>
         <p class="text-sm text-gray-600">Tutar: <strong>{{ number_format($topup->amount,2,',','.') }}₺</strong></p>

@@ -43,6 +43,11 @@ class EngagementController extends Controller
         return $this->board('favorites');
     }
 
+    public function bulkQuote(Request $request)
+    {
+        return $this->board('bulk-quote');
+    }
+
     /**
      * Favoriler tarayicida localStorage'da tutulur (kisisel liste), ama
      * "Kurum Performans Sayfasi"nda goruntulenecek toplam favori sayisi icin

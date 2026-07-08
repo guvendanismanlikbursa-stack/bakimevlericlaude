@@ -36,14 +36,18 @@ class StatsController extends Controller
         // Gercek Turkiye haritasi (public/images/turkiye-harita.svg) icin:
         // haritadaki 81 ilin TAMAMI renklendirilebilsin diye, veri olmayan
         // iller de 0 olarak eklenir (yukaridaki $rows sadece kurumu olan
-        // illeri icerir, INNER JOIN oldugu icin).
-        $mapCounts = City::orderBy('name')->get()->mapWithKeys(function ($city) use ($rows) {
+        // illeri icerir, INNER JOIN oldugu icin). Harita SVG'sindeki <g id>
+        // degerleri zaten City::slug ile birebir ayni (bkz. DatabaseSeeder),
+        // bu yuzden ekstra bir eslestirme tablosu gerekmiyor.
+        $allCities = City::orderBy('name')->get();
+        $mapCounts = $allCities->mapWithKeys(function ($city) use ($rows) {
             $row = $rows->firstWhere('city_slug', $city->slug);
             return [$city->slug => $row->total ?? 0];
         });
+        $cityNames = $allCities->pluck('name', 'slug');
 
         return view("themes.{$brand['theme']}.stats", compact(
-            'brand', 'sections', 'activeSection', 'rows', 'grandTotal', 'maxCity', 'citiesWithData', 'totalCities', 'mapCounts'
+            'brand', 'sections', 'activeSection', 'rows', 'grandTotal', 'maxCity', 'citiesWithData', 'totalCities', 'mapCounts', 'cityNames'
         ));
     }
 }

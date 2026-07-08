@@ -12,8 +12,11 @@
 @section('meta_description', $section['hero_subtitle'].' | '.$brand['name'])
 
 <section class="relative bg-gray-950 text-white overflow-hidden">
-  <img src="{{ $section['hero_image'] }}" alt="{{ $section['title'] }}" class="absolute inset-0 w-full h-full object-cover opacity-34">
-  <div class="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/88 to-gray-950/42"></div>
+  {{-- Foto&#287;raf gorunur/canli kalsin diye opaklik yuksek tutuluyor; sadece
+       sag taraftaki (filtre kart&#305;n&#305;n oturdugu) serit, karta sert bir
+       kesim gibi carpmamak icin bir mask-image ile yumusakca saydamlasiyor. --}}
+  <img src="{{ $section['hero_image'] }}" alt="{{ $section['title'] }}" class="absolute inset-0 w-full h-full object-cover opacity-55" style="mask-image: linear-gradient(to right, black 0%, black 58%, transparent 82%); -webkit-mask-image: linear-gradient(to right, black 0%, black 58%, transparent 82%);">
+  <div class="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/65 to-transparent"></div>
   <div class="relative max-w-6xl mx-auto px-4 py-12 lg:py-16">
     <div class="grid lg:grid-cols-[1fr_360px] gap-8 items-start">
       <div class="pt-4">
@@ -48,16 +51,17 @@
         </div>
       </div>
 
-      <form method="GET" action="{{ brand_route('facilities.index') }}" data-district-map='@json($districtMap)' class="js-location-filter bg-white text-gray-900 rounded-xl shadow-2xl p-5 border border-white/20">
+      <form method="GET" action="{{ brand_route('facilities.index') }}" data-district-map='@json($districtMap)' data-count-url="{{ brand_route('facilities.count') }}" class="js-location-filter bg-white text-gray-900 rounded-xl shadow-2xl p-5 border border-white/20">
         <input type="hidden" name="bolum" value="{{ $section['slug'] }}">
         <div class="flex items-center gap-2 mb-4" style="color: {{ $colors['primary'] }};">@include('themes._shared.partials.section-icon', ['section' => $section, 'class' => 'w-5 h-5'])<span class="font-black">Detaylı filtre</span></div>
         <div class="space-y-3">
           <select name="city" class="js-city w-full border border-gray-200 rounded-lg px-3 py-3 text-sm bg-white"><option value="">İl seçin</option>@foreach($cities as $city)<option value="{{ $city->slug }}">{{ $city->name }}</option>@endforeach</select>
           <select name="district" class="js-district w-full border border-gray-200 rounded-lg px-3 py-3 text-sm bg-white" disabled><option value="">Önce il seçin</option></select>
           <select name="category" class="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm bg-white"><option value="">Kurum türü</option>@foreach($categories as $cat)<option value="{{ $cat->slug }}">{{ $cat->name }}</option>@endforeach</select>
-          <select name="service" class="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm bg-white"><option value="">{{ $section['title'] }} özelliği</option>@foreach($sectionServices as $service)<option value="{{ $service }}">{{ $service }}</option>@endforeach</select>
-          <select name="price_max" class="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm bg-white"><option value="">Maksimum bütçe</option><option value="10000">10.000 TL ve altı</option><option value="20000">20.000 TL ve altı</option><option value="30000">30.000 TL ve altı</option><option value="50000">50.000 TL ve altı</option></select>
+          <select name="service" class="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm bg-white"><option value="">Kurumun özellikleri</option>@foreach($sectionServices as $service)<option value="{{ $service }}">{{ $service }}</option>@endforeach</select>
+          <select name="price_tier" class="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm bg-white"><option value="">Tüm segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
           <button class="w-full rounded-lg text-white font-black px-4 py-3" style="background: {{ $colors['primary'] }};">Kurumları listele</button>
+          <div class="js-live-count text-xs font-bold text-gray-500 text-center"></div>
         </div>
       </form>
     </div>

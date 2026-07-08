@@ -20,4 +20,23 @@
     @endforelse
   </div>
 </div>
+
+@if($faqs->isNotEmpty())
+<script type="application/ld+json">
+{!! json_encode([
+  '@context' => 'https://schema.org',
+  '@type' => 'FAQPage',
+  'mainEntity' => $faqs->map(function ($faq) {
+      return [
+          '@type' => 'Question',
+          'name' => $faq->question,
+          'acceptedAnswer' => [
+              '@type' => 'Answer',
+              'text' => $faq->answer,
+          ],
+      ];
+  })->values()->all(),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+@endif
 @endsection

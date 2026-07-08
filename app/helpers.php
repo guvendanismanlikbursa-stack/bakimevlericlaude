@@ -102,6 +102,43 @@ if (! function_exists('turkey_provinces')) {
     }
 }
 
+if (! function_exists('classify_facility_ownership_type')) {
+    /**
+     * Kurum isminden ozel/kamu/belediye/vakif ayrimini cikarir. E-posta/telefon
+     * gibi kaynaklardan bu bilgi gelmiyor (veri cekici bunlari toplamiyor);
+     * Turkce resmi kurum adlandirma kaliplari isim uzerinden cok daha
+     * guvenilir bir gosterge. Sira onemli: belediye/vakif/kamu once kontrol
+     * edilir, hicbiri eslesmezse varsayilan "ozel" dondurulur.
+     */
+    function classify_facility_ownership_type(string $name): string
+    {
+        $n = \Illuminate\Support\Str::of($name)->lower()->ascii()->toString();
+
+        if (str_contains($n, 'belediye')) {
+            return 'belediye';
+        }
+
+        if (str_contains($n, 'vakfi') || str_contains($n, 'vakif')) {
+            return 'vakif';
+        }
+
+        $kamuKeywords = [
+            'kaymakamlig', 'valilig', 'bakanlig', 'devlet hastanesi',
+            'shcek', 'sosyal hizmet', 'il ozel idare', 'muduurlug',
+            'mudurlug', 'kyk', 'kredi yurtlar kurumu', 'universite',
+            'universitesi', 'il milli egitim', 'ilce milli egitim',
+            'egitim ve arastirma hastanesi', 's.b.u.', 'sbu ',
+        ];
+        foreach ($kamuKeywords as $kw) {
+            if (str_contains($n, $kw)) {
+                return 'kamu';
+            }
+        }
+
+        return 'ozel';
+    }
+}
+
 if (! function_exists('districts_for_city')) {
     function districts_for_city(string $cityName): array
     {
@@ -130,6 +167,25 @@ if (! function_exists('site_content_page')) {
     }
 }
 
+
+if (! function_exists('canonical_url')) {
+    function canonical_url(array $keep = ['bolum', 'city', 'district', 'category', 'service', 'price_tier', 'budget', 'page']): string
+    {
+        $query = array_intersect_key(request()->query(), array_flip($keep));
+        ksort($query);
+
+        return $query ? url()->current().'?'.http_build_query($query) : url()->current();
+    }
+}
+
+if (! function_exists('seo_og_image')) {
+    function seo_og_image(?array $section = null): string
+    {
+        $section = $section ?: active_service_section();
+
+        return url($section['hero_image'] ?? '/images/hero-yasli-bakim.jpg');
+    }
+}
 
 if (! function_exists('facility_card_image')) {
     function facility_card_image($facility, array $section = null): string
@@ -231,5 +287,83 @@ if (! function_exists('facility_brand_framing')) {
             'intro' => strtr($voice['facility_intro'], $replace),
             'meta_suffix' => strtr($voice['meta_suffix'], $replace),
         ];
+    }
+}
+
+if (! function_exists('classify_phone_type')) {
+    /**
+     * Turk telefon numaralarinda cep hatlari "5" ile baslar (0532, 90532,
+     * +90 532... hepsi normalize edildiginde "5..." olur); sabit hatlar il
+     * kodlarindan biriyle baslar (0212, 0224, 0312, 0242 vb. - "2","3","4"
+     * ile baslar). WhatsApp daveti sadece cep hatlarina anlamli oldugu icin
+     * bu ayrim davet kuyruklarini otomatik bolmek icin kullanilir.
+     */
+    function classify_phone_type(?string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+        if ($digits === '') {
+            return 'none';
+        }
+
+        // Basta ulke/sifir on eklerini at: 90XXXXXXXXXX -> XXXXXXXXXX, 0XXXXXXXXXX -> XXXXXXXXXX
+        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+            $digits = substr($digits, 2);
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        }
+
+        if (strlen($digits) !== 10) {
+            return 'none';
+        }
+
+        return $digits[0] === '5' ? 'mobile' : 'landline';
+    }
+}
+
+if (! function_exists('facility_invitation_statuses')) {
+    function facility_invitation_statuses(): array
+    {
+        return [
+            'not_started' => 'Henüz işlem yapılmadı',
+            'opened' => 'WhatsApp açıldı',
+            'sent' => 'Davet gönderildi',
+            'claimed' => 'Kurum sahiplenme başlattı',
+            'approved' => 'Kurum sahiplenildi',
+            'do_not_contact' => 'Kurum istemiyor',
+            'unreachable' => 'Ulaşılamadı',
+            'wrong_number' => 'Numara yanlış',
+            'landline_only' => 'Sadece sabit hat var',
+            'contact_missing' => 'Telefon yok',
+            'excluded' => 'Kamu/belediye veya davet dışı',
+        ];
+    }
+}
+
+if (! function_exists('facility_invitation_message')) {
+    function facility_invitation_message(\App\Models\Facility $facility): string
+    {
+        return "Merhaba, {$facility->name} için bakimevibul.com / bakimeviara.com / bakimevleri.com üzerinde ücretsiz kurum profiliniz oluşturuldu.\n\n"
+            .'Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak ön kayıtlı kurumlardan kolayca sahiplenme başvurusu yapabilirsiniz.'
+            ."\n\nBu mesajı almak istemiyorsanız lütfen \"istemiyorum\" yazmanız yeterlidir.";
+    }
+}
+
+if (! function_exists('facility_whatsapp_url')) {
+    function facility_whatsapp_url(\App\Models\Facility $facility): ?string
+    {
+        if (classify_phone_type($facility->phone) !== 'mobile') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', (string) $facility->phone);
+        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+            // zaten ulke koduyla birlikte
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = '90'.substr($digits, 1);
+        } else {
+            $digits = '90'.$digits;
+        }
+
+        return 'https://wa.me/'.$digits.'?text='.rawurlencode(facility_invitation_message($facility));
     }
 }

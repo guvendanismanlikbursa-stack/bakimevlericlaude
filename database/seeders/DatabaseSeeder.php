@@ -17,14 +17,29 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+// UYARI: bu seeder sabit/bilinen demo sifreleri (Admin12345!, Kurum12345!,
+// Aile12345!) olusturur. Bunlar repo'da/README'de aciktir; canliya asla
+// tasinmamalidir. Sehir/kategori/sayfa/SSS/paket gibi GERCEK referans
+// verileri her ortamda seed edilir; sadece bilinen-sifreli demo HESAPLAR
+// ve demo kurum/soru verisi asagida $seedDemoAccounts ile local/testing
+// disinda atlanir. Production admin hesabi ayrica, gercek bir sifreyle
+// (ornegin `php artisan tinker` ile tek seferlik) olusturulmalidir.
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        Admin::updateOrCreate(
-            ['email' => 'admin@bakimplatform.test'],
-            ['name' => 'Süper Admin', 'password' => Hash::make('Admin12345!'), 'role' => 'superadmin']
-        );
+        $seedDemoAccounts = app()->environment(['local', 'testing']);
+
+        if (! $seedDemoAccounts) {
+            $this->command?->warn('DatabaseSeeder: bu ortamda demo hesaplar (bilinen sifreler) atlandi; sadece sehir/kategori/sayfa/SSS/paket gibi referans veriler seed edildi. Admin hesabini ayrica, gercek bir sifreyle olusturun.');
+        }
+
+        if ($seedDemoAccounts) {
+            Admin::updateOrCreate(
+                ['email' => 'admin@bakimplatform.test'],
+                ['name' => 'Süper Admin', 'password' => Hash::make('Admin12345!'), 'role' => 'superadmin']
+            );
+        }
 
         Setting::set('bank_name', 'Örnek Banka A.Ş.');
         Setting::set('bank_account_holder', 'Bakım Platformu A.Ş.');
@@ -56,7 +71,7 @@ class DatabaseSeeder extends Seeder
             'rehabilitasyon' => ['Fizyoterapist', 'Nörolojik rehabilitasyon', 'Ortopedik rehabilitasyon', 'Hidroterapi', 'Ergoterapi', 'Konuşma terapisi', 'Evde takip', 'Cihaz desteği'],
         ];
 
-        if (Facility::count() === 0) {
+        if ($seedDemoAccounts && Facility::count() === 0) {
             $createdFacilities = collect();
 
             foreach (range(1, 24) as $i) {
@@ -128,21 +143,23 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        FamilyUser::updateOrCreate(
-            ['email' => 'aile@bakimplatform.test'],
-            [
-                'registered_brand' => 'bakimevibul',
-                'name' => 'Demo Aile',
-                'phone' => '0533 000 00 00',
-                'password' => Hash::make('Aile12345!'),
-                'consent_accepted_at' => now(),
-                'consent_ip' => '127.0.0.1',
-                'email_verified_at' => now(),
-                'signup_lat' => 40.1826,
-                'signup_lng' => 29.0669,
-                'signup_city_name' => 'Bursa',
-            ]
-        );
+        if ($seedDemoAccounts) {
+            FamilyUser::updateOrCreate(
+                ['email' => 'aile@bakimplatform.test'],
+                [
+                    'registered_brand' => 'bakimevibul',
+                    'name' => 'Demo Aile',
+                    'phone' => '0533 000 00 00',
+                    'password' => Hash::make('Aile12345!'),
+                    'consent_accepted_at' => now(),
+                    'consent_ip' => '127.0.0.1',
+                    'email_verified_at' => now(),
+                    'signup_lat' => 40.1826,
+                    'signup_lng' => 29.0669,
+                    'signup_city_name' => 'Bursa',
+                ]
+            );
+        }
 
         foreach (['bakimevibul', 'bakimeviara', 'bakimevleri'] as $brand) {
             ContentPage::updateOrCreate(

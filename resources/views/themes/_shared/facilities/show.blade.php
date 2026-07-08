@@ -1,6 +1,15 @@
 @extends('layouts.brand')
 @section('title', $facility->name.' - '.($facility->city->name ?? '').' '.($facility->district ?? ''))
+@section('og_title', $facility->name.' - '.($facility->city->name ?? '').' '.($facility->district ?? ''))
 @section('meta_description', \Illuminate\Support\Str::limit(strip_tags($facility->description), 100).' '.facility_brand_framing($facility, current_brand())['meta_suffix'])
+@section('og_image', facility_card_image($facility))
+@section('breadcrumb_jsonld')
+  @include('themes._shared.partials.breadcrumb-jsonld', ['items' => [
+      ['name' => current_brand()['name'], 'url' => brand_route('home')],
+      ['name' => $facility->city->name ?? '', 'url' => brand_route('facilities.index', ['city' => $facility->city->slug ?? null])],
+      ['name' => $facility->name, 'url' => brand_route('facilities.show', ['slug' => $facility->slug])],
+  ]])
+@endsection
 
 @section('content')
 @php
@@ -35,8 +44,10 @@
     <p class="text-sm text-gray-600 mt-3 italic">{{ facility_brand_framing($facility, $brand)['intro'] }}</p>
 
     <div class="mt-5 grid sm:grid-cols-3 gap-3">
-      <button type="button" class="js-engagement-toggle rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}">Favori</button>
-      <button type="button" class="js-engagement-toggle rounded-xl px-4 py-3 text-sm font-black text-white" style="background: {{ $colors['primary'] }};" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      @if($facility->is_claimed)
+        <button type="button" class="js-engagement-toggle rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}">Favori</button>
+        <button type="button" class="js-engagement-toggle rounded-xl px-4 py-3 text-sm font-black text-white" style="background: {{ $colors['primary'] }};" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      @endif
       <a href="{{ brand_route('engagement.wizard', $sectionSlug ? ['bolum' => $sectionSlug] : []) }}" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-center text-gray-700">Sihirbaza git</a>
     </div>
 
@@ -53,8 +64,16 @@
         <div class="text-3xl font-black mt-1" style="color: {{ $colors['primary'] }};">{{ round($scoreBase) }}/100</div>
       </div>
       <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-        <div class="text-sm font-black text-gray-500">Yorum puanı</div>
-        <div class="text-3xl font-black text-amber-500 mt-1">★ {{ $facility->approved_reviews_avg_rating ? number_format($facility->approved_reviews_avg_rating, 1) : number_format($facility->rating, 1) }}</div>
+        @if($facility->approved_reviews_avg_rating)
+          <div class="text-sm font-black text-gray-500">Yorum puanı</div>
+          <div class="text-3xl font-black text-amber-500 mt-1">★ {{ number_format($facility->approved_reviews_avg_rating, 1) }}</div>
+        @elseif($facility->rating > 0)
+          <div class="text-sm font-black text-gray-500">Google puanı</div>
+          <div class="text-3xl font-black text-amber-500 mt-1">★ {{ number_format($facility->rating, 1) }}</div>
+        @else
+          <div class="text-sm font-black text-gray-500">Yorum puanı</div>
+          <div class="text-lg font-black text-gray-400 mt-2">Henüz puan yok</div>
+        @endif
       </div>
       <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
         <div class="text-sm font-black text-gray-500">Güven sinyali</div>
@@ -173,6 +192,11 @@
       </div>
     </div>
 
+    @php
+      $canReview = $facility->is_claimed
+        && session('family_user_id')
+        && \App\Models\OfferRequest::where('family_user_id', session('family_user_id'))->where('facility_id', $facility->id)->exists();
+    @endphp
     <section class="mt-10 grid lg:grid-cols-[1fr_360px] gap-6">
       <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
         <h2 class="text-xl font-black text-gray-950 mb-4">Kurum yorumları</h2>
@@ -183,21 +207,25 @@
               <p class="text-sm text-gray-600 mt-2">{{ $review->body }}</p>
             </div>
           @empty
-            <div class="rounded-lg border border-dashed border-gray-200 p-5 text-sm text-gray-500">Henüz onaylı yorum yok. İlk yorumu siz bırakabilirsiniz.</div>
+            <div class="rounded-lg border border-dashed border-gray-200 p-5 text-sm text-gray-500">Henüz onaylı yorum yok.</div>
           @endforelse
         </div>
       </div>
       <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm h-fit">
         <h3 class="font-black text-gray-950 mb-3">Yorum bırak</h3>
-        <form method="POST" action="{{ brand_route('reviews.store', ['slug' => $facility->slug]) }}" class="space-y-3">
-          @csrf
-          <input type="text" name="reviewer_name" placeholder="Adınız" required class="border rounded-lg px-3 py-2 w-full">
-          <input type="text" name="reviewer_phone" placeholder="Telefon (yayınlanmaz)" class="border rounded-lg px-3 py-2 w-full">
-          <select name="rating" required class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Puan seçin</option><option value="5">5 - Çok iyi</option><option value="4">4 - İyi</option><option value="3">3 - Orta</option><option value="2">2 - Zayıf</option><option value="1">1 - Kötü</option></select>
-          <textarea name="body" placeholder="Deneyiminizi veya görüşme notunuzu yazın" rows="4" class="border rounded-lg px-3 py-2 w-full"></textarea>
-          <button class="btn-primary w-full rounded-lg py-2 font-black">Yorumu Gönder</button>
-          <p class="text-xs text-gray-400">Yorumlar admin onayından sonra yayınlanır.</p>
-        </form>
+        @if($canReview)
+          <form method="POST" action="{{ brand_route('reviews.store', ['slug' => $facility->slug]) }}" class="space-y-3">
+            @csrf
+            <select name="rating" required class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Puan seçin</option><option value="5">5 - Çok iyi</option><option value="4">4 - İyi</option><option value="3">3 - Orta</option><option value="2">2 - Zayıf</option><option value="1">1 - Kötü</option></select>
+            <textarea name="body" placeholder="Deneyiminizi veya görüşme notunuzu yazın" rows="4" class="border rounded-lg px-3 py-2 w-full"></textarea>
+            <button class="btn-primary w-full rounded-lg py-2 font-black">Yorumu Gönder</button>
+            <p class="text-xs text-gray-400">Yorumlar admin onayından sonra yayınlanır.</p>
+          </form>
+        @elseif(! $facility->is_claimed)
+          <p class="text-sm text-gray-500">Bu kurum henüz sahiplenilmedi. Yorum yapabilmek için kurumun onaylanmış olması gerekir.</p>
+        @else
+          <p class="text-sm text-gray-500">Yorum yapabilmek için önce bu kurumdan <a href="#teklif-talebi" class="font-black text-primary underline">ücret/teklif bilgisi</a> istemelisiniz.</p>
+        @endif
       </div>
     </section>
 
@@ -210,15 +238,19 @@
             <div class="text-sm text-gray-600">C: {{ $question->answer }}</div>
           </div>
         @empty
-          <div class="rounded-lg border border-dashed border-gray-200 p-5 text-sm text-gray-500">Henüz yanıtlanmış soru yok. İlk soruyu siz sorabilirsiniz; kurum yetkilisi cevapladığında burada görünür.</div>
+          <div class="rounded-lg border border-dashed border-gray-200 p-5 text-sm text-gray-500">Henüz yanıtlanmış soru yok.@if($facility->is_claimed) İlk soruyu siz sorabilirsiniz; kurum yetkilisi cevapladığında burada görünür.@endif</div>
         @endforelse
       </div>
-      <form method="POST" action="{{ brand_route('questions.store', ['slug' => $facility->slug]) }}" class="flex flex-col sm:flex-row gap-2">
-        @csrf
-        <input type="text" name="asker_name" placeholder="Adınız (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm sm:w-48">
-        <input type="text" name="question" placeholder="Örn: Alzheimer hastası kabul ediyor musunuz?" required class="border rounded-lg px-3 py-2 text-sm flex-1">
-        <button class="btn-primary rounded-lg px-5 py-2 text-sm font-black whitespace-nowrap">Soru Sor</button>
-      </form>
+      @if($facility->is_claimed)
+        <form method="POST" action="{{ brand_route('questions.store', ['slug' => $facility->slug]) }}" class="flex flex-col sm:flex-row gap-2">
+          @csrf
+          <input type="text" name="asker_name" placeholder="Adınız (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm sm:w-48">
+          <input type="text" name="question" placeholder="Örn: Alzheimer hastası kabul ediyor musunuz?" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+          <button class="btn-primary rounded-lg px-5 py-2 text-sm font-black whitespace-nowrap">Soru Sor</button>
+        </form>
+      @else
+        <p class="text-sm text-gray-500">Bu kurum henüz sahiplenilmedi; soru sorabilmek için kurumun onaylanmış olması gerekir.</p>
+      @endif
     </section>
 
     @if($related->isNotEmpty())
@@ -235,55 +267,60 @@
   </div>
 
   <div>
-    <div class="bg-white p-6 rounded-xl shadow-sm sticky top-24 border border-gray-100">
-      <h3 class="font-black mb-4 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
-      <form method="POST" action="{{ brand_route('offer-requests.store') }}" class="space-y-3">
-        @csrf
-        <input type="hidden" name="facility_id" value="{{ $facility->id }}">
-        <select name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
-          <option value="">Kimin için? (opsiyonel)</option>
-          <option value="kendisi">Kendim için</option>
-          <option value="anne-baba">Anne/Babam için</option>
-          <option value="cocuk">Çocuğum için</option>
-          <option value="yakin">Yakınım için</option>
-        </select>
-        <input type="text" name="patient_name" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
-        <input type="text" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
-        <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
-        <input type="email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
-        <textarea name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea>
-        <button class="btn-primary w-full py-2 rounded-lg font-black">Ücret Bilgisi İste</button>
-        <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
-      </form>
-      @if($facility->phone)<div class="mt-4 text-sm text-gray-600">Telefon: {{ $facility->phone }}</div>@endif
-
-
-      <div class="mt-6 pt-6 border-t">
-        <h3 class="font-black mb-3 text-gray-950">Ziyaret / randevu talebi</h3>
-        <form method="POST" action="{{ brand_route('visit-requests.store', ['slug' => $facility->slug]) }}" class="space-y-3">
+    <div id="teklif-talebi" class="bg-white p-6 rounded-xl shadow-sm sticky top-24 border border-gray-100">
+      @if($facility->is_claimed)
+        <h3 class="font-black mb-4 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
+        <form method="POST" action="{{ brand_route('offer-requests.store') }}" class="space-y-3">
           @csrf
+          <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+          <select name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
+            <option value="">Kimin için? (opsiyonel)</option>
+            <option value="kendisi">Kendim için</option>
+            <option value="anne-baba">Anne/Babam için</option>
+            <option value="cocuk">Çocuğum için</option>
+            <option value="yakin">Yakınım için</option>
+          </select>
+          <input type="text" name="patient_name" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
           <input type="text" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
           <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
           <input type="email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
-          <div class="grid grid-cols-2 gap-2">
-            <select name="preferred_day" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Gün</option><option>Hafta içi</option><option>Hafta sonu</option><option>Fark etmez</option></select>
-            <select name="preferred_time" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Saat</option><option>Sabah</option><option>Öğlen</option><option>Akşamüstü</option></select>
-          </div>
-          <textarea name="message" placeholder="Ziyaret notu" rows="2" class="border rounded-lg px-3 py-2 w-full"></textarea>
-          <button class="w-full rounded-lg border border-primary text-primary font-black py-2">Ziyaret Talebi Gönder</button>
+          <textarea name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea>
+          <button class="btn-primary w-full py-2 rounded-lg font-black">Ücret Bilgisi İste</button>
+          <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
         </form>
-      </div>
+        @if($facility->phone)<div class="mt-4 text-sm text-gray-600">Telefon: {{ $facility->phone }}</div>@endif
 
-      <div class="mt-6 pt-6 border-t">
-        <h3 class="font-black mb-1 text-gray-950">Kontenjan Sor</h3>
-        <p class="text-xs text-gray-500 mb-3">Tek tıkla "Boş yer var mı?" sorusu kuruma iletilir.</p>
-        <form method="POST" action="{{ brand_route('visit-requests.availability', ['slug' => $facility->slug]) }}" class="flex gap-2">
-          @csrf
-          <input type="text" name="full_name" placeholder="Adınız" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
-          <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
-          <button class="whitespace-nowrap rounded-lg bg-gray-900 text-white font-black px-3 text-sm">Sor</button>
-        </form>
-      </div>
+
+        <div class="mt-6 pt-6 border-t">
+          <h3 class="font-black mb-3 text-gray-950">Ziyaret / randevu talebi</h3>
+          <form method="POST" action="{{ brand_route('visit-requests.store', ['slug' => $facility->slug]) }}" class="space-y-3">
+            @csrf
+            <input type="text" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+            <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+            <input type="email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
+            <div class="grid grid-cols-2 gap-2">
+              <select name="preferred_day" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Gün</option><option>Hafta içi</option><option>Hafta sonu</option><option>Fark etmez</option></select>
+              <select name="preferred_time" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Saat</option><option>Sabah</option><option>Öğlen</option><option>Akşamüstü</option></select>
+            </div>
+            <textarea name="message" placeholder="Ziyaret notu" rows="2" class="border rounded-lg px-3 py-2 w-full"></textarea>
+            <button class="w-full rounded-lg border border-primary text-primary font-black py-2">Ziyaret Talebi Gönder</button>
+          </form>
+        </div>
+
+        <div class="mt-6 pt-6 border-t">
+          <h3 class="font-black mb-1 text-gray-950">Kontenjan Sor</h3>
+          <p class="text-xs text-gray-500 mb-3">Tek tıkla "Boş yer var mı?" sorusu kuruma iletilir.</p>
+          <form method="POST" action="{{ brand_route('visit-requests.availability', ['slug' => $facility->slug]) }}" class="flex gap-2">
+            @csrf
+            <input type="text" name="full_name" placeholder="Adınız" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
+            <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
+            <button class="whitespace-nowrap rounded-lg bg-gray-900 text-white font-black px-3 text-sm">Sor</button>
+          </form>
+        </div>
+      @else
+        <h3 class="font-black mb-2 text-gray-950">Bu kurum henüz sahiplenilmedi</h3>
+        <p class="text-sm text-gray-500">Ücret/teklif bilgisi, ziyaret talebi ve kontenjan sorgusu ancak kurum yetkilisi profili sahiplenip onayladıktan sonra kullanılabilir. Bu bilgiler Google Maps verilerinden otomatik toplanmış ön kayıt profilidir.</p>
+      @endif
 
       @unless($facility->is_claimed)
         <div class="mt-6 pt-6 border-t">

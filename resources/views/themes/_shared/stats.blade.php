@@ -30,7 +30,7 @@
 
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-8">
     <h2 class="font-black mb-1">Haritalı dağılım</h2>
-    <p class="text-xs text-gray-400 mb-4">Rengi koyu iller, kurum sayısı yüksek illerdir. Bir ilin üzerine gelin.</p>
+    <p class="text-xs text-gray-400 mb-4">Rengi koyu iller, kurum sayısı yüksek illerdir. Bir ilin üzerine gelin, tıklayarak o ilin kurumlarını listeleyin.</p>
     <div class="relative">
       <div id="js-turkiye-harita" class="w-full [&_svg]:w-full [&_svg]:h-auto">
         {!! file_exists(public_path('images/turkiye-harita.svg')) ? file_get_contents(public_path('images/turkiye-harita.svg')) : '' !!}
@@ -58,12 +58,17 @@
 </div>
 
 <style>
-  #js-turkiye-harita .il { fill: #e5e7eb; stroke: #fff; stroke-width: 0.6; cursor: pointer; transition: fill .15s ease; }
-  #js-turkiye-harita .il:hover { stroke: #111827; stroke-width: 1.2; }
+  /* Harita SVG'sinin kendi CSS'i yok (bkz. kaynak repo); stil tamamen burada
+     tanimlaniyor. #kibris Turkiye ili degil, veri/tiklama disi, notr gri. */
+  #js-turkiye-harita svg path { fill: #e5e7eb; stroke: #fff; stroke-width: 0.6; transition: fill .15s ease; }
+  #js-turkiye-harita svg #turkiye > g[id] { cursor: pointer; }
+  #js-turkiye-harita svg #turkiye > g[id].is-hover path { stroke: #111827; stroke-width: 1.2; }
+  #js-turkiye-harita svg #kibris path { fill: #f3f4f6; cursor: default; }
 </style>
 <script>
 (function () {
   var counts = @json($mapCounts);
+  var names = @json($cityNames);
   var maxCount = Math.max(1, Math.max.apply(null, Object.values(counts)));
   var brandColor = '{{ $brand['primary_color'] ?? '#1e6f5c' }}';
   var listUrl = @json(brand_route('facilities.index'));
@@ -78,26 +83,31 @@
   }
   var rgb = hexToRgb(brandColor);
 
-  svgHost.querySelectorAll('.il').forEach(function (path) {
-    var slug = path.getAttribute('data-il');
-    var name = path.getAttribute('data-il-adi');
+  // Harita SVG'sinde her il, <g id="turkiye"> altinda kendi il slug'iyla
+  // (istanbul dahil) ayri bir <g id="{slug}"> grubudur; Kibris ayri bir
+  // kardes <g id="kibris"> altinda oldugu icin bu secici onu otomatik disarida tutar.
+  svgHost.querySelectorAll('svg #turkiye > g[id]').forEach(function (group) {
+    var slug = group.getAttribute('id');
+    var name = names[slug] || slug;
     var count = counts[slug] || 0;
     var ratio = count > 0 ? Math.min(1, 0.18 + (count / maxCount) * 0.82) : 0;
     if (ratio > 0) {
-      path.style.fill = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + ratio.toFixed(2) + ')';
+      group.style.fill = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + ratio.toFixed(2) + ')';
     }
-    path.addEventListener('mousemove', function (e) {
+    group.addEventListener('mousemove', function (e) {
       var hostRect = svgHost.getBoundingClientRect();
       tooltip.textContent = name + ': ' + count + ' kurum';
       tooltip.style.left = (e.clientX - hostRect.left + 16) + 'px';
       tooltip.style.top = (e.clientY - hostRect.top + 8) + 'px';
       tooltip.classList.remove('hidden');
+      group.classList.add('is-hover');
     });
-    path.addEventListener('mouseleave', function () {
+    group.addEventListener('mouseleave', function () {
       tooltip.classList.add('hidden');
+      group.classList.remove('is-hover');
     });
-    path.addEventListener('click', function () {
-      if (!slug) return;
+    group.addEventListener('click', function () {
+      if (!counts.hasOwnProperty(slug)) return;
       var url = listUrl + '?city=' + slug;
       if (activeBolum) url += '&bolum=' + activeBolum;
       window.location.href = url;

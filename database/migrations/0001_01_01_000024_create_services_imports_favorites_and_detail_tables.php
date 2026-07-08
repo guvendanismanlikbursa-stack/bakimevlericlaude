@@ -22,7 +22,9 @@ return new class extends Migration
         Schema::create('facility_service_option_facility', function (Blueprint $table) {
             $table->id();
             $table->foreignId('facility_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('facility_service_option_id')->constrained()->cascadeOnDelete();
+            // Varsayilan {tablo}_{kolon}_foreign adi 64 karakter MySQL sinirini
+            // asiyordu ("Identifier name ... is too long"); kisa isim veriyoruz.
+            $table->foreignId('facility_service_option_id')->constrained(indexName: 'fac_svc_opt_facility_option_fk')->cascadeOnDelete();
             $table->timestamps();
             $table->unique(['facility_id', 'facility_service_option_id'], 'facility_service_facility_unique');
         });

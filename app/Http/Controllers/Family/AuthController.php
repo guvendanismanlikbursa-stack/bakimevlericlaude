@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Family;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Public\OfferRequestController;
+use App\Models\Facility;
+use App\Models\FacilityCategory;
 use App\Models\FamilyUser;
 use App\Models\OfferRequest;
 use App\Services\GeoLookupService;
+use App\Services\OfferRequestNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -83,6 +87,10 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'E-posta veya şifre hatalı.'])->onlyInput('email');
         }
 
+        if ($family->status !== 'active') {
+            return back()->withErrors(['email' => 'Hesabınız şu anda aktif değil, lütfen yönetici ile iletişime geçin.']);
+        }
+
         $request->session()->regenerate();
         $request->session()->regenerateToken();
         session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
@@ -100,17 +108,37 @@ class AuthController extends Controller
     }
 
     /**
-     * Giriş/kayıt sonrası: eğer oturumda yarım kalmış bir "ücret talebi" varsa
-     * onu simdi olusturup aile panele oyle yonlendirir; yoksa direkt panel.
+     * Giriş/kayıt sonrası: eğer oturumda yarım kalmış bir "ücret talebi"
+     * (tekli veya toplu) varsa onu simdi olusturup aile panele oyle
+     * yonlendirir; yoksa direkt panel. Form doldurulmasi ile hesap
+     * olusturulmasi arasinda zaman gectigi icin (kullanici mail/kayit
+     * ekranini gec tamamlayabilir), kurumun hala yayinda/sahiplenilmis ve
+     * kategorisinin markaya uygun oldugu burada TEKRAR dogrulanir; aksi
+     * halde talep sessizce olusturulmaz.
      */
     private function afterLogin(array $brand)
     {
-        if ($pending = session('pending_offer_request')) {
-            $pending['family_user_id'] = session('family_user_id');
-            OfferRequest::create($pending);
-            session()->forget('pending_offer_request');
+        $notifier = app(OfferRequestNotificationService::class);
 
-            return redirect(brand_route('family.dashboard'))->with('success', 'Hesabınız oluşturuldu ve talebiniz iletildi. Uygun kurumlardan teklif gelmeye başlayacak.');
+        if ($pending = session('pending_offer_request')) {
+            session()->forget('pending_offer_request');
+            $pending['family_user_id'] = session('family_user_id');
+
+            if ($this->pendingOfferRequestIsStillValid($pending)) {
+                $offerRequest = OfferRequest::create($pending);
+                $notifier->notify($offerRequest);
+
+                return redirect(brand_route('family.dashboard'))->with('success', 'Hesabınız oluşturuldu ve talebiniz iletildi. Uygun kurumlardan teklif gelmeye başlayacak.');
+            }
+
+            return redirect(brand_route('family.dashboard'))->with('info', 'Hesabınız oluşturuldu, ancak talep ettiğiniz kurum bu sırada güncellenmiş görünüyor. Lütfen kurumu tekrar arayıp talebinizi yeniden gönderin.');
+        }
+
+        if ($pendingBulk = session('pending_bulk_offer_request')) {
+            session()->forget('pending_bulk_offer_request');
+            $created = OfferRequestController::createBulkRequests($pendingBulk, session('family_user_id'), $notifier);
+
+            return redirect(brand_route('family.dashboard'))->with('success', 'Hesabınız oluşturuldu ve talepleriniz '.count($created).' kuruma iletildi. Teklifler geldikçe panelinizde görünecek.');
         }
 
         if ($intended = session('intended_url')) {
@@ -120,5 +148,24 @@ class AuthController extends Controller
         }
 
         return redirect(brand_route('family.dashboard'));
+    }
+
+    private function pendingOfferRequestIsStillValid(array $pending): bool
+    {
+        $categoryScope = config('brands.brands')[$pending['brand']]['category_scope'] ?? [];
+
+        if (! empty($pending['facility_id'])) {
+            $facility = Facility::published()->where('is_claimed', true)->find($pending['facility_id']);
+
+            return $facility && in_array($facility->category?->brand_scope, $categoryScope, true);
+        }
+
+        if (empty($pending['facility_category_id'])) {
+            return false;
+        }
+
+        $category = FacilityCategory::find($pending['facility_category_id']);
+
+        return $category && in_array($category->brand_scope, $categoryScope, true);
     }
 }

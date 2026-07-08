@@ -17,7 +17,16 @@
       @foreach($cities as $city)
         <tr>
           <td class="p-3">{{ $city->name }}</td>
-          <td class="p-3">{{ $city->facilities_count }}</td>
+          <td class="p-3">
+            <div class="font-semibold">{{ $city->facilities_count }}</div>
+            @if(!empty($categoryBreakdown[$city->id]))
+              <div class="text-xs text-gray-400 mt-0.5">
+                @foreach($categoryBreakdown[$city->id] as $categoryName => $count)
+                  {{ $categoryName }}: {{ $count }}@if(!$loop->last) · @endif
+                @endforeach
+              </div>
+            @endif
+          </td>
           <td class="p-3 text-right">
             <form method="POST" action="{{ route('admin.cities.destroy', $city) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600">Sil</button></form>
           </td>

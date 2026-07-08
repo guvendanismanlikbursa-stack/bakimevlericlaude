@@ -9,6 +9,7 @@
     <input type="password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
     <button class="btn-primary w-full py-2 rounded-lg font-semibold">Giriş Yap</button>
   </form>
+  <p class="text-sm text-gray-500 mt-2 text-center"><a href="{{ brand_route('family.password.request') }}" class="text-primary font-semibold">Şifremi unuttum</a></p>
   <p class="text-sm text-gray-500 mt-4 text-center">Hesabınız yok mu? <a href="{{ brand_route('family.register') }}" class="text-primary font-semibold">Hemen oluşturun</a></p>
 </div>
 @endsection
