@@ -52,6 +52,13 @@ class WalletController extends Controller
             'status' => 'pending',
         ]);
 
+        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+            $admin,
+            'topup_requested',
+            'Yeni bakiye yükleme talebi',
+            $user->facility->name.' '.number_format($data['amount'], 2).' TL bakiye yükleme talebi gönderdi.',
+        ));
+
         return back()->with('success', 'Bakiye yükleme talebiniz alındı, admin onayından sonra bakiyenize yansıyacak.');
     }
 }

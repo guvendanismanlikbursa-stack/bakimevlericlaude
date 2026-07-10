@@ -85,6 +85,10 @@ class FacilityRegistrationController extends Controller
                 'must_change_password' => true,
                 'status' => 'active',
                 'email_verified_at' => null,
+                'signup_lat' => $registration->applicant_lat,
+                'signup_lng' => $registration->applicant_lng,
+                'signup_city_name' => $registration->applicant_city_name,
+                'signup_ip' => $registration->applicant_ip,
             ]);
 
             BalanceLog::create([
@@ -122,6 +126,14 @@ class FacilityRegistrationController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('Kurum kaydi onay maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+        }
+
+        try {
+            Mail::to($mailPayload['email'])->queue(
+                new \App\Mail\FacilityWelcomeMail($mailPayload['facility'], $mailPayload['email'], config("brands.brands.{$registration->brand}.name", $registration->brand), $mailPayload['login_url'])
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Kurum hos geldin maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
         }
 
         $facilityUser = FacilityUser::where('email', $mailPayload['email'])->firstOrFail();

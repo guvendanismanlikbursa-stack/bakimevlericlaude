@@ -63,6 +63,10 @@ class FacilityClaimController extends Controller
                 'must_change_password' => true,
                 'status' => 'active',
                 'email_verified_at' => null,
+                'signup_lat' => $claim->applicant_lat,
+                'signup_lng' => $claim->applicant_lng,
+                'signup_city_name' => $claim->applicant_city_name,
+                'signup_ip' => $claim->applicant_ip,
             ]);
 
             $facility->update([
@@ -111,6 +115,14 @@ class FacilityClaimController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('Sahiplenme onay maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+        }
+
+        try {
+            Mail::to($mailPayload['email'])->queue(
+                new \App\Mail\FacilityWelcomeMail($mailPayload['facility'], $mailPayload['email'], config("brands.brands.{$claim->brand}.name", $claim->brand), $mailPayload['login_url'])
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Kurum hos geldin maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
         }
 
         \App\Http\Controllers\Facility\EmailVerificationController::send(

@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\FacilityInvitationController as AdminFacilityInvi
 use App\Http\Controllers\Admin\FacilityRegistrationController as AdminFacilityRegistrationController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\FacilityQuestionController as AdminFacilityQuestionController;
+use App\Http\Controllers\Admin\NearbySearchController as AdminNearbySearchController;
 use App\Http\Controllers\Admin\OfferRequestController as AdminOfferRequestController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\SiteStatsController as AdminSiteStatsController;
@@ -333,5 +334,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/aile-sorulari/{question}', [AdminFacilityQuestionController::class, 'destroy'])->name('questions.destroy');
 
         Route::get('/site-istatistikleri', [AdminSiteStatsController::class, 'index'])->name('site-stats.index');
+        Route::get('/aileler/{familyUser}', [AdminSiteStatsController::class, 'showFamily'])->name('family-users.show');
+        Route::get('/yakin-arama-kayitlari', [AdminNearbySearchController::class, 'index'])->name('nearby-searches.index');
     });
 });

@@ -42,6 +42,14 @@ class MessageController extends Controller
             'body' => $data['body'],
         ]);
 
+        notify_user(
+            $offerRequest->familyUser,
+            'new_message',
+            'Yeni mesaj',
+            $user->facility->name.' size mesaj gönderdi.',
+            ['offer_request_id' => $offerRequest->id]
+        );
+
         return back();
     }
 

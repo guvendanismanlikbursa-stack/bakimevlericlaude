@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\FacilityCategory;
 use App\Models\FacilityRegistration;
+use App\Services\GeoLookupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -21,16 +22,34 @@ class FacilityRegistrationController extends Controller
         return view("themes.{$brand['theme']}.facility-register", compact('categories', 'cities'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, GeoLookupService $geo)
     {
         $brand = current_brand();
         $data = $this->validateData($request, $brand);
 
-        FacilityRegistration::create([
+        $applicantLat = $data['lat'] ?? null;
+        $applicantLng = $data['lng'] ?? null;
+        unset($data['lat'], $data['lng']);
+        $cityName = ($applicantLat !== null && $applicantLng !== null)
+            ? ($geo->nearestCity($applicantLat, $applicantLng)['city'] ?? null)
+            : null;
+
+        $registration = FacilityRegistration::create([
             ...$data,
             'brand' => $brand['slug'],
             'status' => 'pending',
+            'applicant_lat' => $applicantLat,
+            'applicant_lng' => $applicantLng,
+            'applicant_city_name' => $cityName,
+            'applicant_ip' => $request->ip(),
         ]);
+
+        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+            $admin,
+            'registration_submitted',
+            'Yeni kurum kaydı başvurusu',
+            $registration->name.' için yeni bir kurum kaydı başvurusu geldi.',
+        ));
 
         return redirect(brand_route('facility-registration.received'))
             ->with('success', 'Kurum kaydı başvurunuz alındı. Admin incelemesinden sonra e-posta ile bilgilendirileceksiniz.');
@@ -54,14 +73,21 @@ class FacilityRegistrationController extends Controller
         return view("themes.{$brand['theme']}.facility-register-edit", compact('registration', 'categories', 'cities'));
     }
 
-    public function update(Request $request, FacilityRegistration $registration, string $hash)
+    public function update(Request $request, FacilityRegistration $registration, string $hash, GeoLookupService $geo)
     {
         $this->authorizeEdit($registration, $hash);
 
         $brand = current_brand();
         $data = $this->validateData($request, $brand);
 
-        DB::transaction(function () use ($registration, $data) {
+        $applicantLat = $data['lat'] ?? null;
+        $applicantLng = $data['lng'] ?? null;
+        unset($data['lat'], $data['lng']);
+        $cityName = ($applicantLat !== null && $applicantLng !== null)
+            ? ($geo->nearestCity($applicantLat, $applicantLng)['city'] ?? null)
+            : null;
+
+        DB::transaction(function () use ($registration, $data, $applicantLat, $applicantLng, $cityName, $request) {
             $registration = FacilityRegistration::whereKey($registration->id)->lockForUpdate()->firstOrFail();
             $this->authorizeEdit($registration, sha1($registration->applicant_email));
 
@@ -71,6 +97,10 @@ class FacilityRegistrationController extends Controller
                 'admin_note' => null,
                 'reviewed_by' => null,
                 'reviewed_at' => null,
+                'applicant_lat' => $applicantLat,
+                'applicant_lng' => $applicantLng,
+                'applicant_city_name' => $cityName,
+                'applicant_ip' => $request->ip(),
             ]);
 
             log_admin_event('facility_registration_resubmitted', $registration);
@@ -105,6 +135,8 @@ class FacilityRegistrationController extends Controller
             'applicant_name' => 'required|string|max:120',
             'applicant_email' => 'required|email|max:150',
             'applicant_phone' => 'required|string|max:30',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
         ]);
     }
 }

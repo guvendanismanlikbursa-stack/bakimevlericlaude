@@ -21,6 +21,10 @@ use App\Models\Quote;
 use App\Models\VisitRequest;
 use App\Mail\FacilityClaimApprovedMail;
 use App\Mail\FacilityEmailVerificationMail;
+use App\Mail\FacilityWelcomeMail;
+use App\Mail\FamilyEmailVerificationMail;
+use App\Mail\FamilyWelcomeMail;
+use App\Mail\NotificationMail;
 use App\Models\WalletTopup;
 use App\Services\FacilityImportImageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1372,5 +1376,48 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame('active', $this->facilityUser->fresh()->status);
+    }
+
+    public function test_family_registration_sends_verification_and_welcome_mail(): void
+    {
+        Mail::fake();
+
+        $this->post('/site/bakimevibul/aile/kayit', [
+            'name' => 'Yeni Aile',
+            'email' => 'yeniaile@test.local',
+            'phone' => '05559990000',
+            'password' => 'Sifre12345!',
+            'password_confirmation' => 'Sifre12345!',
+            'consent' => '1',
+        ])->assertRedirect();
+
+        $family = FamilyUser::where('email', 'yeniaile@test.local')->firstOrFail();
+
+        Mail::assertQueued(FamilyEmailVerificationMail::class, fn ($mail) => $mail->family->is($family));
+        Mail::assertQueued(FamilyWelcomeMail::class, fn ($mail) => $mail->family->is($family));
+    }
+
+    public function test_quote_submission_notifies_family_in_app_and_by_mail(): void
+    {
+        Mail::fake();
+
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Bildirim Talep'));
+        $request->update(['family_user_id' => $this->family->id]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id, 'facility_user_name' => $this->facilityUser->name])
+            ->post('/site/bakimeviara/kurum-panel/talep/'.$request->id.'/teklif-ver', [
+                'price' => 9500,
+                'price_period' => 'monthly',
+                'message' => 'Musait yerimiz var.',
+            ])
+            ->assertRedirect();
+
+        $notification = PlatformNotification::where('notifiable_type', FamilyUser::class)
+            ->where('notifiable_id', $this->family->id)
+            ->where('type', 'quote_received')
+            ->first();
+        $this->assertNotNull($notification);
+
+        Mail::assertQueued(NotificationMail::class, fn ($mail) => $mail->title === $notification->title);
     }
 }

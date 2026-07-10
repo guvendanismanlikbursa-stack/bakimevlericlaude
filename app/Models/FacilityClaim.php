@@ -12,7 +12,7 @@ class FacilityClaim extends Model
     protected $fillable = [
         'facility_id', 'brand', 'applicant_name', 'applicant_email', 'applicant_phone',
         'document_path', 'note', 'status', 'admin_note', 'reviewed_by', 'reviewed_at',
-        'applicant_lat', 'applicant_lng', 'applicant_city_name', 'distance_km',
+        'applicant_lat', 'applicant_lng', 'applicant_city_name', 'distance_km', 'applicant_ip',
     ];
 
     // Ham konum verisi hassas kisisel veridir; ileride bir API eklenirse

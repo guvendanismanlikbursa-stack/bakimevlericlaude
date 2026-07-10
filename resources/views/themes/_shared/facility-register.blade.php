@@ -48,7 +48,34 @@
     <input type="email" name="applicant_email" value="{{ old('applicant_email') }}" placeholder="E-posta (giriş bilgileri buraya gönderilecek)" required class="border rounded-lg px-3 py-2 w-full">
     <input type="text" name="applicant_phone" value="{{ old('applicant_phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
 
+    <input type="hidden" name="lat" id="signup_lat">
+    <input type="hidden" name="lng" id="signup_lng">
+
     <button class="btn-primary w-full py-2 rounded-lg font-semibold">Kaydı Gönder</button>
   </form>
 </div>
+
+<script>
+(function(){
+  const form = document.querySelector('form');
+  const latInput = document.getElementById('signup_lat');
+  const lngInput = document.getElementById('signup_lng');
+  let locationRequested = false;
+
+  function requestLocation() {
+    if (locationRequested || !navigator.geolocation) return;
+    locationRequested = true;
+    navigator.geolocation.getCurrentPosition(function(position){
+      latInput.value = position.coords.latitude;
+      lngInput.value = position.coords.longitude;
+    }, function(){
+      // Izin verilmedi veya alinamadi; basvuru yine de devam eder, konum alanlari bos kalir.
+    }, { timeout: 8000 });
+  }
+
+  if (form) {
+    form.addEventListener('focusin', requestLocation, { once: true });
+  }
+})();
+</script>
 @endsection

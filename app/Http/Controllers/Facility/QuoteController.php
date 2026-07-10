@@ -74,6 +74,14 @@ class QuoteController extends Controller
             return back()->withErrors(['quote' => $exception->getMessage()]);
         }
 
+        notify_user(
+            $offerRequest->familyUser,
+            'quote_received',
+            'Yeni bir teklif aldınız',
+            $user->facility->name.' talebinize teklif gönderdi.',
+            ['offer_request_id' => $offerRequest->id]
+        );
+
         return back()->with('success', 'Teklifiniz aileye iletildi.');
     }
 

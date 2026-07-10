@@ -27,7 +27,24 @@ class OfferRequestNotificationService
         );
     }
 
-    private function recipients(OfferRequest $offerRequest)
+    /**
+     * Aile bu talebe yeni bir mesaj yazdiginda, talebi gorebilen TUM kurum
+     * yetkililerine (offer_request::messages() thread'i erisebilenlerle ayni
+     * recipients() mantigi) bildirim gonderir.
+     */
+    public function notifyNewMessageFromFamily(OfferRequest $offerRequest): void
+    {
+        $offerRequest->loadMissing('familyUser');
+        $familyName = $offerRequest->familyUser->name ?? $offerRequest->full_name;
+
+        $this->recipients($offerRequest)->each(
+            fn (FacilityUser $user) => notify_user($user, 'new_message', 'Yeni mesaj', $familyName.' size mesaj gönderdi.', [
+                'offer_request_id' => $offerRequest->id,
+            ])
+        );
+    }
+
+    public function recipients(OfferRequest $offerRequest)
     {
         if ($offerRequest->facility_id) {
             return FacilityUser::where('facility_id', $offerRequest->facility_id)->get();

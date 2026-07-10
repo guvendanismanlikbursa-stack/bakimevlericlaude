@@ -100,10 +100,11 @@
           </td>
           <td class="p-3 text-gray-400">{{ $family->consent_accepted_at?->format('d.m.Y H:i') ?? '—' }}</td>
           <td class="p-3 text-gray-400">{{ $family->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right">
+          <td class="p-3 text-right space-x-2 whitespace-nowrap">
             @if($family->signup_lat && $family->signup_lng)
               <a href="https://www.google.com/maps?q={{ $family->signup_lat }},{{ $family->signup_lng }}" target="_blank" class="text-primary text-xs font-semibold">Haritada gör →</a>
             @endif
+            <a href="{{ route('admin.family-users.show', $family) }}" class="text-primary text-xs font-semibold">Detay →</a>
           </td>
         </tr>
       @empty

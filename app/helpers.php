@@ -267,9 +267,12 @@ if (! function_exists('log_admin_event')) {
 
 if (! function_exists('notify_user')) {
     /**
-     * canliyaal projesinden tasindi: aile/kurum panellerine gosterilecek
-     * uygulama-ici bildirim olusturur. $notifiable bir FacilityUser veya
-     * FamilyUser modeli olmalidir.
+     * canliyaal projesinden tasindi: aile/kurum/admin panellerine gosterilecek
+     * uygulama-ici bildirim olusturur. $notifiable bir FacilityUser, FamilyUser
+     * veya Admin modeli olmalidir. Ayrica $notifiable->email doluysa (mail
+     * ayarlari coktugunda kayit/onay gibi kritik akislarin cokmemesi icin
+     * kurulan try/catch+Log::warning deseniyle) ayni bildirimin bir e-posta
+     * kopyasi da gonderilir.
      */
     function notify_user($notifiable, string $type, string $title, ?string $body = null, array $data = []): void
     {
@@ -285,6 +288,56 @@ if (! function_exists('notify_user')) {
             'body' => $body,
             'data' => $data ?: null,
         ]);
+
+        if (empty($notifiable->email)) {
+            return;
+        }
+
+        try {
+            $actionUrl = notification_action_url($notifiable, $type, $data);
+            \Illuminate\Support\Facades\Mail::to($notifiable->email)->queue(
+                new \App\Mail\NotificationMail($title, $body, $actionUrl)
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Bildirim maili gonderilemedi: ' . $e->getMessage(), [
+                'notifiable_type' => get_class($notifiable),
+                'notifiable_id' => $notifiable->getKey(),
+                'type' => $type,
+            ]);
+        }
+    }
+}
+
+if (! function_exists('notification_action_url')) {
+    /**
+     * Bildirim e-postasindaki "ilgili sayfaya git" butonunun hedefini
+     * $type'a gore uretir. QUEUE_CONNECTION=sync oldugu icin bu her zaman
+     * orijinal HTTP request'in icinde, dogru marka baglaminda calisir
+     * (bkz. brand_route() helper) - ileride gercek arka plan kuyruguna
+     * gecilirse bu varsayim gecersiz olur, o zaman URL notify_user()
+     * cagrisi sirasinda (kuyruga girmeden once) sabit string olarak
+     * hesaplanip tasinmali.
+     */
+    function notification_action_url($notifiable, string $type, array $data): ?string
+    {
+        try {
+            $isFamilyUser = $notifiable instanceof \App\Models\FamilyUser;
+
+            return match ($type) {
+                'offer_request', 'new_question' => isset($data['offer_request_id'])
+                    ? brand_route('facility.thread', $data['offer_request_id']) : null,
+                'quote_received', 'new_message' => isset($data['offer_request_id'])
+                    ? brand_route($isFamilyUser ? 'family.thread' : 'facility.thread', $data['offer_request_id']) : null,
+                'claim_approved', 'registration_approved' => brand_route('facility.login'),
+                'topup_approved', 'topup_rejected' => brand_route('facility.wallet.index'),
+                'claim_submitted' => route('admin.claims.index'),
+                'registration_submitted' => route('admin.registrations.index'),
+                'topup_requested' => route('admin.topups.index'),
+                default => null,
+            };
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }
 

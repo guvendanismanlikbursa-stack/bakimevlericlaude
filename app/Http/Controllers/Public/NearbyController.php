@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Facility;
+use App\Models\NearbySearch;
 use App\Services\GeoLookupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -37,6 +38,24 @@ class NearbyController extends Controller
         }
 
         $brand = current_brand();
+
+        // Kayitli olsun olmasin, "Yakinimda Ara" tiklamasi yapan HERKESIN
+        // konumu kaydedilir - admin talep yogunlugunun gercekte nerelerden
+        // geldigini gorebilsin diye (bkz. admin.nearby-searches.index).
+        // Bu kayit basarisiz olsa bile ozelligin kendisi (yonlendirme) calismaya
+        // devam etmeli, bu yuzden hata sadece loglanir.
+        try {
+            NearbySearch::create([
+                'brand' => $brand['slug'],
+                'lat' => $data['lat'],
+                'lng' => $data['lng'],
+                'city_name' => $city->name,
+                'ip' => $request->ip(),
+                'family_user_id' => session('family_user_id'),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Yakinimda ara kaydi olusturulamadi: ' . $e->getMessage());
+        }
         $hasNearbyFacilities = Facility::published()
             ->forBrand($brand['category_scope'])
             ->whereNotNull('lat')->whereNotNull('lng')

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FamilyUser;
 use App\Models\Message;
 use App\Models\OfferRequest;
+use App\Services\OfferRequestNotificationService;
 use Illuminate\Http\Request;
 
 class MessageController extends Controller
@@ -24,7 +25,7 @@ class MessageController extends Controller
         return view("themes.{$brand['theme']}.family.thread", compact('offerRequest'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, OfferRequestNotificationService $notifier)
     {
         $brand = current_brand();
         $offerRequest = $this->offerRequestFromRoute($request);
@@ -41,6 +42,8 @@ class MessageController extends Controller
             'sender_id' => $family->id,
             'body' => $data['body'],
         ]);
+
+        $notifier->notifyNewMessageFromFamily($offerRequest);
 
         return back();
     }

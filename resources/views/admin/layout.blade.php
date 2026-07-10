@@ -26,10 +26,10 @@
   <nav class="p-3 text-sm space-y-1 flex-1 overflow-y-auto">
     <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.dashboard') ? 'bg-gray-700 text-white' : '' }}">Genel Bakış</a>
     <a href="{{ route('admin.site-stats.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.site-stats.*') ? 'bg-gray-700 text-white' : '' }}">Site İstatistikleri</a>
+    <a href="{{ route('admin.nearby-searches.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.nearby-searches.*') ? 'bg-gray-700 text-white' : '' }}">Yakın Arama Kayıtları</a>
 
     <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Kurumlar</div>
-    <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') && request('claim_status') !== 'unclaimed' ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
-    <a href="{{ route('admin.facilities.index', ['claim_status' => 'unclaimed']) }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') && request('claim_status') === 'unclaimed' ? 'bg-gray-700 text-white' : '' }}">Ön Kayıtlı Kurumlar</a>
+    <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
     <a href="{{ route('admin.claims.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.claims.*') ? 'bg-gray-700 text-white' : '' }}"><span>Sahiplenme Başvuruları</span>@if($pendingClaimsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingClaimsCount }}</span>@endif</a>
     <a href="{{ route('admin.registrations.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.registrations.*') ? 'bg-gray-700 text-white' : '' }}"><span>Kurum Kayıt Başvuruları</span>@if($pendingRegistrationsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingRegistrationsCount }}</span>@endif</a>
     <a href="{{ route('admin.invitations.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.invitations.*') ? 'bg-gray-700 text-white' : '' }}">Kurum Davetleri</a>

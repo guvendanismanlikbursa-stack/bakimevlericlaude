@@ -13,6 +13,7 @@ class FacilityRegistration extends Model
         'brand', 'name', 'facility_category_id', 'city_id', 'district', 'address', 'phone',
         'description', 'capacity', 'price_min', 'price_max',
         'applicant_name', 'applicant_email', 'applicant_phone',
+        'applicant_lat', 'applicant_lng', 'applicant_city_name', 'applicant_ip',
         'status', 'admin_note', 'reviewed_by', 'reviewed_at',
     ];
 

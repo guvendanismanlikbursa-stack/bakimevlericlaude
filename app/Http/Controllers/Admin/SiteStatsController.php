@@ -60,4 +60,11 @@ class SiteStatsController extends Controller
             'brands', 'visitStats', 'dailySeries', 'families', 'cityCounts', 'totalFamilies', 'withLocation', 'verifiedCount'
         ));
     }
+
+    public function showFamily(FamilyUser $familyUser)
+    {
+        $familyUser->loadMissing(['offerRequests' => fn ($q) => $q->latest()->with('facility')]);
+
+        return view('admin.site-stats.family-show', ['family' => $familyUser]);
+    }
 }

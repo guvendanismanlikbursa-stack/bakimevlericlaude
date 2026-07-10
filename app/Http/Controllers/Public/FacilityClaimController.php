@@ -69,11 +69,19 @@ class FacilityClaimController extends Controller
             'applicant_lng' => $applicantLng,
             'applicant_city_name' => $cityName,
             'distance_km' => $distanceKm,
+            'applicant_ip' => $request->ip(),
         ]);
 
         if (! in_array($facility->invitation_status, ['approved'], true)) {
             $facility->update(['invitation_status' => 'claimed', 'invitation_status_at' => now()]);
         }
+
+        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+            $admin,
+            'claim_submitted',
+            'Yeni sahiplenme başvurusu',
+            $facility->name.' için yeni bir sahiplenme başvurusu geldi.',
+        ));
 
         return redirect(brand_route('facilities.show', ['slug' => $facility->slug]))
             ->with('success', 'Sahiplenme basvurunuz alindi. Admin onayindan sonra e-posta ile giris bilgileriniz gonderilecek.');

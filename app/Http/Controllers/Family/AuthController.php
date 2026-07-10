@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Family;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Public\OfferRequestController;
+use App\Mail\FamilyWelcomeMail;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
 use App\Models\FamilyUser;
@@ -12,6 +13,8 @@ use App\Services\GeoLookupService;
 use App\Services\OfferRequestNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -61,6 +64,12 @@ class AuthController extends Controller
         session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
 
         EmailVerificationController::send($family, $brand);
+
+        try {
+            Mail::to($family->email)->queue(new FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));
+        } catch (\Throwable $e) {
+            Log::warning('Aile hos geldin maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
+        }
 
         return $this->afterLogin($brand);
     }

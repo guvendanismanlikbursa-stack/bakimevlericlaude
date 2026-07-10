@@ -153,7 +153,13 @@
       @if($facility->is_claimed)
         <p class="text-sm text-green-700 font-semibold">Sahiplenilmiş ({{ $facility->claimed_at?->format('d.m.Y') }})</p>
         @foreach($facility->facilityUsers as $fu)
-          <p class="text-sm text-gray-600 mt-1">Yetkili: {{ $fu->name }} ({{ $fu->email }}) &middot; {{ $fu->status }}</p>
+          <p class="text-sm text-gray-600 mt-1">
+            Yetkili: {{ $fu->name }} ({{ $fu->email }}) &middot; {{ $fu->status }}
+            &middot; Kayıt IP: <span class="font-mono">{{ $fu->signup_ip ?? '—' }}</span>
+            @if($fu->signup_lat && $fu->signup_lng)
+              &middot; <a href="https://www.google.com/maps?q={{ $fu->signup_lat }},{{ $fu->signup_lng }}" target="_blank" class="text-primary font-semibold">Haritada gör →</a>
+            @endif
+          </p>
         @endforeach
       @else
         <p class="text-sm text-gray-500">Bu kurum henüz sahiplenilmedi (ön kayıtlı profil).</p>
