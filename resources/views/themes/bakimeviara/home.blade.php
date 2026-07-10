@@ -39,7 +39,7 @@
       <div class="grid sm:grid-cols-3 gap-3">
         @foreach($sections as $slug => $item)
           @php $active = $item['slug'] === $section['slug']; @endphp
-          <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="group rounded-2xl border p-4 min-h-[112px] transition hover:-translate-y-0.5 hover:shadow-xl {{ $active ? 'text-white shadow-lg' : 'bg-white text-gray-800 border-gray-100 shadow-sm' }}" style="{{ $active ? 'background:'.$colors['primary'].'; border-color:'.$colors['primary'].';' : '' }}">
+          <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="group section-card-beam rounded-2xl border p-4 min-h-[112px] transition hover:-translate-y-0.5 hover:shadow-xl {{ $active ? 'text-white shadow-lg' : 'bg-white text-gray-800 border-gray-100 shadow-sm' }}" style="--beam-color: {{ $active ? '#ffffff' : $item['theme']['primary'] }}; {{ $active ? 'background:'.$colors['primary'].'; border-color:'.$colors['primary'].';' : '' }}">
             <div class="flex items-start justify-between gap-3">
               <span class="inline-flex rounded-xl p-2 {{ $active ? 'bg-white/18 text-white' : 'bg-gray-50' }}" style="{{ ! $active ? 'color:'.$item['theme']['primary'].';' : '' }}">
                 @include('themes._shared.partials.section-icon', ['section' => $item, 'class' => 'w-7 h-7'])

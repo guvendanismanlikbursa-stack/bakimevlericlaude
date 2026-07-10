@@ -7,6 +7,7 @@ use App\Mail\FamilyPasswordResetMail;
 use App\Models\FamilyUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
@@ -68,6 +69,10 @@ class PasswordResetController extends Controller
 
         $resetUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
 
-        Mail::to($family->email)->queue(new FamilyPasswordResetMail($family, $resetUrl, $brand['name']));
+        try {
+            Mail::to($family->email)->queue(new FamilyPasswordResetMail($family, $resetUrl, $brand['name']));
+        } catch (\Throwable $e) {
+            Log::warning('Aile sifre sifirlama maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
+        }
     }
 }

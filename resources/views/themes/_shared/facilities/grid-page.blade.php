@@ -34,7 +34,10 @@
       @endforeach
     </div>
     @if(method_exists($facilities, 'links'))
-      <div class="mt-8">{{ $facilities->links() }}</div>
+      <div class="mt-8">
+        @include('partials.pagination-info', ['paginator' => $facilities])
+        {{ $facilities->links() }}
+      </div>
     @endif
   @endif
 </div>

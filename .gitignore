@@ -23,10 +23,16 @@ tmp_*
 storage/app/public/facilities
 storage/app/public/silinenler
 storage/app/public/font_test.png
+storage/app/public/claims
+
+# Buyuk scrape yedekleri: kaynak veri, ayri saklanmali
+database/backups
 
 # Veri cekici (Python) calisma zamani/test artefaktlari
 tools/veri-cekici/__pycache__/
 tools/veri-cekici/*.xlsx
+tools/veri-cekici/*_results.json
+tools/veri-cekici/*_log.txt
 
 /bootstrap/cache/*.php
 sample_output.txt

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\FamilyEmailVerificationMail;
 use App\Models\FamilyUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
@@ -72,6 +73,13 @@ class EmailVerificationController extends Controller
 
         $verificationUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
 
-        Mail::to($family->email)->queue(new FamilyEmailVerificationMail($family, $verificationUrl, $brand['name']));
+        // Mail sunucusu gecici/kalici olarak reddedebilir (ör. SMTP 550); bu durumda
+        // kayit/giris gibi kritik islemin 500 hatasiyla cokmesini engellemek icin
+        // hata sadece loglanir, kullanici akisi kesintiye ugramaz.
+        try {
+            Mail::to($family->email)->queue(new FamilyEmailVerificationMail($family, $verificationUrl, $brand['name']));
+        } catch (\Throwable $e) {
+            Log::warning('Aile e-posta dogrulama maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
+        }
     }
 }

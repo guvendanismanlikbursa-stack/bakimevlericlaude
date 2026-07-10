@@ -12,6 +12,7 @@ use App\Models\FacilityUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -115,9 +116,13 @@ class FacilityRegistrationController extends Controller
             return back()->withErrors(['email' => $mailPayload['error']]);
         }
 
-        Mail::to($mailPayload['email'])->queue(
-            new FacilityRegistrationApprovedMail($mailPayload['facility'], $mailPayload['email'], $mailPayload['password'], $mailPayload['login_url'])
-        );
+        try {
+            Mail::to($mailPayload['email'])->queue(
+                new FacilityRegistrationApprovedMail($mailPayload['facility'], $mailPayload['email'], $mailPayload['password'], $mailPayload['login_url'])
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Kurum kaydi onay maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+        }
 
         $facilityUser = FacilityUser::where('email', $mailPayload['email'])->firstOrFail();
 
@@ -153,9 +158,13 @@ class FacilityRegistrationController extends Controller
 
         $editUrl = $this->facilityRegistrationEditUrl($payload);
 
-        Mail::to($payload->applicant_email)->queue(
-            new FacilityRegistrationRevisionRequestedMail($payload, $data['admin_note'], $editUrl)
-        );
+        try {
+            Mail::to($payload->applicant_email)->queue(
+                new FacilityRegistrationRevisionRequestedMail($payload, $data['admin_note'], $editUrl)
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Kurum kaydi duzeltme talebi maili gonderilemedi: ' . $e->getMessage(), ['registration_id' => $payload->id]);
+        }
 
         log_admin_event('facility_registration_revision_requested', $payload, ['admin_note' => $data['admin_note']]);
 

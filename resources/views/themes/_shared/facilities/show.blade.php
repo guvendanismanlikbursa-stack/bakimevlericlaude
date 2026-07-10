@@ -21,7 +21,7 @@
     'yasli-bakim' => ['Ziyaret planı çıkar', 'Fiyat ve bakım kapsamını karşılaştır', 'Aile için soru listesi oluştur'],
     'cocuk' => ['Eğitim programını incele', 'Servis ve yemek düzenini sor', 'Gelişim takibi detayını öğren'],
     'rehabilitasyon' => ['Terapi planını sor', 'Uzman kadro ve ekipmanı karşılaştır', 'Ev programı takibini öğren'],
-  ][$sectionSlug] ?? ['Detaylar&#305; incele', 'Teklif iste', 'Kar&#351;&#305;la&#351;t&#305;r'];
+  ][$sectionSlug] ?? ['Detayları incele', 'Teklif iste', 'Karşılaştır'];
   $sectionChecklist = [
     'yasli-bakim' => ['Günlük sağlık takibi yazılı mı?', 'Acil durumda aileye haber süreci net mi?', 'Ziyaret saatleri ve görüntülü görüşme imkanı var mı?', 'Ek bakım ücretleri açıkça belirtilmiş mi?', 'Beslenme ve ilaç takibi kim tarafından yapılıyor?'],
     'cocuk' => ['Yaş grubu ve sınıf mevcudu uygun mu?', 'Servis, yemek ve güvenlik süreçleri yazılı mı?', 'Gelişim takibi aileyle düzenli paylaşılıyor mu?', 'Rehberlik/psikolog desteği var mı?', 'Özel ihtiyaçlarda bireysel plan hazırlanıyor mu?'],
@@ -87,34 +87,34 @@
     <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
       <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-4">
         <div>
-          <div class="text-sm font-black" style="color: {{ $colors['primary'] }};">Kurum g&ouml;rselleri</div>
-          <h2 class="text-xl font-black text-gray-950">Foto&#287;raf galerisi</h2>
+          <div class="text-sm font-black" style="color: {{ $colors['primary'] }};">Kurum görselleri</div>
+          <h2 class="text-xl font-black text-gray-950">Fotoğraf galerisi</h2>
         </div>
-        <div class="text-xs font-semibold text-gray-500">{{ $galleryCount }}/10 g&ouml;rsel</div>
+        <div class="text-xs font-semibold text-gray-500">{{ $galleryCount }}/10 görsel</div>
       </div>
 
       @if($galleryImages->isNotEmpty())
         <div class="grid lg:grid-cols-[1.5fr_1fr] gap-3">
-          <img src="{{ asset('storage/'.$galleryImages->first()->path) }}" class="h-72 w-full rounded-xl object-cover border border-gray-100" alt="{{ $facility->name }} ana g&ouml;rseli">
+          <img src="{{ asset('storage/'.$galleryImages->first()->path) }}" class="h-72 w-full rounded-xl object-cover border border-gray-100" alt="{{ $facility->name }} ana görseli">
           <div class="grid grid-cols-2 gap-3">
             @foreach($galleryImages->skip(1)->take(4) as $img)
-              <img src="{{ asset('storage/'.$img->path) }}" class="h-[132px] w-full rounded-xl object-cover border border-gray-100" alt="{{ $facility->name }} g&ouml;rseli">
+              <img src="{{ asset('storage/'.$img->path) }}" class="h-[132px] w-full rounded-xl object-cover border border-gray-100" alt="{{ $facility->name }} görseli">
             @endforeach
             @for($i = max(1, $galleryCount); $i < 5; $i++)
-              <div class="h-[132px] rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-xs text-gray-400 text-center px-3">Ek g&ouml;rsel alan&#305;</div>
+              <div class="h-[132px] rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-xs text-gray-400 text-center px-3">Ek görsel alanı</div>
             @endfor
           </div>
         </div>
       @else
         <div class="h-72 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-center px-6">
-          <div class="text-lg font-black text-gray-700">Bu kurum hen&uuml;z galeri g&ouml;rseli eklememi&#351;</div>
-          <p class="text-sm text-gray-500 mt-2 max-w-md">Kurum yetkilisi panelden en fazla 10 ger&ccedil;ek kurum g&ouml;rseli y&uuml;kleyebilir. G&ouml;rseller eklendi&#287;inde ziyaret&ccedil;iler odalar&#305;, ortak alanlar&#305; ve hizmet ortam&#305;n&#305; burada inceleyebilir.</p>
+          <div class="text-lg font-black text-gray-700">Bu kurum henüz galeri görseli eklememiş</div>
+          <p class="text-sm text-gray-500 mt-2 max-w-md">Kurum yetkilisi panelden en fazla 10 gerçek kurum görseli yükleyebilir. Görseller eklendiğinde ziyaretçiler odaları, ortak alanları ve hizmet ortamını burada inceleyebilir.</p>
         </div>
       @endif
 
       <div class="grid grid-cols-5 sm:grid-cols-10 gap-2 mt-3">
         @foreach($galleryImages as $img)
-          <img src="{{ asset('storage/'.$img->path) }}" class="h-16 w-full rounded-lg object-cover border border-gray-100" alt="{{ $facility->name }} k&uuml;&ccedil;&uuml;k g&ouml;rsel">
+          <img src="{{ asset('storage/'.$img->path) }}" class="h-16 w-full rounded-lg object-cover border border-gray-100" alt="{{ $facility->name }} küçük görsel">
         @endforeach
         @for($i = $galleryCount; $i < 10; $i++)
           <div class="h-16 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[11px] text-gray-400">{{ $i + 1 }}</div>
@@ -160,7 +160,7 @@
     <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div class="text-gray-500">Kapasite</div>
-        <div class="font-black text-gray-950">{{ $facility->capacity ?? '-' }} ki&#351;i</div>
+        <div class="font-black text-gray-950">{{ $facility->capacity ?? '-' }} kişi</div>
       </div>
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div class="text-gray-500">Fiyat Aralığı</div>
@@ -334,7 +334,7 @@
 
 <script type="application/ld+json">
 {!! json_encode([
-  '@context' => 'https://schema.org',
+  '@@context' => 'https://schema.org',
   '@type' => 'LocalBusiness',
   'name' => $facility->name,
   'description' => $facility->description,

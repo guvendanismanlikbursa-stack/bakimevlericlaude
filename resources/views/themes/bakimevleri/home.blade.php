@@ -40,7 +40,7 @@
         <div class="grid sm:grid-cols-3 gap-3 max-w-3xl">
           @foreach($sections as $slug => $item)
             @php $active = $item['slug'] === $section['slug']; @endphp
-            <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="border rounded-xl p-4 transition {{ $active ? 'bg-white text-gray-950 border-white' : 'bg-white/8 text-white border-white/14 hover:bg-white/14' }}">
+            <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="section-card-beam border rounded-xl p-4 transition {{ $active ? 'bg-white text-gray-950 border-white' : 'bg-white/8 text-white border-white/14 hover:bg-white/14' }}" style="--beam-color: {{ $item['theme']['primary'] }};">
               <div class="flex items-center gap-3">
                 <span class="inline-flex rounded-lg p-2 {{ $active ? 'bg-gray-100' : 'bg-white/10' }}" style="{{ $active ? 'color:'.$colors['primary'].';' : '' }}">@include('themes._shared.partials.section-icon', ['section' => $item, 'class' => 'w-6 h-6'])</span>
                 <span class="font-black">{{ $item['title'] }}</span>

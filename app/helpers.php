@@ -122,12 +122,33 @@ if (! function_exists('classify_facility_ownership_type')) {
             return 'vakif';
         }
 
+        // "Ozel" ibaresi acikca ozel isletme oldugunu belirtir; asagidaki dernek
+        // ve kamu anahtar kelimeleri bazen ozel isletme isimlerinde de gecebildigi
+        // icin (orn. "Ozel Dernegim Ozel Egitim Merkezi", "Ozel ... Ogrenci Yurdu"),
+        // "ozel" varsa dernek/kamu kontrolu atlanir. Belediye/vakif icin bu koruma
+        // YOK, cunku o kelimeler mulkiyeti (sahiplik) belirtir, "ozel" markalamasi
+        // olsa bile ust kurulus belediye/vakif ise gercekten oyledir.
+        if (str_contains($n, 'ozel')) {
+            return 'ozel';
+        }
+
+        if (str_contains($n, 'dernegi') || str_contains($n, 'dernek ') || str_contains($n, 'dernek-')) {
+            return 'vakif';
+        }
+
         $kamuKeywords = [
             'kaymakamlig', 'valilig', 'bakanlig', 'devlet hastanesi',
             'shcek', 'sosyal hizmet', 'il ozel idare', 'muduurlug',
             'mudurlug', 'kyk', 'kredi yurtlar kurumu', 'universite',
             'universitesi', 'il milli egitim', 'ilce milli egitim',
             'egitim ve arastirma hastanesi', 's.b.u.', 'sbu ',
+            'ogretmenevi', 'halk egitim', 'toplum sagligi', 'aile sagligi',
+            'sydv', 'emniyet', 'jandarma', 'ogrenci yurdu', 'yetistirme yurdu',
+            'defterdarlig', 'garnizon', 'saglik ocagi', 'sgk', 'adliye',
+            'cezaevi', 'ceza infaz', 'karakol', 'diyanet', 'buyuksehir',
+            'baskanlig', 'kizilay', 'ilkokul', 'ortaokul', ' lisesi', ' lise ',
+            'meb ', 'muftulug', 'kaymakamlik', 'mustafa kemal', 'esmek',
+            'geri gonderme merkezi', 'yibo', 'ybo ',
         ];
         foreach ($kamuKeywords as $kw) {
             if (str_contains($n, $kw)) {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\FacilityEmailVerificationMail;
 use App\Models\FacilityUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
@@ -93,6 +94,10 @@ class EmailVerificationController extends Controller
             $verificationUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
         }
 
-        Mail::to($user->email)->queue(new FacilityEmailVerificationMail($user, $verificationUrl, $brandName));
+        try {
+            Mail::to($user->email)->queue(new FacilityEmailVerificationMail($user, $verificationUrl, $brandName));
+        } catch (\Throwable $e) {
+            Log::warning('Kurum e-posta dogrulama maili gonderilemedi: ' . $e->getMessage(), ['facility_user_id' => $user->id]);
+        }
     }
 }

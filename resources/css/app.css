@@ -1,3 +1,54 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Bolum secme kartlarinin cercevesinde gezen ince isik huzmesi (dikkat cekmek icin,
+   kart icerigini kapatmaz - sadece kenarlik halkasinda gorunur). Renk her kartin
+   kendi section temasindan --beam-color ile inline verilir. */
+@property --beam-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.section-card-beam {
+  position: relative;
+  isolation: isolate;
+}
+
+.section-card-beam::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg,
+    transparent 270deg,
+    color-mix(in srgb, var(--beam-color, #fff) 0%, transparent) 284deg,
+    color-mix(in srgb, var(--beam-color, #fff) 90%, transparent) 300deg,
+    var(--beam-color, #fff) 306deg,
+    color-mix(in srgb, var(--beam-color, #fff) 90%, transparent) 312deg,
+    color-mix(in srgb, var(--beam-color, #fff) 0%, transparent) 328deg,
+    transparent 342deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: section-card-beam-spin 4.5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes section-card-beam-spin {
+  to { --beam-angle: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-card-beam::before {
+    animation: none;
+  }
+}

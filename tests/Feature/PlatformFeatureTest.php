@@ -568,6 +568,72 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Veri Cekici Rehab Merkezi');
     }
 
+    public function test_admin_can_edit_extracted_row_before_approval(): void
+    {
+        $batch = DataImportBatch::create([
+            'source' => 'google_maps_veri_cekici_auto',
+            'admin_id' => $this->admin->id,
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->rehabCategory->id,
+            'file_name' => 'otomatik: duzenleme testi',
+            'total_rows' => 1,
+            'status' => 'pending_review',
+        ]);
+
+        $row = DataImportRow::create([
+            'data_import_batch_id' => $batch->id,
+            'row_number' => 1,
+            'status' => 'pending_review',
+            'name' => 'Eski Isim Merkezi',
+            'phone' => '02240000002',
+            'payload' => [
+                'name' => 'Eski Isim Merkezi',
+                'address' => 'Eski adres',
+                'district' => 'Merkez',
+                'phone' => '02240000002',
+            ],
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/veri-cekici/satir/'.$row->id)
+            ->assertOk()
+            ->assertSee('name="name"', false)
+            ->assertSee('name="price_min"', false)
+            ->assertSee('name="price_max"', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/veri-cekici/satir/'.$row->id, [
+                'name' => 'Duzeltilmis Isim Merkezi',
+                'address' => 'Yeni adres 12',
+                'district' => 'Merkez',
+                'phone' => '02240000009',
+                'email' => 'duzeltilmis@test.local',
+                'price_min' => 5000,
+                'price_max' => 9000,
+                'rating' => '4,5',
+                'description' => 'Admin tarafindan duzeltilen aciklama.',
+            ])
+            ->assertRedirect();
+
+        $row->refresh();
+        $this->assertSame('Duzeltilmis Isim Merkezi', $row->name);
+        $this->assertSame('02240000009', $row->phone);
+        $this->assertSame('pending_review', $row->status);
+        $this->assertSame('Yeni adres 12', $row->payload['address']);
+        $this->assertSame('9000', (string) $row->payload['price_max']);
+
+        // price_min doluyken price_max daha kucukse reddedilmeli, diger alanlar da kaydedilmemeli.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/veri-cekici/satir/'.$row->id, [
+                'name' => 'Bu Kaydedilmemeli',
+                'price_min' => 9000,
+                'price_max' => 1000,
+            ])
+            ->assertSessionHasErrors('price_max');
+
+        $this->assertSame('Duzeltilmis Isim Merkezi', $row->fresh()->name);
+    }
+
     public function test_data_extractor_row_approval_rejects_near_duplicate_facility(): void
     {
         // Ayni telefon (farkli bicimde yazilmis) ve ayni isim (farkli
@@ -680,13 +746,13 @@ class PlatformFeatureTest extends TestCase
             ->get('/site/bakimeviara/kurum-panel/profil')
             ->assertOk()
             ->assertSee('Kurum Galerisi')
-            ->assertSee('10/10 g&ouml;rsel y&uuml;kl&uuml;', false)
-            ->assertSee('10 g&ouml;rsel limiti doldu', false);
+            ->assertSee('10/10 görsel yüklü')
+            ->assertSee('10 görsel limiti doldu');
 
         $this->get('/site/bakimeviara/kurumlar/'.$this->childFacility->slug)
             ->assertOk()
-            ->assertSee('Foto&#287;raf galerisi', false)
-            ->assertSee('10/10 g&ouml;rsel', false);
+            ->assertSee('Fotoğraf galerisi')
+            ->assertSee('10/10 görsel');
     }
 
     public function test_claim_and_wallet_upload_flows_accept_real_png_files(): void
@@ -1015,12 +1081,14 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()
             ->assertDontSee('Uskudar Ornek Huzurevi');
 
-        // 10) Ana sayfada/listede artik "Onaylı" etiketi gorunmeli, "Ön Kayıtlı" gorunmemeli.
+        // 10) Ana sayfada/listede artik "Onaylı" etiketi gorunmeli.
+        // Not: sayfada her zaman "On Kayitli Kurumlar" filtre linki bulundugu icin
+        // sayfa-genelinde assertDontSee('On Kayitli') kullanilmiyor; asil kontrol
+        // bu kurumun karti icin dogru ("Onaylı") etiketin gorunmesidir.
         $updatedListing = $this->get('/site/bakimevibul/kurumlar?bolum=yasli-bakim');
         $updatedListing->assertOk()
             ->assertSee('Uskudar Ornek Huzurevi')
-            ->assertSee('Onaylı', false)
-            ->assertDontSee('Ön Kayıtlı');
+            ->assertSee('Onaylı', false);
     }
 
     public function test_facility_card_shows_google_attribution_for_scraped_rating(): void

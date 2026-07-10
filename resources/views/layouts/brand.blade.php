@@ -7,6 +7,9 @@
 <title>@yield('title', $brand['tagline']) · {{ $brand['name'] }}</title>
 <meta name="description" content="@yield('meta_description', $brand['tagline'])">
 <link rel="canonical" href="@yield('canonical', canonical_url())">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/logo-'.$brand['slug'].'-32.png') }}">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logo-'.$brand['slug'].'-192.png') }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo-'.$brand['slug'].'-180.png') }}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ $brand['name'] }}">
 <meta property="og:title" content="@yield('og_title', $brand['tagline'])">
@@ -39,7 +42,10 @@
 @if($theme === 'bakimevleri')
 <header class="bg-gray-950 text-white sticky top-0 z-30 border-b border-white/10">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-    <a href="{{ brand_route('home') }}" class="text-xl font-black tracking-tight">{{ $brand['logo_text'] }}</a>
+    <a href="{{ brand_route('home') }}" class="flex items-center gap-2 text-xl font-black tracking-tight">
+      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-9 h-9 flex-shrink-0">
+      <span>{{ $brand['logo_text'] }}</span>
+    </a>
     <nav class="hidden lg:flex gap-5 text-sm font-semibold text-white/78">
       <a href="{{ brand_route('home') }}" class="hover:text-white">Ana Sayfa</a>
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="hover:text-white">Seçim Asistanı</a>
@@ -61,7 +67,10 @@
 @elseif($theme === 'bakimeviara')
 <header class="bg-white/92 backdrop-blur sticky top-0 z-30 border-b border-gray-100">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-    <a href="{{ brand_route('home') }}" class="text-xl font-black rounded-full px-3 py-1" style="color: {{ $brand['primary_color'] }}; background: {{ $brand['secondary_color'] }}22;">{{ $brand['logo_text'] }}</a>
+    <a href="{{ brand_route('home') }}" class="flex items-center gap-2 text-xl font-black rounded-full pl-1.5 pr-3 py-1" style="color: {{ $brand['primary_color'] }}; background: {{ $brand['secondary_color'] }}22;">
+      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-8 h-8 flex-shrink-0">
+      <span>{{ $brand['logo_text'] }}</span>
+    </a>
     <nav class="hidden lg:flex gap-1 text-sm font-bold bg-gray-50 rounded-full p-1">
       <a href="{{ brand_route('home') }}" class="px-3 py-2 rounded-full hover:bg-white">Ana Sayfa</a>
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="px-3 py-2 rounded-full hover:bg-white">Aile Sihirbazı</a>
@@ -82,7 +91,10 @@
 @else
 <header class="bg-white shadow-sm sticky top-0 z-30">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-    <a href="{{ brand_route('home') }}" class="text-xl font-black text-primary">{{ $brand['logo_text'] }}</a>
+    <a href="{{ brand_route('home') }}" class="flex items-center gap-2 text-xl font-black text-primary">
+      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-9 h-9 flex-shrink-0">
+      <span>{{ $brand['logo_text'] }}</span>
+    </a>
     <nav class="hidden lg:flex gap-5 text-sm font-semibold">
       <a href="{{ brand_route('home') }}" class="hover:text-primary">Ana Sayfa</a>
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="hover:text-primary">Karar Sihirbazı</a>
@@ -121,7 +133,10 @@
 <footer class="{{ $theme === 'bakimeviara' ? 'bg-gray-50 text-gray-600 border-t border-gray-100' : 'bg-gray-950 text-gray-300' }} mt-16">
   <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-4 gap-8 text-sm">
     <div>
-      <div class="{{ $theme === 'bakimeviara' ? 'text-gray-950' : 'text-white' }} font-black text-lg mb-2">{{ $brand['logo_text'] }}</div>
+      <div class="flex items-center gap-2 {{ $theme === 'bakimeviara' ? 'text-gray-950' : 'text-white' }} font-black text-lg mb-2">
+        <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-7 h-7 flex-shrink-0">
+        <span>{{ $brand['logo_text'] }}</span>
+      </div>
       <p>{{ $brand['tagline'] }}</p>
     </div>
     <div>
@@ -152,6 +167,9 @@
       <ul class="space-y-1">
         <li><a href="{{ brand_route('pages.show', ['slug' => 'hakkimizda']) }}" class="hover:text-primary">Hakkımızda</a></li>
         <li><a href="{{ brand_route('pages.show', ['slug' => 'kvkk']) }}" class="hover:text-primary">KVKK</a></li>
+        <li><a href="{{ brand_route('pages.show', ['slug' => 'gizlilik-politikasi']) }}" class="hover:text-primary">Gizlilik Politikası</a></li>
+        <li><a href="{{ brand_route('pages.show', ['slug' => 'kullanim-sartlari']) }}" class="hover:text-primary">Kullanım Şartları</a></li>
+        <li><a href="{{ brand_route('pages.show', ['slug' => 'cerez-politikasi']) }}" class="hover:text-primary">Çerez Politikası</a></li>
         <li><a href="{{ brand_route('contact.create') }}" class="hover:text-primary">İletişim</a></li>
       </ul>
     </div>

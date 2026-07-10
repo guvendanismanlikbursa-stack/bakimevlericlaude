@@ -125,6 +125,9 @@
     </tbody>
   </table>
 </div>
-<div class="mt-6">{{ $facilities->links() }}</div>
+<div class="mt-6">
+  @include('partials.pagination-info', ['paginator' => $facilities])
+  {{ $facilities->links() }}
+</div>
 @endsection
 

@@ -37,12 +37,12 @@
       </div>
       <div class="flex flex-wrap gap-2">
         <a href="{{ brand_route('engagement.wizard', ['bolum' => $activeSection['slug']]) }}" class="btn-primary rounded-xl px-4 py-3 text-sm font-black">Karar Sihirbazı</a>
-        <a href="{{ brand_route('engagement.compare') }}" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700">Kar&#351;&#305;la&#351;t&#305;r</a>
+        <a href="{{ brand_route('engagement.compare') }}" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700">Karşılaştır</a>
         @if(session('family_user_id'))
           <a href="{{ brand_route('engagement.favorites') }}" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700">Favoriler</a>
         @endif
-        <a href="{{ brand_route('facilities.index', array_filter(['bolum' => $activeSection['slug'] ?? null, 'pre_registered' => 1])) }}" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700">&Ouml;n Kay&#305;tl&#305; Kurumlar</a>
-        <button type="button" id="js-nearby-button" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700">📍 Yak&#305;n&#305;mdaki Kurumlar</button>
+        <a href="{{ brand_route('facilities.index', array_filter(['bolum' => $activeSection['slug'] ?? null, 'pre_registered' => 1])) }}" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700">Ön Kayıtlı Kurumlar</a>
+        <button type="button" id="js-nearby-button" class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700">📍 Yakınımdaki Kurumlar</button>
       </div>
     </div>
 
@@ -79,11 +79,11 @@
     <form method="GET" data-district-map='@json($districtMap)' data-auto-submit="1" data-count-url="{{ brand_route('facilities.count') }}" class="js-location-filter bg-white rounded-xl shadow-sm p-4 grid sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-8 border border-gray-100">
       <input type="hidden" name="bolum" value="{{ $activeSection['slug'] }}">
       @if(request('pre_registered'))<input type="hidden" name="pre_registered" value="1">@endif
-      <select name="city" class="js-city border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">&#304;l se&ccedil;in</option>@foreach($cities as $city)<option value="{{ $city->slug }}" @selected(request('city') === $city->slug)>{{ $city->name }}</option>@endforeach</select>
-      <select name="district" data-selected="{{ request('district') }}" class="js-district border rounded-lg px-3 py-2.5 text-sm bg-white" disabled><option value="">&Ouml;nce il se&ccedil;in</option></select>
-      <select name="category" class="border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Kurum t&uuml;r&uuml;</option>@foreach($categories as $category)<option value="{{ $category->slug }}" @selected(request('category') === $category->slug)>{{ $category->name }}</option>@endforeach</select>
-      <select name="service" class="border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Kurumun &ouml;zellikleri</option>@foreach($sectionServices as $service)<option value="{{ $service }}" @selected(request('service') === $service)>{{ $service }}</option>@endforeach</select>
-      <select name="price_tier" class="border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">T&uuml;m segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}" @selected(request('price_tier') === $value)>{{ $label }}</option>@endforeach</select>
+      <select name="city" class="js-city border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">İl seçin</option>@foreach($cities as $city)<option value="{{ $city->slug }}" @selected(request('city') === $city->slug)>{{ $city->name }}</option>@endforeach</select>
+      <select name="district" data-selected="{{ request('district') }}" class="js-district border rounded-lg px-3 py-2.5 text-sm bg-white" disabled><option value="">Önce il seçin</option></select>
+      <select name="category" class="border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Kurum türü</option>@foreach($categories as $category)<option value="{{ $category->slug }}" @selected(request('category') === $category->slug)>{{ $category->name }}</option>@endforeach</select>
+      <select name="service" class="border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Kurumun özellikleri</option>@foreach($sectionServices as $service)<option value="{{ $service }}" @selected(request('service') === $service)>{{ $service }}</option>@endforeach</select>
+      <select name="price_tier" class="border rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Tüm segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}" @selected(request('price_tier') === $value)>{{ $label }}</option>@endforeach</select>
       <button class="btn-primary rounded-lg px-4 py-2.5 font-black">Filtrele</button>
     </form>
 
@@ -91,11 +91,11 @@
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
         <div>
           <div class="text-sm font-black text-primary mb-1">Konum görünümü</div>
-          <h2 class="text-2xl font-black text-gray-950">Harita mant&#305;&#287;&#305;nda b&ouml;lgesel da&#287;&#305;l&#305;m</h2>
-          <p class="text-sm text-gray-500 mt-1">Listelenen kurumlar&#305; &#351;ehir ve il&ccedil;e k&uuml;melerine g&ouml;re h&#305;zl&#305;ca taray&#305;n.</p>
+          <h2 class="text-2xl font-black text-gray-950">Harita mantığında bölgesel dağılım</h2>
+          <p class="text-sm text-gray-500 mt-1">Listelenen kurumları şehir ve ilçe kümelerine göre hızlıca tarayın.</p>
         </div>
         @if($selectedCity)
-          <a href="{{ brand_route('location-guide.show', ['sectionSlug' => $activeSection['slug'], 'citySlug' => $selectedCity->slug]) }}" class="rounded-xl border border-gray-200 px-4 py-3 text-sm font-black text-gray-700 hover:shadow-sm">{{ $selectedCity->name }} rehberini a&ccedil;</a>
+          <a href="{{ brand_route('location-guide.show', ['sectionSlug' => $activeSection['slug'], 'citySlug' => $selectedCity->slug]) }}" class="rounded-xl border border-gray-200 px-4 py-3 text-sm font-black text-gray-700 hover:shadow-sm">{{ $selectedCity->name }} rehberini aç</a>
         @endif
       </div>
       <div class="grid md:grid-cols-3 gap-3">
@@ -128,7 +128,10 @@
       @endforeach
     </div>
 
-    <div class="mt-8">{{ $facilities->links() }}</div>
+    <div class="mt-8">
+      @include('partials.pagination-info', ['paginator' => $facilities])
+      {{ $facilities->links() }}
+    </div>
 @endif
   </div>
 </div>

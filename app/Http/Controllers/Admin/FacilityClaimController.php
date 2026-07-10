@@ -10,6 +10,7 @@ use App\Models\FacilityUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -104,9 +105,13 @@ class FacilityClaimController extends Controller
         // Mail::queue kullanildi: QUEUE_CONNECTION=sync iken aninda,
         // ileride database/redis queue'ya gecilince arka planda gonderilir.
         // Boylece admin onay islemi SMTP gecikmesine takilmaz.
-        Mail::to($mailPayload['email'])->queue(
-            new FacilityClaimApprovedMail($mailPayload['facility'], $mailPayload['email'], $mailPayload['password'], $mailPayload['login_url'])
-        );
+        try {
+            Mail::to($mailPayload['email'])->queue(
+                new FacilityClaimApprovedMail($mailPayload['facility'], $mailPayload['email'], $mailPayload['password'], $mailPayload['login_url'])
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Sahiplenme onay maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+        }
 
         \App\Http\Controllers\Facility\EmailVerificationController::send(
             \App\Models\FacilityUser::where('email', $mailPayload['email'])->firstOrFail(),

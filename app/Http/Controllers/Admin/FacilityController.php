@@ -12,6 +12,7 @@ use App\Services\ImageCompressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class FacilityController extends Controller
@@ -216,7 +217,11 @@ class FacilityController extends Controller
             'description' => 'nullable|string|max:5000',
             'capacity' => 'nullable|integer|min:0',
             'price_min' => 'nullable|numeric|min:0',
-            'price_max' => 'nullable|numeric|min:0|gte:price_min',
+            // gte:price_min sadece price_min de doluysa uygulanir; aksi halde
+            // admin sadece price_max girdiginde (price_min bos) dogrulama
+            // tum formu reddedip diger tum alanlardaki degisiklikleri de
+            // kaydetmeden geri donduruyordu.
+            'price_max' => ['nullable', 'numeric', 'min:0', Rule::when($request->filled('price_min'), ['gte:price_min'])],
             'cover_image' => 'nullable|string|max:255',
             'images' => 'nullable|array|max:10',
             'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',

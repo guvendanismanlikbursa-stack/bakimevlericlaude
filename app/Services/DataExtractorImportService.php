@@ -73,8 +73,8 @@ class DataExtractorImportService
             }
 
             $ownershipType = classify_facility_ownership_type($item['name']);
-            if (in_array($ownershipType, ['kamu', 'belediye'], true)) {
-                $batch->rows()->create(['row_number' => $line + 2, 'status' => 'skipped', 'name' => $item['name'], 'phone' => $item['phone'], 'message' => 'Kamu/belediyeye ait kurum, platform kapsami disinda', 'payload' => $item]);
+            if (in_array($ownershipType, ['kamu', 'belediye', 'vakif'], true)) {
+                $batch->rows()->create(['row_number' => $line + 2, 'status' => 'skipped', 'name' => $item['name'], 'phone' => $item['phone'], 'message' => 'Kamu/belediye/vakfa ait kurum, platform kapsami disinda', 'payload' => $item]);
                 $skipped++;
                 continue;
             }

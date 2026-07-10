@@ -7,10 +7,10 @@
   $remainingImages = max(0, 10 - $imageCount);
 @endphp
 <div class="max-w-4xl mx-auto px-4 py-10">
-  <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">&larr; Panele d&ouml;n</a>
-  <h1 class="text-2xl font-bold mt-2 mb-2">Kurum Bilgilerimi D&uuml;zenle</h1>
+  <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">&larr; Panele dön</a>
+  <h1 class="text-2xl font-bold mt-2 mb-2">Kurum Bilgilerimi Düzenle</h1>
   @if($serviceSection)
-    <p class="text-sm text-gray-500 mb-6">Bu kurum <strong>{{ $serviceSection['title'] }}</strong> b&ouml;l&uuml;m&uuml;nde hizmet veriyor. Ana sayfa filtreleri ve kuruma &ouml;zel detay alanlar&#305; bu b&ouml;l&uuml;me g&ouml;re haz&#305;rlan&#305;r.</p>
+    <p class="text-sm text-gray-500 mb-6">Bu kurum <strong>{{ $serviceSection['title'] }}</strong> bölümünde hizmet veriyor. Ana sayfa filtreleri ve kuruma özel detay alanları bu bölüme göre hazırlanır.</p>
   @endif
 
   @if(session('success'))
@@ -18,7 +18,7 @@
   @endif
   @if($errors->any())
     <div class="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-      <div class="font-black mb-1">L&uuml;tfen alanlar&#305; kontrol edin.</div>
+      <div class="font-black mb-1">Lütfen alanları kontrol edin.</div>
       <ul class="list-disc pl-5 space-y-1">
         @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
       </ul>
@@ -28,13 +28,13 @@
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
-        <div class="text-sm font-semibold text-gray-500">Profil kalite puan&#305;<span class="sr-only">Profil kalite puani</span></div>
+        <div class="text-sm font-semibold text-gray-500">Profil kalite puanı<span class="sr-only">Profil kalite puani</span></div>
         <div class="text-3xl font-black text-gray-950 mt-1">{{ $profileQuality['score'] }}/100</div>
-        <p class="text-sm text-gray-500 mt-1">Tam profil daha fazla ziyaret&ccedil;i g&uuml;veni, daha iyi teklif d&ouml;n&uuml;&scedil;&uuml; ve daha g&uuml;&ccedil;l&uuml; SEO sinyali verir.</p>
+        <p class="text-sm text-gray-500 mt-1">Tam profil daha fazla ziyaretçi güveni, daha iyi teklif dönüşü ve daha güçlü SEO sinyali verir.</p>
       </div>
       <div class="w-full md:w-56">
         <div class="h-3 rounded-full bg-gray-100 overflow-hidden"><div class="h-full bg-primary" style="width: {{ $profileQuality['score'] }}%"></div></div>
-        <div class="text-xs text-gray-400 mt-2">{{ $profileQuality['completed'] }}/{{ $profileQuality['total'] }} alan tamamland&#305;<span class="sr-only">alan tamamlandi</span></div>
+        <div class="text-xs text-gray-400 mt-2">{{ $profileQuality['completed'] }}/{{ $profileQuality['total'] }} alan tamamlandı<span class="sr-only">alan tamamlandi</span></div>
       </div>
     </div>
     @if($profileQuality['missing'])
@@ -49,17 +49,17 @@
   <form method="POST" action="{{ brand_route('facility.profile.update') }}" class="bg-white rounded-xl shadow-sm p-6 grid md:grid-cols-2 gap-4 mb-8">
     @csrf @method('PUT')
     <div class="md:col-span-2">
-      <label class="text-sm font-medium">Kurum Ad&#305;</label>
+      <label class="text-sm font-medium">Kurum Adı</label>
       <input type="text" name="name" value="{{ old('name', $facility->name) }}" required class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div>
-      <label class="text-sm font-medium">&#350;ehir</label>
+      <label class="text-sm font-medium">Şehir</label>
       <select name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
         @foreach($cities as $city)<option value="{{ $city->id }}" @selected(old('city_id', $facility->city_id) == $city->id)>{{ $city->name }}</option>@endforeach
       </select>
     </div>
     <div>
-      <label class="text-sm font-medium">&#304;l&ccedil;e</label>
+      <label class="text-sm font-medium">İlçe</label>
       <input type="text" name="district" value="{{ old('district', $facility->district) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div>
@@ -75,7 +75,7 @@
       <input type="text" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div class="md:col-span-2">
-      <label class="text-sm font-medium">A&ccedil;&#305;klama</label>
+      <label class="text-sm font-medium">Açıklama</label>
       <textarea name="description" rows="4" class="border rounded-lg px-3 py-2 w-full mt-1">{{ old('description', $facility->description) }}</textarea>
     </div>
     <div>
@@ -91,9 +91,9 @@
       <div class="md:col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-4">
         <div class="flex items-center gap-2 mb-2">
           @include('themes._shared.partials.section-icon', ['section' => $serviceSection, 'class' => 'w-5 h-5'])
-          <label class="text-sm font-black">Ana sayfa filtrelerinde g&ouml;r&uuml;nen {{ $serviceSection['title'] }} &ouml;zellikleri</label>
+          <label class="text-sm font-black">Ana sayfa filtrelerinde görünen {{ $serviceSection['title'] }} özellikleri</label>
         </div>
-        <p class="text-xs text-gray-500 mb-3">Burada se&ccedil;ilen &ouml;zellikler ziyaret&ccedil;inin ana sayfa ve kurum listesi filtresinde kurumunuzu bulmas&#305;n&#305; sa&#287;lar.</p>
+        <p class="text-xs text-gray-500 mb-3">Burada seçilen özellikler ziyaretçinin ana sayfa ve kurum listesi filtresinde kurumunuzu bulmasını sağlar.</p>
         <div class="grid sm:grid-cols-2 gap-2">
           @foreach($serviceSection['features'] as $feature)
             <label class="flex items-center gap-2 text-sm bg-white border rounded-lg px-3 py-2">
@@ -107,8 +107,8 @@
 
     @if(!empty($sectionDetailFields))
       <div class="md:col-span-2 rounded-xl border border-gray-100 bg-white p-4">
-        <div class="text-sm font-black text-gray-950 mb-1">Kuruma &ouml;zel {{ $serviceSection['title'] }} detaylar&#305;</div>
-        <p class="text-xs text-gray-500 mb-4">Bu alanlar kurum detay sayfas&#305;nda ziyaret&ccedil;iye daha net bilgi vermek ve admin taraf&#305;ndan denetlenebilir profil olu&#351;turmak i&ccedil;indir.</p>
+        <div class="text-sm font-black text-gray-950 mb-1">Kuruma özel {{ $serviceSection['title'] }} detayları</div>
+        <p class="text-xs text-gray-500 mb-4">Bu alanlar kurum detay sayfasında ziyaretçiye daha net bilgi vermek ve admin tarafından denetlenebilir profil oluşturmak içindir.</p>
         <div class="grid md:grid-cols-2 gap-3">
           @foreach($sectionDetailFields as $field)
             <label class="block">
@@ -121,7 +121,7 @@
     @endif
 
     <div class="md:col-span-2">
-      <label class="text-sm font-medium">Ek hizmetler (virg&uuml;lle ay&#305;r&#305;n)</label>
+      <label class="text-sm font-medium">Ek hizmetler (virgülle ayırın)</label>
       <input type="text" name="services_raw" value="{{ old('services_raw', $selectedServices->diff($serviceSection['features'] ?? [])->implode(', ')) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div class="md:col-span-2">
@@ -133,7 +133,7 @@
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
       <div>
         <h2 class="font-bold">Kurum Galerisi</h2>
-        <p class="text-sm text-gray-500">En fazla 10 g&ouml;rsel eklenebilir. &#350;u an {{ $imageCount }}/10 g&ouml;rsel y&uuml;kl&uuml;.</p>
+        <p class="text-sm text-gray-500">En fazla 10 görsel eklenebilir. Şu an {{ $imageCount }}/10 görsel yüklü.</p>
       </div>
       <span class="text-xs font-semibold rounded-full px-3 py-1 {{ $remainingImages > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500' }}">Kalan hak: {{ $remainingImages }}</span>
     </div>
@@ -141,7 +141,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
       @foreach($facility->images->take(10) as $img)
         <div class="relative group">
-          <img src="{{ asset('storage/'.$img->path) }}" class="rounded-lg h-28 w-full object-cover border border-gray-100" alt="{{ $facility->name }} g&ouml;rseli">
+          <img src="{{ asset('storage/'.$img->path) }}" class="rounded-lg h-28 w-full object-cover border border-gray-100" alt="{{ $facility->name }} görseli">
           <form method="POST" action="{{ brand_route('facility.profile.image.destroy', $img) }}" class="absolute top-1 right-1">
             @csrf @method('DELETE')
             <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>
@@ -149,7 +149,7 @@
         </div>
       @endforeach
       @for($i = $imageCount; $i < 10; $i++)
-        <div class="h-28 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-center px-2 text-xs text-gray-400">G&ouml;rsel alan&#305;<br>{{ $i + 1 }}/10</div>
+        <div class="h-28 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-center px-2 text-xs text-gray-400">Görsel alanı<br>{{ $i + 1 }}/10</div>
       @endfor
     </div>
 
@@ -157,11 +157,11 @@
       <form method="POST" action="{{ brand_route('facility.profile.image.store') }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row">
         @csrf
         <input type="file" name="images[]" multiple accept="image/*" required class="border rounded-lg px-3 py-2 text-sm flex-1">
-        <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">G&ouml;rsel Ekle</button>
+        <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Görsel Ekle</button>
       </form>
-      <p class="text-xs text-gray-400 mt-2">Tek seferde kalan hak kadar JPG, PNG veya WEBP g&ouml;rsel y&uuml;kleyebilirsiniz.</p>
+      <p class="text-xs text-gray-400 mt-2">Tek seferde kalan hak kadar JPG, PNG veya WEBP görsel yükleyebilirsiniz.</p>
     @else
-      <div class="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm text-gray-500">10 g&ouml;rsel limiti doldu. Yeni g&ouml;rsel eklemek i&ccedil;in &ouml;nce mevcut g&ouml;rsellerden birini silin.</div>
+      <div class="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm text-gray-500">10 görsel limiti doldu. Yeni görsel eklemek için önce mevcut görsellerden birini silin.</div>
     @endif
   </div>
 </div>

@@ -20,41 +20,64 @@
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
-        <div>
-          <label class="text-xs uppercase tracking-wider text-gray-500">Ad</label>
-          <p class="mt-1 text-gray-800">{{ $prefill['name'] ?? '-' }}</p>
+      @if ($errors->any())
+        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+          <strong>Kaydedilemedi:</strong>
+          <ul class="list-disc list-inside mt-1">
+            @foreach ($errors->all() as $error)
+              <li>{{ $error }}</li>
+            @endforeach
+          </ul>
         </div>
-        <div>
-          <label class="text-xs uppercase tracking-wider text-gray-500">Telefon</label>
-          <p class="mt-1 text-gray-800">{{ $prefill['phone'] ?? '-' }}</p>
-        </div>
-        <div>
-          <label class="text-xs uppercase tracking-wider text-gray-500">E-posta</label>
-          <p class="mt-1 text-gray-800">{{ $prefill['email'] ?? '-' }}</p>
-        </div>
-        <div>
-          <label class="text-xs uppercase tracking-wider text-gray-500">İlçe</label>
-          <p class="mt-1 text-gray-800">{{ $prefill['district'] ?? '-' }}</p>
-        </div>
-        <div class="md:col-span-2">
-          <label class="text-xs uppercase tracking-wider text-gray-500">Adres</label>
-          <p class="mt-1 text-gray-800">{{ $prefill['address'] ?? '-' }}</p>
-        </div>
-        <div>
-          <label class="text-xs uppercase tracking-wider text-gray-500">Fiyat aralığı</label>
-          <p class="mt-1 text-gray-800">{{ $prefill['price_min'] ?? '-' }} - {{ $prefill['price_max'] ?? '-' }}</p>
-        </div>
-        <div>
-          <label class="text-xs uppercase tracking-wider text-gray-500">Puan</label>
-          <p class="mt-1 text-gray-800">{{ $prefill['rating'] ?? '-' }}</p>
-        </div>
-      </div>
+      @endif
 
-      <div class="mt-4">
-        <label class="text-xs uppercase tracking-wider text-gray-500">Açıklama</label>
-        <p class="mt-1 whitespace-pre-line text-gray-800">{{ $prefill['description'] ?? '-' }}</p>
-      </div>
+      <form method="POST" action="{{ route('admin.data-extractor.rows.update', $row) }}" id="row-edit-form">
+        @csrf
+        @method('PUT')
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="text-xs uppercase tracking-wider text-gray-500" for="field-name">Ad</label>
+            <input type="text" id="field-name" name="name" value="{{ old('name', $prefill['name'] ?? '') }}" required maxlength="180" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-wider text-gray-500" for="field-phone">Telefon</label>
+            <input type="text" id="field-phone" name="phone" value="{{ old('phone', $prefill['phone'] ?? '') }}" maxlength="30" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-wider text-gray-500" for="field-email">E-posta</label>
+            <input type="email" id="field-email" name="email" value="{{ old('email', $prefill['email'] ?? '') }}" maxlength="150" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-wider text-gray-500" for="field-district">İlçe</label>
+            <input type="text" id="field-district" name="district" value="{{ old('district', $prefill['district'] ?? '') }}" maxlength="120" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-xs uppercase tracking-wider text-gray-500" for="field-address">Adres</label>
+            <input type="text" id="field-address" name="address" value="{{ old('address', $prefill['address'] ?? '') }}" maxlength="500" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-wider text-gray-500">Fiyat aralığı</label>
+            <div class="mt-1 flex items-center gap-2">
+              <input type="number" step="0.01" min="0" name="price_min" value="{{ old('price_min', $prefill['price_min'] ?? '') }}" placeholder="min" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <span class="text-gray-400">-</span>
+              <input type="number" step="0.01" min="0" name="price_max" value="{{ old('price_max', $prefill['price_max'] ?? '') }}" placeholder="max" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-wider text-gray-500" for="field-rating">Puan</label>
+            <input type="text" id="field-rating" name="rating" value="{{ old('rating', $prefill['rating'] ?? '') }}" maxlength="20" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="text-xs uppercase tracking-wider text-gray-500" for="field-description">Açıklama</label>
+          <textarea id="field-description" name="description" rows="4" maxlength="5000" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">{{ old('description', $prefill['description'] ?? '') }}</textarea>
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="rounded-lg bg-gray-900 text-white px-4 py-2 text-sm font-semibold">Değişiklikleri Kaydet</button>
+        </div>
+      </form>
 
       @if($row->message)
         <div class="mt-4 rounded-lg bg-gray-50 border border-gray-200 p-4 text-sm text-gray-700">

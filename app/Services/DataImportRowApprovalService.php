@@ -39,9 +39,9 @@ class DataImportRowApprovalService
         }
 
         $ownershipType = classify_facility_ownership_type($item['name']);
-        if (in_array($ownershipType, ['kamu', 'belediye'], true)) {
-            $row->update(['status' => 'skipped', 'message' => 'Kamu/belediyeye ait kurum, platform kapsami disinda.']);
-            throw new RuntimeException('Kamu/belediyeye ait kurum, platform kapsami disinda.');
+        if (in_array($ownershipType, ['kamu', 'belediye', 'vakif'], true)) {
+            $row->update(['status' => 'skipped', 'message' => 'Kamu/belediye/vakfa ait kurum, platform kapsami disinda.']);
+            throw new RuntimeException('Kamu/belediye/vakfa ait kurum, platform kapsami disinda.');
         }
 
         $districtModel = $this->districtModel($city, $item['district']);

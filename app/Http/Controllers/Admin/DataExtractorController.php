@@ -12,6 +12,7 @@ use App\Services\DataImportRowApprovalService;
 use App\Services\GoogleMapsDataExtractorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\Rule;
 
 class DataExtractorController extends Controller
 {
@@ -128,6 +129,8 @@ class DataExtractorController extends Controller
             'district' => 'nullable|string|max:120',
             'phone' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:150',
+            'price_min' => 'nullable|numeric|min:0',
+            'price_max' => ['nullable', 'numeric', 'min:0', Rule::when($request->filled('price_min'), ['gte:price_min'])],
             'rating' => 'nullable|string|max:20',
             'description' => 'nullable|string|max:5000',
         ]);

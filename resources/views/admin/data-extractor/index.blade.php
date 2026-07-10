@@ -1,11 +1,11 @@
 @extends('admin.layout')
-@section('title', 'Veri &Ccedil;ekici')
+@section('title', 'Veri Çekici')
 
 @section('content')
 <div class="flex items-center justify-between mb-6">
   <div>
-    <h1 class="text-2xl font-bold">Veri &Ccedil;ekici<span class="sr-only">Veri Cekici</span></h1>
-    <p class="text-sm text-gray-500 mt-1">Google Maps verilerini &ouml;nce inceleme listesine al&#305;r; admin onaylay&#305;nca &ouml;n kay&#305;tl&#305; kurum olu&#351;turur.</p>
+    <h1 class="text-2xl font-bold">Veri Çekici<span class="sr-only">Veri Cekici</span></h1>
+    <p class="text-sm text-gray-500 mt-1">Google Maps verilerini önce inceleme listesine alır; admin onaylayınca ön kayıtlı kurum oluşturur.</p>
   </div>
 </div>
 
@@ -14,23 +14,23 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div class="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h2 class="font-bold">Otomatik Veri &Ccedil;ek</h2>
-          <p class="text-xs text-gray-500 mt-1">Tek seferde en fazla 1000 kurum &ccedil;ekilir. Web adresi kayda al&#305;nmaz.</p>
+          <h2 class="font-bold">Otomatik Veri Çek</h2>
+          <p class="text-xs text-gray-500 mt-1">Tek seferde en fazla 1000 kurum çekilir. Web adresi kayda alınmaz.</p>
         </div>
         <span class="rounded-full bg-gray-900 text-white px-3 py-1 text-xs font-bold">Max 1000</span>
       </div>
       <form method="POST" action="{{ route('admin.data-extractor.run') }}" class="grid md:grid-cols-2 gap-4">
         @csrf
         <div class="md:col-span-2">
-          <label class="text-sm font-medium">Arama c&uuml;mlesi</label>
-          <input type="text" name="query" required maxlength="255" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="&Ouml;rn: huzurevi nilufer bursa">
+          <label class="text-sm font-medium">Arama cümlesi</label>
+          <input type="text" name="query" required maxlength="255" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="Örn: huzurevi nilufer bursa">
         </div>
         <div>
-          <label class="text-sm font-medium">&Ccedil;ekilecek kurum say&#305;s&#305;</label>
+          <label class="text-sm font-medium">Çekilecek kurum sayısı</label>
           <input type="number" name="limit" min="1" max="1000" value="50" required class="border rounded-lg px-3 py-2 w-full mt-1">
         </div>
         <div>
-          <label class="text-sm font-medium">&#350;ehir</label>
+          <label class="text-sm font-medium">Şehir</label>
           <select name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
             @foreach($cities as $city)
               <option value="{{ $city->id }}">{{ $city->name }}</option>
@@ -38,8 +38,8 @@
           </select>
         </div>
         <div>
-          <label class="text-sm font-medium">&#304;l&ccedil;e</label>
-          <input type="text" name="district" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="&Ouml;rn: Nil&uuml;fer">
+          <label class="text-sm font-medium">İlçe</label>
+          <input type="text" name="district" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="Örn: Nilüfer">
         </div>
         <div>
           <label class="text-sm font-medium">Kurum Kategorisi</label>
@@ -51,7 +51,7 @@
           </select>
         </div>
         <div class="md:col-span-2">
-          <button class="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-semibold">Otomatik &Ccedil;al&#305;&#351;t&#305;r ve Listele</button>
+          <button class="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-semibold">Otomatik Çalıştır ve Listele</button>
         </div>
       </form>
     </div>
@@ -61,12 +61,12 @@
       <form method="POST" action="{{ route('admin.data-extractor.import') }}" enctype="multipart/form-data" class="grid md:grid-cols-2 gap-4">
         @csrf
         <div class="md:col-span-2">
-          <label class="text-sm font-medium">Veri &Ccedil;ekici Excel dosyas? (.xlsx)</label>
+          <label class="text-sm font-medium">Veri Çekici Excel dosyası (.xlsx)</label>
           <input type="file" name="file" accept=".xlsx" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
-          <p class="text-xs text-gray-400 mt-1">Excel import eski h&#305;zl&#305; ak&#305;&#351;t&#305;r; sat&#305;rlar&#305; do&#287;rudan &ouml;n kay&#305;tl&#305; kuruma &ccedil;evirir.</p>
+          <p class="text-xs text-gray-400 mt-1">Excel import eski hızlı akıştır; satırları doğrudan ön kayıtlı kuruma çevirir.</p>
         </div>
         <div>
-          <label class="text-sm font-medium">&#350;ehir</label>
+          <label class="text-sm font-medium">Şehir</label>
           <select name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
             @foreach($cities as $city)
               <option value="{{ $city->id }}">{{ $city->name }}</option>
@@ -74,8 +74,8 @@
           </select>
         </div>
         <div>
-          <label class="text-sm font-medium">&#304;l&ccedil;e</label>
-          <input type="text" name="district" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="&Ouml;rn: Nil&uuml;fer">
+          <label class="text-sm font-medium">İlçe</label>
+          <input type="text" name="district" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="Örn: Nilüfer">
         </div>
         <div class="md:col-span-2">
           <label class="text-sm font-medium">Kurum Kategorisi</label>
@@ -100,7 +100,7 @@
       <div class="flex items-center justify-between mb-4">
         <div>
           <h2 class="font-bold">Çekilen Liste / Admin Onayı</h2>
-          <p class="text-xs text-gray-500 mt-1">D&uuml;zenle, otomatik doldur, onayla veya sil. Onaylanan satır kurum kaydına dönüşür.</p>
+          <p class="text-xs text-gray-500 mt-1">Düzenle, otomatik doldur, onayla veya sil. Onaylanan satır kurum kaydına dönüşür.</p>
         </div>
         <span class="text-xs text-gray-500">Son 100 satir</span>
       </div>
@@ -129,14 +129,14 @@
 
             <form method="POST" action="{{ route('admin.data-extractor.rows.update', $row) }}" class="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
               @csrf @method('PUT')
-              <input name="name" value="{{ $payload['name'] ?? $row->name }}" required class="border rounded-lg px-3 py-2 text-sm" placeholder="Kurum ad&#305;">
-              <input name="category" value="{{ $payload['category'] ?? '' }}" class="border rounded-lg px-3 py-2 text-sm" placeholder="&Ccedil;ekilen kategori">
-              <input name="district" value="{{ $payload['district'] ?? '' }}" class="border rounded-lg px-3 py-2 text-sm" placeholder="&#304;l&ccedil;e">
+              <input name="name" value="{{ $payload['name'] ?? $row->name }}" required class="border rounded-lg px-3 py-2 text-sm" placeholder="Kurum adı">
+              <input name="category" value="{{ $payload['category'] ?? '' }}" class="border rounded-lg px-3 py-2 text-sm" placeholder="Çekilen kategori">
+              <input name="district" value="{{ $payload['district'] ?? '' }}" class="border rounded-lg px-3 py-2 text-sm" placeholder="İlçe">
               <input name="phone" value="{{ $payload['phone'] ?? $row->phone }}" class="border rounded-lg px-3 py-2 text-sm" placeholder="Telefon">
               <input name="email" value="{{ $payload['email'] ?? '' }}" class="border rounded-lg px-3 py-2 text-sm" placeholder="E-posta">
               <input name="rating" value="{{ $payload['rating'] ?? '' }}" class="border rounded-lg px-3 py-2 text-sm" placeholder="Puan">
               <input name="address" value="{{ $payload['address'] ?? '' }}" class="border rounded-lg px-3 py-2 text-sm lg:col-span-2" placeholder="Adres">
-              <textarea name="description" rows="2" class="border rounded-lg px-3 py-2 text-sm md:col-span-2 lg:col-span-3" placeholder="K&#305;sa a&ccedil;&#305;klama">{{ $payload['description'] ?? '' }}</textarea>
+              <textarea name="description" rows="2" class="border rounded-lg px-3 py-2 text-sm md:col-span-2 lg:col-span-3" placeholder="Kısa açıklama">{{ $payload['description'] ?? '' }}</textarea>
               <button class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-bold">Satırı Kaydet</button>
             </form>
           </div>
@@ -167,7 +167,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h2 class="font-bold mb-3">Yerel Arac Durumu</h2>
       <div class="space-y-2 text-sm">
-        <div class="flex justify-between"><span>Klas&ouml;r</span><strong class="{{ $tool['exists'] ? 'text-green-700' : 'text-red-600' }}">{{ $tool['exists'] ? 'Hazır' : 'Yok' }}</strong></div>
+        <div class="flex justify-between"><span>Klasör</span><strong class="{{ $tool['exists'] ? 'text-green-700' : 'text-red-600' }}">{{ $tool['exists'] ? 'Hazır' : 'Yok' }}</strong></div>
         <div class="flex justify-between"><span>Scraper</span><strong class="{{ $tool['scraper'] ? 'text-green-700' : 'text-red-600' }}">{{ $tool['scraper'] ? 'Hazır' : 'Yok' }}</strong></div>
         <div class="flex justify-between"><span>Canli API</span><strong class="text-green-700">Devre disi</strong></div>
       </div>
