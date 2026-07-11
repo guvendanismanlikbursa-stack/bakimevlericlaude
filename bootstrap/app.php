@@ -27,4 +27,21 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->report(function (\Throwable $e) {
             notify_admin_of_exception($e);
         });
+
+        // Oturum/CSRF token'i suresi dolunca (419) cıplak hata sayfasi yerine
+        // ayni formu Turkce bir uyariyla tekrar gosteriyoruz - ozellikle
+        // e-posta/push bildirimindeki eski bir linki tiklayip uzun sure sonra
+        // giris yapmaya calisan kullanicilar icin (bkz. admin girisi). Not:
+        // Laravel TokenMismatchException'i render'a gelmeden ONCE genel bir
+        // HttpException(419)'a ceviriyor (bkz. Handler::prepareException()),
+        // bu yuzden tip-bazli render() closure'i hicbir zaman eslesmiyordu -
+        // dogru yer, nihai response'un durum koduna bakan respond() kancasi.
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $e, \Illuminate\Http\Request $request) {
+            if ($response->getStatusCode() === 419 && ! $request->expectsJson()) {
+                return back()->withInput($request->except('password'))
+                    ->with('error', 'Oturumunuz zaman aşımına uğradı (sayfa uzun süre açık kalmış olabilir). Lütfen tekrar deneyin.');
+            }
+
+            return $response;
+        });
     })->create();

@@ -11,6 +11,9 @@
     <h1 class="text-xl font-bold mb-1">Ortak Admin Panel</h1>
     <p class="text-sm text-gray-500 mb-6">3 site için tek yönetim paneli</p>
 
+    @if(session('error'))
+      <div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm mb-4">{{ session('error') }}</div>
+    @endif
     @if($errors->any())
       <div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm mb-4">
         @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach

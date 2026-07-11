@@ -86,9 +86,10 @@ class SupportChatController extends Controller
     {
         $label = ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent;
         $name = $thread->guest_name ? $thread->guest_name.' isimli ziyaretçi' : 'Yeni bir ziyaretçi';
+        $brandName = config("brands.brands.{$thread->brand}.name", $thread->brand);
 
         foreach (Admin::all() as $admin) {
-            notify_user($admin, 'chat_message', 'Yeni canlı sohbet', "{$name} \"{$label}\" için yazmaya başladı.", ['chat_thread_id' => $thread->id]);
+            notify_user($admin, 'chat_message', "Yeni canlı sohbet · {$brandName}", "{$name} {$brandName} üzerinden \"{$label}\" için yazmaya başladı.", ['chat_thread_id' => $thread->id]);
         }
     }
 
@@ -136,9 +137,10 @@ class SupportChatController extends Controller
             $assignedAdmin = $thread->assigned_admin_id ? Admin::find($thread->assigned_admin_id) : null;
             $recipients = $assignedAdmin ? collect([$assignedAdmin]) : Admin::all();
             $preview = $data['body'] ? Str::limit($data['body'], 80) : ('['.($attachmentType ?? 'dosya').']');
+            $brandName = config("brands.brands.{$thread->brand}.name", $thread->brand);
 
             foreach ($recipients as $admin) {
-                notify_user($admin, 'chat_message', 'Yeni sohbet mesajı', $preview, ['chat_thread_id' => $thread->id]);
+                notify_user($admin, 'chat_message', "Yeni sohbet mesajı · {$brandName}", $preview, ['chat_thread_id' => $thread->id]);
             }
         }
 

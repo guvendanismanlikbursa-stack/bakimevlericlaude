@@ -173,6 +173,9 @@
 @if(session('info'))
 <div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-blue-100 text-blue-800 px-4 py-3 rounded-lg text-sm">{{ session('info') }}</div></div>
 @endif
+@if(session('error'))
+<div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm">{{ session('error') }}</div></div>
+@endif
 @if($errors->any())
 <div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm"><ul class="list-disc list-inside">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div></div>
 @endif

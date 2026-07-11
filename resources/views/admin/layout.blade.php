@@ -110,6 +110,7 @@
 
   <main class="flex-1 p-4 md:p-8 overflow-auto min-w-0">
     @if(session('success'))<div class="bg-green-100 text-green-800 px-4 py-3 rounded-lg text-sm mb-6">{{ session('success') }}</div>@endif
+    @if(session('error'))<div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm mb-6">{{ session('error') }}</div>@endif
     @if($errors->any())<div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm mb-6"><ul class="list-disc list-inside">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
     @yield('content')
   </main>
