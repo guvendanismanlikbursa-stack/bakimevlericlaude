@@ -27,11 +27,14 @@ jobs:
           extensions: mbstring, pdo_sqlite, gd, zip
           coverage: none
 
+      - name: .env hazirla (composer'in package:discover kancasi .env'e ihtiyac duyuyor)
+        run: cp .env.example .env
+
       - name: Composer bagimliliklarini kur
         run: composer install --no-interaction --prefer-dist
 
-      - name: .env hazirla
-        run: cp .env.example .env && php artisan key:generate
+      - name: APP_KEY uret
+        run: php artisan key:generate
 
       - name: Testleri calistir
         run: vendor/bin/phpunit
@@ -49,11 +52,14 @@ jobs:
           extensions: mbstring, pdo_sqlite, gd, zip
           coverage: none
 
+      - name: .env hazirla (composer'in package:discover kancasi .env'e ihtiyac duyuyor)
+        run: cp .env.example .env
+
       - name: SADECE production bagimliliklarini kur (--no-dev, production'daki ayni durum)
         run: composer install --no-interaction --prefer-dist --no-dev
 
-      - name: .env hazirla (DB'ye dokunmadan, sadece APP_KEY)
-        run: cp .env.example .env && php artisan key:generate --force
+      - name: APP_KEY uret (DB'ye dokunmadan)
+        run: php artisan key:generate --force
 
       - name: Bootstrap dumani - autoload/service-provider hatalarini yakalar
         run: |
