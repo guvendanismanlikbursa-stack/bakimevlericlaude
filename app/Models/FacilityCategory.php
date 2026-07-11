@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FacilityCategory extends Model
 {
-    protected $fillable = ['name', 'slug', 'brand_scope'];
+    protected $fillable = ['name', 'slug', 'brand_scope', 'seo_description'];
 
     public function facilities()
     {

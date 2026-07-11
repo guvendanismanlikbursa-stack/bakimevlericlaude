@@ -7,7 +7,10 @@
       ['name' => $section['title'].' Fiyatları', 'url' => brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug])],
   ];
   if ($category) {
-      $breadcrumbItems[] = ['name' => $category->name.' Fiyatları', 'url' => url()->current()];
+      $breadcrumbItems[] = ['name' => $category->name.' Fiyatları', 'url' => brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug])];
+  }
+  if ($districtName ?? null) {
+      $breadcrumbItems[] = ['name' => $districtName, 'url' => url()->current()];
   }
 @endphp
 @section('title', $placeTitle.' '.$topicTitle.' Fiyatları - Ücret Rehberi')
@@ -16,12 +19,22 @@
 @section('og_image', seo_og_image($section))
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => $breadcrumbItems])
+  @include('themes._shared.partials.itemlist-jsonld', ['facilities' => $facilities])
+  @include('themes._shared.partials.faqpage-jsonld', ['questions' => site_section_content($brand['slug'], $section['slug'])['faq_preview'] ?? []])
 @endsection
 @section('content')
 <div class="max-w-6xl mx-auto px-4 py-10">
   <div class="text-xs font-black text-primary mb-2">Ücret Rehberi</div>
   <h1 class="text-3xl font-black text-gray-950 mb-2">{{ $placeTitle }} {{ $topicTitle }} Fiyatları</h1>
-  <p class="text-sm text-gray-500 mb-8">{{ $placeTitle }} bölgesinde yayında olan {{ $stats['total'] }} {{ $topicTitle }} kurumunun fiyat özeti. Fiyatlar kurumlar tarafından girilir, kesin ücret için kuruma teklif talebi gönderin.</p>
+  <p class="text-sm text-gray-500 mb-3">{{ $placeTitle }} bölgesinde yayında olan {{ $stats['total'] }} {{ $topicTitle }} kurumunun fiyat özeti. Fiyatlar kurumlar tarafından girilir, kesin ücret için kuruma teklif talebi gönderin.</p>
+  @if(!empty($guideContent['intro']))
+    <p class="text-sm text-gray-700 font-semibold mb-3">{{ $guideContent['intro'] }}</p>
+  @endif
+  @if($category && !empty($category->seo_description))
+    <p class="text-sm text-gray-600 mb-8">{{ $category->seo_description }}</p>
+  @else
+    <div class="mb-8"></div>
+  @endif
 
   @if($sectionCategories->isNotEmpty())
     <div class="flex flex-wrap gap-2 mb-8">
@@ -29,6 +42,17 @@
       @foreach($sectionCategories as $sectionCategory)
         <a href="{{ brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $sectionCategory->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold {{ $category?->id === $sectionCategory->id ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">{{ $sectionCategory->name }}</a>
       @endforeach
+    </div>
+  @endif
+
+  @if(($nearDistricts ?? collect())->isNotEmpty())
+    <div class="mb-8">
+      <div class="text-xs font-black text-gray-500 mb-2">Yakın ilçe fiyat rehberleri</div>
+      <div class="flex flex-wrap gap-2">
+        @foreach($nearDistricts as $district)
+          <a href="{{ $category ? brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug, 'districtSlug' => Str::slug($district)]) : brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => Str::slug($district)]) }}" class="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:shadow-sm">{{ $district }}</a>
+        @endforeach
+      </div>
     </div>
   @endif
 

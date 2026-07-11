@@ -373,6 +373,48 @@ if (! function_exists('facility_brand_framing')) {
     }
 }
 
+if (! function_exists('guide_page_content')) {
+    /**
+     * Rehber (/rehber) ve fiyat rehberi (/fiyat-rehberi) sayfalari icin markaya
+     * ozgu, coğrafya+kategoriye gore FARKLILASAN giris metni uretir.
+     *
+     * Neden gerekli: bu sayfa ailesi 81 il x ~30 ortalama ilce x kategori
+     * kombinasyonuna kadar olceklenebiliyor (bkz. SitemapController) ama
+     * eskiden intro metni sadece marka+bolum bazinda (config/site_content.php)
+     * sabitti - yani binlerce farkli il/ilce/kategori sayfasi BIREBIR AYNI
+     * paragrafi gosteriyordu (Google duplicate/thin-content riski). Bu
+     * fonksiyon iki katmanli bir cozum uygular:
+     *   1) Marka basina 4 alternatif cumle sablonu (config/brand_voice.php
+     *      'guide_intro_templates') arasindan, sayfanin kendi kimligine
+     *      (il+ilce+kategori+marka) gore DETERMINISTIK (crc32 hash) secim -
+     *      ayni URL her zaman ayni metni uretir (indexleme tutarliligi),
+     *      farkli URL'ler farkli sablona dusme egilimindedir.
+     *   2) Sablona GERCEK, o sayfaya ozgu bir sayi (kurum sayisi) enjekte
+     *      edilir - facility_brand_framing() ile ayni "ayni ham veri +
+     *      markaya ozgu cerceve" deseninin coğrafya sayfalarina tasinmis hali.
+     */
+    function guide_page_content(array $brand, string $cityName, ?string $districtName, string $categoryLabel, int $facilityCount): array
+    {
+        $voice = config("brand_voice.{$brand['slug']}", config('brand_voice.bakimevibul'));
+        $templates = $voice['guide_intro_templates'] ?? [];
+
+        if (empty($templates)) {
+            return ['intro' => ''];
+        }
+
+        $location = trim(($districtName ? $districtName.', ' : '').$cityName);
+        $index = crc32($cityName.'|'.$districtName.'|'.$categoryLabel.'|'.$brand['slug']) % count($templates);
+
+        $replace = [
+            ':location' => $location ?: 'bölgenizde',
+            ':category' => $categoryLabel,
+            ':count' => max($facilityCount, 0),
+        ];
+
+        return ['intro' => strtr($templates[$index], $replace)];
+    }
+}
+
 if (! function_exists('classify_phone_type')) {
     /**
      * Turk telefon numaralarinda cep hatlari "5" ile baslar (0532, 90532,

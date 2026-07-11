@@ -1420,4 +1420,50 @@ class PlatformFeatureTest extends TestCase
 
         Mail::assertQueued(NotificationMail::class, fn ($mail) => $mail->title === $notification->title);
     }
+
+    public function test_guide_page_content_is_deterministic_and_varies_by_input(): void
+    {
+        $brand = config('brands.brands.bakimevibul');
+
+        $first = guide_page_content($brand, 'İstanbul', null, 'Huzurevi', 12);
+        $second = guide_page_content($brand, 'İstanbul', null, 'Huzurevi', 12);
+        $this->assertSame($first['intro'], $second['intro'], 'Ayni girdi her zaman ayni metni uretmeli (deterministik secim).');
+
+        $differentCategory = guide_page_content($brand, 'İstanbul', null, 'Kreş ve Anaokulu', 12);
+        $this->assertNotSame($first['intro'], $differentCategory['intro'], 'Farkli kategori en azindan sayaç/kategori metnini degistirmeli.');
+
+        $differentCount = guide_page_content($brand, 'İstanbul', null, 'Huzurevi', 99);
+        $this->assertStringContainsString('12', $first['intro']);
+        $this->assertStringContainsString('99', $differentCount['intro']);
+    }
+
+    public function test_location_guide_renders_dynamic_guide_intro_and_category_description(): void
+    {
+        $response = $this->get('/site/bakimeviara/rehber/yasli-bakim/'.$this->city->slug.'/kategori/'.$this->elderlyCategory->slug);
+        $response->assertOk();
+
+        // guide_page_content() ciktisi (marka sesi + gercek kurum sayisi enjekte
+        // edilmis paragraf) artik sayfada olmali - eskiden sadece 9 sabit
+        // (marka x bolum) varyanttan biri gorunuyordu, coğrafya/kategoriye gore
+        // hic degismiyordu.
+        $brand = config('brands.brands.bakimeviara');
+        $facilityCount = Facility::published()->where('facility_category_id', $this->elderlyCategory->id)->where('city_id', $this->city->id)->count();
+        $expectedIntro = guide_page_content($brand, $this->city->name, null, $this->elderlyCategory->name, $facilityCount)['intro'];
+
+        $response->assertSee($expectedIntro, false);
+        $response->assertSee($this->elderlyCategory->seo_description, false);
+    }
+
+    public function test_price_guide_supports_city_district_category_route(): void
+    {
+        // districts_for_city() gercek Turkiye il/ilce listesine (config/turkiye.php)
+        // gore calisiyor - test fixture'indaki "Istanbul" (ASCII) bu listede
+        // eslesmiyor, bu yuzden gercek yazimla ("İstanbul") ayri bir city
+        // olusturup gercek bir ilcesiyle (Adalar) test ediyoruz.
+        $realCity = City::firstOrCreate(['slug' => 'istanbul-gercek'], ['name' => 'İstanbul']);
+        $this->facility('Adalar Cocuk Merkezi', $this->childCategory, true)->update(['city_id' => $realCity->id, 'district' => 'Adalar']);
+
+        $this->get('/site/bakimeviara/fiyat-rehberi/cocuk/'.$realCity->slug.'/kategori/'.$this->childCategory->slug.'/adalar')
+            ->assertOk();
+    }
 }

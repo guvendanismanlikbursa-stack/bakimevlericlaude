@@ -88,6 +88,7 @@ class SitemapController extends Controller
 
             foreach ($categoryDistrictCombos[$category->slug] ?? [] as $combo) {
                 $urls->push($this->url($prefix.'/rehber/'.$section['slug'].'/'.$combo['city_slug'].'/kategori/'.$category->slug.'/'.$combo['district_slug'], 'weekly', '0.5'));
+                $urls->push($this->url($prefix.'/fiyat-rehberi/'.$section['slug'].'/'.$combo['city_slug'].'/kategori/'.$category->slug.'/'.$combo['district_slug'], 'weekly', '0.5'));
             }
         }
 

@@ -169,4 +169,7 @@
   });
 })();
 </script>
+@if($activeSection ?? null)
+  @include('themes._shared.partials.itemlist-jsonld', ['facilities' => $facilities])
+@endif
 @endsection

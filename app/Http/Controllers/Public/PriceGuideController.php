@@ -39,6 +39,9 @@ class PriceGuideController extends Controller
 
     /**
      * Kategori-ozel ucret rehberi: "Istanbul Huzurevi Fiyatlari" gibi.
+     * Opsiyonel ilce parametresi ile ucuncu eksen (il+ilce+kategori) de
+     * desteklenir - LocationGuideController::showCategory() ile ayni
+     * granularite, sitemap kapasitesini tam esitlemek icin.
      */
     public function showCategory(Request $request)
     {
@@ -46,6 +49,7 @@ class PriceGuideController extends Controller
         $sectionSlug = $request->route('sectionSlug');
         $citySlug = $request->route('citySlug');
         $categorySlug = $request->route('categorySlug');
+        $districtSlug = $request->route('districtSlug');
 
         $section = active_service_section($sectionSlug, $brand);
         abort_if(($section['slug'] ?? null) !== $sectionSlug, 404);
@@ -56,12 +60,17 @@ class PriceGuideController extends Controller
         abort_if((service_section_for_scope($category->brand_scope)['slug'] ?? null) !== $sectionSlug, 404);
 
         $city = City::where('slug', $citySlug)->firstOrFail();
+        $districtName = $this->resolveDistrict($city, $districtSlug);
 
         $baseQuery = Facility::published()
             ->where('facility_category_id', $category->id)
             ->where('city_id', $city->id);
 
-        return $this->render($brand, $section, $city, null, $category, $baseQuery);
+        if ($districtName) {
+            $baseQuery->where('district', $districtName);
+        }
+
+        return $this->render($brand, $section, $city, $districtName, $category, $baseQuery);
     }
 
     /**
@@ -106,9 +115,12 @@ class PriceGuideController extends Controller
             ->paginate(12);
 
         $sectionCategories = FacilityCategory::whereIn('brand_scope', $section['scopes'])->orderBy('name')->get();
+        $nearDistricts = collect(districts_for_city($city->name))->take(18)->values();
+        $categoryLabel = $category->name ?? ($section['title'].' kurumları');
+        $guideContent = guide_page_content($brand, $city->name, $districtName, $categoryLabel, $stats['total']);
 
         return view("themes.{$brand['theme']}.price-guide", compact(
-            'brand', 'section', 'city', 'districtName', 'category', 'stats', 'tierCounts', 'facilities', 'sectionCategories'
+            'brand', 'section', 'city', 'districtName', 'category', 'stats', 'tierCounts', 'facilities', 'sectionCategories', 'nearDistricts', 'guideContent'
         ));
     }
 

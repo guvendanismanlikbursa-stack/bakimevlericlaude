@@ -109,7 +109,7 @@ $siteRoutes = function () {
 
     // Ucret rehberi
     Route::get('/fiyat-rehberi', [PriceGuideController::class, 'index'])->name('price-guide.index');
-    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/kategori/{categorySlug}', [PriceGuideController::class, 'showCategory'])->name('price-guide.category');
+    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [PriceGuideController::class, 'showCategory'])->name('price-guide.category');
     Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/{districtSlug?}', [PriceGuideController::class, 'show'])->name('price-guide.show');
 
     // Turkiye istatistikleri

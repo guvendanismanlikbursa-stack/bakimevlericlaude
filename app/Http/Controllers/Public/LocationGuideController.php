@@ -36,11 +36,13 @@ class LocationGuideController extends Controller
             $query->where('district', $districtName);
         }
 
+        $facilityCount = (clone $query)->count();
         $facilities = $query->limit(12)->get();
         $nearDistricts = collect($districts)->take(18)->values();
         $content = site_section_content($brand['slug'], $section['slug']);
         $sectionCategories = FacilityCategory::whereIn('brand_scope', $section['scopes'])->orderBy('name')->get();
         $category = null;
+        $guideContent = guide_page_content($brand, $city->name, $districtName, $section['title'].' kurumları', $facilityCount);
 
         return view("themes.{$brand['theme']}.location-guide", compact(
             'brand',
@@ -49,9 +51,11 @@ class LocationGuideController extends Controller
             'districtName',
             'nearDistricts',
             'facilities',
+            'facilityCount',
             'content',
             'category',
-            'sectionCategories'
+            'sectionCategories',
+            'guideContent'
         ));
     }
 
@@ -90,10 +94,12 @@ class LocationGuideController extends Controller
             $query->where('district', $districtName);
         }
 
+        $facilityCount = (clone $query)->count();
         $facilities = $query->limit(12)->get();
         $nearDistricts = collect($districts)->take(18)->values();
         $content = site_section_content($brand['slug'], $section['slug']);
         $sectionCategories = FacilityCategory::whereIn('brand_scope', $section['scopes'])->orderBy('name')->get();
+        $guideContent = guide_page_content($brand, $city->name, $districtName, $category->name, $facilityCount);
 
         return view("themes.{$brand['theme']}.location-guide", compact(
             'brand',
@@ -102,9 +108,11 @@ class LocationGuideController extends Controller
             'districtName',
             'nearDistricts',
             'facilities',
+            'facilityCount',
             'content',
             'category',
-            'sectionCategories'
+            'sectionCategories',
+            'guideContent'
         ));
     }
 

@@ -23,6 +23,8 @@
 @section('og_image', seo_og_image($section))
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => $breadcrumbItems])
+  @include('themes._shared.partials.itemlist-jsonld', ['facilities' => $facilities])
+  @include('themes._shared.partials.faqpage-jsonld', ['questions' => $content['faq_preview'] ?? []])
 @endsection
 
 <section class="{{ $theme === 'bakimevleri' ? 'bg-gray-950 text-white' : ($theme === 'bakimeviara' ? 'bg-white' : 'bg-gray-50') }} border-b border-gray-100">
@@ -68,7 +70,13 @@
     <div>
       <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-6">
         <h2 class="text-2xl font-black text-gray-950 mb-3">{{ $placeTitle }} için seçim kontrolü</h2>
-        <p class="text-gray-600 leading-relaxed">{{ $content['intro'] ?? '' }}</p>
+        @if(!empty($guideContent['intro']))
+          <p class="text-gray-700 leading-relaxed font-semibold">{{ $guideContent['intro'] }}</p>
+        @endif
+        @if($category && !empty($category->seo_description))
+          <p class="text-gray-600 leading-relaxed mt-3">{{ $category->seo_description }}</p>
+        @endif
+        <p class="text-gray-600 leading-relaxed mt-3">{{ $content['intro'] ?? '' }}</p>
         <div class="grid sm:grid-cols-2 gap-3 mt-5">
           @foreach(($content['checks'] ?? []) as $check)
             <div class="rounded-lg px-3 py-3 text-sm font-semibold" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">{{ $check }}</div>
