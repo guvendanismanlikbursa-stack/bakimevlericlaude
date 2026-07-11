@@ -8,6 +8,14 @@ storage/framework/sessions/*
 storage/framework/views/*
 storage/framework/testing/*
 storage/logs/*
+# Yukaridaki "*" kurallari .gitkeep'i de hariç tutuyordu - temiz bir git
+# clone'da (ör. GitHub Actions) bu klasorler HIC OLUSMUYORDU, "Please
+# provide a valid cache path" gibi hatalarla CI'i patlatiyordu (12 Temmuz
+# 2026). Klasorlerin en azindan BOS olarak var olmasi icin istisna edildi.
+!storage/framework/cache/data/.gitkeep
+!storage/framework/sessions/.gitkeep
+!storage/framework/views/.gitkeep
+!storage/logs/.gitkeep
 
 .env.codex-backup
 .env.production
