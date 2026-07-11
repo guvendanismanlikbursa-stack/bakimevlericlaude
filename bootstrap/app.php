@@ -4,6 +4,7 @@ use App\Http\Middleware\ResolveBrand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Sentry\Laravel\Integration as SentryIntegration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,6 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // config('sentry.dsn') bos ise SDK zaten no-op kalir (bkz.
+        // config/sentry.php) - .env'de SENTRY_LARAVEL_DSN set edilmeden bu
+        // satirin hicbir etkisi yok, yani devreye alma tamamen opsiyonel.
+        SentryIntegration::handles($exceptions);
+
         $exceptions->report(function (\Throwable $e) {
             notify_admin_of_exception($e);
         });

@@ -110,7 +110,7 @@ def run(cmd, cwd=APP_ROOT, check=True):
 
 def step1_run_tests():
     info('Adim 1/7: yerel test paketi calistiriliyor...')
-    result = run(['vendor/bin/phpunit'], check=False)
+    result = run(['php', 'vendor/bin/phpunit'], check=False)
     if result.returncode != 0:
         fail('Testler basarisiz - deploy DURDURULDU. Once testleri gecir, sonra tekrar dene.')
     ok('Testler yesil.')
