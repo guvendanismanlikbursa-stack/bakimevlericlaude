@@ -23,6 +23,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'facility.auth' => \App\Http\Middleware\FacilityUserAuth::class,
             'track.visit' => \App\Http\Middleware\TrackSiteVisit::class,
         ]);
+
+        // /_ops/{action} tarayici formu degil, deploy script'inin Bearer
+        // token ile cagirdigi bir uc (bkz. OpsController) - CSRF cerez/
+        // oturum tabanli oldugu icin buraya hic uygulanmiyor. Onceden bu
+        // istisna yoktu, CSRF hatasi 419'a donusup bizim "nazik geri donus"
+        // kancamiz (asagida) sessizce anasayfaya yonlendiriyordu - deploy
+        // script'i bunu "basarili" saniyordu ama gercekte hicbir komut
+        // calismiyordu.
+        $middleware->validateCsrfTokens(except: ['_ops/*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // config('sentry.dsn') bos ise SDK zaten no-op kalir (bkz.
