@@ -99,7 +99,15 @@ def load_deploy_env():
 
 def run(cmd, cwd=APP_ROOT, check=True):
     info('calistiriliyor: ' + ' '.join(cmd))
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, shell=(os.name == 'nt'))
+    # encoding='utf-8' + errors='replace' sart: Windows'ta varsayilan yerel
+    # kod sayfasi (ör. cp1254) composer/git ciktisindaki UTF-8 karakterleri
+    # decode edemeyip subprocess okuyucu thread'ini sessizce cokertiyor,
+    # bu da result.stdout'un None kalmasina ve sonraki json.loads() gibi
+    # cagrilarin TypeError ile patlamasina yol aciyordu.
+    result = subprocess.run(
+        cmd, cwd=cwd, capture_output=True, text=True,
+        encoding='utf-8', errors='replace', shell=(os.name == 'nt'),
+    )
     print(result.stdout)
     if result.returncode != 0:
         print(result.stderr)
@@ -178,7 +186,14 @@ def step2_prepare_autoload(changed_files):
         return False
 
     info('Adim 2/7: composer.lock degisti, temiz (--no-dev) autoload uretiliyor...')
-    run(['php', 'composer.phar', 'dump-autoload', '--no-dev', '--optimize'], check=False)
+    # --no-scripts sart: bu komutun post-autoload-dump kancasi normalde
+    # "artisan package:discover" calistirir, o da yerel (dev-dahil)
+    # installed.json'da hala listeli olan dev-only paketleri (ör.
+    # laravel/sail) instantiate etmeye calisip patlar - tam bugunku 2.
+    # cokmenin yerel bir yan etkisi. Paket kesfi zaten production'da ayrica
+    # /_ops/package-discover ile, sunucunun kendi --no-dev installed.json'undan
+    # yapiliyor; yerelde hic gerekmiyor.
+    run(['php', 'composer.phar', 'dump-autoload', '--no-dev', '--optimize', '--no-scripts'])
 
     leaked = dev_only_paketler_sizdi_mi()
     if leaked:
