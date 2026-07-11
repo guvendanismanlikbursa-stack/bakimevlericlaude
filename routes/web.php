@@ -47,6 +47,8 @@ use App\Http\Controllers\Public\FacilityClaimController;
 use App\Http\Controllers\Public\FacilityRegistrationController;
 use App\Http\Controllers\Public\FacilityRegistrationGoogleAuthController;
 use App\Http\Controllers\Public\CronRunnerController;
+use App\Http\Controllers\Public\HealthController;
+use App\Http\Controllers\Public\OpsController;
 use App\Http\Controllers\Public\FacilityController;
 use App\Http\Controllers\Public\FaqController;
 use App\Http\Controllers\Public\HomeController;
@@ -252,6 +254,10 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/robots.txt', RobotsController::class)->name('robots');
 // cPanel cron'u dakikada bir bu URL'i curl ile tetikler (bkz. CronRunnerController).
 Route::get('/_internal/cron-runner', [CronRunnerController::class, 'run'])->name('internal.cron-runner');
+// Dis izleme (UptimeRobot vb.) ve deploy script'inin canliyi dogrulamasi icin - bkz. HealthController.
+Route::get('/_saglik', [HealthController::class, 'check'])->name('health-check');
+// Deploy script'inin migrate/cache-refresh tetiklemesi icin token korumali uc - bkz. OpsController.
+Route::post('/_ops/{action}', [OpsController::class, 'run'])->middleware('throttle:public-sensitive')->name('ops.run');
 
 Route::middleware('track.visit')->group($siteRoutes);
 

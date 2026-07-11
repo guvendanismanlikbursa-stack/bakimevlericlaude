@@ -10,6 +10,14 @@ return [
     // bu uc hicbir token ile eslesmez, yani devre disi kalir.
     'cron_secret' => env('CRON_SECRET', ''),
 
+    // Deploy script'inin migrate/cache-refresh gibi birkac sabit komutu
+    // uzaktan tetikleyebilmesi icin paylasilan sifre (bkz.
+    // App\Http\Controllers\Public\OpsController). Bos birakilirsa bu uc
+    // hicbir token ile eslesmez, yani devre disi kalir - deploy oncesi
+    // gecici, kimliksiz PHP script'leri public/'e atip silme deseninin
+    // yerini alir.
+    'ops_secret' => env('OPS_SECRET', ''),
+
     // Yeni sahiplenilen kuruma tanınan ücretsiz teklif hakkı sayısı
     'free_claim_credits' => 5,
 

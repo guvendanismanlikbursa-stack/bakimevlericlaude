@@ -37,3 +37,7 @@ tools/veri-cekici/*_log.txt
 /bootstrap/cache/*.php
 sample_output.txt
 route-list.txt
+
+# FTP sifresi + OPS_SECRET icerir, asla commit edilmez (bkz. deploy/deploy.py,
+# deploy/.env.deploy.example sablonu commit edilir).
+/deploy/.env.deploy

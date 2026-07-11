@@ -1743,4 +1743,53 @@ class PlatformFeatureTest extends TestCase
         $this->assertStringContainsString('applicant_google_name=Kurum', $response->headers->get('Location'));
         $this->assertStringContainsString('applicant_google_email=yetkili%40test.local', $response->headers->get('Location'));
     }
+
+    public function test_health_check_endpoint_reports_ok(): void
+    {
+        $this->get('/_saglik')
+            ->assertOk()
+            ->assertJson(['status' => 'ok'])
+            ->assertJsonPath('checks.database', 'ok')
+            ->assertJsonPath('checks.socialite', 'ok');
+    }
+
+    public function test_ops_endpoint_is_disabled_without_secret_configured(): void
+    {
+        config(['platform.ops_secret' => '']);
+
+        $this->postJson('/_ops/migrate', [], ['Authorization' => 'Bearer anything'])
+            ->assertForbidden();
+    }
+
+    public function test_ops_endpoint_rejects_wrong_secret(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+
+        $this->postJson('/_ops/migrate', [], ['Authorization' => 'Bearer yanlis-sifre'])
+            ->assertForbidden();
+    }
+
+    public function test_ops_endpoint_rejects_unknown_action_even_with_correct_secret(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+
+        $this->postJson('/_ops/rm-rf', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertNotFound();
+    }
+
+    public function test_ops_endpoint_runs_cache_refresh_with_correct_secret(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+
+        $this->postJson('/_ops/cache-refresh', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk();
+    }
+
+    public function test_ops_endpoint_runs_package_discover_with_correct_secret(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+
+        $this->postJson('/_ops/package-discover', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk();
+    }
 }
