@@ -63,7 +63,24 @@
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold text-white/80 hover:text-white hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="text-sm px-4 py-2 rounded-md font-black" style="background: {{ $brand['secondary_color'] }}; color:#fff;">Başla</a>
+      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-white text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
     </div>
+  </div>
+  <div id="js-mobile-menu" class="hidden lg:hidden bg-gray-950 border-t border-white/10">
+    <nav class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm font-semibold text-white/80">
+      <a href="{{ brand_route('home') }}" class="py-2 hover:text-white">Ana Sayfa</a>
+      <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="py-2 hover:text-white">Seçim Asistanı</a>
+      <a href="{{ brand_route('engagement.compare') }}" class="py-2 hover:text-white">Karşılaştır</a>
+      @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="py-2 hover:text-white">Favoriler</a>@endif
+      <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-white">Kurumları Bul</a>
+      <a href="{{ brand_route('contact.create') }}" class="py-2 hover:text-white">İletişim</a>
+      <hr class="border-white/10 my-1">
+      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-white">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-white">Aile Girişi</a>@endif
+      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-white">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-white">Kurum Girişi</a>@endif
+      @if(session('facility_user_id') || session('family_user_id'))
+        <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-white">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+      @endif
+    </nav>
   </div>
 </header>
 @elseif($theme === 'bakimeviara')
@@ -87,7 +104,23 @@
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-bold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="btn-primary text-sm px-4 py-2 rounded-full font-black">Başla</a>
+      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
     </div>
+  </div>
+  <div id="js-mobile-menu" class="hidden lg:hidden bg-white border-t border-gray-100">
+    <nav class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm font-bold text-gray-700">
+      <a href="{{ brand_route('home') }}" class="py-2 hover:text-primary">Ana Sayfa</a>
+      <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="py-2 hover:text-primary">Aile Sihirbazı</a>
+      <a href="{{ brand_route('engagement.compare') }}" class="py-2 hover:text-primary">Karşılaştır</a>
+      @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="py-2 hover:text-primary">Favoriler</a>@endif
+      <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-primary">Kurumlar</a>
+      <hr class="border-gray-100 my-1">
+      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-primary">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-primary">Aile Girişi</a>@endif
+      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
+      @if(session('facility_user_id') || session('family_user_id'))
+        <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-primary">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+      @endif
+    </nav>
   </div>
 </header>
 @else
@@ -112,7 +145,24 @@
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="btn-primary text-sm px-4 py-2 rounded-lg font-bold">Başla</a>
+      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
     </div>
+  </div>
+  <div id="js-mobile-menu" class="hidden lg:hidden bg-white border-t border-gray-100 shadow-sm">
+    <nav class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm font-semibold text-gray-700">
+      <a href="{{ brand_route('home') }}" class="py-2 hover:text-primary">Ana Sayfa</a>
+      <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="py-2 hover:text-primary">Karar Sihirbazı</a>
+      <a href="{{ brand_route('engagement.compare') }}" class="py-2 hover:text-primary">Karşılaştır</a>
+      @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="py-2 hover:text-primary">Favoriler</a>@endif
+      <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-primary">Kurumları Bul</a>
+      <a href="{{ brand_route('contact.create') }}" class="py-2 hover:text-primary">İletişim</a>
+      <hr class="border-gray-100 my-1">
+      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-primary">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-primary">Aile Girişi</a>@endif
+      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
+      @if(session('facility_user_id') || session('family_user_id'))
+        <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-primary">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+      @endif
+    </nav>
   </div>
 </header>
 @endif
@@ -193,6 +243,20 @@
 @include('themes._shared.partials.pwa-install-button')
 @include('themes._shared.partials.organization-jsonld')
 @yield('breadcrumb_jsonld')
+
+<script>
+(function () {
+  var toggle = document.getElementById('js-mobile-menu-toggle');
+  var menu = document.getElementById('js-mobile-menu');
+  if (!toggle || !menu) return;
+  toggle.addEventListener('click', function () {
+    menu.classList.toggle('hidden');
+  });
+  menu.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () { menu.classList.add('hidden'); });
+  });
+})();
+</script>
 
 </body>
 </html>

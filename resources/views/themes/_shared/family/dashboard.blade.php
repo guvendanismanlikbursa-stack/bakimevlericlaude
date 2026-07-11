@@ -37,23 +37,6 @@
       <div class="text-xs text-gray-500">Toplam Talep</div>
       <div class="text-2xl font-bold mt-1">{{ $stats['total_requests'] }}</div>
     </div>
-  <div class="grid md:grid-cols-3 gap-4 mb-8">
-    <a href="{{ brand_route('engagement.wizard') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
-      <div class="text-xs font-semibold text-primary">Karar Merkezi</div>
-      <div class="font-black text-gray-950 mt-1">İhtiyaç sihirbazı</div>
-      <p class="text-sm text-gray-500 mt-2">Bakım, eğitim veya rehabilitasyon ihtiyacına göre uygun arama yolunu seçin.</p>
-    </a>
-    <a href="{{ brand_route('engagement.compare') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
-      <div class="text-xs font-semibold text-primary">Karşılaştırma<span class="sr-only">Karsilastirma</span></div>
-      <div class="font-black text-gray-950 mt-1">Kurumları yan yana gör</div>
-      <p class="text-sm text-gray-500 mt-2">Favoriye veya karşılaştırmaya eklediğiniz kurumları tek ekranda inceleyin.</p>
-    </a>
-    <a href="{{ brand_route('engagement.favorites') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
-      <div class="text-xs font-semibold text-primary">Notlar</div>
-      <div class="font-black text-gray-950 mt-1">Favori listeniz</div>
-      <p class="text-sm text-gray-500 mt-2">Kısa liste oluşturun, görüşme notlarını aile panelinden takip edin.</p>
-    </a>
-  </div>
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Açık Talep</div>
       <div class="text-2xl font-bold mt-1">{{ $stats['open_requests'] }}</div>
@@ -70,6 +53,24 @@
       <div class="text-xs text-gray-500">Mesaj</div>
       <div class="text-2xl font-bold mt-1">{{ $stats['message_count'] }}</div>
     </div>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4 mb-8">
+    <a href="{{ brand_route('engagement.wizard') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
+      <div class="text-xs font-semibold text-primary">Karar Merkezi</div>
+      <div class="font-black text-gray-950 mt-1">İhtiyaç sihirbazı</div>
+      <p class="text-sm text-gray-500 mt-2">Bakım, eğitim veya rehabilitasyon ihtiyacına göre uygun arama yolunu seçin.</p>
+    </a>
+    <a href="{{ brand_route('engagement.compare') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
+      <div class="text-xs font-semibold text-primary">Karşılaştırma<span class="sr-only">Karsilastirma</span></div>
+      <div class="font-black text-gray-950 mt-1">Kurumları yan yana gör</div>
+      <p class="text-sm text-gray-500 mt-2">Favoriye veya karşılaştırmaya eklediğiniz kurumları tek ekranda inceleyin.</p>
+    </a>
+    <a href="{{ brand_route('engagement.favorites') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
+      <div class="text-xs font-semibold text-primary">Notlar</div>
+      <div class="font-black text-gray-950 mt-1">Favori listeniz</div>
+      <p class="text-sm text-gray-500 mt-2">Kısa liste oluşturun, görüşme notlarını aile panelinden takip edin.</p>
+    </a>
   </div>
 
   @if($requests->isEmpty())
