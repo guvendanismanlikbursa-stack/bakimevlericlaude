@@ -18,6 +18,24 @@
   </form>
 </div>
 
+@php $intentLabels = ['sohbet' => '💬 Sohbet', 'dertlesme' => '🤍 Dertleşme', 'fikir' => '💡 Fikir', 'temsilci' => '🎧 Temsilci']; @endphp
+@if($siblingThreads->isNotEmpty())
+  <div class="mb-4">
+    <div class="text-xs font-bold text-gray-500 mb-2">Bu ziyaretçinin diğer sohbetleri (aynı kişi, ayrı bölümler)</div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{{ route('admin.chat.show', $thread) }}" class="px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 text-white">
+        {{ $intentLabels[$thread->intent] ?? $thread->intent }} (şu an)
+      </a>
+      @foreach($siblingThreads as $sibling)
+        <a href="{{ route('admin.chat.show', $sibling) }}" class="px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-200">
+          {{ $intentLabels[$sibling->intent] ?? $sibling->intent }}
+          @if($sibling->unread_by_admin)<span class="ml-1 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">yeni</span>@endif
+        </a>
+      @endforeach
+    </div>
+  </div>
+@endif
+
 <div class="bg-white rounded-xl shadow-sm flex flex-col h-[70vh]">
   <div id="js-admin-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 rounded-t-xl">
     @foreach($thread->messages as $m)

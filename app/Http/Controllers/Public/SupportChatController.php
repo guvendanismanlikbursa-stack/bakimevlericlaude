@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\ChatMessage;
 use App\Models\ChatThread;
 use App\Models\ChatWorkingHour;
 use App\Models\Setting;
-use App\Services\GeoLookupService;
 use App\Services\ImageCompressionService;
+use App\Services\IpGeoLookupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,64 +21,75 @@ class SupportChatController extends Controller
 {
     private const DEFAULT_OFFLINE_MESSAGE = 'Şu an çevrimdışıyız. Mesajınızı bırakın, size en kısa sürede döneriz.';
 
-    public function start(Request $request, GeoLookupService $geo)
+    public function start(Request $request, IpGeoLookupService $ipGeo)
     {
         $brand = current_brand();
 
         $data = $request->validate([
             'guest_token' => 'nullable|string|max:64',
-            'intent' => 'required_without:guest_token|nullable|in:sohbet,dertlesme,fikir,temsilci',
+            'intent' => 'nullable|in:sohbet,dertlesme,fikir,temsilci',
             'operator_gender_preference' => 'nullable|in:erkek,kadin,farketmez',
-            'lat' => 'nullable|numeric|between:-90,90',
-            'lng' => 'nullable|numeric|between:-180,180',
+            'guest_name' => 'nullable|string|max:80',
+            'guest_age' => 'nullable|integer|min:1|max:120',
         ]);
 
-        $thread = null;
-        if (! empty($data['guest_token'])) {
-            $thread = ChatThread::where('brand', $brand['slug'])
-                ->where('guest_token', $data['guest_token'])
-                ->where('status', '!=', 'closed')
-                ->first();
-        }
+        // guest_token BIR KISIYI (tarayiciyi) tanimlar, thread'i degil. Ayni
+        // kisinin farkli niyetleri (sohbet/dertlesme/fikir/temsilci) HER ZAMAN
+        // ayri thread'lerdir - kendi mesaj gecmisiyle, birbirine karismaz.
+        // "Konu değiştir" ile baska bir niyete gecince, o niyetin thread'i
+        // varsa devam eder, yoksa yeni acilir - ama ESKI niyetin mesajlari
+        // asla yeni bolume sizmaz.
+        $guestToken = ($data['guest_token'] ?? null) ?: Str::random(40);
+        $intent = $data['intent'] ?? 'sohbet';
 
-        // Kullanici mevcut bir sohbeti surdururken konu/niyet degistirdiyse
-        // (widget'taki "Konu değiştir" butonu) YENI bir thread acmak yerine
-        // ayni thread'i guncelliyoruz - mesaj gecmisi kaybolmaz.
-        if ($thread && ! empty($data['intent'])) {
-            $thread->update([
-                'intent' => $data['intent'],
-                'operator_gender_preference' => $data['operator_gender_preference'] ?? $thread->operator_gender_preference,
-                'unread_by_admin' => true,
-            ]);
-        }
+        $thread = ChatThread::where('brand', $brand['slug'])
+            ->where('guest_token', $guestToken)
+            ->where('intent', $intent)
+            ->where('status', '!=', 'closed')
+            ->first();
 
         if (! $thread) {
-            $cityName = null;
-            if (($data['lat'] ?? null) !== null && ($data['lng'] ?? null) !== null) {
-                $nearest = $geo->nearestCity((float) $data['lat'], (float) $data['lng']);
-                $cityName = $nearest['city'] ?? null;
-            }
+            // Ayni misafirin (guest_token) baska bir bolumde acilmis onceki
+            // thread'i varsa isim/yas/sehir bilgisini oradan devral - her
+            // bolum degisiminde tekrar sormaya/IP sorgulamaya gerek kalmaz.
+            $siblingThread = ChatThread::where('guest_token', $guestToken)->latest()->first();
+
+            $cityName = $siblingThread->city_name
+                ?? $ipGeo->cityFromIp($request->ip());
 
             $thread = ChatThread::create([
                 'brand' => $brand['slug'],
-                'guest_token' => Str::random(40),
-                'intent' => $data['intent'] ?? 'sohbet',
+                'guest_token' => $guestToken,
+                'intent' => $intent,
                 'operator_gender_preference' => $data['operator_gender_preference'] ?? null,
                 'status' => 'open',
-                'lat' => $data['lat'] ?? null,
-                'lng' => $data['lng'] ?? null,
                 'city_name' => $cityName,
+                'guest_name' => $data['guest_name'] ?? $siblingThread?->guest_name,
+                'guest_age' => $data['guest_age'] ?? $siblingThread?->guest_age,
                 'unread_by_admin' => true,
             ]);
+
+            $this->notifyAdminsOfNewThread($thread);
         }
 
         return response()->json([
             'thread_id' => $thread->id,
+            'intent' => $thread->intent,
             'guest_token' => $thread->guest_token,
             'is_online' => ChatWorkingHour::isCurrentlyOpen(),
             'offline_message' => Setting::get('chat_offline_message', self::DEFAULT_OFFLINE_MESSAGE),
             'messages' => $thread->messages()->orderBy('id')->get()->map(fn ($m) => $this->formatMessage($m))->values(),
         ]);
+    }
+
+    private function notifyAdminsOfNewThread(ChatThread $thread): void
+    {
+        $label = ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent;
+        $name = $thread->guest_name ? $thread->guest_name.' isimli ziyaretçi' : 'Yeni bir ziyaretçi';
+
+        foreach (Admin::all() as $admin) {
+            notify_user($admin, 'chat_message', 'Yeni canlı sohbet', "{$name} \"{$label}\" için yazmaya başladı.", ['chat_thread_id' => $thread->id]);
+        }
     }
 
     public function send(Request $request)
@@ -107,12 +119,28 @@ class SupportChatController extends Controller
             'attachment_size' => $attachmentSize,
         ]);
 
+        // Zaten "okunmamis" isaretliyse (admin onceki mesaji da henuz gormedi)
+        // tekrar bildirim atmiyoruz - hizli art arda mesajlarda admini
+        // bildirim yagmuruna tutmamak icin sadece "okunmus -> okunmamis"
+        // gecisinde (bkz. unread_by_admin false idi) yeni bildirim gonderilir.
+        $shouldNotify = ! $thread->unread_by_admin;
+
         $thread->update([
             'last_message_at' => now(),
             'last_message_preview' => $data['body'] ? Str::limit($data['body'], 80) : ('['.($attachmentType ?? 'dosya').']'),
             'unread_by_admin' => true,
             'status' => $thread->status === 'closed' ? 'open' : $thread->status,
         ]);
+
+        if ($shouldNotify) {
+            $assignedAdmin = $thread->assigned_admin_id ? Admin::find($thread->assigned_admin_id) : null;
+            $recipients = $assignedAdmin ? collect([$assignedAdmin]) : Admin::all();
+            $preview = $data['body'] ? Str::limit($data['body'], 80) : ('['.($attachmentType ?? 'dosya').']');
+
+            foreach ($recipients as $admin) {
+                notify_user($admin, 'chat_message', 'Yeni sohbet mesajı', $preview, ['chat_thread_id' => $thread->id]);
+            }
+        }
 
         return response()->json([
             'message' => $this->formatMessage($message),

@@ -320,6 +320,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/whatsapp-tiklamalari/{whatsappClick}', [AdminWhatsappClickController::class, 'destroy'])->name('whatsapp-clicks.destroy');
 
         Route::get('/canli-sohbet', [AdminChatController::class, 'index'])->name('chat.index');
+        Route::get('/canli-sohbet-istatistik', [AdminChatController::class, 'stats'])->name('chat.stats');
         Route::get('/canli-sohbet/{thread}', [AdminChatController::class, 'show'])->name('chat.show');
         Route::post('/canli-sohbet/{thread}/yanitla', [AdminChatController::class, 'reply'])->name('chat.reply');
         Route::get('/canli-sohbet/{thread}/mesajlar', [AdminChatController::class, 'poll'])->name('chat.poll');

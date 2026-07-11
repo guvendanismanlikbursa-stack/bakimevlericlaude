@@ -29,6 +29,7 @@ use App\Models\WalletTopup;
 use App\Services\FacilityImportImageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -1470,16 +1471,27 @@ class PlatformFeatureTest extends TestCase
     public function test_guest_can_start_chat_send_message_and_poll_for_reply(): void
     {
         \App\Models\ChatWorkingHour::query()->update(['is_active' => true, 'open_time' => '00:00:00', 'close_time' => '23:59:59']);
+        Mail::fake();
 
         $start = $this->postJson('/site/bakimeviara/destek/baslat', [
             'intent' => 'sohbet',
             'operator_gender_preference' => 'kadin',
-            'lat' => 40.19, 'lng' => 29.06,
+            'guest_name' => 'Ayşe',
+            'guest_age' => 47,
         ])->assertOk()->json();
 
         $this->assertNotEmpty($start['guest_token']);
         $this->assertTrue($start['is_online']);
         $threadId = $start['thread_id'];
+
+        // Test istemcisi hep yerel/ozel IP (127.0.0.1) kullandigi icin
+        // sehir tespiti burada calismaz (IpGeoLookupService bunu bilerek
+        // atlar - bkz. ayri test_ip_geo_lookup_service_* testleri).
+        $this->assertDatabaseHas('chat_threads', [
+            'id' => $threadId,
+            'guest_name' => 'Ayşe',
+            'guest_age' => 47,
+        ]);
 
         $send = $this->postJson("/site/bakimeviara/destek/{$threadId}/mesaj", [
             'guest_token' => $start['guest_token'],
@@ -1488,6 +1500,13 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertSame('Annem icin huzurevi ariyorum.', $send['message']['body']);
         $this->assertSame('yasli-bakim', $send['suggested_section']['slug']);
+
+        // Yeni thread acildiginda admin(ler)e bildirim gitmis olmali
+        $this->assertDatabaseHas('platform_notifications', [
+            'notifiable_type' => \App\Models\Admin::class,
+            'notifiable_id' => $this->admin->id,
+            'type' => 'chat_message',
+        ]);
 
         // Admin yanitlar
         \App\Models\ChatMessage::create([
@@ -1504,6 +1523,7 @@ class PlatformFeatureTest extends TestCase
 
     public function test_chat_thread_is_isolated_per_brand(): void
     {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
         $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
 
         // Ayni thread'e baska bir marka uzerinden erisim 403 vermeli.
@@ -1515,6 +1535,7 @@ class PlatformFeatureTest extends TestCase
 
     public function test_chat_send_rejects_wrong_guest_token(): void
     {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
         $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
 
         $this->postJson("/site/bakimeviara/destek/{$start['thread_id']}/mesaj", [
@@ -1525,6 +1546,7 @@ class PlatformFeatureTest extends TestCase
 
     public function test_chat_shows_offline_message_outside_working_hours(): void
     {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
         \App\Models\ChatWorkingHour::query()->update(['is_active' => false]);
         \App\Models\Setting::set('chat_offline_message', 'Test cevrimdisi mesaji.');
 
@@ -1536,6 +1558,7 @@ class PlatformFeatureTest extends TestCase
 
     public function test_admin_can_view_and_reply_to_chat_thread(): void
     {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
         $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'])->assertOk()->json();
         $this->postJson("/site/bakimeviara/destek/{$start['thread_id']}/mesaj", [
             'guest_token' => $start['guest_token'],
@@ -1557,6 +1580,76 @@ class PlatformFeatureTest extends TestCase
             'sender_admin_id' => $this->admin->id,
             'body' => 'Merhaba, yardimci oluyorum.',
         ]);
+    }
+
+    public function test_ip_geo_lookup_service_returns_city_for_public_ip(): void
+    {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'success', 'city' => 'Bursa'])]);
+
+        $service = new \App\Services\IpGeoLookupService();
+
+        $this->assertSame('Bursa', $service->cityFromIp('8.8.8.8'));
+    }
+
+    public function test_ip_geo_lookup_service_skips_private_and_local_ips(): void
+    {
+        $service = new \App\Services\IpGeoLookupService();
+
+        $this->assertNull($service->cityFromIp('127.0.0.1'));
+        $this->assertNull($service->cityFromIp('192.168.1.5'));
+        $this->assertNull($service->cityFromIp(null));
+    }
+
+    public function test_switching_chat_intent_creates_separate_thread_with_own_history(): void
+    {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
+        // Once "sohbet" niyetiyle baslayip mesaj yazar
+        $sohbet = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+        $this->postJson("/site/bakimeviara/destek/{$sohbet['thread_id']}/mesaj", [
+            'guest_token' => $sohbet['guest_token'],
+            'body' => 'Sohbet mesaji',
+        ])->assertOk();
+
+        // Ayni misafir (ayni guest_token) "dertlesme" niyetine gecer
+        $dertlesme = $this->postJson('/site/bakimeviara/destek/baslat', [
+            'guest_token' => $sohbet['guest_token'],
+            'intent' => 'dertlesme',
+        ])->assertOk()->json();
+
+        // Farkli bir thread olmali, ve sohbet mesaji burada GORUNMEMELI
+        $this->assertNotSame($sohbet['thread_id'], $dertlesme['thread_id']);
+        $this->assertSame($sohbet['guest_token'], $dertlesme['guest_token']);
+        $this->assertEmpty($dertlesme['messages']);
+
+        $this->postJson("/site/bakimeviara/destek/{$dertlesme['thread_id']}/mesaj", [
+            'guest_token' => $dertlesme['guest_token'],
+            'body' => 'Dertlesme mesaji',
+        ])->assertOk();
+
+        // "sohbet"e geri donunce hala sadece kendi mesaji gorunmeli
+        $resumeSohbet = $this->postJson('/site/bakimeviara/destek/baslat', [
+            'guest_token' => $sohbet['guest_token'],
+            'intent' => 'sohbet',
+        ])->assertOk()->json();
+
+        $this->assertSame($sohbet['thread_id'], $resumeSohbet['thread_id']);
+        $this->assertCount(1, $resumeSohbet['messages']);
+        $this->assertSame('Sohbet mesaji', $resumeSohbet['messages'][0]['body']);
+    }
+
+    public function test_admin_sees_sibling_threads_for_same_guest(): void
+    {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
+        $sohbet = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+        $dertlesme = $this->postJson('/site/bakimeviara/destek/baslat', [
+            'guest_token' => $sohbet['guest_token'],
+            'intent' => 'dertlesme',
+        ])->assertOk()->json();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get("/admin/canli-sohbet/{$sohbet['thread_id']}")
+            ->assertOk()
+            ->assertSee(route('admin.chat.show', $dertlesme['thread_id']), false);
     }
 
     public function test_detect_chat_section_matches_keywords_and_ignores_unrelated_text(): void

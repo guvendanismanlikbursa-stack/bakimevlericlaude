@@ -342,6 +342,7 @@ if (! function_exists('notification_action_url')) {
                 'claim_submitted' => route('admin.claims.index'),
                 'registration_submitted' => route('admin.registrations.index'),
                 'topup_requested' => route('admin.topups.index'),
+                'chat_message' => isset($data['chat_thread_id']) ? route('admin.chat.show', $data['chat_thread_id']) : route('admin.chat.index'),
                 default => null,
             };
         } catch (\Throwable $e) {

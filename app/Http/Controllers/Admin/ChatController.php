@@ -15,15 +15,25 @@ class ChatController extends Controller
     public function index(Request $request)
     {
         $status = $request->get('status', 'open');
+        $city = $request->get('city');
+        $intent = $request->get('intent');
+        $brand = $request->get('brand');
 
         $threads = ChatThread::query()
+            ->withCount('siblingThreads')
             ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($city, fn ($q) => $q->where('city_name', $city))
+            ->when($intent, fn ($q) => $q->where('intent', $intent))
+            ->when($brand, fn ($q) => $q->where('brand', $brand))
             ->orderByDesc('last_message_at')
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.chat.index', compact('threads', 'status'));
+        $cities = ChatThread::whereNotNull('city_name')->distinct()->orderBy('city_name')->pluck('city_name');
+        $brands = ChatThread::distinct()->orderBy('brand')->pluck('brand');
+
+        return view('admin.chat.index', compact('threads', 'status', 'city', 'intent', 'brand', 'cities', 'brands'));
     }
 
     public function show(ChatThread $thread)
@@ -31,7 +41,14 @@ class ChatController extends Controller
         $thread->load('messages', 'assignedAdmin');
         $thread->update(['unread_by_admin' => false]);
 
-        return view('admin.chat.show', compact('thread'));
+        // Ayni misafirin (guest_token) baska bolumlerde acilmis sohbetleri
+        // varsa admin gorsun - her biri ayri thread/gecmis, ama ayni kisi.
+        $siblingThreads = ChatThread::where('guest_token', $thread->guest_token)
+            ->where('id', '!=', $thread->id)
+            ->orderByDesc('last_message_at')
+            ->get();
+
+        return view('admin.chat.show', compact('thread', 'siblingThreads'));
     }
 
     public function reply(Request $request, ChatThread $thread)
@@ -82,6 +99,39 @@ class ChatController extends Controller
                 'created_at' => $m->created_at->toIso8601String(),
             ])->values(),
         ]);
+    }
+
+    public function stats()
+    {
+        $totalGuests = ChatThread::distinct('guest_token')->count('guest_token');
+        $totalThreads = ChatThread::count();
+
+        $byCity = ChatThread::whereNotNull('city_name')
+            ->selectRaw('city_name, count(distinct guest_token) as guest_count')
+            ->groupBy('city_name')
+            ->orderByDesc('guest_count')
+            ->limit(15)
+            ->get();
+
+        $byIntent = ChatThread::selectRaw('intent, count(*) as thread_count')
+            ->groupBy('intent')
+            ->orderByDesc('thread_count')
+            ->get();
+
+        $byBrand = ChatThread::selectRaw('brand, count(distinct guest_token) as guest_count')
+            ->groupBy('brand')
+            ->orderByDesc('guest_count')
+            ->get();
+
+        $ageBuckets = [
+            '0-17' => ChatThread::whereNotNull('guest_age')->where('guest_age', '<', 18)->distinct('guest_token')->count('guest_token'),
+            '18-34' => ChatThread::whereBetween('guest_age', [18, 34])->distinct('guest_token')->count('guest_token'),
+            '35-54' => ChatThread::whereBetween('guest_age', [35, 54])->distinct('guest_token')->count('guest_token'),
+            '55-74' => ChatThread::whereBetween('guest_age', [55, 74])->distinct('guest_token')->count('guest_token'),
+            '75+' => ChatThread::where('guest_age', '>=', 75)->distinct('guest_token')->count('guest_token'),
+        ];
+
+        return view('admin.chat.stats', compact('totalGuests', 'totalThreads', 'byCity', 'byIntent', 'byBrand', 'ageBuckets'));
     }
 
     public function close(ChatThread $thread)

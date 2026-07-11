@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ChatThread extends Model
 {
     protected $fillable = [
-        'brand', 'guest_token', 'family_user_id', 'intent', 'operator_gender_preference',
+        'brand', 'guest_token', 'guest_name', 'guest_age', 'family_user_id', 'intent', 'operator_gender_preference',
         'status', 'assigned_admin_id', 'lat', 'lng', 'city_name',
         'last_message_at', 'last_message_preview', 'unread_by_admin', 'unread_by_guest',
     ];
@@ -36,5 +36,14 @@ class ChatThread extends Model
     public function assignedAdmin()
     {
         return $this->belongsTo(Admin::class, 'assigned_admin_id');
+    }
+
+    /**
+     * Ayni misafirin (guest_token) TUM thread'leri (kendisi dahil) - admin
+     * listesinde "bu ziyaretcinin kac bolumde sohbeti var" gostermek icin.
+     */
+    public function siblingThreads()
+    {
+        return $this->hasMany(self::class, 'guest_token', 'guest_token');
     }
 }

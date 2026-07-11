@@ -2,6 +2,16 @@
   $waDefaults = config('platform.default_whatsapp');
   $waNumber = \App\Models\Setting::get('whatsapp_number', $waDefaults['number']);
   $waMessage = str_replace('{marka}', $brand['name'], \App\Models\Setting::get('whatsapp_message', $waDefaults['message']));
+
+  // Her markada ikerik/akis birebir ayni, sadece yuzen ikonun SEKLI markaya
+  // gore degisiyor - 3 site yan yana kullanildiginda kullanicilar hangi
+  // sitede olduklarini ikon uzerinden de ayirt edebilsin diye.
+  $chatIcons = [
+    'bakimevibul' => '<path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.62 1.32 4.96 3.4 6.56-.09.99-.4 2.4-1.24 3.72-.15.24.06.54.34.5 1.9-.28 3.34-1.05 4.28-1.68.99.26 2.06.4 3.22.4 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z"/>',
+    'bakimeviara' => '<path opacity=".55" d="M7.5 2A5.5 5.5 0 0 0 3.24 10.9L2 15l4.24-.9A5.5 5.5 0 1 0 7.5 2Z"/><path d="M15.5 7A6.5 6.5 0 0 0 9.9 16.86 6.47 6.47 0 0 0 15.5 20c1.2 0 2.32-.31 3.3-.86L22 20l-1.09-3.6A6.5 6.5 0 0 0 15.5 7Z"/>',
+    'bakimevleri' => '<path d="M12 3a7 7 0 0 0-7 7v5.2A2.8 2.8 0 0 0 7.8 18H9a1 1 0 0 0 1-1v-4.4a1 1 0 0 0-1-1H7.2V10a4.8 4.8 0 0 1 9.6 0v1.6H15a1 1 0 0 0-1 1V17a1 1 0 0 0 1 1h1.2a2.8 2.8 0 0 0 2.8-2.8V13a1 1 0 0 0-1-1v-2a7 7 0 0 0-7-7Z"/><circle cx="12" cy="20.5" r="1.1"/>',
+  ];
+  $chatIconSvg = $chatIcons[$brand['slug']] ?? $chatIcons['bakimevibul'];
 @endphp
 {{-- Canli destek ikonu: tek ikon, WhatsApp'a erisim asagidaki menude --}}
 <button
@@ -12,7 +22,7 @@
   style="background: {{ $brand['primary_color'] }};"
 >
   <svg viewBox="0 0 24 24" class="w-7 h-7 fill-white" aria-hidden="true">
-    <path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.62 1.32 4.96 3.4 6.56-.09.99-.4 2.4-1.24 3.72-.15.24.06.54.34.5 1.9-.28 3.34-1.05 4.28-1.68.99.26 2.06.4 3.22.4 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z"/>
+    {!! $chatIconSvg !!}
   </svg>
 </button>
 
@@ -37,6 +47,16 @@
     <button type="button" class="js-gender-btn rounded-xl border border-gray-200 py-4 text-sm font-bold text-gray-800 hover:border-gray-400" data-gender="kadin">👩 Bayan</button>
   </div>
   <button type="button" class="js-gender-btn w-full text-center px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50" data-gender="farketmez">Farketmez, önemli değil</button>
+</div>
+
+<div id="js-chat-identity" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+  <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Size nasıl hitap edelim?</div>
+  <div class="p-3 space-y-2">
+    <input type="text" id="js-chat-identity-name" placeholder="Adınız" maxlength="80" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400">
+    <input type="number" id="js-chat-identity-age" placeholder="Yaşınız" min="1" max="120" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400">
+    <div id="js-chat-identity-error" class="hidden text-xs text-red-600"></div>
+    <button type="button" id="js-chat-identity-continue" class="w-full rounded-lg py-2.5 text-sm font-bold text-white" style="background: {{ $brand['primary_color'] }};">Devam Et</button>
+  </div>
 </div>
 
 <div id="js-chat-panel" class="fixed bottom-5 right-5 z-50 hidden w-[min(92vw,360px)] h-[min(78vh,560px)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
@@ -88,12 +108,20 @@
 (function () {
   var brandSlug = @json($brand['slug']);
   var storageKey = 'support_chat_token_' + brandSlug;
+  var intentStorageKey = 'support_chat_intent_' + brandSlug;
+  var genderStorageKey = 'support_chat_gender_' + brandSlug;
 
   var toggleBtn = document.getElementById('js-chat-toggle');
   var menuEl = document.getElementById('js-chat-menu');
   var genderEl = document.getElementById('js-chat-gender');
+  var identityEl = document.getElementById('js-chat-identity');
   var panelEl = document.getElementById('js-chat-panel');
-  if (!toggleBtn || !menuEl || !genderEl || !panelEl) return;
+  if (!toggleBtn || !menuEl || !genderEl || !identityEl || !panelEl) return;
+
+  var identityNameInput = document.getElementById('js-chat-identity-name');
+  var identityAgeInput = document.getElementById('js-chat-identity-age');
+  var identityError = document.getElementById('js-chat-identity-error');
+  var identityContinueBtn = document.getElementById('js-chat-identity-continue');
 
   var statusEl = document.getElementById('js-chat-status');
   var offlineBanner = document.getElementById('js-chat-offline-banner');
@@ -115,18 +143,25 @@
   var facilitiesUrlTemplate = @json(brand_route('facilities.index', ['bolum' => 'SECTION_SLUG']));
   var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-  var state = { threadId: null, guestToken: null, lastMessageId: 0, pollTimer: null, selectedIntent: null };
+  var state = { threadId: null, guestToken: null, lastMessageId: 0, pollTimer: null, selectedIntent: null, selectedGender: null };
   var pendingFile = null;
 
-  function hideAllPanels() { menuEl.classList.add('hidden'); genderEl.classList.add('hidden'); panelEl.classList.add('hidden'); }
+  function hideAllPanels() {
+    menuEl.classList.add('hidden');
+    genderEl.classList.add('hidden');
+    identityEl.classList.add('hidden');
+    panelEl.classList.add('hidden');
+  }
 
   toggleBtn.addEventListener('click', function () {
     if (!panelEl.classList.contains('hidden')) { hideAllPanels(); return; }
     if (!menuEl.classList.contains('hidden')) { hideAllPanels(); return; }
 
     var savedToken = localStorage.getItem(storageKey);
-    if (savedToken) {
-      openPanel(savedToken, null, null);
+    var savedIntent = localStorage.getItem(intentStorageKey);
+    var savedGender = localStorage.getItem(genderStorageKey);
+    if (savedToken && savedIntent) {
+      openPanel(savedToken, savedIntent, savedGender);
     } else {
       hideAllPanels();
       menuEl.classList.remove('hidden');
@@ -156,38 +191,55 @@
 
   document.querySelectorAll('.js-gender-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var gender = btn.getAttribute('data-gender');
+      state.selectedGender = btn.getAttribute('data-gender');
       hideAllPanels();
-      captureLocationAndStart(state.selectedIntent, gender);
+
+      // Bu tarayicida daha once hic sohbet baslatilmamissa (guest_token yok)
+      // isim/yas sormadan devam edilemez - zaten taniyorsak (donen misafir)
+      // tekrar sormaya gerek yok, sunucu onceki bilgiyi otomatik tasir.
+      if (!localStorage.getItem(storageKey)) {
+        identityNameInput.value = '';
+        identityAgeInput.value = '';
+        identityError.classList.add('hidden');
+        identityEl.classList.remove('hidden');
+      } else {
+        startThread(state.guestToken, state.selectedIntent, state.selectedGender, null, null);
+      }
     });
   });
 
-  // Konum: WhatsApp butonundaki desenle birebir ayni - kisa timeout, izin
-  // verilsin/verilmesin istek her zaman gonderilir, kullanici asla beklemez.
-  // state.guestToken doluysa (kullanici zaten bir sohbete baslamis, sadece
-  // konu degistiriyor) o mevcut thread'e baglanip niyeti gunceller - yeni
-  // bir thread acmaz, mesaj gecmisi kaybolmaz.
-  function captureLocationAndStart(intent, gender) {
-    var token = state.guestToken || null;
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function (pos) {
-        startThread(token, intent, gender, pos.coords.latitude, pos.coords.longitude);
-      }, function () {
-        startThread(token, intent, gender, null, null);
-      }, { timeout: 4000, maximumAge: 60000 });
-    } else {
-      startThread(token, intent, gender, null, null);
+  identityContinueBtn.addEventListener('click', function () {
+    var name = identityNameInput.value.trim();
+    var age = identityAgeInput.value.trim();
+    if (!name || !age) {
+      identityError.textContent = 'Devam edebilmek için adınızı ve yaşınızı girmeniz gerekiyor.';
+      identityError.classList.remove('hidden');
+      return;
     }
-  }
+    hideAllPanels();
+    startThread(null, state.selectedIntent, state.selectedGender, name, age);
+  });
 
-  function startThread(existingToken, intent, gender, lat, lng) {
-    var body = { guest_token: existingToken || undefined, intent: intent || undefined, operator_gender_preference: gender || undefined, lat: lat, lng: lng };
+  // Konum artik istenmiyor (izin ekrani gostermeden otomatik IP tabanli sehir
+  // tespiti sunucu tarafinda yapiliyor - bkz. IpGeoLookupService). guest_name/
+  // guest_age sadece bu tarayicida ILK KEZ sohbet baslatilirken gonderilir;
+  // donen misafirlerde/konu degisiminde sunucu onceki thread'den otomatik tasir.
+  function startThread(existingToken, intent, gender, guestName, guestAge) {
+    var body = {
+      guest_token: existingToken || undefined,
+      intent: intent || undefined,
+      operator_gender_preference: gender || undefined,
+      guest_name: guestName || undefined,
+      guest_age: guestAge || undefined,
+    };
     fetch(startUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
       body: JSON.stringify(body),
     }).then(function (r) { return r.json(); }).then(function (data) {
       localStorage.setItem(storageKey, data.guest_token);
+      localStorage.setItem(intentStorageKey, data.intent);
+      if (gender) localStorage.setItem(genderStorageKey, gender);
       state.threadId = data.thread_id;
       state.guestToken = data.guest_token;
       applyOnlineStatus(data.is_online, data.offline_message);
@@ -201,8 +253,10 @@
     });
   }
 
-  function openPanel(savedToken) {
-    startThread(savedToken, null, null, null, null);
+  // Kayitli bir sohbeti (son aktif niyetiyle) sessizce, konum sormadan devam
+  // ettirir - konum sadece YENI bir niyet/thread acilirken bir kez sorulur.
+  function openPanel(savedToken, savedIntent) {
+    startThread(savedToken, savedIntent, null, null, null);
   }
 
   function applyOnlineStatus(isOnline, offlineMessage) {
