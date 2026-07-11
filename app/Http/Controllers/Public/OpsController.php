@@ -51,11 +51,19 @@ class OpsController extends Controller
 
     private function packageDiscover(): string
     {
-        // Sunucunun kendi (--no-dev, temiz) vendor/composer/installed.json'undan
-        // bootstrap/cache/packages.php + services.php dosyalarini yeniden uretir.
-        // Bugunku hatanin kok nedeni (bu iki dosyanin git'ten, yereldeki dev-dahil
-        // haliyle production'a tasinmasi) bu sayede bir daha yasanmaz - dosyalar
-        // artik hic FTP ile tasinmiyor, her zaman sunucuda dogru sekilde uretiliyor.
+        // Sunucunun kendi vendor/composer/installed.json'undan bootstrap/cache/
+        // packages.php + services.php dosyalarini yeniden uretir. KRITIK: Laravel'in
+        // PackageManifest::build() metodu var olan cache dosyasini SIFIRDAN yazmaz,
+        // ARTIMLI gunceller - yani eskiden orada olan bir paket (ör. dev-dahil bir
+        // yuklemeden kalma laravel/sail) yeni kesifte artik installed.json'da
+        // olmasa bile cache'de KALMAYA devam eder. Bu yuzden dosyalari once silmek
+        // sart (11 Temmuz 2026'da bu tam olarak siteyi tekrar dusurdu - CSRF fix'i
+        // sonrasi bu uc ilk kez gercekten calistiginda ortaya cikti).
+        File::delete([
+            base_path('bootstrap/cache/packages.php'),
+            base_path('bootstrap/cache/services.php'),
+        ]);
+
         Artisan::call('package:discover');
 
         return Artisan::output();

@@ -187,6 +187,48 @@ def dev_only_paketler_sizdi_mi():
     return leaked
 
 
+def filter_installed_files_for_no_dev():
+    """3. cokmenin otomatik testi/duzeltmesi: 'composer dump-autoload --no-dev'
+    SADECE autoload class-map'ini --no-dev'e gore filtreler, installed.json
+    ve installed.php dosyalarini DEGISTIRMEZ (bunlar Composer'in "ne kurulu"
+    kaydidir, sadece 'composer install/update' tarafindan yazilir). Bu yuzden
+    bu iki dosya HER ZAMAN yerel (dev-dahil) paket listesini tasir - production'a
+    boyle yuklenince "artisan package:discover" installed.json'da hala listeli
+    laravel/sail'i instantiate etmeye calisip 500'e dusuruyordu (11 Temmuz 2026,
+    /_ops/package-discover ilk kez CSRF-fix sonrasi gercekten calistiginda
+    ortaya cikti). Burada composer.json > require-dev'deki paket adlarini
+    installed.json + installed.php'den elle cikariyoruz."""
+    with open(os.path.join(APP_ROOT, 'composer.json'), 'r', encoding='utf-8') as f:
+        composer_json = json.load(f)
+    dev_packages = set(composer_json.get('require-dev', {}).keys())
+
+    json_path = os.path.join(APP_ROOT, 'vendor', 'composer', 'installed.json')
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    before = len(data['packages'])
+    data['packages'] = [p for p in data['packages'] if p['name'] not in dev_packages]
+    after = len(data['packages'])
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+    info(f'installed.json: {before} -> {after} paket (dev paketleri cikarildi)')
+
+    php_path = os.path.join(APP_ROOT, 'vendor', 'composer', 'installed.php')
+    helper_path = os.path.join(DEPLOY_DIR, '_filter_installed_php.php')
+    helper_source = (
+        "<?php\n"
+        "$devPackages = json_decode($argv[2], true);\n"
+        "$data = require $argv[1];\n"
+        "foreach ($devPackages as $pkg) { unset($data['versions'][$pkg]); }\n"
+        "if (isset($data['root']['dev'])) { $data['root']['dev'] = false; }\n"
+        "file_put_contents($argv[1], '<?php return ' . var_export($data, true) . ';' . PHP_EOL);\n"
+        "echo count($data['versions']) . ' paket kaldi' . PHP_EOL;\n"
+    )
+    with open(helper_path, 'w', encoding='utf-8') as f:
+        f.write(helper_source)
+    run(['php', helper_path, php_path, json.dumps(list(dev_packages))])
+    os.remove(helper_path)
+
+
 def step2_prepare_autoload(changed_files):
     if not composer_lock_changed(changed_files):
         info('Adim 2/7: composer.lock degismedi, autoload rejenerasyonu atlanidi.')
@@ -201,6 +243,7 @@ def step2_prepare_autoload(changed_files):
     # /_ops/package-discover ile, sunucunun kendi --no-dev installed.json'undan
     # yapiliyor; yerelde hic gerekmiyor.
     run(['php', 'composer.phar', 'dump-autoload', '--no-dev', '--optimize', '--no-scripts'])
+    filter_installed_files_for_no_dev()
 
     leaked = dev_only_paketler_sizdi_mi()
     if leaked:

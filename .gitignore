@@ -41,3 +41,5 @@ route-list.txt
 # FTP sifresi + OPS_SECRET icerir, asla commit edilmez (bkz. deploy/deploy.py,
 # deploy/.env.deploy.example sablonu commit edilir).
 /deploy/.env.deploy
+/deploy/__pycache__/
+log_output.txt
