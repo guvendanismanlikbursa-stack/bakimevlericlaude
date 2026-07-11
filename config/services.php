@@ -18,5 +18,9 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        // Socialite'in Manager'i bu anahtarin varligini zorunlu tutuyor;
+        // gercek deger her cagride ->redirectUrl() ile markaya gore
+        // ezildigi icin burasi sadece bir yer tutucu.
+        'redirect' => '/destek/google-callback',
     ],
 ];
