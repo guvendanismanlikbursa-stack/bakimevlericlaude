@@ -55,10 +55,15 @@
         <tr class="{{ $thread->unread_by_admin ? 'bg-amber-50' : '' }}">
           <td class="p-3 font-medium">{{ $thread->brand }}</td>
           <td class="p-3">
-            {{ $thread->guest_name ?? 'Misafir #'.$thread->id }}{{ $thread->guest_age ? ' ('.$thread->guest_age.')' : '' }}
-            @if($thread->sibling_threads_count > 1)
-              <span class="ml-1 bg-gray-100 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $thread->sibling_threads_count }} sohbet</span>
-            @endif
+            <div class="flex items-center gap-2">
+              @if($thread->guest_avatar_url)
+                <img src="{{ $thread->guest_avatar_url }}" alt="" class="w-6 h-6 rounded-full shrink-0">
+              @endif
+              <span>{{ $thread->guest_name ?? 'Misafir #'.$thread->id }}{{ $thread->guest_age ? ' ('.$thread->guest_age.')' : '' }}</span>
+              @if($thread->sibling_threads_count > 1)
+                <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $thread->sibling_threads_count }} sohbet</span>
+              @endif
+            </div>
           </td>
           <td class="p-3">{{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }}</td>
           <td class="p-3">{{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }}</td>

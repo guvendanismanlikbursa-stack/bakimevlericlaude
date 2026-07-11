@@ -53,6 +53,7 @@ use App\Http\Controllers\Public\OfferRequestController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\RobotsController;
 use App\Http\Controllers\Public\SitemapController;
+use App\Http\Controllers\Public\GoogleChatAuthController;
 use App\Http\Controllers\Public\SupportChatController;
 use App\Http\Controllers\Admin\FacilityReviewController as AdminFacilityReviewController;
 use App\Http\Controllers\Admin\VisitRequestController as AdminVisitRequestController;
@@ -130,6 +131,8 @@ $siteRoutes = function () {
     Route::post('/destek/baslat', [SupportChatController::class, 'start'])->middleware('throttle:public-form')->name('support-chat.start');
     Route::post('/destek/{thread}/mesaj', [SupportChatController::class, 'send'])->middleware('throttle:public-form')->name('support-chat.send');
     Route::get('/destek/{thread}/mesajlar', [SupportChatController::class, 'poll'])->middleware('throttle:public-light')->name('support-chat.poll');
+    Route::get('/destek/google-giris', [GoogleChatAuthController::class, 'redirect'])->middleware('throttle:public-light')->name('support-chat.google-redirect');
+    Route::get('/destek/google-callback', [GoogleChatAuthController::class, 'callback'])->middleware('throttle:public-light')->name('support-chat.google-callback');
 
     // PWA manifest (marka bazli) + Web Push abonelikleri (session'a gore aile/kurum/admin cozumlenir)
     Route::get('/manifest.json', [ManifestController::class, 'show'])->name('manifest');

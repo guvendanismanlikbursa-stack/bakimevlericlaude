@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ChatThread extends Model
 {
     protected $fillable = [
-        'brand', 'guest_token', 'guest_name', 'guest_age', 'family_user_id', 'intent', 'operator_gender_preference',
+        'brand', 'guest_token', 'guest_name', 'guest_age', 'guest_avatar_url', 'family_user_id', 'intent', 'operator_gender_preference',
         'status', 'assigned_admin_id', 'lat', 'lng', 'city_name',
         'last_message_at', 'last_message_preview', 'unread_by_admin', 'unread_by_guest',
     ];

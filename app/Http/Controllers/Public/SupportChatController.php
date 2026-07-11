@@ -31,6 +31,7 @@ class SupportChatController extends Controller
             'operator_gender_preference' => 'nullable|in:erkek,kadin,farketmez',
             'guest_name' => 'nullable|string|max:80',
             'guest_age' => 'nullable|integer|min:1|max:120',
+            'guest_avatar_url' => 'nullable|url|max:500',
         ]);
 
         // guest_token BIR KISIYI (tarayiciyi) tanimlar, thread'i degil. Ayni
@@ -66,6 +67,7 @@ class SupportChatController extends Controller
                 'city_name' => $cityName,
                 'guest_name' => $data['guest_name'] ?? $siblingThread?->guest_name,
                 'guest_age' => $data['guest_age'] ?? $siblingThread?->guest_age,
+                'guest_avatar_url' => $data['guest_avatar_url'] ?? $siblingThread?->guest_avatar_url,
                 'unread_by_admin' => true,
             ]);
 

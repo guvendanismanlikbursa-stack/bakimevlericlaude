@@ -3,13 +3,18 @@
 
 @section('content')
 <div class="flex items-center justify-between mb-4">
-  <div>
-    <h1 class="text-2xl font-bold">Sohbet #{{ $thread->id }} · {{ $thread->brand }}</h1>
-    <div class="text-sm text-gray-500 mt-1">
-      {{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }}
-      · Tercih: {{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }}
-      · Şehir: {{ $thread->city_name ?? '—' }}
-      · İlgilenen: {{ $thread->assignedAdmin->name ?? '—' }}
+  <div class="flex items-center gap-3">
+    @if($thread->guest_avatar_url)
+      <img src="{{ $thread->guest_avatar_url }}" alt="" class="w-10 h-10 rounded-full shrink-0">
+    @endif
+    <div>
+      <h1 class="text-2xl font-bold">{{ $thread->guest_name ?? 'Sohbet #'.$thread->id }} · {{ $thread->brand }}</h1>
+      <div class="text-sm text-gray-500 mt-1">
+        {{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }}
+        · Tercih: {{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }}
+        · Şehir: {{ $thread->city_name ?? '—' }}
+        · İlgilenen: {{ $thread->assignedAdmin->name ?? '—' }}
+      </div>
     </div>
   </div>
   <form method="POST" action="{{ route('admin.chat.close', $thread) }}" onsubmit="return confirm('Bu sohbeti kapatmak istediğinize emin misiniz?');">

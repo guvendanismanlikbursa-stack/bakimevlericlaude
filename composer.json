@@ -5,6 +5,7 @@
     "require":  {
         "php": "^8.2",
         "laravel/framework": "^12.61.1",
+        "laravel/socialite": "^5.28",
         "laravel/tinker": "^2.9",
         "minishlink/web-push": "^10.1"
     },
