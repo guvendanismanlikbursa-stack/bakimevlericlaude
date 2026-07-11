@@ -57,6 +57,13 @@ SKIP_PREFIXES = (
     'bootstrap/cache/', '.env', 'README', '.gitignore',
 )
 
+# Windows'ta konsol varsayilan olarak yerel kod sayfasini (ör. cp1254)
+# kullanir - composer/git ciktisindaki UTF-8 karakterler (BOM, Turkce
+# harfler) print() sirasinda UnicodeEncodeError ile script'i cokertiyordu.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(encoding='utf-8', errors='replace')
+
 
 def fail(msg):
     print(f'\n[HATA] {msg}')
@@ -207,8 +214,17 @@ def step2_prepare_autoload(changed_files):
     return True
 
 
+def run_quiet(cmd, cwd=APP_ROOT):
+    """run()'un sessiz hali - buyuk/gurultulu ciktilar (ör. composer.lock
+    JSON dump'i) icin, konsolu kirletmeden calistirir."""
+    return subprocess.run(
+        cmd, cwd=cwd, capture_output=True, text=True,
+        encoding='utf-8', errors='replace', shell=(os.name == 'nt'),
+    )
+
+
 def get_composer_lock_packages(ref):
-    result = run(['git', 'show', f'{ref}:composer.lock'], check=False)
+    result = run_quiet(['git', 'show', f'{ref}:composer.lock'])
     if result.returncode != 0:
         return {}
     data = json.loads(result.stdout)
