@@ -15,6 +15,12 @@
     </div>
   </div>
 </div>
+<style>
+  {{-- Banner acikken alttaki yuzen butonlarla (WhatsApp/sohbet/PWA) cakismasin diye yukari itilir. --}}
+  body.js-cookie-banner-open #js-whatsapp-button,
+  body.js-cookie-banner-open #js-chat-toggle { bottom: 5.5rem !important; }
+  body.js-cookie-banner-open #js-pwa-install-button { bottom: 9rem !important; }
+</style>
 <script>
 (function () {
   var KEY = 'cookie_consent';
@@ -24,6 +30,7 @@
   try {
     if (!localStorage.getItem(KEY)) {
       banner.classList.remove('hidden');
+      document.body.classList.add('js-cookie-banner-open');
     }
   } catch (e) {
     return;
@@ -32,6 +39,7 @@
   function setConsent(value) {
     try { localStorage.setItem(KEY, value); } catch (e) {}
     banner.classList.add('hidden');
+    document.body.classList.remove('js-cookie-banner-open');
   }
 
   var acceptBtn = document.getElementById('js-cookie-accept');

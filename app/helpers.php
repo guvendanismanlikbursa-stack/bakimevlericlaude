@@ -554,3 +554,32 @@ if (! function_exists('notify_admin_of_exception')) {
         }
     }
 }
+
+if (! function_exists('detect_chat_section')) {
+    /**
+     * Canli destek sohbetinde misafirin yazdigi metne bakarak hangi bolume
+     * (yasli-bakim/cocuk/rehabilitasyon) ilgi duydugunu tahmin eder - sadece
+     * bir ONERI karti icin kullanilir, asla otomatik yonlendirme yapmaz
+     * (bkz. config/chat_routing.php). Eslesme yoksa null doner.
+     *
+     * @return array{slug: string, label: string}|null
+     */
+    function detect_chat_section(?string $text): ?array
+    {
+        if (! $text) {
+            return null;
+        }
+
+        $normalized = mb_strtolower($text, 'UTF-8');
+
+        foreach (config('chat_routing', []) as $slug => $section) {
+            foreach ($section['keywords'] as $keyword) {
+                if (str_contains($normalized, mb_strtolower($keyword, 'UTF-8'))) {
+                    return ['slug' => $slug, 'label' => $section['label']];
+                }
+            }
+        }
+
+        return null;
+    }
+}

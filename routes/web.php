@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\BalanceController as AdminBalanceController;
 use App\Http\Controllers\Admin\CityController as AdminCityController;
 use App\Http\Controllers\Admin\ContactMessageController as AdminContactMessageController;
 use App\Http\Controllers\Admin\WhatsappClickController as AdminWhatsappClickController;
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
+use App\Http\Controllers\Admin\ChatSettingsController as AdminChatSettingsController;
 use App\Http\Controllers\Admin\ContentPageController as AdminContentPageController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DataExtractorController as AdminDataExtractorController;
@@ -51,6 +53,7 @@ use App\Http\Controllers\Public\OfferRequestController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\RobotsController;
 use App\Http\Controllers\Public\SitemapController;
+use App\Http\Controllers\Public\SupportChatController;
 use App\Http\Controllers\Admin\FacilityReviewController as AdminFacilityReviewController;
 use App\Http\Controllers\Admin\VisitRequestController as AdminVisitRequestController;
 use App\Http\Controllers\Public\FacilityReviewController;
@@ -122,6 +125,11 @@ $siteRoutes = function () {
     // Yakinimdaki kurumlar (il bazli yaklasik konum eslesmesi)
     Route::post('/yakinimdaki-kurumlar', [NearbyController::class, 'locate'])->middleware('throttle:public-light')->name('nearby.locate');
     Route::post('/whatsapp-tiklama', [WhatsappController::class, 'track'])->middleware('throttle:public-light')->name('whatsapp.track');
+
+    // Canli destek sohbeti (anonim misafir, polling tabanli - bkz. SupportChatController)
+    Route::post('/destek/baslat', [SupportChatController::class, 'start'])->middleware('throttle:public-form')->name('support-chat.start');
+    Route::post('/destek/{thread}/mesaj', [SupportChatController::class, 'send'])->middleware('throttle:public-form')->name('support-chat.send');
+    Route::get('/destek/{thread}/mesajlar', [SupportChatController::class, 'poll'])->middleware('throttle:public-light')->name('support-chat.poll');
 
     // PWA manifest (marka bazli) + Web Push abonelikleri (session'a gore aile/kurum/admin cozumlenir)
     Route::get('/manifest.json', [ManifestController::class, 'show'])->name('manifest');
@@ -310,6 +318,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/whatsapp-tiklamalari', [AdminWhatsappClickController::class, 'index'])->name('whatsapp-clicks.index');
         Route::delete('/whatsapp-tiklamalari/{whatsappClick}', [AdminWhatsappClickController::class, 'destroy'])->name('whatsapp-clicks.destroy');
+
+        Route::get('/canli-sohbet', [AdminChatController::class, 'index'])->name('chat.index');
+        Route::get('/canli-sohbet/{thread}', [AdminChatController::class, 'show'])->name('chat.show');
+        Route::post('/canli-sohbet/{thread}/yanitla', [AdminChatController::class, 'reply'])->name('chat.reply');
+        Route::get('/canli-sohbet/{thread}/mesajlar', [AdminChatController::class, 'poll'])->name('chat.poll');
+        Route::post('/canli-sohbet/{thread}/kapat', [AdminChatController::class, 'close'])->name('chat.close');
+        Route::get('/canli-sohbet-ayarlari', [AdminChatSettingsController::class, 'edit'])->name('chat-settings.edit');
+        Route::put('/canli-sohbet-ayarlari', [AdminChatSettingsController::class, 'update'])->name('chat-settings.update');
 
         Route::get('/sehirler', [AdminCityController::class, 'index'])->name('cities.index');
         Route::post('/sehirler', [AdminCityController::class, 'store'])->name('cities.store');

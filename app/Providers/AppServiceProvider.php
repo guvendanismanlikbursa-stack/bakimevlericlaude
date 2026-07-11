@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\ChatThread;
 use App\Models\FacilityClaim;
 use App\Models\FacilityRegistration;
 use App\Models\FacilityUser;
@@ -47,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('pendingClaimsCount', FacilityClaim::where('status', 'pending')->count());
             $view->with('pendingTopupsCount', WalletTopup::where('status', 'pending')->count());
             $view->with('pendingRegistrationsCount', FacilityRegistration::where('status', 'pending')->count());
+            $view->with('unreadChatThreadsCount', ChatThread::where('unread_by_admin', true)->count());
         });
     }
 

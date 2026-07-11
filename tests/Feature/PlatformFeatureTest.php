@@ -1466,4 +1466,104 @@ class PlatformFeatureTest extends TestCase
         $this->get('/site/bakimeviara/fiyat-rehberi/cocuk/'.$realCity->slug.'/kategori/'.$this->childCategory->slug.'/adalar')
             ->assertOk();
     }
+
+    public function test_guest_can_start_chat_send_message_and_poll_for_reply(): void
+    {
+        \App\Models\ChatWorkingHour::query()->update(['is_active' => true, 'open_time' => '00:00:00', 'close_time' => '23:59:59']);
+
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', [
+            'intent' => 'sohbet',
+            'operator_gender_preference' => 'kadin',
+            'lat' => 40.19, 'lng' => 29.06,
+        ])->assertOk()->json();
+
+        $this->assertNotEmpty($start['guest_token']);
+        $this->assertTrue($start['is_online']);
+        $threadId = $start['thread_id'];
+
+        $send = $this->postJson("/site/bakimeviara/destek/{$threadId}/mesaj", [
+            'guest_token' => $start['guest_token'],
+            'body' => 'Annem icin huzurevi ariyorum.',
+        ])->assertOk()->json();
+
+        $this->assertSame('Annem icin huzurevi ariyorum.', $send['message']['body']);
+        $this->assertSame('yasli-bakim', $send['suggested_section']['slug']);
+
+        // Admin yanitlar
+        \App\Models\ChatMessage::create([
+            'chat_thread_id' => $threadId, 'sender_type' => 'admin', 'sender_admin_id' => $this->admin->id,
+            'body' => 'Merhaba, size nasil yardimci olabilirim?',
+        ]);
+
+        $poll = $this->getJson("/site/bakimeviara/destek/{$threadId}/mesajlar?after_id={$send['message']['id']}&guest_token={$start['guest_token']}")
+            ->assertOk()->json();
+
+        $this->assertCount(1, $poll['messages']);
+        $this->assertSame('admin', $poll['messages'][0]['sender_type']);
+    }
+
+    public function test_chat_thread_is_isolated_per_brand(): void
+    {
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+
+        // Ayni thread'e baska bir marka uzerinden erisim 403 vermeli.
+        $this->postJson("/site/bakimevleri/destek/{$start['thread_id']}/mesaj", [
+            'guest_token' => $start['guest_token'],
+            'body' => 'Deneme',
+        ])->assertForbidden();
+    }
+
+    public function test_chat_send_rejects_wrong_guest_token(): void
+    {
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+
+        $this->postJson("/site/bakimeviara/destek/{$start['thread_id']}/mesaj", [
+            'guest_token' => 'yanlis-token',
+            'body' => 'Deneme',
+        ])->assertForbidden();
+    }
+
+    public function test_chat_shows_offline_message_outside_working_hours(): void
+    {
+        \App\Models\ChatWorkingHour::query()->update(['is_active' => false]);
+        \App\Models\Setting::set('chat_offline_message', 'Test cevrimdisi mesaji.');
+
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+
+        $this->assertFalse($start['is_online']);
+        $this->assertSame('Test cevrimdisi mesaji.', $start['offline_message']);
+    }
+
+    public function test_admin_can_view_and_reply_to_chat_thread(): void
+    {
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'])->assertOk()->json();
+        $this->postJson("/site/bakimeviara/destek/{$start['thread_id']}/mesaj", [
+            'guest_token' => $start['guest_token'],
+            'body' => 'Yardim lazim.',
+        ])->assertOk();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/canli-sohbet')
+            ->assertOk()
+            ->assertSee('Yardim lazim.', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post("/admin/canli-sohbet/{$start['thread_id']}/yanitla", ['body' => 'Merhaba, yardimci oluyorum.'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('chat_messages', [
+            'chat_thread_id' => $start['thread_id'],
+            'sender_type' => 'admin',
+            'sender_admin_id' => $this->admin->id,
+            'body' => 'Merhaba, yardimci oluyorum.',
+        ]);
+    }
+
+    public function test_detect_chat_section_matches_keywords_and_ignores_unrelated_text(): void
+    {
+        $this->assertSame('yasli-bakim', detect_chat_section('Annem icin huzurevi ariyorum')['slug']);
+        $this->assertSame('cocuk', detect_chat_section('3 yasindaki cocugum icin kres bakiyorum')['slug']);
+        $this->assertSame('rehabilitasyon', detect_chat_section('Felc sonrasi fizik tedavi lazim')['slug']);
+        $this->assertNull(detect_chat_section('Merhaba nasilsiniz'));
+    }
 }

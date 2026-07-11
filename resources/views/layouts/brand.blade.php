@@ -240,6 +240,7 @@
 </footer>
 
 @include('themes._shared.partials.whatsapp-button')
+@include('themes._shared.partials.support-chat-widget')
 @include('themes._shared.partials.pwa-install-button')
 @include('themes._shared.partials.cookie-consent')
 @include('themes._shared.partials.organization-jsonld')
