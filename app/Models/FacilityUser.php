@@ -36,6 +36,11 @@ class FacilityUser extends Model
         return $this->morphMany(PlatformNotification::class, 'notifiable')->latest();
     }
 
+    public function pushSubscriptions()
+    {
+        return $this->morphMany(PushSubscription::class, 'subscribable');
+    }
+
     public function hasVerifiedEmail(): bool
     {
         return ! is_null($this->email_verified_at);

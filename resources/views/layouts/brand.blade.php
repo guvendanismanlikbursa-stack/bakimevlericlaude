@@ -10,6 +10,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/logo-'.$brand['slug'].'-32.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logo-'.$brand['slug'].'-192.png') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo-'.$brand['slug'].'-180.png') }}">
+<link rel="manifest" href="{{ brand_route('manifest') }}">
+<meta name="theme-color" content="{{ $brand['primary_color'] }}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ $brand['name'] }}">
 <meta property="og:title" content="@yield('og_title', $brand['tagline'])">
@@ -188,6 +190,7 @@
 </footer>
 
 @include('themes._shared.partials.whatsapp-button')
+@include('themes._shared.partials.pwa-install-button')
 @include('themes._shared.partials.organization-jsonld')
 @yield('breadcrumb_jsonld')
 

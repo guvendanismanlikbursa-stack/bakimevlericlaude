@@ -289,17 +289,26 @@ if (! function_exists('notify_user')) {
             'data' => $data ?: null,
         ]);
 
-        if (empty($notifiable->email)) {
-            return;
+        $actionUrl = notification_action_url($notifiable, $type, $data);
+
+        if (! empty($notifiable->email)) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($notifiable->email)->queue(
+                    new \App\Mail\NotificationMail($title, $body, $actionUrl)
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Bildirim maili gonderilemedi: ' . $e->getMessage(), [
+                    'notifiable_type' => get_class($notifiable),
+                    'notifiable_id' => $notifiable->getKey(),
+                    'type' => $type,
+                ]);
+            }
         }
 
         try {
-            $actionUrl = notification_action_url($notifiable, $type, $data);
-            \Illuminate\Support\Facades\Mail::to($notifiable->email)->queue(
-                new \App\Mail\NotificationMail($title, $body, $actionUrl)
-            );
+            app(\App\Services\WebPushService::class)->sendToNotifiable($notifiable, $title, $body, $actionUrl);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Bildirim maili gonderilemedi: ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::warning('Push bildirimi gonderilemedi: ' . $e->getMessage(), [
                 'notifiable_type' => get_class($notifiable),
                 'notifiable_id' => $notifiable->getKey(),
                 'type' => $type,

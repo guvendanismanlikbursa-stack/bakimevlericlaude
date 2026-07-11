@@ -58,7 +58,9 @@ use App\Http\Controllers\Public\DiscoveryController;
 use App\Http\Controllers\Public\CareAdvisorController;
 use App\Http\Controllers\Public\FacilityQuestionController;
 use App\Http\Controllers\Public\GuideController;
+use App\Http\Controllers\Public\ManifestController;
 use App\Http\Controllers\Public\NearbyController;
+use App\Http\Controllers\Public\PushSubscriptionController;
 use App\Http\Controllers\Public\WhatsappController;
 use App\Http\Controllers\Public\PriceGuideController;
 use App\Http\Controllers\Public\StatsController;
@@ -119,6 +121,11 @@ $siteRoutes = function () {
     // Yakinimdaki kurumlar (il bazli yaklasik konum eslesmesi)
     Route::post('/yakinimdaki-kurumlar', [NearbyController::class, 'locate'])->middleware('throttle:public-light')->name('nearby.locate');
     Route::post('/whatsapp-tiklama', [WhatsappController::class, 'track'])->middleware('throttle:public-light')->name('whatsapp.track');
+
+    // PWA manifest (marka bazli) + Web Push abonelikleri (session'a gore aile/kurum/admin cozumlenir)
+    Route::get('/manifest.json', [ManifestController::class, 'show'])->name('manifest');
+    Route::post('/push/abone-ol', [PushSubscriptionController::class, 'store'])->middleware('throttle:public-light')->name('push.subscribe');
+    Route::post('/push/abonelikten-cik', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:public-light')->name('push.unsubscribe');
 
     // Aile sorulari
     Route::post('/kurumlar/{slug}/soru-sor', [FacilityQuestionController::class, 'store'])->middleware('throttle:public-sensitive')->name('questions.store');

@@ -17,4 +17,9 @@ class Admin extends Model
     {
         return ['last_login_at' => 'datetime'];
     }
+
+    public function pushSubscriptions()
+    {
+        return $this->morphMany(PushSubscription::class, 'subscribable');
+    }
 }

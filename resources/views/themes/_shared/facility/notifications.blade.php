@@ -5,6 +5,10 @@
   <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">← Panele dön</a>
   <h1 class="text-2xl font-bold mt-2 mb-6">Bildirimler</h1>
 
+  <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+    @include('themes._shared.partials.notification-permission')
+  </div>
+
   <div class="bg-white rounded-xl shadow-sm divide-y">
     @forelse($notifications as $n)
       <div class="p-4 flex items-start justify-between gap-3 {{ $n->read_at ? '' : 'bg-blue-50/50' }}">

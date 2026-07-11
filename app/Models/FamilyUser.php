@@ -42,4 +42,9 @@ class FamilyUser extends Model
     {
         return $this->morphMany(PlatformNotification::class, 'notifiable')->latest();
     }
+
+    public function pushSubscriptions()
+    {
+        return $this->morphMany(PushSubscription::class, 'subscribable');
+    }
 }

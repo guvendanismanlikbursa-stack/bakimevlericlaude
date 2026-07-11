@@ -3,10 +3,11 @@
     "type":  "project",
     "description":  "Yasli bakim / cocuk ve rehabilitasyon merkezleri arama-eslestirme platformu - 3 marka, ortak veritabani ve admin panel",
     "require":  {
-                    "php":  "^8.2",
-                    "laravel/framework":  "^12.61.1",
-                    "laravel/tinker":  "^2.9"
-                },
+        "php": "^8.2",
+        "laravel/framework": "^12.61.1",
+        "laravel/tinker": "^2.9",
+        "minishlink/web-push": "^10.1"
+    },
     "require-dev":  {
         "fakerphp/faker": "^1.23",
         "laravel/pint": "^1.13",

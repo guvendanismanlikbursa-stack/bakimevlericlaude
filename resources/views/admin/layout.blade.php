@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Panel') - Ortak Admin Panel</title>
 <script>
   if (localStorage.getItem('admin-theme') === 'dark') {
@@ -69,6 +70,7 @@
       <span id="admin-theme-toggle-label">Gece Modu</span>
       <span id="admin-theme-toggle-icon" aria-hidden="true">🌙</span>
     </button>
+    @include('themes._shared.partials.notification-permission', ['buttonClass' => 'text-sm text-gray-200 hover:text-white font-semibold'])
     <div class="text-xs text-gray-400">{{ session('admin_name') }}</div>
     <form method="POST" action="{{ route('admin.logout') }}">@csrf<button class="text-sm text-red-400 hover:text-red-300">Çıkış Yap</button></form>
   </div>
