@@ -228,6 +228,7 @@ class FacilityController extends Controller
             'services_raw' => 'nullable|string',
             'services' => 'nullable|array',
             'services.*' => 'nullable|string|max:120',
+            'ministry_verification' => 'nullable|in:verified,kamu_vakif,review,unverified',
         ]);
     }
 

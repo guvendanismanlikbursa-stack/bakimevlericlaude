@@ -1792,4 +1792,33 @@ class PlatformFeatureTest extends TestCase
         $this->postJson('/_ops/package-discover', [], ['Authorization' => 'Bearer dogru-sifre'])
             ->assertOk();
     }
+
+    public function test_admin_can_set_ministry_verification_badge_and_it_shows_on_card_and_detail(): void
+    {
+        $payload = [
+            'name' => $this->elderlyFacility->name,
+            'city_id' => $this->elderlyFacility->city_id,
+            'facility_category_id' => $this->elderlyFacility->facility_category_id,
+            'ministry_verification' => 'verified',
+            // Gercek admin formunda checkbox onceden isaretli geldigi icin
+            // (bkz. form.blade.php @checked(...)) normal bir kaydetmede bu
+            // her zaman gonderilir; yoksa update() is_published'i false'a ceker.
+            'is_published' => '1',
+        ];
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->elderlyFacility->id, $payload)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('facilities', [
+            'id' => $this->elderlyFacility->id,
+            'ministry_verification' => 'verified',
+        ]);
+
+        $this->get('/site/bakimevleri/kurumlar?bolum=yasli-bakim')
+            ->assertSee('Bakanlık: Doğrulandı (Özel)');
+
+        $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
+            ->assertSee('Bakanlık: Doğrulandı (Özel)');
+    }
 }

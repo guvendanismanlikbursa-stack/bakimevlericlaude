@@ -38,6 +38,7 @@
       @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
+      @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-1 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
     </div>
     <h1 class="text-3xl font-black text-gray-950">{{ $facility->name }}</h1>
     <p class="text-gray-500 mt-1">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>

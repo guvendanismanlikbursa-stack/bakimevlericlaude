@@ -128,6 +128,18 @@
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_featured" value="1" @checked(old('is_featured', $facility->is_featured))> Öne çıkar</label>
   </div>
 
+  <div>
+    <label class="text-sm font-medium">Bakanlık/Resmi Onay Rozeti</label>
+    <select name="ministry_verification" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <option value="" @selected(old('ministry_verification', $facility->ministry_verification) === null)>— Rozet yok —</option>
+      <option value="verified" @selected(old('ministry_verification', $facility->ministry_verification) === 'verified')>Doğrulandı (Özel)</option>
+      <option value="kamu_vakif" @selected(old('ministry_verification', $facility->ministry_verification) === 'kamu_vakif')>Kamu/Belediye/Vakıf</option>
+      <option value="review" @selected(old('ministry_verification', $facility->ministry_verification) === 'review')>İncelenmeli</option>
+      <option value="unverified" @selected(old('ministry_verification', $facility->ministry_verification) === 'unverified')>Doğrulanamadı</option>
+    </select>
+    <p class="text-xs text-gray-500 mt-1">Kurum kartı ve detay sayfasında rozet olarak gösterilir.</p>
+  </div>
+
   <div class="md:col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-4">
     <div class="flex items-center justify-between gap-3 mb-2">
       <label class="text-sm font-semibold">Demo / Galeri Görselleri</label>
