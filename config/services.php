@@ -23,4 +23,13 @@ return [
         // ezildigi icin burasi sadece bir yer tutucu.
         'redirect' => '/destek/google-callback',
     ],
+
+    // Analitik (ikisi de ucretsiz, ikisi de opsiyonel) - ID tanimlanmadigi
+    // surece layouts/brand.blade.php hicbir script render etmez.
+    'google_analytics' => [
+        'id' => env('GA4_MEASUREMENT_ID'),
+    ],
+    'meta_pixel' => [
+        'id' => env('META_PIXEL_ID'),
+    ],
 ];

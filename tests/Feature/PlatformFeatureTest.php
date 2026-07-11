@@ -1875,4 +1875,20 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()
             ->assertDontSee('js-notify-reminder-wrap', false);
     }
+
+    public function test_analytics_scripts_only_render_when_ids_configured(): void
+    {
+        config(['services.google_analytics.id' => null, 'services.meta_pixel.id' => null]);
+        $this->get('/site/bakimevibul/')
+            ->assertOk()
+            ->assertDontSee('googletagmanager.com/gtag', false)
+            ->assertDontSee('fbevents.js', false);
+
+        config(['services.google_analytics.id' => 'G-TEST123', 'services.meta_pixel.id' => '123456789']);
+        $this->get('/site/bakimevibul/')
+            ->assertOk()
+            ->assertSee('googletagmanager.com/gtag/js?id=G-TEST123', false)
+            ->assertSee('fbevents.js', false)
+            ->assertSee("fbq('init', \"123456789\")", false);
+    }
 }
