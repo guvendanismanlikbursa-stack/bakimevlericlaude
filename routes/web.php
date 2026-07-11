@@ -196,6 +196,7 @@ $siteRoutes = function () {
             Route::post('/talep/{offerRequest}/mesajlar', [FamilyMessageController::class, 'store'])->name('thread.store');
             Route::get('/bildirimler', [FamilyNotificationController::class, 'index'])->name('notifications.index');
             Route::post('/bildirimler/{notification}/okundu', [FamilyNotificationController::class, 'markRead'])->name('notifications.read');
+            Route::get('/bildirimler/sayi', [FamilyNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
         });
     });
 
@@ -239,6 +240,7 @@ $siteRoutes = function () {
 
             Route::get('/bildirimler', [FacilityNotificationController::class, 'index'])->name('notifications.index');
             Route::post('/bildirimler/{notification}/okundu', [FacilityNotificationController::class, 'markRead'])->name('notifications.read');
+            Route::get('/bildirimler/sayi', [FacilityNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 
             Route::get('/paketler', [FacilitySubscriptionController::class, 'index'])->name('packages.index');
             Route::post('/paketler/{package}', [FacilitySubscriptionController::class, 'store'])->name('packages.store');

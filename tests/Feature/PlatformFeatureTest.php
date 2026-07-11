@@ -1821,4 +1821,58 @@ class PlatformFeatureTest extends TestCase
         $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
             ->assertSee('Bakanlık: Doğrulandı (Özel)');
     }
+
+    public function test_family_unread_notification_count_endpoint(): void
+    {
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevibul/aile/bildirimler/sayi')
+            ->assertOk()
+            ->assertJson(['count' => 0]);
+
+        PlatformNotification::create([
+            'notifiable_type' => FamilyUser::class,
+            'notifiable_id' => $this->family->id,
+            'type' => 'quote_received',
+            'title' => 'Yeni teklif',
+        ]);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevibul/aile/bildirimler/sayi')
+            ->assertOk()
+            ->assertJson(['count' => 1]);
+    }
+
+    public function test_facility_unread_notification_count_endpoint(): void
+    {
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimevibul/kurum-panel/bildirimler/sayi')
+            ->assertOk()
+            ->assertJson(['count' => 0]);
+
+        PlatformNotification::create([
+            'notifiable_type' => FacilityUser::class,
+            'notifiable_id' => $this->facilityUser->id,
+            'type' => 'offer_request',
+            'title' => 'Yeni talep',
+        ]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimevibul/kurum-panel/bildirimler/sayi')
+            ->assertOk()
+            ->assertJson(['count' => 1]);
+    }
+
+    public function test_family_dashboard_includes_notification_reminder_script_but_public_pages_dont(): void
+    {
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevibul/aile/panel')
+            ->assertOk()
+            ->assertSee('js-notify-reminder-wrap', false);
+
+        $this->flushSession();
+
+        $this->get('/site/bakimevibul/')
+            ->assertOk()
+            ->assertDontSee('js-notify-reminder-wrap', false);
+    }
 }

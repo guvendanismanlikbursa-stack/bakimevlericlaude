@@ -24,4 +24,13 @@ class NotificationController extends Controller
 
         return back();
     }
+
+    // Panel acikken sesli bildirim icin hafif polling ucu - bkz.
+    // layouts/brand.blade.php'deki js-notification-poll script'i.
+    public function unreadCount()
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+
+        return response()->json(['count' => $user->notifications()->unread()->count()]);
+    }
 }

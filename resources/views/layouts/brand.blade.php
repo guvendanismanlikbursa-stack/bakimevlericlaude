@@ -245,6 +245,7 @@
 @include('themes._shared.partials.support-chat-widget')
 @include('themes._shared.partials.pwa-install-button')
 @include('themes._shared.partials.cookie-consent')
+@include('themes._shared.partials.panel-notification-alerts')
 @include('themes._shared.partials.organization-jsonld')
 @yield('breadcrumb_jsonld')
 
