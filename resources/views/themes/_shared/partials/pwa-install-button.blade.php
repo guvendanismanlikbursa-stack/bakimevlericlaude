@@ -29,7 +29,10 @@
   var dismissed = (function () { try { return localStorage.getItem('pwa_install_dismissed') === '1'; } catch (e) { return false; } })();
 
   function hideWrap() {
-    if (wrapEl) wrapEl.hidden = true;
+    // wrapEl'de "flex" utility sinifi da oldugu icin salt DOM `hidden`
+    // ozelligi CSS kaskadinda kaybedebiliyor (ikisi de ayni ozgullukte,
+    // flex sonra geliyor) - inline style ile kesin olarak gizliyoruz.
+    if (wrapEl) { wrapEl.hidden = true; wrapEl.style.display = 'none'; }
     if (autoHideTimer) { clearTimeout(autoHideTimer); autoHideTimer = null; }
   }
 
@@ -42,7 +45,7 @@
     event.preventDefault();
     if (alreadyInstalled || dismissed) return;
     deferredPrompt = event;
-    if (wrapEl) wrapEl.hidden = false;
+    if (wrapEl) { wrapEl.hidden = false; wrapEl.style.display = 'flex'; }
     // Kullanici hicbir sey yapmazsa 13 saniye sonra kendiliginden kaybolur
     // (kalici gizleme isareti koymadan - bir sonraki sayfa yuklemesinde
     // tekrar gorunebilir), takilip kalan bir uyari olmasin diye.
