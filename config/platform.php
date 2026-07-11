@@ -1,6 +1,10 @@
 <?php
 
 return [
+    // Production'da kritik (beklenmeyen) hatalar olustugunda otomatik e-posta
+    // uyarisi gonderilecek adres. Bkz. bootstrap/app.php withExceptions + notify_admin_of_exception().
+    'admin_alert_email' => env('ADMIN_ALERT_EMAIL', 'guvendanismanlikbursa@gmail.com'),
+
     // Yeni sahiplenilen kuruma tanınan ücretsiz teklif hakkı sayısı
     'free_claim_credits' => 5,
 

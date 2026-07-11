@@ -492,3 +492,65 @@ if (! function_exists('facility_whatsapp_url')) {
         return 'https://wa.me/'.$digits.'?text='.rawurlencode(facility_invitation_message($facility));
     }
 }
+
+if (! function_exists('notify_admin_of_exception')) {
+    /**
+     * Production'da beklenmeyen hatalari config('platform.admin_alert_email')'e mail
+     * atarak bildirir (bkz. bootstrap/app.php withExceptions). Beklenen/gurultulu
+     * istisnalar (404, validation, throttle, CSRF vb.) haric tutulur. Ayni hata
+     * (sinif+dosya+satir) 1 saat icinde tekrar ederse spam olmasin diye cache ile
+     * susturulur - kritik hata bize ancak saatte bir mail olarak ulasir.
+     */
+    function notify_admin_of_exception(\Throwable $e): void
+    {
+        if (! app()->environment('production')) {
+            return;
+        }
+
+        $ignored = [
+            \Illuminate\Validation\ValidationException::class,
+            \Illuminate\Auth\AuthenticationException::class,
+            \Illuminate\Auth\Access\AuthorizationException::class,
+            \Illuminate\Database\Eloquent\ModelNotFoundException::class,
+            \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
+            \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class,
+            \Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException::class,
+            \Illuminate\Session\TokenMismatchException::class,
+        ];
+        foreach ($ignored as $class) {
+            if ($e instanceof $class) {
+                return;
+            }
+        }
+
+        $cacheKey = 'admin-alert:'.md5(get_class($e).'|'.$e->getFile().'|'.$e->getLine());
+        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            return;
+        }
+        \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHour());
+
+        $host = request()?->getHost() ?? 'CLI';
+        $url = request()?->fullUrl() ?? 'CLI/console';
+
+        $body = sprintf(
+            "Hata: %s\nMesaj: %s\nDosya: %s:%d\nURL: %s\nZaman: %s\n\nStack trace (ilk 20 satir):\n%s",
+            get_class($e),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            $url,
+            now()->toDateTimeString(),
+            implode("\n", array_slice(explode("\n", $e->getTraceAsString()), 0, 20))
+        );
+
+        try {
+            \Illuminate\Support\Facades\Mail::raw($body, function ($message) use ($host) {
+                $message->to(config('platform.admin_alert_email'))
+                    ->subject('['.config('app.name').'] Kritik hata: '.$host);
+            });
+        } catch (\Throwable $mailError) {
+            // Mail gonderimi de basarisiz olursa (ör. mail sunucusu coktuyse) sessizce
+            // yut - hata zaten Laravel'in varsayilan log kanalina yazilmis olacak.
+        }
+    }
+}
