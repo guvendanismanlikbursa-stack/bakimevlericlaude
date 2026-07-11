@@ -22,7 +22,7 @@
   @else
     <div class="grid sm:grid-cols-3 md:grid-cols-4 gap-4">
       @foreach($images as $image)
-        <a href="{{ brand_route('facilities.show', ['slug' => $image->facility->slug]) }}" class="group block">
+        <a href="{{ brand_route('facilities.show', ['slug' => $image->facility->slug]) }}" class="group block min-w-0">
           <div class="h-36 rounded-xl overflow-hidden bg-gray-100 border border-gray-100">
             <img src="{{ asset('storage/'.$image->path) }}" alt="{{ $image->facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
           </div>
