@@ -33,6 +33,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\TestCase;
 
 class PlatformFeatureTest extends TestCase
@@ -1658,5 +1660,87 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('cocuk', detect_chat_section('3 yasindaki cocugum icin kres bakiyorum')['slug']);
         $this->assertSame('rehabilitasyon', detect_chat_section('Felc sonrasi fizik tedavi lazim')['slug']);
         $this->assertNull(detect_chat_section('Merhaba nasilsiniz'));
+    }
+
+    public function test_family_google_login_signs_in_existing_account_by_email(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-existing-1',
+            'name' => 'Demo Aile',
+            'email' => $this->family->email,
+            'avatar' => 'https://example.com/avatar.jpg',
+        ]));
+
+        $this->get('/site/bakimevibul/aile/google-callback')
+            ->assertRedirect('/site/bakimevibul/aile/panel');
+
+        $this->assertSame($this->family->id, session('family_user_id'));
+        $this->family->refresh();
+        $this->assertSame('g-existing-1', $this->family->google_id);
+        $this->assertSame('https://example.com/avatar.jpg', $this->family->avatar_url);
+    }
+
+    public function test_family_google_signup_requires_phone_and_consent_then_creates_account(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-new-1',
+            'name' => 'Yeni Google Aile',
+            'email' => 'yeni-google-aile@test.local',
+            'avatar' => 'https://example.com/new-avatar.jpg',
+        ]));
+
+        $this->get('/site/bakimevibul/aile/google-callback')
+            ->assertRedirect('/site/bakimevibul/aile/google-tamamla');
+
+        $this->assertNull(session('family_user_id'));
+        $this->assertIsArray(session('family_google_pending'));
+
+        $this->get('/site/bakimevibul/aile/google-tamamla')->assertOk()->assertSee('Yeni Google Aile');
+
+        $this->post('/site/bakimevibul/aile/google-tamamla', [
+            'phone' => '05551234567',
+            'consent' => '1',
+        ])->assertRedirect('/site/bakimevibul/aile/panel');
+
+        $family = FamilyUser::where('email', 'yeni-google-aile@test.local')->firstOrFail();
+        $this->assertSame('g-new-1', $family->google_id);
+        $this->assertSame('https://example.com/new-avatar.jpg', $family->avatar_url);
+        $this->assertSame('05551234567', $family->phone);
+        $this->assertNotNull($family->consent_accepted_at);
+        $this->assertNotNull($family->email_verified_at);
+        $this->assertSame($family->id, session('family_user_id'));
+        $this->assertNull(session('family_google_pending'));
+    }
+
+    public function test_family_google_signup_without_consent_is_rejected(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-new-2',
+            'name' => 'Rizasiz Aile',
+            'email' => 'rizasiz-aile@test.local',
+        ]));
+
+        $this->get('/site/bakimevibul/aile/google-callback');
+
+        $this->post('/site/bakimevibul/aile/google-tamamla', [
+            'phone' => '05551234567',
+        ])->assertSessionHasErrors('consent');
+
+        $this->assertNull(FamilyUser::where('email', 'rizasiz-aile@test.local')->first());
+    }
+
+    public function test_facility_registration_google_prefill_redirects_with_name_and_email(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-facility-1',
+            'name' => 'Kurum Yetkilisi',
+            'email' => 'yetkili@test.local',
+        ]));
+
+        $response = $this->get('/site/bakimevibul/kurum-kaydi/google-callback');
+        $response->assertRedirect();
+        $this->assertStringContainsString('/site/bakimevibul/kurum-kaydi?', $response->headers->get('Location'));
+        $this->assertStringContainsString('applicant_google_name=Kurum', $response->headers->get('Location'));
+        $this->assertStringContainsString('applicant_google_email=yetkili%40test.local', $response->headers->get('Location'));
     }
 }

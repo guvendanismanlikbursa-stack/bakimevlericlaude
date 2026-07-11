@@ -35,6 +35,7 @@ use App\Http\Controllers\Facility\QuoteController as FacilityQuoteController;
 use App\Http\Controllers\Facility\SubscriptionController as FacilitySubscriptionController;
 use App\Http\Controllers\Facility\WalletController as FacilityWalletController;
 use App\Http\Controllers\Family\AuthController as FamilyAuthController;
+use App\Http\Controllers\Family\GoogleAuthController as FamilyGoogleAuthController;
 use App\Http\Controllers\Family\PasswordResetController as FamilyPasswordResetController;
 use App\Http\Controllers\Family\DashboardController as FamilyDashboardController;
 use App\Http\Controllers\Family\EmailVerificationController as FamilyEmailVerificationController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\EngagementController;
 use App\Http\Controllers\Public\FacilityClaimController;
 use App\Http\Controllers\Public\FacilityRegistrationController;
+use App\Http\Controllers\Public\FacilityRegistrationGoogleAuthController;
 use App\Http\Controllers\Public\CronRunnerController;
 use App\Http\Controllers\Public\FacilityController;
 use App\Http\Controllers\Public\FaqController;
@@ -149,6 +151,8 @@ $siteRoutes = function () {
     // Kurum kendi kendine kayit basvurusu (herkese acik form, giris gerekmez)
     Route::get('/kurum-kaydi', [FacilityRegistrationController::class, 'create'])->name('facility-registration.create');
     Route::post('/kurum-kaydi', [FacilityRegistrationController::class, 'store'])->middleware('throttle:public-sensitive')->name('facility-registration.store');
+    Route::get('/kurum-kaydi/google-giris', [FacilityRegistrationGoogleAuthController::class, 'redirect'])->middleware('throttle:public-light')->name('facility-registration.google-redirect');
+    Route::get('/kurum-kaydi/google-callback', [FacilityRegistrationGoogleAuthController::class, 'callback'])->middleware('throttle:public-light')->name('facility-registration.google-callback');
     Route::get('/kurum-kaydi/basvuru-alindi', [FacilityRegistrationController::class, 'received'])->name('facility-registration.received');
     Route::get('/kurum-kaydi/{registration}/duzenle/{hash}', [FacilityRegistrationController::class, 'edit'])
         ->middleware('signed')->name('facility-registration.edit');
@@ -166,6 +170,10 @@ $siteRoutes = function () {
         Route::get('/giris', [FamilyAuthController::class, 'showLogin'])->name('login');
         Route::post('/giris', [FamilyAuthController::class, 'login'])->middleware('throttle:auth-attempt')->name('login.attempt');
         Route::post('/cikis', [FamilyAuthController::class, 'logout'])->name('logout');
+        Route::get('/google-giris', [FamilyGoogleAuthController::class, 'redirect'])->middleware('throttle:public-light')->name('google-redirect');
+        Route::get('/google-callback', [FamilyGoogleAuthController::class, 'callback'])->middleware('throttle:public-light')->name('google-callback');
+        Route::get('/google-tamamla', [FamilyGoogleAuthController::class, 'completeForm'])->name('google-complete');
+        Route::post('/google-tamamla', [FamilyGoogleAuthController::class, 'completeStore'])->middleware('throttle:auth-register')->name('google-complete.store');
         Route::get('/sifremi-unuttum', [FamilyPasswordResetController::class, 'showRequest'])->name('password.request');
         Route::post('/sifremi-unuttum', [FamilyPasswordResetController::class, 'sendResetLink'])->middleware('throttle:public-sensitive')->name('password.email');
         Route::get('/sifre-sifirla/{id}/{hash}', [FamilyPasswordResetController::class, 'showReset'])

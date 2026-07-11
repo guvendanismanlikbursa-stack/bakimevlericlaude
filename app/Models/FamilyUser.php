@@ -9,6 +9,7 @@ class FamilyUser extends Model
     protected $fillable = [
         'registered_brand', 'name', 'email', 'phone', 'password', 'email_verified_at', 'status',
         'consent_accepted_at', 'consent_ip', 'signup_lat', 'signup_lng', 'signup_city_name',
+        'google_id', 'avatar_url',
     ];
 
     protected $hidden = ['password', 'consent_ip', 'signup_lat', 'signup_lng'];

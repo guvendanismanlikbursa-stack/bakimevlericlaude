@@ -125,7 +125,7 @@ class AuthController extends Controller
      * kategorisinin markaya uygun oldugu burada TEKRAR dogrulanir; aksi
      * halde talep sessizce olusturulmaz.
      */
-    private function afterLogin(array $brand)
+    protected function afterLogin(array $brand)
     {
         $notifier = app(OfferRequestNotificationService::class);
 
