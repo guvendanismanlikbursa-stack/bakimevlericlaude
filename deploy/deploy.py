@@ -15,9 +15,14 @@ Kullanim:
 Ne yapar (sirayla, herhangi bir adim basarisiz olursa DURUR):
   1. Yerel `vendor/bin/phpunit` calistirir.
   2. composer.lock son deploy'dan beri degistiyse: `composer dump-autoload
-     --no-dev --optimize` ile temiz autoload uretir, uretilen dosyalarda
-     require-dev'e ozel bir paketin sizip sizmedigini otomatik dogrular
-     (bkz. dev_only_paketler_sizdi_mi()) - 1. cokmenin otomatik testi.
+     --no-dev --optimize` ile temiz autoload uretir, installed.json/
+     installed.php'yi de dev-paketlerden arindirir (bkz.
+     filter_installed_files_for_no_dev()), sonra require-dev'e ozel bir
+     paketin sizip sizmedigini otomatik dogrular (bkz.
+     dev_only_paketler_sizdi_mi()) - 1. ve 3. cokmenin otomatik testi.
+  2b. Yerel `php artisan route:list` ile bootstrap dumani calistirir -
+     production'a HENUZ HICBIR SEY YUKLENMEDEN kod hatalarini yakalar
+     (bkz. step2b_local_boot_smoke_test() - sinirlarini da orada okuyun).
   3. Son basarili deploy'dan (deploy/.last_deployed_sha) bu yana degisen
      git-takipli dosyalari FTP ile 3 doc root'a yukler. composer.lock
      degistiyse yeni eklenen/guncellenen vendor paket dizinlerini de
@@ -25,13 +30,20 @@ Ne yapar (sirayla, herhangi bir adim basarisiz olursa DURUR):
   4. Her doc root'ta sirasiyla /_ops/migrate, /_ops/package-discover,
      /_ops/cache-refresh cagirir (bkz. OpsController) - bootstrap/cache/
      dosyalari artik hic FTP ile tasinmiyor, hep sunucuda uretiliyor
-     (2. cokmenin kok nedeni buydu).
+     (2. cokmenin kok nedeni buydu). Herhangi biri basarisiz olursa
+     otomatik olarak log-tail cagirip gercek hatayi hemen gosterir.
   5. /_saglik ucunu 3 domainde de kontrol eder (bkz. HealthController);
      hepsi "ok" degilse script kirmizi ile biter.
   6. Basarili olursa deploy/.last_deployed_sha guncellenir (commit etmek
      kullaniciya birakilir).
   7. composer.lock degistiyse en sonda yerel `composer install` (normal,
      dev dahil) ile gelistirme ortami eski haline getirilir.
+
+Ayrica: GitHub Actions'daki "production-boot-check" job'u (bkz.
+.github/workflows/tests.yml) her push'ta GERCEKTEN izole bir --no-dev
+kurulumla bootstrap dumani + dev-paket sizinti kontrolu yapar - bu
+depo'nun asil "staging" karsiligidir, deploy.py'nin 2b adimindan daha
+guclu bir garanti verir (bkz. o fonksiyonun docstring'indeki sinir notu).
 
 Bilinen sinir: otomatik rollback YOK. 5. adim basarisiz olursa script
 kirmizi biter ama o ana kadar yuklenmis dosyalar sunucuda kalir - elle
@@ -386,6 +398,34 @@ def step3_upload(env, changed_files, autoload_regenerated, from_sha):
     ok('Yukleme tamamlandi.')
 
 
+def step2b_local_boot_smoke_test():
+    """Staging ortamimiz yok (paylasimli FTP-only barindirma, yeni subdomain
+    acmak icin cPanel erisimi gerekiyor) - bunun yerine gecen guvenlik agi:
+    production'a HIC dokunmadan, yerel PHP ile vendor/autoload.php +
+    bootstrap/app.php + tum route dosyalarini yukleyip fatal hata cikip
+    cikmadigini kontrol eder. bootstrap/app.php'deki KOD hatalarini (ör.
+    Sentry entegrasyon hatasi tipinde bir seyi) guvenilir sekilde yakalar.
+
+    ONEMLI SINIR: bu test YEREL vendor'i kullanir, yerel makinede TUM
+    composer paketleri (dev dahil) fiziksel olarak diskte mevcuttur - yani
+    "production'a SADECE BELIRLI vendor paket dizinleri yuklendigi icin
+    orada eksik olan bir dosya" sinifi hatayi (ör. myclabs/deep-copy'nin
+    hic yuklenmemis olmasi) YEREL ORTAMDA asla YAKALAYAMAZ, cunku o dosya
+    yerelde zaten var. O sinif hatalarin GERCEK guvenlik agi GitHub
+    Actions'daki 'production-boot-check' job'udur (bkz. .github/workflows/
+    tests.yml) - orasi GERCEKTEN izole, --no-dev-only bir ortamda calisir,
+    dev paketleri diske hic inmez. Bu fonksiyon SADECE ek, hizli bir
+    ikinci katmandir."""
+    info('Adim 2b/7: yerel bootstrap dumani (staging yerine gecen guvenlik agi)...')
+    result = run(['php', 'artisan', 'route:list', '--no-ansi'], check=False)
+    if result.returncode != 0:
+        fail(
+            'Yerel bootstrap dumani basarisiz - production\'a HENUZ HICBIR SEY '
+            'YUKLENMEDI. Yukaridaki hatayi duzeltip tekrar deneyin.'
+        )
+    ok('Yerel bootstrap saglikli (route:list sorunsuz calisti), production\'a yuklemeye devam ediliyor.')
+
+
 def call_ops(env, domain, action):
     url = f'https://{domain}/_ops/{action}'
     req = urllib.request.Request(url, method='POST', headers={'Authorization': f'Bearer {env["OPS_SECRET"]}'})
@@ -404,7 +444,15 @@ def step4_run_ops(env):
         for action in ['migrate', 'package-discover', 'cache-refresh']:
             status, body = call_ops(env, domain, action)
             if status != 200:
-                fail(f'{domain} -> /_ops/{action} basarisiz (status={status}):\n{body[:500]}')
+                # 11 Temmuz 2026'da tam bu noktada basarisiz olan bir /_ops
+                # cagrisinin gercek nedenini bulmak icin elle log-tail
+                # cagirmak, FTP ile gecici script atmak vs. gerekmisti - artik
+                # otomatik: basarisizlik anindaki gercek hatayi hemen gosterir.
+                _, log = call_ops(env, domain, 'log-tail?bytes=3000')
+                fail(
+                    f'{domain} -> /_ops/{action} basarisiz (status={status}):\n{body[:500]}\n\n'
+                    f'--- son log kaydi ({domain}) ---\n{log[-3000:]}'
+                )
             print(f'  {domain} -> /_ops/{action}: OK')
     ok('Tum domainlerde migrate/cache-refresh tamamlandi.')
 
@@ -468,6 +516,7 @@ def main():
     print()
 
     autoload_regenerated = step2_prepare_autoload(changed_files)
+    step2b_local_boot_smoke_test()
     step3_upload(env, changed_files, autoload_regenerated, from_sha)
     step4_run_ops(env)
     step5_health_check(env)

@@ -1,9 +1,12 @@
 name: Testler
 
 # Deploy'u otomatiklestirmiyor (barindirma FTP-only, bkz. deploy/deploy.py) -
-# amac sadece kirik kodun master'a sessizce girmesini engellemek. Bugun
-# yasadigimiz kesintiler kod hatasi degil altyapi/config hatasiydi, bu
-# workflow onlari yakalamaz - ama gelecekteki mantik hatalarini yakalar.
+# amac kirik kodun master'a sessizce girmesini engellemek. 11 Temmuz 2026'da
+# yasadigimiz kesintiler (composer dev/no-dev autoload karisikligi, Sail
+# service provider'inin --no-dev ortaminda instantiate edilmeye calisilmasi)
+# yerel testlerde hic yakalanmiyordu cunku yerel gelistirme ortami hep
+# dev-dahil calisiyor - production-boot-check job'u TAM OLARAK bu sinif
+# hatalari, production'a hic dokunmadan, her push'ta otomatik yakalar.
 on:
   push:
     branches: [master]
@@ -32,3 +35,52 @@ jobs:
 
       - name: Testleri calistir
         run: vendor/bin/phpunit
+
+  production-boot-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP kurulumu
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, gd, zip
+          coverage: none
+
+      - name: SADECE production bagimliliklarini kur (--no-dev, production'daki ayni durum)
+        run: composer install --no-interaction --prefer-dist --no-dev
+
+      - name: .env hazirla (DB'ye dokunmadan, sadece APP_KEY)
+        run: cp .env.example .env && php artisan key:generate --force
+
+      - name: Bootstrap dumani - autoload/service-provider hatalarini yakalar
+        run: |
+          php artisan route:list --no-ansi > /dev/null
+          php -r '
+            require "vendor/autoload.php";
+            require "bootstrap/app.php";
+            echo "AUTOLOAD_VE_BOOTSTRAP_OK" . PHP_EOL;
+          '
+
+      - name: dev-only paket sizintisi kontrolu (myclabs/deep-copy sinifi hatalar)
+        run: |
+          php -r '
+            $composerJson = json_decode(file_get_contents("composer.json"), true);
+            $devPackages = array_keys($composerJson["require-dev"] ?? []);
+            $leaked = [];
+            foreach (["vendor/composer/autoload_classmap.php", "vendor/composer/autoload_static.php", "vendor/composer/autoload_real.php", "vendor/composer/autoload_files.php"] as $file) {
+                if (!file_exists($file)) continue;
+                $content = file_get_contents($file);
+                foreach ($devPackages as $pkg) {
+                    $fragment = explode("/", $pkg)[1];
+                    if (str_contains($content, $fragment)) { $leaked[] = "$pkg -> $file"; }
+                }
+            }
+            if ($leaked) {
+                fwrite(STDERR, "DEV-ONLY PAKET SIZINTISI:\n" . implode("\n", $leaked) . "\n");
+                exit(1);
+            }
+            echo "Sizinti yok.\n";
+          '
