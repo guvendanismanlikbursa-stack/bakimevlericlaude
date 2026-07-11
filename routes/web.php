@@ -42,6 +42,7 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\EngagementController;
 use App\Http\Controllers\Public\FacilityClaimController;
 use App\Http\Controllers\Public\FacilityRegistrationController;
+use App\Http\Controllers\Public\CronRunnerController;
 use App\Http\Controllers\Public\FacilityController;
 use App\Http\Controllers\Public\FaqController;
 use App\Http\Controllers\Public\HomeController;
@@ -230,6 +231,8 @@ $siteRoutes = function () {
 // 1) Gercek domain modu (host eslesirse ResolveBrand brand'i ayarlar)
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/robots.txt', RobotsController::class)->name('robots');
+// cPanel cron'u dakikada bir bu URL'i curl ile tetikler (bkz. CronRunnerController).
+Route::get('/_internal/cron-runner', [CronRunnerController::class, 'run'])->name('internal.cron-runner');
 
 Route::middleware('track.visit')->group($siteRoutes);
 

@@ -5,6 +5,11 @@ return [
     // uyarisi gonderilecek adres. Bkz. bootstrap/app.php withExceptions + notify_admin_of_exception().
     'admin_alert_email' => env('ADMIN_ALERT_EMAIL', 'guvendanismanlikbursa@gmail.com'),
 
+    // cPanel cron'unun /_internal/cron-runner ucunu tetiklerken kullandigi paylasilan
+    // sifre (bkz. App\Http\Controllers\Public\CronRunnerController). Bos birakilirsa
+    // bu uc hicbir token ile eslesmez, yani devre disi kalir.
+    'cron_secret' => env('CRON_SECRET', ''),
+
     // Yeni sahiplenilen kuruma tanınan ücretsiz teklif hakkı sayısı
     'free_claim_credits' => 5,
 
