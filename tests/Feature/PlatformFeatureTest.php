@@ -1891,4 +1891,12 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('fbevents.js', false)
             ->assertSee("fbq('init', \"123456789\")", false);
     }
+
+    public function test_ops_endpoint_runs_log_tail_with_correct_secret(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+
+        $this->postJson('/_ops/log-tail', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk();
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 
 // Deploy script'inin migrate + cache yenileme gibi birkac SABIT komutu
 // uzaktan tetikleyebilmesi icin - CronRunnerController'daki paylasilan-
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Artisan;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh'];
+    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh', 'log-tail'];
 
     public function run(Request $request, string $action): Response
     {
@@ -35,6 +36,7 @@ class OpsController extends Controller
             'migrate' => $this->migrate(),
             'package-discover' => $this->packageDiscover(),
             'cache-refresh' => $this->cacheRefresh(),
+            'log-tail' => $this->logTail((int) $request->query('bytes', 8000)),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -69,5 +71,26 @@ class OpsController extends Controller
         }
 
         return $output;
+    }
+
+    // Bugune kadar her hata teshisinde public/'e ozel bir "log oku" script'i
+    // atip silme deseninin yerini alir - artik kalici, token korumali bu uc
+    // uzerinden log dosyasinin son N byte'ini okuyabiliyoruz.
+    private function logTail(int $bytes): string
+    {
+        $bytes = max(1000, min($bytes, 200000));
+        $path = storage_path('logs/laravel.log');
+
+        if (! File::exists($path)) {
+            return 'LOG YOK';
+        }
+
+        $size = File::size($path);
+        $handle = fopen($path, 'r');
+        fseek($handle, max(0, $size - $bytes));
+        $content = fread($handle, $bytes);
+        fclose($handle);
+
+        return $content;
     }
 }
