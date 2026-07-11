@@ -40,6 +40,17 @@ class SupportChatController extends Controller
                 ->first();
         }
 
+        // Kullanici mevcut bir sohbeti surdururken konu/niyet degistirdiyse
+        // (widget'taki "Konu değiştir" butonu) YENI bir thread acmak yerine
+        // ayni thread'i guncelliyoruz - mesaj gecmisi kaybolmaz.
+        if ($thread && ! empty($data['intent'])) {
+            $thread->update([
+                'intent' => $data['intent'],
+                'operator_gender_preference' => $data['operator_gender_preference'] ?? $thread->operator_gender_preference,
+                'unread_by_admin' => true,
+            ]);
+        }
+
         if (! $thread) {
             $cityName = null;
             if (($data['lat'] ?? null) !== null && ($data['lng'] ?? null) !== null) {

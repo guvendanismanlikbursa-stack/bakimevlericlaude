@@ -40,6 +40,7 @@
   <form id="js-admin-reply-form" method="POST" action="{{ route('admin.chat.reply', $thread) }}" enctype="multipart/form-data" class="border-t p-3">
     @csrf
     <div id="js-admin-attach-preview" class="hidden px-1 pb-2 text-xs text-gray-500"></div>
+    <div id="js-admin-mic-status" class="hidden px-1 pb-2 text-xs"></div>
     <div class="flex items-end gap-2">
       <input type="file" name="attachment" id="js-admin-file" class="hidden" accept="image/jpeg,image/png,image/webp,video/mp4,.pdf,.doc,.docx">
       <button type="button" id="js-admin-attach-btn" class="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" title="Dosya ekle">📎</button>
@@ -97,23 +98,62 @@
 
   var micBtn = document.getElementById('js-admin-mic-btn');
   var inputEl = document.getElementById('js-admin-input');
+  var micStatus = document.getElementById('js-admin-mic-status');
+  function showMicStatus(text, isError) {
+    if (!text) { micStatus.classList.add('hidden'); return; }
+    micStatus.textContent = text;
+    micStatus.className = isError ? 'px-1 pb-2 text-xs text-red-600' : 'px-1 pb-2 text-xs text-blue-600';
+  }
+
   var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (SpeechRecognition) {
+  if (! window.isSecureContext) {
+    // Web Speech API sadece HTTPS (veya localhost) uzerinde calisir - http
+    // uzerinden acilan bir admin paneli mikrofonu hic baslatamaz.
+    // Buton yine de gizli kalir (asagidaki SpeechRecognition kontrolu).
+  }
+  if (SpeechRecognition && window.isSecureContext) {
     micBtn.classList.remove('hidden');
     var recognition = new SpeechRecognition();
     recognition.lang = 'tr-TR';
     recognition.interimResults = false;
     var listening = false;
+
     micBtn.addEventListener('click', function () {
-      if (listening) { recognition.stop(); return; }
-      recognition.start();
-      listening = true;
+      if (listening) {
+        recognition.stop();
+        return;
+      }
+      try {
+        recognition.start();
+        listening = true;
+        micBtn.classList.add('text-red-600');
+        showMicStatus('Dinleniyor…', false);
+      } catch (err) {
+        // Onceki oturum tam kapanmadan tekrar start() cagrilirsa
+        // InvalidStateError firlatir - kullaniciya sessizce hicbir sey
+        // olmuyormus gibi gorunmemesi icin hata gosteriliyor.
+        showMicStatus('Mikrofon başlatılamadı, tekrar deneyin.', true);
+      }
     });
     recognition.addEventListener('result', function (e) {
       inputEl.value = (inputEl.value ? inputEl.value + ' ' : '') + e.results[0][0].transcript;
     });
-    recognition.addEventListener('end', function () { listening = false; });
-    recognition.addEventListener('error', function () { listening = false; });
+    recognition.addEventListener('end', function () {
+      listening = false;
+      micBtn.classList.remove('text-red-600');
+      showMicStatus(null);
+    });
+    recognition.addEventListener('error', function (e) {
+      listening = false;
+      micBtn.classList.remove('text-red-600');
+      var messages = {
+        'not-allowed': 'Mikrofon izni reddedildi. Tarayıcı ayarlarından izin verin.',
+        'no-speech': 'Ses algılanamadı, tekrar deneyin.',
+        'audio-capture': 'Mikrofon bulunamadı.',
+        'network': 'Ses tanıma servisine ulaşılamadı (internet bağlantısını kontrol edin).',
+      };
+      showMicStatus(messages[e.error] || ('Mikrofon hatası: ' + e.error), true);
+    });
   }
 
   // Formu normal POST-redirect-back ile gonderiyoruz (admin panelinin genel

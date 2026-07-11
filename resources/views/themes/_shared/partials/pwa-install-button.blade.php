@@ -19,16 +19,25 @@
   var installButton = document.getElementById('js-pwa-install-button');
   var deferredPrompt = null;
 
+  // Zaten yuklu bir PWA icinden aciliyorsa (standalone) ya da kullanici
+  // daha once "gizle" demisse bir daha hic gosterme.
+  var alreadyInstalled = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+  var dismissed = (function () { try { return localStorage.getItem('pwa_install_dismissed') === '1'; } catch (e) { return false; } })();
+
   window.addEventListener('beforeinstallprompt', function (event) {
     event.preventDefault();
+    if (alreadyInstalled || dismissed) return;
     deferredPrompt = event;
     if (installButton) installButton.hidden = false;
   });
 
   if (installButton) {
     installButton.addEventListener('click', function () {
-      if (!deferredPrompt) return;
+      // Prompt gecerli degilse (suresi dolmus/zaten yuklu) bile buton
+      // ekranda pasif kalmasin - her durumda gizlenir.
       installButton.hidden = true;
+      try { localStorage.setItem('pwa_install_dismissed', '1'); } catch (e) {}
+      if (!deferredPrompt) return;
       deferredPrompt.prompt();
       deferredPrompt = null;
     });
@@ -36,6 +45,7 @@
 
   window.addEventListener('appinstalled', function () {
     if (installButton) installButton.hidden = true;
+    try { localStorage.setItem('pwa_install_dismissed', '1'); } catch (e) {}
   });
 })();
 </script>

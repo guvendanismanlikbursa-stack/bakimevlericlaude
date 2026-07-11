@@ -239,7 +239,6 @@
   <div class="text-center text-xs py-4 {{ $theme === 'bakimeviara' ? 'border-t border-gray-200' : 'border-t border-white/10' }}">© {{ date('Y') }} {{ $brand['logo_text'] }}. Tüm hakları saklıdır.</div>
 </footer>
 
-@include('themes._shared.partials.whatsapp-button')
 @include('themes._shared.partials.support-chat-widget')
 @include('themes._shared.partials.pwa-install-button')
 @include('themes._shared.partials.cookie-consent')

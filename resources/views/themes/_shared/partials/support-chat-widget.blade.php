@@ -3,12 +3,12 @@
   $waNumber = \App\Models\Setting::get('whatsapp_number', $waDefaults['number']);
   $waMessage = str_replace('{marka}', $brand['name'], \App\Models\Setting::get('whatsapp_message', $waDefaults['message']));
 @endphp
-{{-- Canli destek ikonu: WhatsApp butonunun yanina, ayni satirda --}}
+{{-- Canli destek ikonu: tek ikon, WhatsApp'a erisim asagidaki menude --}}
 <button
   type="button"
   id="js-chat-toggle"
   aria-label="Canlı destek"
-  class="fixed bottom-5 right-24 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg animate-[wa-bounce-in_.5s_ease-out] hover:scale-105 transition-transform"
+  class="fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg animate-[wa-bounce-in_.5s_ease-out] hover:scale-105 transition-transform"
   style="background: {{ $brand['primary_color'] }};"
 >
   <svg viewBox="0 0 24 24" class="w-7 h-7 fill-white" aria-hidden="true">
@@ -39,7 +39,7 @@
   <button type="button" class="js-gender-btn w-full text-center px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50" data-gender="farketmez">Farketmez, önemli değil</button>
 </div>
 
-<div id="js-chat-panel" class="fixed bottom-5 right-5 sm:right-24 z-50 hidden w-[min(92vw,360px)] h-[min(78vh,560px)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
+<div id="js-chat-panel" class="fixed bottom-5 right-5 z-50 hidden w-[min(92vw,360px)] h-[min(78vh,560px)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
   <div class="flex items-center gap-3 px-4 py-3 text-white shrink-0" style="background: {{ $brand['primary_color'] }};">
     <div id="js-chat-eye" class="relative w-9 h-9 rounded-full bg-white shrink-0 overflow-hidden">
       <div id="js-chat-pupil" class="absolute w-3.5 h-3.5 rounded-full" style="top:50%;left:50%;margin:-7px 0 0 -7px;"></div>
@@ -48,6 +48,7 @@
       <div class="text-sm font-black">Sizi dinliyoruz</div>
       <div id="js-chat-status" class="text-xs text-white/80">Bağlanıyor…</div>
     </div>
+    <button type="button" id="js-chat-topic-btn" aria-label="Konu değiştir" title="Konu değiştir" class="text-white/80 hover:text-white text-lg leading-none px-1">☰</button>
     <button type="button" id="js-chat-close" aria-label="Kapat" class="text-white/80 hover:text-white text-xl leading-none px-1">×</button>
   </div>
 
@@ -106,6 +107,7 @@
   var micBtn = document.getElementById('js-chat-mic-btn');
   var eyeEl = document.getElementById('js-chat-eye');
   var pupilEl = document.getElementById('js-chat-pupil');
+  var topicBtn = document.getElementById('js-chat-topic-btn');
 
   var startUrl = @json(brand_route('support-chat.start'));
   var sendUrlTemplate = @json(brand_route('support-chat.send', ['thread' => 'THREAD_ID']));
@@ -136,6 +138,14 @@
     if (state.pollTimer) clearInterval(state.pollTimer);
   });
 
+  // Sohbet devam ederken kullanici konu/niyet degistirmek isteyebilir -
+  // menuyu tekrar acar, secim yapinca AYNI thread'in niyeti guncellenir
+  // (bkz. captureLocationAndStart -> state.guestToken), mesaj gecmisi kaybolmaz.
+  topicBtn.addEventListener('click', function () {
+    panelEl.classList.add('hidden');
+    menuEl.classList.remove('hidden');
+  });
+
   document.querySelectorAll('.js-intent-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       state.selectedIntent = btn.getAttribute('data-intent');
@@ -154,15 +164,19 @@
 
   // Konum: WhatsApp butonundaki desenle birebir ayni - kisa timeout, izin
   // verilsin/verilmesin istek her zaman gonderilir, kullanici asla beklemez.
+  // state.guestToken doluysa (kullanici zaten bir sohbete baslamis, sadece
+  // konu degistiriyor) o mevcut thread'e baglanip niyeti gunceller - yeni
+  // bir thread acmaz, mesaj gecmisi kaybolmaz.
   function captureLocationAndStart(intent, gender) {
+    var token = state.guestToken || null;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function (pos) {
-        startThread(null, intent, gender, pos.coords.latitude, pos.coords.longitude);
+        startThread(token, intent, gender, pos.coords.latitude, pos.coords.longitude);
       }, function () {
-        startThread(null, intent, gender, null, null);
+        startThread(token, intent, gender, null, null);
       }, { timeout: 4000, maximumAge: 60000 });
     } else {
-      startThread(null, intent, gender, null, null);
+      startThread(token, intent, gender, null, null);
     }
   }
 
@@ -203,7 +217,7 @@
   }
 
   function renderMessages(list, replace) {
-    if (replace) messagesEl.innerHTML = '';
+    if (replace) { messagesEl.innerHTML = ''; state.lastMessageId = 0; }
     (list || []).forEach(function (m) {
       if (m.id <= state.lastMessageId) return;
       state.lastMessageId = Math.max(state.lastMessageId, m.id);
@@ -295,8 +309,9 @@
   });
 
   // Sesli yaziya dokme - tarayici yerlisi, sunucuya hicbir sey gitmez.
+  // Sadece guvenli baglamda (https/localhost) calisir.
   var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (SpeechRecognition) {
+  if (SpeechRecognition && window.isSecureContext) {
     micBtn.classList.remove('hidden');
     var recognition = new SpeechRecognition();
     recognition.lang = 'tr-TR';
@@ -304,16 +319,26 @@
     var listening = false;
     micBtn.addEventListener('click', function () {
       if (listening) { recognition.stop(); return; }
-      recognition.start();
-      listening = true;
-      micBtn.classList.add('text-red-500');
+      try {
+        recognition.start();
+        listening = true;
+        micBtn.classList.add('text-red-500');
+      } catch (err) {
+        // Onceki oturum tam kapanmadan tekrar start() cagrilirsa olusan
+        // InvalidStateError'i sessizce yutmak yerine kullaniciya bildiriyoruz.
+        alert('Mikrofon başlatılamadı, lütfen tekrar deneyin.');
+      }
     });
     recognition.addEventListener('result', function (e) {
       var transcript = e.results[0][0].transcript;
       inputEl.value = (inputEl.value ? inputEl.value + ' ' : '') + transcript;
     });
     recognition.addEventListener('end', function () { listening = false; micBtn.classList.remove('text-red-500'); });
-    recognition.addEventListener('error', function () { listening = false; micBtn.classList.remove('text-red-500'); });
+    recognition.addEventListener('error', function (e) {
+      listening = false;
+      micBtn.classList.remove('text-red-500');
+      if (e.error === 'not-allowed') alert('Mikrofon izni reddedildi. Tarayıcı ayarlarından izin verin.');
+    });
   }
 
   // Goz ikonu: masaustunde imleci takip eder, dokunmatikte durgun/kirpan hale duser.
