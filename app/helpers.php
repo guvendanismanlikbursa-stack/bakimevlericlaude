@@ -204,7 +204,7 @@ if (! function_exists('seo_og_image')) {
     {
         $section = $section ?: active_service_section();
 
-        return url($section['hero_image'] ?? '/images/hero-yasli-bakim.jpg');
+        return url($section['hero_image'] ?? '/images/hero-yasli-bakim.webp');
     }
 }
 

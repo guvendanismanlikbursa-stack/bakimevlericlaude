@@ -16,3 +16,29 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# 12 Temmuz 2026: PageSpeed Insights "Verimli onbellek surelerini kullanin"
+# bulgusu icin - statik dosyalar (gorseller, build/ altindaki hash'li CSS/JS,
+# fontlar) tarayicida hic onbelleklenmiyordu, her ziyarette yeniden
+# indiriliyordu. build/ icindeki dosyalar Vite tarafindan icerik hash'i ile
+# adlandirilir (ayni dosya asla degismez, yeni surum yeni dosya adi alir),
+# bu yuzden 1 yillik "immutable" onbellek guvenlidir.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 month"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js)$">
+        <If "%{REQUEST_URI} =~ m#^/build/#">
+            Header set Cache-Control "public, max-age=31536000, immutable"
+        </If>
+    </FilesMatch>
+</IfModule>
