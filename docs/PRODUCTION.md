@@ -129,13 +129,31 @@ HTTPS zorunlu olmalidir. HTTP istekleri HTTPS'e yonlendirilmelidir.
 
 ## 7. Cron / Scheduler
 
-Sunucuda cron eklenmelidir:
+Bu paylasimli (cPanel) hostingde dogrudan `php artisan schedule:run` cron'u
+GUVENILMEZ (CLI PHP binary yolu tutarsiz olabiliyor - 12 Temmuz 2026'da
+tam bu yuzden saatlerce hata ayiklandi). Bunun yerine cPanel Cron Jobs'ta
+HER 3 DOMAIN icin, dakikada bir, asagidaki gibi bir HTTP tetikleyici
+kullanilir (CronRunnerController):
 
 ```bash
-* * * * * php /path/to/project/artisan schedule:run >> /dev/null 2>&1
+* * * * * curl -s "https://bakimevleri.com/_internal/cron-runner?token=<CRON_SECRET>" > /dev/null 2>&1
+* * * * * curl -s "https://bakimevibul.com/_internal/cron-runner?token=<CRON_SECRET>" > /dev/null 2>&1
+* * * * * curl -s "https://bakimeviara.com/_internal/cron-runner?token=<CRON_SECRET>" > /dev/null 2>&1
 ```
 
-Su an queue `sync` calisabilir. Yogun trafik veya mail islemleri artarsa queue worker ayrica kurulur.
+`<CRON_SECRET>`, ilgili domain'in `.env`'indeki `CRON_SECRET` degeriyle
+birebir ayni olmali (`config('platform.cron_secret')`). Bu uc `Artisan::
+call('schedule:run')` calistirir; `routes/console.php`'deki
+`Schedule::command('queue:work --stop-when-empty ...')->everyMinute()`
+sayesinde ayni tetikleme kuyruğu da isler - ayrica bir queue worker
+kurulumu GEREKMEZ.
+
+**Onemli**: `.env` duzenleyen tek-seferlik script'ler `public/` altina
+yuklenip web'den tetiklenir - script icinde `.env` yolu MUTLAKA
+`__DIR__ . '/../.env'` olmali (`__DIR__ . '/.env'` degil), yoksa
+`public/.env` adinda gercek olmayan bir "hayalet" dosyaya yazip
+degisikligin hic etkisi olmadigini fark etmeden saatler kaybedebilirsiniz
+(bkz. 12 Temmuz 2026 CRON_SECRET olayi).
 
 ## 8. Canli Smoke Test
 
