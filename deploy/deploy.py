@@ -116,7 +116,12 @@ def load_deploy_env():
     return env
 
 
-def run(cmd, cwd=APP_ROOT, check=True):
+def run(cmd, cwd=None, check=True):
+    # cwd=None + gec-baglama (fonksiyon govdesinde APP_ROOT okumak) sart:
+    # Python'da varsayilan parametre degerleri import ANINDA sabitlenir, bu
+    # yuzden testlerin patch.object(deploy, 'APP_ROOT', ...) ile gecici bir
+    # deger vermesi calismazdi (bkz. deploy/test_deploy.py).
+    cwd = cwd or APP_ROOT
     info('calistiriliyor: ' + ' '.join(cmd))
     # encoding='utf-8' + errors='replace' sart: Windows'ta varsayilan yerel
     # kod sayfasi (ör. cp1254) composer/git ciktisindaki UTF-8 karakterleri
@@ -269,9 +274,10 @@ def step2_prepare_autoload(changed_files):
     return True
 
 
-def run_quiet(cmd, cwd=APP_ROOT):
+def run_quiet(cmd, cwd=None):
     """run()'un sessiz hali - buyuk/gurultulu ciktilar (ör. composer.lock
     JSON dump'i) icin, konsolu kirletmeden calistirir."""
+    cwd = cwd or APP_ROOT
     return subprocess.run(
         cmd, cwd=cwd, capture_output=True, text=True,
         encoding='utf-8', errors='replace', shell=(os.name == 'nt'),

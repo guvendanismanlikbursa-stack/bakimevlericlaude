@@ -98,3 +98,17 @@ jobs:
             }
             echo "Sizinti yok.\n";
           '
+
+  deploy-script-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Git kullanici bilgisi (VersionBumpDetectionTest gecici commit'ler atiyor)
+        run: |
+          git config --global user.email "ci@test.local"
+          git config --global user.name "CI"
+
+      - name: deploy.py birim testlerini calistir
+        run: cd deploy && python3 -m unittest test_deploy -v
