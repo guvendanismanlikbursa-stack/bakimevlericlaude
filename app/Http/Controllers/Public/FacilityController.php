@@ -41,7 +41,7 @@ class FacilityController extends Controller
             ));
         }
 
-        $query = $this->filteredQuery($request, $scope);
+        $query = $this->filteredQuery($request, $scope)->with(['city', 'category', 'images']);
 
         $perPage = $request->boolean('pre_registered') ? 12 : 9;
         $facilities = $query->orderByDesc('is_featured')->orderByDesc('rating')->paginate($perPage)->withQueryString();
@@ -217,6 +217,7 @@ class FacilityController extends Controller
             ->forBrand($serviceSection['scopes'] ?? $brand['category_scope'])
             ->where('facility_category_id', $facility->facility_category_id)
             ->where('id', '!=', $facility->id)
+            ->with(['city', 'category', 'images'])
             ->limit(3)
             ->get();
 

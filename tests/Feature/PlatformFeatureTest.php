@@ -1353,6 +1353,30 @@ class PlatformFeatureTest extends TestCase
         ];
     }
 
+    public function test_facility_listing_page_does_not_n_plus_one_query(): void
+    {
+        // 12 Temmuz 2026'da kod incelemesinde bulundu: FacilityController::index()
+        // ->with(['city','category','images']) eksikti, facility-card.blade.php
+        // (city/category/images'e erisiyor) sayfadaki HER kart icin 3 ayri sorgu
+        // tetikliyordu (9 kartlik bir sayfada +27 sorgu). Duzeltildi; bu test
+        // sorgu sayisinin kart adediyle BIRLIKTE artmadigini kalici olarak korur.
+        for ($i = 0; $i < 9; $i++) {
+            $this->facility("N1 Test Kurum {$i}", $this->elderlyCategory, true);
+        }
+
+        $queryCount = 0;
+        \Illuminate\Support\Facades\DB::listen(function () use (&$queryCount) {
+            $queryCount++;
+        });
+
+        $this->get('/site/bakimevleri/kurumlar?bolum=yasli-bakim')->assertOk();
+
+        // Eager loading olmadan (city+category+images, 10 kart icin) 30'un
+        // uzerinde sorgu olurdu; duzeltmeyle sayfa basina sabit, dusuk bir
+        // sorgu sayisinda kalmali - kart adedinden BAGIMSIZ.
+        $this->assertLessThan(25, $queryCount, "Beklenenden fazla sorgu ({$queryCount}) - N+1 geri gelmis olabilir.");
+    }
+
     public function test_admin_message_review_screen_shows_thread_hidden_from_main_list(): void
     {
         $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Sikayet konusu talep'));
