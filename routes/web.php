@@ -278,6 +278,9 @@ Route::prefix('site/{brand}')->name('brand.')->middleware('track.visit')->group(
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/giris', [AdminAuthController::class, 'showLogin'])->name('login');
     Route::post('/giris', [AdminAuthController::class, 'login'])->middleware('throttle:auth-attempt')->name('login.attempt');
+    Route::get('/giris/dogrula', [AdminAuthController::class, 'showVerify'])->name('login.verify');
+    Route::post('/giris/dogrula', [AdminAuthController::class, 'verify'])->middleware('throttle:auth-attempt')->name('login.verify.attempt');
+    Route::post('/giris/kod-yenile', [AdminAuthController::class, 'resendCode'])->middleware('throttle:public-sensitive')->name('login.verify.resend');
     Route::post('/cikis', [AdminAuthController::class, 'logout'])->name('logout');
 
     Route::middleware('admin.auth')->group(function () {

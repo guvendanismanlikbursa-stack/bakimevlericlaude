@@ -102,6 +102,63 @@ class PlatformFeatureTest extends TestCase
         $this->get('/admin/giris')->assertOk()->assertSee('Ortak Admin Panel');
     }
 
+    public function test_admin_correct_password_requires_2fa_code_before_dashboard_access(): void
+    {
+        // 12 Temmuz 2026'da eklendi: en hassas panel sadece sifreyle
+        // korunuyordu, artik dogru sifre TEK BASINA panele erisim vermiyor.
+        $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!'])
+            ->assertRedirect('/admin/giris/dogrula');
+
+        $this->assertNull(session('admin_id'));
+        $this->assertNotNull(session('admin_2fa_pending_id'));
+
+        $this->admin->refresh();
+        $this->assertNotNull($this->admin->two_factor_code);
+        $this->assertNotNull($this->admin->two_factor_expires_at);
+    }
+
+    public function test_admin_can_complete_login_with_correct_2fa_code(): void
+    {
+        $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!']);
+        $this->admin->refresh();
+
+        // Kod hash'lenerek saklandigi icin dogrudan DB'den okunamaz;
+        // sendLoginCode() private oldugundan Reflection ile gercek kodu
+        // yakalamak yerine, bilinen bir kodu manuel set edip test ediyoruz.
+        $this->admin->update(['two_factor_code' => Hash::make('123456'), 'two_factor_expires_at' => now()->addMinutes(10)]);
+
+        $this->post('/admin/giris/dogrula', ['code' => '123456'])
+            ->assertRedirect('/admin');
+
+        $this->assertSame($this->admin->id, session('admin_id'));
+        $this->assertNull(session('admin_2fa_pending_id'));
+
+        $this->admin->refresh();
+        $this->assertNull($this->admin->two_factor_code);
+    }
+
+    public function test_admin_2fa_rejects_wrong_code(): void
+    {
+        $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!']);
+        $this->admin->update(['two_factor_code' => Hash::make('123456'), 'two_factor_expires_at' => now()->addMinutes(10)]);
+
+        $this->post('/admin/giris/dogrula', ['code' => '000000'])
+            ->assertSessionHasErrors('code');
+
+        $this->assertNull(session('admin_id'));
+    }
+
+    public function test_admin_2fa_rejects_expired_code(): void
+    {
+        $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!']);
+        $this->admin->update(['two_factor_code' => Hash::make('123456'), 'two_factor_expires_at' => now()->subMinute()]);
+
+        $this->post('/admin/giris/dogrula', ['code' => '123456'])
+            ->assertSessionHasErrors('code');
+
+        $this->assertNull(session('admin_id'));
+    }
+
     public function test_family_account_is_global_but_dashboard_is_brand_scoped(): void
     {
         OfferRequest::create($this->offerData('bakimevibul', $this->elderlyCategory, 'Bul Talep'));
