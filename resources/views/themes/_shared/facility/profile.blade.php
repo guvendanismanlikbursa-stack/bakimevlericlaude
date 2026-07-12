@@ -94,7 +94,7 @@
           <label class="text-sm font-black">Ana sayfa filtrelerinde görünen {{ $serviceSection['title'] }} özellikleri</label>
         </div>
         <p class="text-xs text-gray-500 mb-3">Burada seçilen özellikler ziyaretçinin ana sayfa ve kurum listesi filtresinde kurumunuzu bulmasını sağlar.</p>
-        <div class="grid sm:grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 gap-2">
           @foreach($serviceSection['features'] as $feature)
             <label class="flex items-center gap-2 text-sm bg-white border rounded-lg px-3 py-2">
               <input type="checkbox" name="services[]" value="{{ $feature }}" @checked($selectedServices->contains($feature))>

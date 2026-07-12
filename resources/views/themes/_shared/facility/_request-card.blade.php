@@ -6,7 +6,7 @@
         <span class="text-xs rounded-full px-2 py-1 bg-gray-100 text-gray-700">{{ $req->isBroadcast() ? 'Genel talep' : 'Doğrudan talep' }}</span>
       </div>
       <div class="text-xs text-gray-400 mt-1">{{ $req->patient_name ? $req->patient_name.' · ' : '' }}{{ $req->created_at->format('d.m.Y H:i') }}</div>
-      <div class="grid sm:grid-cols-3 gap-3 text-sm text-gray-600 mt-3">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm text-gray-600 mt-3">
         <div><span class="block text-xs text-gray-400">Kategori</span>{{ $req->category->name ?? '-' }}</div>
         <div><span class="block text-xs text-gray-400">Şehir</span>{{ $req->city->name ?? '-' }}</div>
         <div><span class="block text-xs text-gray-400">Telefon</span>{{ $req->phone ?: '-' }}</div>

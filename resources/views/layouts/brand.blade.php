@@ -84,6 +84,7 @@
       @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold text-white/80 hover:text-white hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+        <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-semibold text-white/80 hover:text-white">Çıkış Yap</button></form>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="text-sm px-4 py-2 rounded-md font-black" style="background: {{ $brand['secondary_color'] }}; color:#fff;">Başla</a>
       <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-white text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
@@ -102,6 +103,8 @@
       @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-white">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-white">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-white">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.profile.edit') }}" class="py-2 hover:text-white">Profili Düzenle</a>@else<a href="{{ brand_route('family.profile.edit') }}" class="py-2 hover:text-white">Hesap Bilgilerim</a>@endif
+        <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}">@csrf<button class="py-2 hover:text-white">Çıkış Yap</button></form>
       @endif
     </nav>
   </div>
@@ -125,6 +128,7 @@
       @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-bold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+        <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-bold hover:text-primary">Çıkış Yap</button></form>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="btn-primary text-sm px-4 py-2 rounded-full font-black">Başla</a>
       <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
@@ -142,6 +146,8 @@
       @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-primary">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.profile.edit') }}" class="py-2 hover:text-primary">Profili Düzenle</a>@else<a href="{{ brand_route('family.profile.edit') }}" class="py-2 hover:text-primary">Hesap Bilgilerim</a>@endif
+        <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}">@csrf<button class="py-2 hover:text-primary">Çıkış Yap</button></form>
       @endif
     </nav>
   </div>
@@ -166,6 +172,7 @@
       @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+        <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-semibold hover:text-primary">Çıkış Yap</button></form>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="btn-primary text-sm px-4 py-2 rounded-lg font-bold">Başla</a>
       <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
@@ -184,6 +191,8 @@
       @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-primary">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.profile.edit') }}" class="py-2 hover:text-primary">Profili Düzenle</a>@else<a href="{{ brand_route('family.profile.edit') }}" class="py-2 hover:text-primary">Hesap Bilgilerim</a>@endif
+        <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}">@csrf<button class="py-2 hover:text-primary">Çıkış Yap</button></form>
       @endif
     </nav>
   </div>
@@ -209,7 +218,7 @@
 </main>
 
 <footer class="{{ $theme === 'bakimeviara' ? 'bg-gray-50 text-gray-600 border-t border-gray-100' : 'bg-gray-950 text-gray-300' }} mt-16">
-  <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-4 gap-8 text-sm">
+  <div class="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
     <div>
       <div class="flex items-center gap-2 {{ $theme === 'bakimeviara' ? 'text-gray-950' : 'text-white' }} font-black text-lg mb-2">
         <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-7 h-7 flex-shrink-0">

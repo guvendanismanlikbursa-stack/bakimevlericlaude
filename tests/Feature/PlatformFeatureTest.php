@@ -124,6 +124,63 @@ class PlatformFeatureTest extends TestCase
             ->assertDontSee('Bul Talep');
     }
 
+    public function test_family_can_view_and_update_profile_page(): void
+    {
+        // 12 Temmuz 2026'da panel denetiminde bulundu: aile hesabinin kendi
+        // bilgilerini (ad/telefon/sifre) duzenleyebilecegi hicbir sayfa yoktu.
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevibul/aile/profil')
+            ->assertOk()
+            ->assertSee('Hesap Bilgilerim')
+            ->assertSee($this->family->email);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->put('/site/bakimevibul/aile/profil', [
+                'name' => 'Guncellenmis Isim',
+                'phone' => '05559998877',
+            ])
+            ->assertRedirect();
+
+        $this->family->refresh();
+        $this->assertSame('Guncellenmis Isim', $this->family->name);
+        $this->assertSame('05559998877', $this->family->phone);
+    }
+
+    public function test_family_can_change_password_via_profile_page(): void
+    {
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->put('/site/bakimevibul/aile/profil', [
+                'name' => $this->family->name,
+                'phone' => $this->family->phone,
+                'password' => 'YeniSifre123!',
+                'password_confirmation' => 'YeniSifre123!',
+            ])
+            ->assertRedirect();
+
+        $this->family->refresh();
+        $this->assertTrue(Hash::check('YeniSifre123!', $this->family->password));
+    }
+
+    public function test_logout_is_reachable_from_a_non_panel_page_while_logged_in(): void
+    {
+        // 12 Temmuz 2026'da panel denetiminde bulundu: "Cikis Yap" sadece
+        // dashboard sayfasinin icindeydi - baska bir sayfaya gecen bir
+        // kullanicinin cikis yapmanin yolu yoktu.
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevibul/kurumlar')
+            ->assertOk()
+            ->assertSee('Çıkış Yap', false);
+    }
+
+    public function test_facility_dashboard_links_to_notifications_and_password_change(): void
+    {
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimeviara/kurum-panel/panel')
+            ->assertOk()
+            ->assertSee('/site/bakimeviara/kurum-panel/bildirimler', false)
+            ->assertSee('/site/bakimeviara/kurum-panel/sifre-degistir', false);
+    }
+
     public function test_each_site_accepts_all_three_main_service_sections(): void
     {
         $this->get('/site/bakimevibul/?bolum=yasli-bakim')

@@ -196,6 +196,8 @@ $siteRoutes = function () {
             Route::post('/talep/{offerRequest}/mesajlar', [FamilyMessageController::class, 'store'])->name('thread.store');
             Route::get('/bildirimler', [FamilyNotificationController::class, 'index'])->name('notifications.index');
             Route::post('/bildirimler/{notification}/okundu', [FamilyNotificationController::class, 'markRead'])->name('notifications.read');
+            Route::get('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'edit'])->name('profile.edit');
+            Route::put('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'update'])->name('profile.update');
             Route::get('/bildirimler/sayi', [FamilyNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
         });
     });

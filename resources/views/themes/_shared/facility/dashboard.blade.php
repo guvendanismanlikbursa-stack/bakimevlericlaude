@@ -28,7 +28,7 @@
     </div>
   @endif
 
-  <div class="grid sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-8">
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Ücretsiz Hak</div>
       <div class="text-2xl font-bold mt-1">{{ $facility->free_quote_credits }}</div>
@@ -49,9 +49,11 @@
       <div class="text-xs text-gray-500">Tekliflerim</div>
       <div class="text-2xl font-bold mt-1">{{ $stats['sent_quotes'] }}</div>
     </div>
-    <a href="{{ brand_route('facility.wallet.index') }}" class="bg-primary text-white rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold">Bakiye Yükle →</a>
-    <a href="{{ brand_route('facility.packages.index') }}" class="border border-primary text-primary rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold">Paketler →</a>
-    <a href="{{ brand_route('facility.questions.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold">Aile Soruları →</a>
+    <a href="{{ brand_route('facility.wallet.index') }}" class="bg-primary text-white rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Bakiye Yükle →</a>
+    <a href="{{ brand_route('facility.packages.index') }}" class="border border-primary text-primary rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Paketler →</a>
+    <a href="{{ brand_route('facility.questions.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Aile Soruları →</a>
+    <a href="{{ brand_route('facility.notifications.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Bildirimler →</a>
+    <a href="{{ brand_route('facility.password.change') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Şifre Değiştir →</a>
   </div>
 
   <div class="grid lg:grid-cols-[1fr_320px] gap-6">

@@ -32,7 +32,7 @@
     </div>
   @endunless
 
-  <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Toplam Talep</div>
       <div class="text-2xl font-bold mt-1">{{ $stats['total_requests'] }}</div>
@@ -55,21 +55,31 @@
     </div>
   </div>
 
-  <div class="grid md:grid-cols-3 gap-4 mb-8">
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
     <a href="{{ brand_route('engagement.wizard') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
       <div class="text-xs font-semibold text-primary">Karar Merkezi</div>
       <div class="font-black text-gray-950 mt-1">İhtiyaç sihirbazı</div>
-      <p class="text-sm text-gray-500 mt-2">Bakım, eğitim veya rehabilitasyon ihtiyacına göre uygun arama yolunu seçin.</p>
+      <p class="text-sm text-gray-500 mt-2 hidden sm:block">Bakım, eğitim veya rehabilitasyon ihtiyacına göre uygun arama yolunu seçin.</p>
     </a>
     <a href="{{ brand_route('engagement.compare') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
       <div class="text-xs font-semibold text-primary">Karşılaştırma<span class="sr-only">Karsilastirma</span></div>
       <div class="font-black text-gray-950 mt-1">Kurumları yan yana gör</div>
-      <p class="text-sm text-gray-500 mt-2">Favoriye veya karşılaştırmaya eklediğiniz kurumları tek ekranda inceleyin.</p>
+      <p class="text-sm text-gray-500 mt-2 hidden sm:block">Favoriye veya karşılaştırmaya eklediğiniz kurumları tek ekranda inceleyin.</p>
     </a>
     <a href="{{ brand_route('engagement.favorites') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
       <div class="text-xs font-semibold text-primary">Notlar</div>
       <div class="font-black text-gray-950 mt-1">Favori listeniz</div>
-      <p class="text-sm text-gray-500 mt-2">Kısa liste oluşturun, görüşme notlarını aile panelinden takip edin.</p>
+      <p class="text-sm text-gray-500 mt-2 hidden sm:block">Kısa liste oluşturun, görüşme notlarını aile panelinden takip edin.</p>
+    </a>
+    <a href="{{ brand_route('family.notifications.index') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
+      <div class="text-xs font-semibold text-primary">Bildirimler</div>
+      <div class="font-black text-gray-950 mt-1">Gelen bildirimler</div>
+      <p class="text-sm text-gray-500 mt-2 hidden sm:block">Kurumlardan gelen mesaj ve teklif bildirimlerinizi görün.</p>
+    </a>
+    <a href="{{ brand_route('family.profile.edit') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
+      <div class="text-xs font-semibold text-primary">Hesabım</div>
+      <div class="font-black text-gray-950 mt-1">Hesap Bilgilerim</div>
+      <p class="text-sm text-gray-500 mt-2 hidden sm:block">Ad, telefon ve şifrenizi güncelleyin.</p>
     </a>
   </div>
 
@@ -105,7 +115,7 @@
               @endif
             </div>
             <p class="text-xs text-gray-400 mt-1">{{ $req->created_at->format('d.m.Y H:i') }} &middot; {{ $req->isBroadcast() ? 'Şehir/kategori talebi' : 'Doğrudan kurum talebi' }}</p>
-            <div class="grid sm:grid-cols-3 gap-3 text-sm text-gray-600 mt-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm text-gray-600 mt-4">
               <div><span class="block text-xs text-gray-400">Hasta / Yakın</span>{{ $req->patient_name ?: $req->full_name }}</div>
               <div><span class="block text-xs text-gray-400">İletişim</span>{{ $req->phone ?: '-' }}</div>
               <div><span class="block text-xs text-gray-400">Teklif / Mesaj</span>{{ $quoteCount }} teklif · {{ $messageCount }} mesaj</div>

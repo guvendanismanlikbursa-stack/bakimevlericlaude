@@ -5,7 +5,7 @@
   <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">← Panele dön</a>
   <h1 class="text-2xl font-bold mt-2 mb-6">Bakiyem</h1>
 
-  <div class="grid md:grid-cols-2 gap-4 mb-8">
+  <div class="grid grid-cols-2 gap-4 mb-8">
     <div class="bg-white rounded-xl shadow-sm p-4">
       <div class="text-gray-500 text-sm">Ücretsiz Hak</div>
       <div class="text-2xl font-bold">{{ $facility->free_quote_credits }}</div>
