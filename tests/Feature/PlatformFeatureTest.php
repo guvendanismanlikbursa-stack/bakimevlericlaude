@@ -1729,6 +1729,55 @@ class PlatformFeatureTest extends TestCase
         $this->assertNull(FamilyUser::where('email', 'rizasiz-aile@test.local')->first());
     }
 
+    public function test_facility_google_login_signs_in_existing_active_account_by_email(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-facility-1',
+            'name' => 'Demo Kurum',
+            'email' => $this->facilityUser->email,
+            'avatar' => 'https://example.com/facility-avatar.jpg',
+        ]));
+
+        $this->get('/site/bakimevibul/kurum-panel/google-callback')
+            ->assertRedirect('/site/bakimevibul/kurum-panel/panel');
+
+        $this->assertSame($this->facilityUser->id, session('facility_user_id'));
+        $this->facilityUser->refresh();
+        $this->assertSame('g-facility-1', $this->facilityUser->google_id);
+        $this->assertSame('https://example.com/facility-avatar.jpg', $this->facilityUser->avatar_url);
+    }
+
+    public function test_facility_google_login_rejects_unmatched_email_without_creating_account(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-facility-unknown',
+            'name' => 'Bilinmeyen Kurum',
+            'email' => 'kayitsiz-kurum@test.local',
+        ]));
+
+        $this->get('/site/bakimevibul/kurum-panel/google-callback')
+            ->assertRedirect('/site/bakimevibul/kurum-panel/giris');
+
+        $this->assertNull(session('facility_user_id'));
+        $this->assertNull(FacilityUser::where('email', 'kayitsiz-kurum@test.local')->first());
+    }
+
+    public function test_facility_google_login_rejects_suspended_account(): void
+    {
+        $this->facilityUser->update(['status' => 'suspended']);
+
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-facility-suspended',
+            'name' => 'Askidaki Kurum',
+            'email' => $this->facilityUser->email,
+        ]));
+
+        $this->get('/site/bakimevibul/kurum-panel/google-callback')
+            ->assertRedirect('/site/bakimevibul/kurum-panel/giris');
+
+        $this->assertNull(session('facility_user_id'));
+    }
+
     public function test_facility_registration_google_prefill_redirects_with_name_and_email(): void
     {
         Socialite::fake('google', SocialiteUser::fake([

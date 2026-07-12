@@ -209,6 +209,8 @@ $siteRoutes = function () {
         Route::get('/giris', [FacilityAuthController::class, 'showLogin'])->name('login');
         Route::post('/giris', [FacilityAuthController::class, 'login'])->middleware('throttle:auth-attempt')->name('login.attempt');
         Route::post('/cikis', [FacilityAuthController::class, 'logout'])->name('logout');
+        Route::get('/google-giris', [\App\Http\Controllers\Facility\GoogleAuthController::class, 'redirect'])->middleware('throttle:public-light')->name('google-redirect');
+        Route::get('/google-callback', [\App\Http\Controllers\Facility\GoogleAuthController::class, 'callback'])->middleware('throttle:public-light')->name('google-callback');
         Route::get('/sifremi-unuttum', [FacilityPasswordResetController::class, 'showRequest'])->name('password.request');
         Route::post('/sifremi-unuttum', [FacilityPasswordResetController::class, 'sendResetLink'])->middleware('throttle:public-sensitive')->name('password.email');
         Route::get('/sifre-sifirla/{id}/{hash}', [FacilityPasswordResetController::class, 'showReset'])

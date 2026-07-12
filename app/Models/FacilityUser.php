@@ -8,7 +8,7 @@ class FacilityUser extends Model
 {
     protected $fillable = [
         'facility_id', 'name', 'email', 'phone', 'password', 'must_change_password', 'status', 'email_verified_at',
-        'signup_lat', 'signup_lng', 'signup_city_name', 'signup_ip',
+        'signup_lat', 'signup_lng', 'signup_city_name', 'signup_ip', 'google_id', 'avatar_url',
     ];
 
     protected $hidden = ['password', 'signup_lat', 'signup_lng'];
