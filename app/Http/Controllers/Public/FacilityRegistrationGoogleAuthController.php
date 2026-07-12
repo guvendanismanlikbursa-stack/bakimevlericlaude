@@ -26,6 +26,9 @@ class FacilityRegistrationGoogleAuthController extends Controller
                 ->redirectUrl(brand_route('facility-registration.google-callback'))
                 ->user();
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Kurum kaydi Google girisi basarisiz: ' . $e->getMessage(), ['exception' => $e]);
+            \Sentry\captureException($e);
+
             return redirect(brand_route('facility-registration.create'))->with('error', 'Google ile giriş başarısız oldu, lütfen tekrar deneyin.');
         }
 

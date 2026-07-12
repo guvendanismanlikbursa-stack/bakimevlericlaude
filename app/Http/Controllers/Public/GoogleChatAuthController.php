@@ -40,6 +40,9 @@ class GoogleChatAuthController extends Controller
                 ->redirectUrl(brand_route('support-chat.google-callback'))
                 ->user();
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Destek sohbeti Google girisi basarisiz: ' . $e->getMessage(), ['exception' => $e]);
+            \Sentry\captureException($e);
+
             return redirect(brand_route('home'))->with('error', 'Google ile giriş başarısız oldu, lütfen tekrar deneyin.');
         }
 

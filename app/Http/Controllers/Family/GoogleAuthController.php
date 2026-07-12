@@ -32,6 +32,9 @@ class GoogleAuthController extends AuthController
                 ->redirectUrl(brand_route('family.google-callback'))
                 ->user();
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Aile Google girisi basarisiz: ' . $e->getMessage(), ['exception' => $e]);
+            \Sentry\captureException($e);
+
             return redirect(brand_route('family.login'))->with('error', 'Google ile giriş başarısız oldu, lütfen tekrar deneyin.');
         }
 

@@ -29,6 +29,9 @@ class GoogleAuthController extends AuthController
                 ->redirectUrl(brand_route('facility.google-callback'))
                 ->user();
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Kurum Google girisi basarisiz: ' . $e->getMessage(), ['exception' => $e]);
+            \Sentry\captureException($e);
+
             return redirect(brand_route('facility.login'))->with('error', 'Google ile giriş başarısız oldu, lütfen tekrar deneyin.');
         }
 
