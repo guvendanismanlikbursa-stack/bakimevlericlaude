@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\File;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work'];
+    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test'];
 
     public function run(Request $request, string $action): Response
     {
@@ -41,6 +41,7 @@ class OpsController extends Controller
             'sentry-test' => $this->sentryTest(),
             'queue-status' => $this->queueStatus(),
             'queue-work' => $this->queueWork(),
+            'queue-test' => $this->queueTest(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -149,5 +150,18 @@ class OpsController extends Controller
         ]);
 
         return Artisan::output();
+    }
+
+    // Gercek bir e-posta gondermeden, kuyruk hattinin (dispatch -> jobs
+    // tablosu -> queue:work islemesi) production'da gercekten calistigini
+    // dogrulamak icin - 12 Temmuz 2026'da QUEUE_CONNECTION=database'e
+    // gecis sonrasi ilk canli test icin eklendi.
+    private function queueTest(): string
+    {
+        dispatch(function () {
+            \Illuminate\Support\Facades\Log::info('QUEUE-TEST: arka plan isci basariyla calisti, zaman=' . now());
+        });
+
+        return 'Kuyruga eklendi, bekleyen=' . DB::table('jobs')->count();
     }
 }

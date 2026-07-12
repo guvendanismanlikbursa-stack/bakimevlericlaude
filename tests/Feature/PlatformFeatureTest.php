@@ -1932,4 +1932,15 @@ class PlatformFeatureTest extends TestCase
         $this->assertDatabaseCount('jobs', 0);
         $this->assertDatabaseCount('failed_jobs', 0);
     }
+
+    public function test_ops_endpoint_queue_test_dispatches_a_real_queued_job(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre', 'queue.default' => 'database']);
+
+        $this->postJson('/_ops/queue-test', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk()
+            ->assertSee('bekleyen=1');
+
+        $this->assertDatabaseCount('jobs', 1);
+    }
 }
