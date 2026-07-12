@@ -340,14 +340,28 @@ def delete_file(ftp, doc_root, rel_path):
 
 
 def upload_tree(ftp, doc_root, rel_dir):
+    # manifest.json her zaman EN SON yuklenir. os.walk() bir klasoru
+    # yukaridan asagiya tarar, yani manifest.json (public/build/'un
+    # kendisinde) alt klasordeki (assets/) hash'li JS/CSS dosyalarindan
+    # ONCE geliyordu - deploy sirasinda birkac saniyelik bir pencerede
+    # sunucuda "yeni manifest + eski/olmayan dosyalar" durumu olusuyor,
+    # tam o anda gelen bir ziyaretci "Unable to locate file in Vite
+    # manifest" hatasi goruyordu (12 Temmuz 2026'da canli logda yakalandi).
     local_dir = os.path.join(APP_ROOT, rel_dir)
     count = 0
+    deferred = []
     for dirpath, _dirnames, filenames in os.walk(local_dir):
         rel_dirpath = os.path.relpath(dirpath, APP_ROOT)
         for fname in filenames:
             rel_file = os.path.join(rel_dirpath, fname)
+            if fname == 'manifest.json':
+                deferred.append(rel_file)
+                continue
             upload_file(ftp, doc_root, rel_file)
             count += 1
+    for rel_file in deferred:
+        upload_file(ftp, doc_root, rel_file)
+        count += 1
     return count
 
 

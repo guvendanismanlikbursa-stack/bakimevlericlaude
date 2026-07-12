@@ -64,6 +64,47 @@ class UploadFileTest(unittest.TestCase):
             os.remove(tmp_path)
 
 
+class UploadTreeManifestOrderingTest(unittest.TestCase):
+    """12 Temmuz 2026'da canli logda yakalanan bir hatanin regresyon testi:
+    manifest.json, hash'li asset dosyalarindan ONCE yuklenirse, deploy
+    sirasinda gelen bir ziyaretci 'Unable to locate file in Vite manifest'
+    hatasi goruyordu. manifest.json'in her zaman EN SON yuklendigini
+    dogrular."""
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp(prefix='deploy_test_build_')
+        assets_dir = os.path.join(self.tmp_dir, 'public', 'build', 'assets')
+        os.makedirs(assets_dir, exist_ok=True)
+        with open(os.path.join(assets_dir, 'app-ABC123.css'), 'w') as f:
+            f.write('body{}')
+        with open(os.path.join(assets_dir, 'app-XYZ789.js'), 'w') as f:
+            f.write('console.log(1)')
+        with open(os.path.join(self.tmp_dir, 'public', 'build', 'manifest.json'), 'w') as f:
+            f.write('{}')
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_manifest_json_is_uploaded_after_all_other_build_files(self):
+        ftp = MagicMock()
+        with patch.object(deploy, 'APP_ROOT', self.tmp_dir):
+            count = deploy.upload_tree(ftp, 'public_html', 'public/build')
+
+        self.assertEqual(count, 3)
+        uploaded_paths = [call.args[0] for call in ftp.storbinary.call_args_list]
+        manifest_calls = [p for p in uploaded_paths if p.endswith('manifest.json')]
+        other_calls = [p for p in uploaded_paths if not p.endswith('manifest.json')]
+
+        self.assertEqual(len(manifest_calls), 1)
+        self.assertEqual(len(other_calls), 2)
+        self.assertGreater(
+            uploaded_paths.index(manifest_calls[0]),
+            max(uploaded_paths.index(p) for p in other_calls),
+            'manifest.json, diger tum build dosyalarindan SONRA yuklenmeli',
+        )
+
+
 class VersionBumpDetectionTest(unittest.TestCase):
     """12 Temmuz 2026'da izole bir git worktree'de elle dogrulanan senaryonun
     kalici, otomatik versiyonu: composer.lock'ta SADECE versiyonu degisen
