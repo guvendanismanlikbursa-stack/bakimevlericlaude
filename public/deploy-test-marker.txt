@@ -1,4 +1,0 @@
-Bu dosya deploy.py'nin dosya silme (FTP DELETE) yolunu gercek production ortaminda
-test etmek icin olusturuldu. Hicbir route/view tarafindan referans verilmiyor,
-tamamen zararsizdir. Testten hemen sonra git'ten silinip deploy.py tekrar
-calistirilarak FTP DELETE'in gercekten calistigi dogrulanacak.
