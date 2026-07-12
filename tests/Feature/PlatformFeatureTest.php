@@ -1899,4 +1899,14 @@ class PlatformFeatureTest extends TestCase
         $this->postJson('/_ops/log-tail', [], ['Authorization' => 'Bearer dogru-sifre'])
             ->assertOk();
     }
+
+    public function test_ops_endpoint_runs_sentry_test_with_correct_secret(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+
+        // DSN test ortaminda bos - komut basarisiz donse bile (gonderecek DSN
+        // yok) uc nokta cokmemeli, sadece komutun ciktisini dondurmeli.
+        $this->postJson('/_ops/sentry-test', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk();
+    }
 }

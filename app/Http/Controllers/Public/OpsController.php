@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\File;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh', 'log-tail'];
+    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test'];
 
     public function run(Request $request, string $action): Response
     {
@@ -37,6 +37,7 @@ class OpsController extends Controller
             'package-discover' => $this->packageDiscover(),
             'cache-refresh' => $this->cacheRefresh(),
             'log-tail' => $this->logTail((int) $request->query('bytes', 8000)),
+            'sentry-test' => $this->sentryTest(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -100,5 +101,16 @@ class OpsController extends Controller
         fclose($handle);
 
         return $content;
+    }
+
+    // Sentry DSN production'a eklendikten sonra gercekten calisip
+    // calismadigini dogrulamak icin - paketin kendi 'sentry:test' komutunu
+    // calistirir, bilincli bir test hatasi gonderir. Sentry panelinde
+    // "Issues" altinda gorunmesi DSN'in dogru calistiginin kaniti.
+    private function sentryTest(): string
+    {
+        Artisan::call('sentry:test');
+
+        return Artisan::output();
     }
 }
