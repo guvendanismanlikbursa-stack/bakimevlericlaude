@@ -104,13 +104,21 @@ class OpsController extends Controller
     }
 
     // Sentry DSN production'a eklendikten sonra gercekten calisip
-    // calismadigini dogrulamak icin - paketin kendi 'sentry:test' komutunu
-    // calistirir, bilincli bir test hatasi gonderir. Sentry panelinde
-    // "Issues" altinda gorunmesi DSN'in dogru calistiginin kaniti.
+    // calismadigini dogrulamak icin bilincli bir test hatasi gonderir.
+    // NOT: paketin kendi 'sentry:test' artisan komutu KASITLI olarak
+    // SADECE console'da calisirken register ediliyor (ServiceProvider'da
+    // runningInConsole() sarti var) - bu uc noktadan Artisan::call() ile
+    // cagirilinca "command not found" ile 500 verdigi 12 Temmuz 2026'da
+    // gorulup duzeltildi. Bunun yerine SDK'nin kendi captureException()
+    // fonksiyonu dogrudan kullanilir, console kisitlamasindan etkilenmez.
     private function sentryTest(): string
     {
-        Artisan::call('sentry:test');
+        try {
+            throw new \Exception('Bu, /_ops/sentry-test uzerinden gonderilen bilincli bir test hatasidir.');
+        } catch (\Exception $exception) {
+            $eventId = \Sentry\captureException($exception);
+        }
 
-        return Artisan::output();
+        return $eventId ? "Test olayi gonderildi: {$eventId}" : 'HATA: Sentry olayi gonderilemedi (DSN bos veya gecersiz olabilir).';
     }
 }
