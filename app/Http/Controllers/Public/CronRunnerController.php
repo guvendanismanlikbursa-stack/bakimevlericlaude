@@ -19,8 +19,15 @@ class CronRunnerController extends Controller
     public function run(Request $request): Response
     {
         $secret = (string) config('platform.cron_secret');
+        $provided = (string) $request->query('token');
 
-        if ($secret === '' || ! hash_equals($secret, (string) $request->query('token'))) {
+        if ($secret === '' || ! hash_equals($secret, $provided)) {
+            \Illuminate\Support\Facades\Log::warning('CRON-DEBUG: eslesme basarisiz', [
+                'secret_len' => strlen($secret),
+                'provided_len' => strlen($provided),
+                'secret_hash' => md5($secret),
+                'provided_hash' => md5($provided),
+            ]);
             abort(403);
         }
 
