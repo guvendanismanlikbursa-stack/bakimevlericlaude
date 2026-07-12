@@ -64,6 +64,36 @@ class UploadFileTest(unittest.TestCase):
             os.remove(tmp_path)
 
 
+class CleanupLocalBootstrapCacheTest(unittest.TestCase):
+    """12 Temmuz 2026: composer install sonrasi yerelde birikip route/config
+    degisikliklerini bayat gostererek kafa karistiran bootstrap/cache/*.php
+    dosyalarinin her deploy sonunda temizlendigini dogrular."""
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp(prefix='deploy_test_cache_')
+        self.cache_dir = os.path.join(self.tmp_dir, 'bootstrap', 'cache')
+        os.makedirs(self.cache_dir, exist_ok=True)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def test_removes_known_stale_cache_files_but_keeps_gitkeep(self):
+        for fname in ['config.php', 'packages.php', 'routes-v7.php', 'services.php', '.gitkeep']:
+            with open(os.path.join(self.cache_dir, fname), 'w') as f:
+                f.write('x')
+
+        with patch.object(deploy, 'APP_ROOT', self.tmp_dir):
+            deploy.cleanup_local_bootstrap_cache()
+
+        remaining = set(os.listdir(self.cache_dir))
+        self.assertEqual(remaining, {'.gitkeep'}, 'sadece .gitkeep kalmali, digerleri silinmeli')
+
+    def test_does_not_error_when_cache_dir_already_clean(self):
+        with patch.object(deploy, 'APP_ROOT', self.tmp_dir):
+            deploy.cleanup_local_bootstrap_cache()
+
+
 class UploadTreeManifestOrderingTest(unittest.TestCase):
     """12 Temmuz 2026'da canli logda yakalanan bir hatanin regresyon testi:
     manifest.json, hash'li asset dosyalarindan ONCE yuklenirse, deploy

@@ -519,6 +519,28 @@ def step7_restore_local_vendor(autoload_regenerated):
     ok('Yerel vendor eski haline dondu.')
 
 
+def cleanup_local_bootstrap_cache():
+    # 12 Temmuz 2026: composer install'in post-autoload-dump kancasi
+    # ('package:discover') ve/veya baska bir adim yerelde bootstrap/cache/
+    # altina packages.php/services.php/config.php/routes-v7.php birakiyor -
+    # tam kok nedeni ne olursa olsun, bu dosyalarin BURADA (yerel gelistirme
+    # ortaminda) var olmasi sadece kafa karistirir: sonraki bir 'php artisan
+    # route:list' veya test calistirmasi routes/web.php'ye yapilan YENI bir
+    # degisikligi gormeyip bayat sonuc verir (birden fazla kez basimiza
+    # geldi). Production'da bu dosyalar ayri ve gerekli (OpsController
+    # cache-refresh onlari orada kasitli olarak yeniden uretir) - burada
+    # SADECE yerel makine icin, her deploy sonunda temizlenir.
+    cache_dir = os.path.join(APP_ROOT, 'bootstrap', 'cache')
+    removed = []
+    for fname in ['config.php', 'packages.php', 'routes-v7.php', 'services.php']:
+        fpath = os.path.join(cache_dir, fname)
+        if os.path.isfile(fpath):
+            os.remove(fpath)
+            removed.append(fname)
+    if removed:
+        print(f'  Yerel bootstrap/cache temizlendi: {", ".join(removed)}')
+
+
 def main():
     env = load_deploy_env()
     from_sha = get_last_deployed_sha()
@@ -542,6 +564,7 @@ def main():
     step5_health_check(env)
     step6_update_marker()
     step7_restore_local_vendor(autoload_regenerated)
+    cleanup_local_bootstrap_cache()
 
     print('\nDEPLOY BASARILI.')
 
