@@ -1909,4 +1909,27 @@ class PlatformFeatureTest extends TestCase
         $this->postJson('/_ops/sentry-test', [], ['Authorization' => 'Bearer dogru-sifre'])
             ->assertOk();
     }
+
+    public function test_ops_endpoint_reports_queue_status_with_correct_secret(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+
+        $this->postJson('/_ops/queue-status', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk()
+            ->assertSee('bekleyen=0');
+    }
+
+    public function test_ops_endpoint_runs_queue_work_and_processes_pending_jobs(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre', 'queue.default' => 'database']);
+
+        notify_user($this->family, 'topup_approved', 'Kuyruk Testi', 'Govde');
+        $this->assertDatabaseCount('jobs', 1);
+
+        $this->postJson('/_ops/queue-work', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk();
+
+        $this->assertDatabaseCount('jobs', 0);
+        $this->assertDatabaseCount('failed_jobs', 0);
+    }
 }

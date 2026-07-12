@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 // Deploy script'inin migrate + cache yenileme gibi birkac SABIT komutu
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\File;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test'];
+    private const ACTIONS = ['migrate', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work'];
 
     public function run(Request $request, string $action): Response
     {
@@ -38,6 +39,8 @@ class OpsController extends Controller
             'cache-refresh' => $this->cacheRefresh(),
             'log-tail' => $this->logTail((int) $request->query('bytes', 8000)),
             'sentry-test' => $this->sentryTest(),
+            'queue-status' => $this->queueStatus(),
+            'queue-work' => $this->queueWork(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -120,5 +123,31 @@ class OpsController extends Controller
         }
 
         return $eventId ? "Test olayi gonderildi: {$eventId}" : 'HATA: Sentry olayi gonderilemedi (DSN bos veya gecersiz olabilir).';
+    }
+
+    // 12 Temmuz 2026'da QUEUE_CONNECTION sync'ten database'e gecirildi
+    // (mail gonderimi artik istegi yapan ziyaretciyi beklemiyor, ayrica
+    // paylasimli hostingin "Entry Processes" sinirini de daha az isgal
+    // ediyor). Gercek isleyici cPanel Cron Jobs uzerinden dogrudan
+    // `php artisan queue:work` calistiriyor - bu iki uc SADECE elle
+    // dogrulama/acil mudahale icin (ör. cron bir sure calismazsa kuyrugu
+    // burdan elle bosaltmak).
+    private function queueStatus(): string
+    {
+        $pending = DB::table('jobs')->count();
+        $failed = DB::table('failed_jobs')->count();
+
+        return "queue.default=" . config('queue.default') . "\nbekleyen=$pending\nbasarisiz=$failed\n";
+    }
+
+    private function queueWork(): string
+    {
+        Artisan::call('queue:work', [
+            '--stop-when-empty' => true,
+            '--tries' => 3,
+            '--no-interaction' => true,
+        ]);
+
+        return Artisan::output();
     }
 }
