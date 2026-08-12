@@ -2,6 +2,7 @@
 @section('title', 'Bakiye Yüklemeleri')
 
 @section('content')
+@php $topupStatusLabels = ['pending' => 'Bekliyor', 'approved' => 'Onaylandı', 'rejected' => 'Reddedildi']; @endphp
 <h1 class="text-2xl font-bold mb-6">Bakiye Yükleme Talepleri</h1>
 
 <form method="GET" class="mb-4">
@@ -16,19 +17,19 @@
   @forelse($topups as $topup)
     <div class="bg-white rounded-xl shadow-sm p-5 flex gap-6">
       @if(str_ends_with(strtolower($topup->receipt_path), '.pdf'))
-        <a href="{{ asset('storage/'.$topup->receipt_path) }}" target="_blank" class="w-40 h-32 rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-red-600 hover:bg-gray-100">
+        <a href="{{ route('admin.documents.show', ['type' => 'topup', 'id' => $topup->id]) }}" target="_blank" class="w-40 h-32 rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-red-600 hover:bg-gray-100">
           <span class="text-3xl">📄</span>
           <span class="text-xs font-semibold mt-1">PDF'i Aç</span>
         </a>
       @else
-        <a href="{{ asset('storage/'.$topup->receipt_path) }}" target="_blank">
-          <img src="{{ asset('storage/'.$topup->receipt_path) }}" class="w-40 h-32 object-cover rounded-lg">
+        <a href="{{ route('admin.documents.show', ['type' => 'topup', 'id' => $topup->id]) }}" target="_blank">
+          <img src="{{ route('admin.documents.show', ['type' => 'topup', 'id' => $topup->id]) }}" class="w-40 h-32 object-cover rounded-lg">
         </a>
       @endif
       <div class="flex-1">
         <h2 class="font-bold">{{ $topup->facility->name }}</h2>
         <p class="text-sm text-gray-600">Tutar: <strong>{{ number_format($topup->amount,2,',','.') }}₺</strong></p>
-        <p class="text-xs text-gray-400">{{ $topup->created_at->format('d.m.Y H:i') }} · Durum: {{ $topup->status }}</p>
+        <p class="text-xs text-gray-400">{{ $topup->created_at->format('d.m.Y H:i') }} · Durum: {{ $topupStatusLabels[$topup->status] ?? $topup->status }}</p>
         @if($topup->note)<p class="text-sm text-gray-500 mt-1">{{ $topup->note }}</p>@endif
 
         @if($topup->status === 'pending')

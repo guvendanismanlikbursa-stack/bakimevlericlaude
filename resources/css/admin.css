@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 28 Temmuz 2026: sekme/durum linkleri tam sayfa yenilemesi yaptigi icin sert
+   hissettiriyordu - bkz. app.css'teki ayni kural, JS'siz calisir. */
+@view-transition {
+  navigation: auto;
+}
+
 /*
  * Ortak admin paneli icin gece modu. Admin views'lar Tailwind utility
  * class'lariyla (bg-white, text-gray-950 vb.) yazildigi icin her dosyayi

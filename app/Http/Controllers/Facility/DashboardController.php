@@ -53,6 +53,8 @@ class DashboardController extends Controller
             'message_threads' => $sentQuotes->pluck('offer_request_id')->unique()->count(),
         ];
 
+        $performance = $facility->performanceSummary();
+
         return view("themes.{$brand['theme']}.facility.dashboard", compact(
             'user',
             'facility',
@@ -60,7 +62,8 @@ class DashboardController extends Controller
             'broadcastLeads',
             'sentQuotes',
             'facilityInBrandScope',
-            'stats'
+            'stats',
+            'performance'
         ));
     }
 }

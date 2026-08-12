@@ -1,0 +1,49 @@
+# Bu uygulama koku (app/, vendor/, .env vb.) dogrudan web-erisimli klasore
+# yuklendi (hosting doc-root'u public/ alt klasorune ayarlanamiyor). Bu
+# dosya TUM istekleri public/ alt klasorune yonlendirir ve hassas
+# dosya/klasorlere dogrudan erisimi ayrica engeller.
+#
+# ONEMLI: Bu dosya projenin GIT deposu disinda, sunucuda
+# /home/bakimevl/public_html/.htaccess (ve bakimeviara.com/,
+# public_html_bakimevibul/, public_html_staging/ altinda ayni icerikle)
+# olarak durur - proje public/ klasoru DEGIL, uygulama KOKU icin. Bu dosya
+# kaybolur/bozulursa site aninda tamamen 404 verir (13 Temmuz 2026'da
+# staging kurulumunda bu tam olarak yasandi). Buradaki kopya sadece
+# referans/yedek amaclidir - degisiklik yaptiginizda sunucudaki 4 kopyayi
+# da elle guncelleyin.
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # HTTP -> HTTPS zorunlu yonlendirme
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Hassas klasorlere dogrudan erisimi engelle (defence-in-depth). "storage"
+    # buraya DAHIL EDILMEZ: /storage/... URL'i public/storage sembolik
+    # baglantisi (storage:link) uzerinden herkese acik gorsellere gider ve
+    # asagidaki genel yonlendirme kurali zaten bunu sadece storage/app/public
+    # icerigiyle sinirlar; storage/framework, storage/logs gibi klasorler bu
+    # sembolik baglantinin disinda kaldigi icin ayrica engellemeye gerek yok.
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|tests|tools|docs|vendor)(/.*)?$ - [F,L]
+    RewriteRule ^(artisan|composer\.json|composer\.lock|package\.json|package-lock\.json|phpunit\.xml|README\.md|vite\.config\.js|tailwind\.config\.js|postcss\.config\.js)$ - [F,L]
+
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# BEGIN cPanel-generated php ini directives, do not edit
+# Manual editing of this file may result in unexpected behavior.
+# To make changes to this file, use the cPanel MultiPHP INI Editor (Home >> Software >> MultiPHP INI Editor)
+# For more information, read our documentation (https://go.cpanel.net/EA4ModifyINI)
+<IfModule php8_module>
+
+</IfModule>
+<IfModule lsapi_module>
+
+</IfModule>
+# END cPanel-generated php ini directives, do not edit

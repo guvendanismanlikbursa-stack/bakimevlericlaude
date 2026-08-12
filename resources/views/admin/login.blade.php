@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Girişi</title>
+<link rel="manifest" href="{{ route('admin.manifest') }}">
+<meta name="theme-color" content="#111827">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logo-bakimevleri-192.png') }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo-bakimevleri-180.png') }}">
 @vite('resources/css/app.css')
 </head>
 <body class="bg-gray-900 min-h-screen flex items-center justify-center">

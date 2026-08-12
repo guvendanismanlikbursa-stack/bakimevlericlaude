@@ -36,7 +36,19 @@ class PushSubscriptionController extends Controller
                 'endpoint' => $data['endpoint'],
                 'public_key' => $data['keys']['p256dh'],
                 'auth_token' => $data['keys']['auth'],
-                'content_encoding' => 'aesgcm',
+                // 30 Temmuz 2026: admin gercek cihazinda push bildirimi hic
+                // gormedigini bildirdi - kok neden bulundu: burada TUM yeni
+                // aboneliklere sabit olarak eski/artik kullanilmayan "aesgcm"
+                // sifreleme semasi (draft-httpbis-encryption-encoding-01)
+                // yaziliyordu. Modern tarayicilar (Chrome ~56+'dan beri,
+                // yillardir) push mesajlarini SADECE guncel standart olan
+                // "aes128gcm" (RFC 8291) ile cozebiliyor. FCM bu opak sifreli
+                // veriyi icerigine hic bakmadan iletiyor ("basarili" donuyor),
+                // ama tarayici/isletim sistemi kendi tarafinda cozemedigi icin
+                // bildirimi HICBIR HATA/LOG BIRAKMADAN sessizce dusuruyordu -
+                // bu yuzden gonderim "basarili" gorunuyordu ama hicbir zaman
+                // ekranda/seste bir sey cikmiyordu.
+                'content_encoding' => 'aes128gcm',
                 'user_agent' => substr((string) $request->userAgent(), 0, 255),
             ]
         );
@@ -53,16 +65,34 @@ class PushSubscriptionController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    // 30 Temmuz 2026: gercek kok neden burada bulundu (log-tail teshis
+    // kaydiyla dogrulandi) - bir cihazda/tarayicida daha once (ör. admin'in
+    // "Panelde Gör" ile bir kurum yetkilisini goruntulemesi sirasinda, ya da
+    // dogrudan kurum-panel girisiyle) olusmus ESKI bir facility_user_id/
+    // family_user_id session anahtari, o kullanici SONRADAN silinmis/
+    // gecersiz olsa bile session'da KALICI olarak duruyordu (hicbir login()
+    // akisi digger rollerin session anahtarlarini temizlemiyordu). Bu
+    // fonksiyon ilk DOLU anahtari bulunca hemen onu donduruyordu - o ID
+    // artik gecersizse (silinmis kullanici) bile FacilityUser::find() null
+    // donup fonksiyon da null donuyordu, GERCEKTEN GECERLI olan admin_id'ye
+    // hic bakmadan. Artik gecersiz/silinmis bir ID'yi atlayip bir SONRAKI
+    // rolu de kontrol ediyor.
     private function currentSubscribable(): FamilyUser|FacilityUser|Admin|null
     {
         if ($id = session('family_user_id')) {
-            return FamilyUser::find($id);
+            if ($family = FamilyUser::find($id)) {
+                return $family;
+            }
         }
         if ($id = session('facility_user_id')) {
-            return FacilityUser::find($id);
+            if ($facilityUser = FacilityUser::find($id)) {
+                return $facilityUser;
+            }
         }
         if ($id = session('admin_id')) {
-            return Admin::find($id);
+            if ($admin = Admin::find($id)) {
+                return $admin;
+            }
         }
 
         return null;

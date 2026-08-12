@@ -20,14 +20,26 @@ class FacilityController extends Controller
     private const MAX_GALLERY_IMAGES = 10;
     public function index(Request $request)
     {
-        $query = $this->filteredQuery($request, includeCategory: true)->with(['city', 'category', 'images']);
+        $query = $this->filteredQuery($request, includeCategory: true)->with(['city', 'category', 'images', 'facilityUsers']);
 
         $facilities = $query->latest()->paginate(15)->withQueryString();
+        $ownershipTypes = ['ozel' => 'Özel', 'kamu' => 'Kamu', 'belediye' => 'Belediye', 'vakif' => 'Vakıf'];
+
+        // 12 Agustos 2026: admin panelindeki arama/filtre kutulari da (aynen
+        // site tarafi gibi) sayfa yenilenmeden aninda sonuc guncelliyor -
+        // kategori kirilimi gibi agir aggregate'i her tus vurusunda tekrar
+        // hesaplamamak icin bu yolda atlaniyor, sadece tablo+sayfalama doner.
+        if ($request->ajax()) {
+            return response()->json([
+                'count' => $facilities->total(),
+                'html' => view('admin.facilities._results', compact('facilities', 'ownershipTypes'))->render(),
+            ]);
+        }
+
         $brands = config('brands.brands');
         $cities = City::orderBy('name')->get();
         $categories = FacilityCategory::orderBy('name')->get();
         $districtMap = $cities->mapWithKeys(fn ($city) => [$city->slug => districts_for_city($city->name)]);
-        $ownershipTypes = ['ozel' => 'Özel', 'kamu' => 'Kamu', 'belediye' => 'Belediye', 'vakif' => 'Vakıf'];
 
         // Secilen kategori disindaki tum filtreler uygulanmis haliyle, kategori
         // bazinda kirilim: admin "Tum Kategoriler" secili iken bile bu filtreye
@@ -71,6 +83,15 @@ class FacilityController extends Controller
 
         if ($request->filled('ownership_type')) {
             $query->where('ownership_type', $request->ownership_type);
+        }
+
+        // 28 Temmuz 2026: kurum ismiyle arama - toplu Excel ice aktarmada
+        // yanlis kategoriye dusmus kurumlari (ör. "kres"/"rehabilitasyon"
+        // gecen bir isim Yasli Bakim Evi kategorisinde) admin'in yapisal
+        // filtrelerle degil, isim/anahtar kelimeyle bulup duzeltebilmesi
+        // icin (bkz. miscategory-scan/-fix ops uclariyla ayni ihtiyac).
+        if ($request->filled('q')) {
+            $query->where('name', 'like', '%'.$request->string('q').'%');
         }
 
         return $query;
@@ -155,6 +176,16 @@ class FacilityController extends Controller
     public function destroy(Facility $facility, FacilityArchiveService $archiveService)
     {
         $archivePath = $archiveService->archiveBeforeDelete($facility);
+
+        // 21 Temmuz 2026: Facility soft-delete edilince ('deleted_at' set
+        // edilince), SoftDeletes'in global scope'u yuzunden $user->facility
+        // iliskisi artik null doner - o kurumun yetkilisi panele girmeye
+        // calisinca "isInBrandScope() on null" ile 500 hatasi aliyordu
+        // (temiz bir "hesabiniz aktif degil" mesaji yerine). Kurum silinince
+        // yetkilileri de askiya alinir - ayni suspend deseni OfferRequest
+        // Controller::suspendFacility'de zaten kullaniliyor.
+        \App\Models\FacilityUser::where('facility_id', $facility->id)->update(['status' => 'suspended']);
+
         $facility->delete();
 
         return back()->with('success', 'Kurum silindi ve silinenler arşivine taşındı: '.$archivePath);
@@ -168,7 +199,16 @@ class FacilityController extends Controller
             'source' => 'google_maps_veri_cekici',
         ]);
 
-        return back()->with('success', 'Kurum ön kayıtlı hale getirildi.');
+        // 30 Temmuz 2026: bir kurum yanlislikla/deneme amacli sahiplenilip
+        // sonra buradan "ön kayıtlı"ya döndürüldüğünde, o sahiplenmeyle
+        // acilan FacilityUser hesabi(lari) askiya alinmiyordu - kurum artik
+        // "sahipsiz" gorunse bile o hesap Kurum Yetkilileri'nde "Aktif"
+        // kalmaya ve kurum panelinden giris yapip yonetmeye devam
+        // edebiliyordu. destroy()'daki ayni suspend deseni burada da
+        // uygulanir.
+        \App\Models\FacilityUser::where('facility_id', $facility->id)->update(['status' => 'suspended']);
+
+        return back()->with('success', 'Kurum ön kayıtlı hale getirildi ve bağlı kurum yetkilisi hesapları askıya alındı.');
     }
 
     public function deleteImage(FacilityImage $image)
@@ -193,8 +233,15 @@ class FacilityController extends Controller
             throw ValidationException::withMessages(['images' => "Bir kurum için en fazla 10 görsel eklenebilir. Kalan yükleme hakkı: {$remaining}."]);
         }
 
+        // 3 Agustos 2026: bkz. Facility\ProfileController::uploadImage ayni
+        // yorum - yazimdan sonra dosyanin gercekten var oldugu dogrulanir.
         foreach ($files as $i => $file) {
             $path = app(ImageCompressionService::class)->store($file, 'facilities');
+            if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                \Illuminate\Support\Facades\Log::error('Kurum galeri gorseli (admin) kaydedilemedi.', ['facility_id' => $facility->id]);
+                \Sentry\captureException(new \RuntimeException('Gorsel diske yazildiktan sonra dogrulanamadi.'));
+                continue;
+            }
             FacilityImage::create([
                 'facility_id' => $facility->id,
                 'path' => $path,

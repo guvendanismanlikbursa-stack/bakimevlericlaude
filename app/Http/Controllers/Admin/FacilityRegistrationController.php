@@ -48,10 +48,18 @@ class FacilityRegistrationController extends Controller
 
         $mailPayload = DB::transaction(function () use ($registration, $temporaryPassword, $freeCredits) {
             $registration = FacilityRegistration::whereKey($registration->id)->lockForUpdate()->firstOrFail();
-            abort_if($registration->status !== 'pending', 400, 'Bu basvuru zaten islenmis.');
+            // 12 Agustos 2026: kullanicinin talebi - admin daha once
+            // reddettigi bir kayit basvurusunu gerekirse sonradan
+            // onaylayabilmeli; sadece zaten ONAYLANMIS bir basvurunun
+            // tekrar islenmesini engelliyoruz.
+            abort_if($registration->status === 'approved', 400, 'Bu basvuru zaten onaylanmis.');
 
             if (FacilityUser::where('email', $registration->applicant_email)->exists()) {
                 return ['error' => 'Bu e-posta zaten bir kurum hesabina ait. Baska bir basvuru/e-posta gerekiyor.'];
+            }
+
+            if ($error = email_taken_by_other_account_type($registration->applicant_email)) {
+                return ['error' => $error];
             }
 
             $facility = Facility::create([
@@ -121,7 +129,7 @@ class FacilityRegistrationController extends Controller
         }
 
         try {
-            Mail::to($mailPayload['email'])->queue(
+            Mail::to($mailPayload['email'])->sendNow(
                 new FacilityRegistrationApprovedMail($mailPayload['facility'], $mailPayload['email'], $mailPayload['password'], $mailPayload['login_url'])
             );
         } catch (\Throwable $e) {
@@ -129,7 +137,7 @@ class FacilityRegistrationController extends Controller
         }
 
         try {
-            Mail::to($mailPayload['email'])->queue(
+            Mail::to($mailPayload['email'])->sendNow(
                 new \App\Mail\FacilityWelcomeMail($mailPayload['facility'], $mailPayload['email'], config("brands.brands.{$registration->brand}.name", $registration->brand), $mailPayload['login_url'])
             );
         } catch (\Throwable $e) {
@@ -147,7 +155,9 @@ class FacilityRegistrationController extends Controller
 
         notify_user($facilityUser, 'registration_approved', 'Kurum kaydınız onaylandı', 'Kurum hesabınız aktifleşti, giriş bilgileri e-posta ile gönderildi.');
 
-        return redirect()->route('admin.registrations.index')->with('success', 'Basvuru onaylandi, giris bilgileri e-posta ile gonderildi.');
+        // 30 Temmuz 2026: FacilityClaimController::approve() ile ayni gerekce
+        // - mail gecikirse/gitmezse admin gecici sifreyi manuel iletebilsin.
+        return redirect()->route('admin.registrations.index')->with('success', "Başvuru onaylandı, giriş bilgileri e-posta ile gönderildi. E-posta ulaşmazsa şu bilgileri kullanıcıya siz iletebilirsiniz — E-posta: {$mailPayload['email']} / Geçici şifre: {$mailPayload['password']}");
     }
 
     public function requestRevision(Request $request, FacilityRegistration $registration)
@@ -171,7 +181,7 @@ class FacilityRegistrationController extends Controller
         $editUrl = $this->facilityRegistrationEditUrl($payload);
 
         try {
-            Mail::to($payload->applicant_email)->queue(
+            Mail::to($payload->applicant_email)->sendNow(
                 new FacilityRegistrationRevisionRequestedMail($payload, $data['admin_note'], $editUrl)
             );
         } catch (\Throwable $e) {
@@ -181,6 +191,39 @@ class FacilityRegistrationController extends Controller
         log_admin_event('facility_registration_revision_requested', $payload, ['admin_note' => $data['admin_note']]);
 
         return back()->with('success', 'Basvuru sahibinden duzeltme istendi, e-posta gonderildi.');
+    }
+
+    // 12 Agustos 2026: kullanicinin talebi - "talep onaylansa da red edilse
+    // de mutlaka basvuru sahibinin mailine bildirim gitmeli". Onceden
+    // kurum kayit basvurusunu reddetmenin tek yolu "Sil" (destroy()) idi -
+    // sessizce siliyordu, basvuru sahibi asla haberdar olmuyordu. Artik
+    // FacilityClaimController::reject() ile birebir ayni desen: durum
+    // 'rejected' olarak kaydedilir, sebep varsa not düşülür, mail atılır.
+    public function reject(Request $request, FacilityRegistration $registration)
+    {
+        $data = $request->validate(['reject_note' => 'nullable|string|max:1000']);
+
+        DB::transaction(function () use ($registration, $data) {
+            $registration = FacilityRegistration::whereKey($registration->id)->lockForUpdate()->firstOrFail();
+            abort_if($registration->status !== 'pending', 400, 'Bu basvuru zaten islenmis.');
+
+            $registration->update([
+                'status' => 'rejected',
+                'admin_note' => $data['reject_note'] ?? null,
+                'reviewed_by' => session('admin_id'),
+                'reviewed_at' => now(),
+            ]);
+        });
+
+        log_admin_event('facility_registration_rejected', $registration, ['admin_note' => $data['reject_note'] ?? null]);
+
+        try {
+            Mail::to($registration->applicant_email)->sendNow(new \App\Mail\FacilityRegistrationRejectedMail($registration));
+        } catch (\Throwable $e) {
+            Log::warning('Kurum kaydi red maili gonderilemedi: ' . $e->getMessage(), ['registration_id' => $registration->id]);
+        }
+
+        return back()->with('success', 'Basvuru reddedildi, basvuru sahibine e-posta gonderildi.');
     }
 
     public function destroy(FacilityRegistration $registration)

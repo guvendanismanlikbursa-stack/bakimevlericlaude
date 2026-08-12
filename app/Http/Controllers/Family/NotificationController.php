@@ -13,7 +13,7 @@ class NotificationController extends Controller
         $family = FamilyUser::findOrFail(session('family_user_id'));
         $notifications = $family->notifications()->paginate(20);
 
-        return view('themes._shared.family.notifications', compact('notifications'));
+        return view('themes._shared.family.notifications', compact('notifications', 'family'));
     }
 
     public function markRead(Request $request, int $notification)

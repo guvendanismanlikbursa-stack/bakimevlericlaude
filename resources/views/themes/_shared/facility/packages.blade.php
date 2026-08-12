@@ -1,11 +1,12 @@
 @extends('layouts.brand')
 
 @section('content')
-<div class="max-w-4xl mx-auto px-4 py-10">
-  <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">← Panele dön</a>
-  <h1 class="text-2xl font-bold mt-2 mb-2">Paketler</h1>
-  <p class="text-sm text-gray-500 mb-8">Bir paket seçip dekont yükleyin; admin onayından sonra tutar bakiyenize, bonus hak varsa ücretsiz hak sayınıza eklenir.</p>
+@php
+  $topupStatusLabels = ['pending' => 'Onay bekliyor', 'approved' => 'Onaylandı', 'rejected' => 'Reddedildi'];
+@endphp
+@include('themes._shared.partials.facility-panel-header', ['title' => 'Paketler', 'subtitle' => 'Bir paket seçip dekont yükleyin; admin onayından sonra tutar bakiyenize, bonus hak varsa ücretsiz hak sayınıza eklenir.'])
 
+<div class="max-w-4xl mx-auto px-4 py-10">
   <div class="grid md:grid-cols-3 gap-4 mb-10">
     @forelse($packages as $package)
       <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col">
@@ -34,9 +35,9 @@
       <tbody class="divide-y">
         @forelse($myTopups as $t)
           <tr>
-            <td class="p-3">{{ $t->subscriptionPackage?->name ?? '—' }}</td>
+            <td class="p-3">{{ $t->package_name_snapshot ?? $t->subscriptionPackage?->name ?? '—' }}</td>
             <td class="p-3">{{ number_format($t->amount,2,',','.') }}₺</td>
-            <td class="p-3">{{ $t->status }}</td>
+            <td class="p-3">{{ $topupStatusLabels[$t->status] ?? $t->status }}</td>
             <td class="p-3 text-gray-400">{{ $t->created_at->format('d.m.Y H:i') }}</td>
           </tr>
         @empty

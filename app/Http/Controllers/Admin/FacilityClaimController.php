@@ -45,13 +45,21 @@ class FacilityClaimController extends Controller
 
         $mailPayload = DB::transaction(function () use ($claim, $temporaryPassword, $freeCredits) {
             $claim = FacilityClaim::whereKey($claim->id)->lockForUpdate()->firstOrFail();
-            abort_if($claim->status !== 'pending', 400, 'Bu basvuru zaten islenmis.');
+            // 12 Agustos 2026: kullanicinin talebi - admin daha once
+            // reddettigi bir basvuruyu gerekirse (ör. basvuran ek belge
+            // gonderdiyse) sonradan onaylayabilmeli; sadece zaten ONAYLANMIS
+            // bir basvurunun tekrar islenmesini engelliyoruz.
+            abort_if($claim->status === 'approved', 400, 'Bu basvuru zaten onaylanmis.');
 
             $facility = $claim->facility()->lockForUpdate()->firstOrFail();
             abort_if($facility->is_claimed, 400, 'Bu kurum zaten sahiplenilmis.');
 
             if (FacilityUser::where('email', $claim->applicant_email)->exists()) {
                 return ['error' => 'Bu e-posta zaten bir kurum hesabina ait. Baska bir basvuru/e-posta gerekiyor.'];
+            }
+
+            if ($error = email_taken_by_other_account_type($claim->applicant_email)) {
+                return ['error' => $error];
             }
 
             $facilityUser = FacilityUser::create([
@@ -76,6 +84,17 @@ class FacilityClaimController extends Controller
                 'invitation_status' => 'approved',
                 'invitation_status_at' => now(),
             ]);
+
+            // 10 Agustos 2026: kurum sahiplenildiginde artik gercek bir
+            // sahibi var - veri cekiciden/on-kayittan kalma 'facilities/
+            // demo/...' sablon gorselleri (gercek dosyasi hic olmayan,
+            // "ÖRNEKTİR" filigranli placeholder'lar) burada yanilticidir,
+            // sahiplenme onaylanir onaylanmaz otomatik temizlenir. Sadece
+            // path prefix'i kesin eslesirse siler - kurumun kendi yukledigi
+            // HICBIR gercek gorsele (facilities/RANDOM.webp) dokunmaz.
+            \App\Models\FacilityImage::where('facility_id', $facility->id)
+                ->where('path', 'like', 'facilities/demo/%')
+                ->delete();
 
             BalanceLog::create([
                 'facility_id' => $facility->id,
@@ -110,7 +129,7 @@ class FacilityClaimController extends Controller
         // ileride database/redis queue'ya gecilince arka planda gonderilir.
         // Boylece admin onay islemi SMTP gecikmesine takilmaz.
         try {
-            Mail::to($mailPayload['email'])->queue(
+            Mail::to($mailPayload['email'])->sendNow(
                 new FacilityClaimApprovedMail($mailPayload['facility'], $mailPayload['email'], $mailPayload['password'], $mailPayload['login_url'])
             );
         } catch (\Throwable $e) {
@@ -118,7 +137,7 @@ class FacilityClaimController extends Controller
         }
 
         try {
-            Mail::to($mailPayload['email'])->queue(
+            Mail::to($mailPayload['email'])->sendNow(
                 new \App\Mail\FacilityWelcomeMail($mailPayload['facility'], $mailPayload['email'], config("brands.brands.{$claim->brand}.name", $claim->brand), $mailPayload['login_url'])
             );
         } catch (\Throwable $e) {
@@ -135,7 +154,11 @@ class FacilityClaimController extends Controller
         $facilityUser = \App\Models\FacilityUser::where('email', $mailPayload['email'])->first();
         notify_user($facilityUser, 'claim_approved', 'Sahiplenme başvurunuz onaylandı', 'Kurum hesabınız aktifleşti, giriş bilgileri e-posta ile gönderildi.');
 
-        return redirect()->route('admin.claims.index')->with('success', 'Basvuru onaylandi, giris bilgileri e-posta ile gonderildi.');
+        // 30 Temmuz 2026: gecici sifre SADECE mail icine gomuluyordu, admin
+        // paneli mail gecikirse/gitmezse (bkz. Gmail SMTP gecikme sorunu)
+        // hicbir yerde goremiyordu - basvuru sahibine telefonla vb. manuel
+        // iletebilecegi bir yol yoktu. Artik onay ekraninda da gosteriliyor.
+        return redirect()->route('admin.claims.index')->with('success', "Başvuru onaylandı, giriş bilgileri e-posta ile gönderildi. E-posta ulaşmazsa şu bilgileri kullanıcıya siz iletebilirsiniz — E-posta: {$mailPayload['email']} / Geçici şifre: {$mailPayload['password']}");
     }
 
     /**
@@ -174,6 +197,17 @@ class FacilityClaimController extends Controller
         });
 
         log_admin_event('facility_claim_rejected', $claim, ['admin_note' => $data['admin_note'] ?? null]);
+
+        // 28 Temmuz 2026: red edilen basvuru sahibinin henuz bir kullanici
+        // hesabi yok (hesap sadece onayda aciliyor), bu yuzden notify_user()
+        // kullanilamaz - basvuru reddedildiginde applicant_email'e DOGRUDAN
+        // mail atilan tek nokta burasi. Onceden bu uc hicbir bildirim
+        // gondermiyordu, basvuru sahibi reddedildigini hicbir zaman ogrenmiyordu.
+        try {
+            Mail::to($claim->applicant_email)->sendNow(new \App\Mail\FacilityClaimRejectedMail($claim));
+        } catch (\Throwable $e) {
+            Log::warning('Sahiplenme red maili gonderilemedi: ' . $e->getMessage(), ['claim_id' => $claim->id]);
+        }
 
         return back()->with('success', 'Basvuru reddedildi.');
     }

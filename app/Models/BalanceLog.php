@@ -13,7 +13,7 @@ class BalanceLog extends Model
 
     protected function casts(): array
     {
-        return ['amount' => 'float', 'balance_after' => 'float'];
+        return ['facility_id' => 'integer', 'amount' => 'float', 'balance_after' => 'float'];
     }
 
     public function facility()

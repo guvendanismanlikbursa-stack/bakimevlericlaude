@@ -13,7 +13,7 @@ class Quote extends Model
 
     protected function casts(): array
     {
-        return ['price' => 'float'];
+        return ['facility_id' => 'integer', 'offer_request_id' => 'integer', 'price' => 'float'];
     }
 
     public function offerRequest()

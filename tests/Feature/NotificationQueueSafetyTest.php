@@ -2,29 +2,32 @@
 
 namespace Tests\Feature;
 
+use App\Mail\NotificationMail;
 use App\Models\FamilyUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class NotificationQueueSafetyTest extends TestCase
 {
     use RefreshDatabase;
 
-    // 12 Temmuz 2026'da production'da QUEUE_CONNECTION sync'ten database'e
-    // gecirildi (kapasite icin - eskiden her bildirim maili, o istegi yapan
-    // ziyaretciyi mail gonderilene kadar bekletiyordu). helpers.php'deki
-    // notification_action_url() yorumu bir riske isaret ediyordu:
-    // brand_route() request()->route('brand')'a bagimli, gercek bir kuyruk
-    // isci sureci (CLI, HTTP baglamsiz) icinde calisirsa bos/yanlis URL
-    // uretebilirdi. Kod zaten URL'i notify_user() icinde - kuyruga GIRMEDEN
-    // once - sabit string olarak hesaplayip Mailable'a tasiyor; bu test
-    // bunun "mantiken dogru" olmanin otesinde gercek bir queue:work ile
-    // calistigini kalici olarak dogrular.
-    public function test_queued_notification_survives_being_processed_by_a_real_worker_outside_http_context(): void
+    // 3 Agustos 2026: kullanicinin acik/tekrarlanan talebi geregi ("kuyruga
+    // filan asla alma, dogrudan mail yollasin") tum Mail::to(...) cagrilari
+    // ->send() yerine ->sendNow() kullanacak sekilde degistirildi - bu da
+    // bu testin ORIJINAL endisesini (queue worker'in HTTP-baglamsiz CLI
+    // surecinde brand_route() icin gecerli bir actionUrl uretip
+    // uretemeyecegi) tamamen ORTADAN KALDIRDI, cunku mail artik HICBIR
+    // zaman bir kuyruk isci surecinde islenmiyor - hep senkron, orijinal
+    // HTTP request baglaminin icinde gonderiliyor. Test simdi bunun TERSINI,
+    // yani "mail kuyruga hic girmiyor" garantisini kalici olarak korur -
+    // aksi halde bir sonraki 'ShouldQueue implement eden yeni bir Mailable'
+    // veya '->send()'e geri donen bir degisiklik sessizce ayni eski
+    // soruna (mailin kuyrukta takili kalmasi) geri doner.
+    public function test_notification_mail_is_sent_synchronously_without_ever_touching_the_queue(): void
     {
+        Mail::fake();
         config(['queue.default' => 'database']);
 
         $family = FamilyUser::create([
@@ -37,25 +40,12 @@ class NotificationQueueSafetyTest extends TestCase
 
         notify_user($family, 'topup_approved', 'Test Basligi', 'Test govde metni');
 
-        $this->assertDatabaseCount('jobs', 1);
-
-        // notify_user() cagrisi burada (test metodunda) aktif bir HTTP
-        // route'u OLMADAN calisiyor - yani brand_route()'un
-        // request()->route('brand') donusu zaten null, tipki gercek bir
-        // kuyruk iscisinin CLI baglaminda olacagi gibi. Yine de URL'in
-        // bos/null degil, gecerli bir string olarak uretilip tasindigini
-        // doğrudan is kuyrugundaki (henuz islenmemis) payload'dan
-        // dogruluyoruz.
-        $payload = json_decode(DB::table('jobs')->value('payload'), true);
-        $this->assertStringContainsString('actionUrl', $payload['data']['command']);
-        $this->assertStringNotContainsString('"actionUrl";N;', $payload['data']['command']);
-
-        Artisan::call('queue:work', [
-            '--stop-when-empty' => true,
-            '--no-interaction' => true,
-        ]);
-
         $this->assertDatabaseCount('jobs', 0);
-        $this->assertDatabaseCount('failed_jobs', 0);
+
+        Mail::assertSent(NotificationMail::class, function (NotificationMail $mail) use ($family) {
+            return $mail->hasTo($family->email)
+                && $mail->actionUrl !== null
+                && str_contains($mail->actionUrl, 'http');
+        });
     }
 }

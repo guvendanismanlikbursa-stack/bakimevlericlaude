@@ -15,6 +15,21 @@ class OfferRequest extends Model
         'status', 'accepted_quote_id', 'batch_id',
     ];
 
+    // 13 Temmuz 2026: bu castlar olmadan family_user_id bazen string donuyordu,
+    // Family\MessageController'daki `$offerRequest->family_user_id === $family->id`
+    // strict karsilastirmasi hep basarisiz oluyordu (int 2 !== string "2") -
+    // aile kendi mesaj konusunu ASLA acamiyordu. Facility tarafi ayni hatayi
+    // yasamiyordu cunku o taraf bir DB sorgusuyla (exists()) kontrol ediyor.
+    protected $casts = [
+        'facility_id' => 'integer',
+        'brand_id' => 'integer',
+        'family_user_id' => 'integer',
+        'city_id' => 'integer',
+        'district_id' => 'integer',
+        'facility_category_id' => 'integer',
+        'accepted_quote_id' => 'integer',
+    ];
+
     public function brandModel()
     {
         return $this->belongsTo(Brand::class, 'brand_id');

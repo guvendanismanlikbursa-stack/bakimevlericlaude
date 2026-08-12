@@ -29,6 +29,24 @@ class FacilityCategoryController extends Controller
         return back()->with('success', 'Kategori eklendi.');
     }
 
+    // 16 Temmuz 2026: fiyat segmenti esikleri artik global degil, kurum
+    // kategorisi bazinda ayarlanabiliyor (bkz. Facility::priceTier/priceTiers).
+    public function updatePriceTiers(Request $request, FacilityCategory $category)
+    {
+        $data = $request->validate([
+            'price_tier_standart_min' => 'required|integer|min:0',
+            'price_tier_premium_min' => 'required|integer|gt:price_tier_standart_min',
+            'price_tier_ultra_min' => 'required|integer|gt:price_tier_premium_min',
+        ], [
+            'price_tier_premium_min.gt' => 'Premium eşiği Standart eşiğinden büyük olmalı.',
+            'price_tier_ultra_min.gt' => 'Ultra Premium eşiği Premium eşiğinden büyük olmalı.',
+        ]);
+
+        $category->update($data);
+
+        return back()->with('success', "{$category->name} segment eşikleri güncellendi.");
+    }
+
     public function destroy(FacilityCategory $category)
     {
         if ($category->facilities()->exists()) {

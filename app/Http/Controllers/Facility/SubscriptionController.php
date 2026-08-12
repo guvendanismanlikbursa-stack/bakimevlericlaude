@@ -42,13 +42,34 @@ class SubscriptionController extends Controller
             'receipt' => 'required|image|max:4096',
         ]);
 
-        $path = $request->file('receipt')->store('dekontlar', 'public');
+        // 21 Temmuz 2026: dekont finansal bilgi iceriyor - 'public' yerine
+        // 'local' diskte, sadece admin.documents.show route'u uzerinden servis edilir.
+        // 3 Agustos 2026: bkz. FacilityClaimController ayni yorum - yazimdan
+        // sonra dosyanin gercekten var oldugu dogrulanir, basarisizsa
+        // topup hic olusturulmaz.
+        try {
+            $path = $request->file('receipt')->store('dekontlar', 'local');
+            if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                throw new \RuntimeException('Dekont diske yazildiktan sonra dogrulanamadi.');
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Paket satin alma dekontu kaydedilemedi: ' . $e->getMessage());
+            \Sentry\captureException($e);
 
+            return back()->withErrors(['receipt' => 'Dekont yüklenirken bir sorun oluştu, lütfen tekrar deneyin.'])->withInput();
+        }
+
+        // 21 Temmuz 2026: bonus_quote_credits (ve paket adi) burada, satin alma
+        // aninda dondurulur - amount (fiyat) zaten oyle davraniyordu. Admin
+        // onaydan ONCE paketi duzenler/silerse kurum yine talep ettigi kredi
+        // miktarini alir, canli paket verisine bagimli kalmaz (bkz. migration).
         WalletTopup::create([
             'facility_id' => $user->facility_id,
             'facility_user_id' => $user->id,
             'subscription_package_id' => $package->id,
             'amount' => $package->price,
+            'bonus_quote_credits_snapshot' => $package->bonus_quote_credits,
+            'package_name_snapshot' => $package->name,
             'receipt_path' => $path,
             'note' => "Paket talebi: {$package->name}",
             'status' => 'pending',

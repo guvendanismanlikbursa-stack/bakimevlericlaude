@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
+use App\Models\FamilyUser;
 use App\Models\OfferRequest;
 use App\Services\OfferRequestNotificationService;
 use Illuminate\Http\Request;
@@ -49,11 +50,15 @@ class OfferRequestController extends Controller
         }
 
         if ($familyId = session('family_user_id')) {
+            if ($redirect = $this->blockIfUnverified($familyId)) {
+                return $redirect;
+            }
+
             $validated['family_user_id'] = $familyId;
             $offerRequest = OfferRequest::create($validated);
             $notifier->notify($offerRequest);
 
-            return redirect(brand_route('family.dashboard'))->with('success', 'Talebiniz olusturuldu, uygun kurumlardan teklif gelmeye baslayacak.');
+            return redirect(brand_route('family.dashboard'))->with('success', 'Talebiniz kuruma iletildi. Kurum yanıt verdiğinde burada bildirim alacak, teklifi inceleyip mesajlaşmaya başlayabileceksiniz.');
         }
 
         session(['pending_offer_request' => $validated]);
@@ -102,15 +107,40 @@ class OfferRequestController extends Controller
         ];
 
         if ($familyId = session('family_user_id')) {
+            if ($redirect = $this->blockIfUnverified($familyId)) {
+                return $redirect;
+            }
+
             $this->createBulkRequests($payload, $familyId, $notifier);
 
-            return redirect(brand_route('family.dashboard'))->with('success', 'Talepleriniz '.count($payload['facility_ids']).' kuruma iletildi, teklifler geldikce panelinizde gorunecek.');
+            return redirect(brand_route('family.dashboard'))->with('success', 'Talebiniz '.count($payload['facility_ids']).' kuruma iletildi. Yanıt veren kurumları panelinizden karşılaştırabilir, dilediğinizle mesajlaşmaya başlayabilirsiniz.');
         }
 
         session(['pending_bulk_offer_request' => $payload]);
 
         return redirect(brand_route('family.register'))
             ->with('info', 'Ucret/teklif bilgisi alabilmek icin once ucretsiz bir aile hesabi olusturmaniz gerekiyor. Bilgileriniz kaybolmayacak.');
+    }
+
+    /**
+     * 21 Temmuz 2026: kayit olur olmaz olusturulan ILK talep (bkz.
+     * Family\AuthController::afterLogin, session('pending_offer_request'))
+     * BILEREK dogrulama beklemiyor - donusumu kirmamak icin. Ama zaten
+     * oturum acmis bir aile buradan YENI bir talep daha gonderiyorsa
+     * (veya toplu talep), sahte/yaziml hatali e-postayla sinirsiz kurum
+     * kredisi tuketilmesini onlemek icin e-posta dogrulanmis olmali -
+     * kurum panelindeki (FacilityUserAuth) ayni kuralla tutarli.
+     */
+    private function blockIfUnverified(int $familyId)
+    {
+        $family = FamilyUser::find($familyId);
+
+        if ($family && ! $family->hasVerifiedEmail()) {
+            return redirect(brand_route('family.verify-email.notice'))
+                ->with('info', 'Yeni bir teklif talebi gönderebilmek için önce e-posta adresinizi doğrulamanız gerekiyor.');
+        }
+
+        return null;
     }
 
     public static function createBulkRequests(array $payload, int $familyId, OfferRequestNotificationService $notifier): array

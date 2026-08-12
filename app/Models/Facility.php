@@ -20,6 +20,15 @@ class Facility extends Model
     protected function casts(): array
     {
         return [
+            // 28 Temmuz 2026: OfferRequest::city_id/facility_category_id
+            // ZATEN integer'a cast'li (bkz. o model), Facility tarafinda
+            // bu alanlar cast'siz olunca "yayin talebi" (broadcast) uygunluk
+            // kontrolundeki === kiyaslamalari (Facility\QuoteController)
+            // ayni turden bir string/int uyumsuzlugu riski tasiyordu - bkz.
+            // facility_id icin FacilityUser'da bulunan ve duzeltilen ayni sinif hata.
+            'city_id' => 'integer',
+            'district_id' => 'integer',
+            'facility_category_id' => 'integer',
             'services' => 'array',
             'source_payload' => 'array',
             'is_published' => 'boolean',
@@ -284,11 +293,26 @@ class Facility extends Model
     }
 
     /**
+     * 16 Temmuz 2026: 4 segmentin (Ekonomik/Standart/Premium/Ultra Premium)
+     * sinir/etiket/renk tanimlarini, VERILEN esiklere (artik kurum kategorisi
+     * bazinda - bkz. FacilityCategory::priceTierThresholds()) gore uretir.
+     * Her tier'in [min, max) araligi vardir (max=null => sinirsiz ust sinir).
+     */
+    private static function tierBands(array $thresholds): array
+    {
+        return [
+            ['key' => 'ekonomik', 'label' => 'Ekonomik', 'emoji' => '🟢', 'classes' => 'bg-green-100 text-green-800', 'min' => 0, 'max' => $thresholds['standart_min']],
+            ['key' => 'standart', 'label' => 'Standart', 'emoji' => '🔵', 'classes' => 'bg-blue-100 text-blue-800', 'min' => $thresholds['standart_min'], 'max' => $thresholds['premium_min']],
+            ['key' => 'premium', 'label' => 'Premium', 'emoji' => '🟣', 'classes' => 'bg-purple-100 text-purple-800', 'min' => $thresholds['premium_min'], 'max' => $thresholds['ultra_min']],
+            ['key' => 'ultra_premium', 'label' => 'Ultra Premium', 'emoji' => '🟡', 'classes' => 'bg-amber-100 text-amber-800', 'min' => $thresholds['ultra_min'], 'max' => null],
+        ];
+    }
+
+    /**
      * Ucretlendirme segmenti: Ekonomik / Standart / Premium / Ultra Premium.
-     * price_min uzerinden, admin panelden ayarlanabilir esiklere gore hesaplanir
-     * (bkz. Setting::get('price_tier_...'), varsayilanlar config/platform.php).
-     * Fiyat bilgisi olmayan (ozellikle on kayitli, veri cekiciyle gelen) kurumlarda
-     * yanlis bir segment gostermemek icin null doner.
+     * price_min uzerinden, kurumun KATEGORISINE gore ayarlanmis esiklere gore
+     * hesaplanir. Fiyat bilgisi olmayan (ozellikle on kayitli, veri cekiciyle
+     * gelen) kurumlarda yanlis bir segment gostermemek icin null doner.
      */
     public function priceTier(): ?array
     {
@@ -296,19 +320,40 @@ class Facility extends Model
             return null;
         }
 
-        $defaults = config('platform.default_price_tiers');
-        $standartMin = (float) Setting::get('price_tier_standart_min', $defaults['standart_min']);
-        $premiumMin = (float) Setting::get('price_tier_premium_min', $defaults['premium_min']);
-        $ultraMin = (float) Setting::get('price_tier_ultra_min', $defaults['ultra_min']);
-
+        $thresholds = $this->category?->priceTierThresholds() ?? config('platform.default_price_tiers');
         $price = (float) $this->price_min;
 
-        return match (true) {
-            $price >= $ultraMin => ['key' => 'ultra_premium', 'label' => 'Ultra Premium', 'emoji' => '🟡', 'classes' => 'bg-amber-100 text-amber-800'],
-            $price >= $premiumMin => ['key' => 'premium', 'label' => 'Premium', 'emoji' => '🟣', 'classes' => 'bg-purple-100 text-purple-800'],
-            $price >= $standartMin => ['key' => 'standart', 'label' => 'Standart', 'emoji' => '🔵', 'classes' => 'bg-blue-100 text-blue-800'],
-            default => ['key' => 'ekonomik', 'label' => 'Ekonomik', 'emoji' => '🟢', 'classes' => 'bg-green-100 text-green-800'],
-        };
+        foreach (array_reverse(self::tierBands($thresholds)) as $tier) {
+            if ($price >= $tier['min']) {
+                return $tier;
+            }
+        }
+
+        return self::tierBands($thresholds)[0];
+    }
+
+    /**
+     * 16 Temmuz 2026: bir kurumun fiyat araligi (price_min - price_max)
+     * BIRDEN FAZLA segmenti kaplayabilir (orn. 12.000-35.000₺ hem Ekonomik'in
+     * ust ucunu hem Standart'in tamamini hem Premium'un alt ucunu kapsayabilir).
+     * Kurum karti/inceleme sayfasinda TEK degil, kesisen TUM segment
+     * rozetlerinin gosterilmesi icin kullanilir. price_max yoksa tek nokta
+     * (price_min) muamelesi gorur - priceTier() ile ayni sonucu verir.
+     */
+    public function priceTiers(): array
+    {
+        if (! $this->price_min) {
+            return [];
+        }
+
+        $thresholds = $this->category?->priceTierThresholds() ?? config('platform.default_price_tiers');
+        $min = (float) $this->price_min;
+        $max = $this->price_max !== null ? (float) $this->price_max : $min;
+
+        return collect(self::tierBands($thresholds))
+            ->filter(fn ($tier) => $min < ($tier['max'] ?? INF) && $max >= $tier['min'])
+            ->values()
+            ->all();
     }
 
     /**

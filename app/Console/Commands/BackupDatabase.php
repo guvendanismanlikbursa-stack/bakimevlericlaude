@@ -2,14 +2,19 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\BackupCreatedMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Mail;
 
 // Bakim: Bu host paylasimli cPanel hosting oldugu icin shell_exec/mysqldump
 // binary'sine guvenilir erisim yok - saf PHP/PDO ile tablo tablo dump alinir.
-// Yedekler sunucunun kendi diskinde tutulur (offsite degildir), amac "yanlislikla
-// veri silme/bozma" senaryosuna karsi hizli bir geri donus noktasi saglamaktir.
+// 13 Temmuz 2026'dan itibaren yedek sadece sunucu diskinde degil, ayrica
+// MAIL_FROM_ADDRESS adresine (bakimevleri@gmail.com) posta ekiyle de
+// gonderiliyor - amac "yanlislikla veri silme/bozma" senaryosuna karsi
+// hizli bir geri donus noktasi VE sunucu/hesap tamamen kaybedilirse bile
+// erisilebilir bir kopya saglamaktir.
 class BackupDatabase extends Command
 {
     protected $signature = 'backup:database {--keep-days=14 : Bu gunden eski yedekler silinir}';
@@ -43,11 +48,34 @@ class BackupDatabase extends Command
         }
 
         $size = File::size($path);
-        $this->info("Yedek olusturuldu: {$filename} (".number_format($size / 1024, 1).' KB)');
+        $sizeLabel = number_format($size / 1024, 1).' KB';
+        $this->info("Yedek olusturuldu: {$filename} ({$sizeLabel})");
+
+        $this->emailBackup($filename, $sizeLabel, $path, $size);
 
         $this->pruneOldBackups($dir, (int) $this->option('keep-days'));
 
         return self::SUCCESS;
+    }
+
+    // Gmail ekleri gercekte ~25MB sinirlidir, base64 kodlama da boyutu ~%33
+    // buyuttugu icin guvenli tarafta kalmak adina 15MB ustunde dosyayi
+    // eklemeden sadece bilgilendirme maili gonderir.
+    private function emailBackup(string $filename, string $sizeLabel, string $path, int $size): void
+    {
+        $adminEmail = config('mail.from.address');
+        if (! $adminEmail) {
+            return;
+        }
+
+        $attachmentPath = $size <= 15 * 1024 * 1024 ? $path : null;
+
+        try {
+            Mail::to($adminEmail)->sendNow(new BackupCreatedMail($filename, $sizeLabel, $attachmentPath));
+        } catch (\Throwable $e) {
+            $this->error('Yedek maili gonderilemedi: '.$e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Yedek maili gonderilemedi: '.$e->getMessage());
+        }
     }
 
     private function dumpMysql(string $path): void

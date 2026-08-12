@@ -20,12 +20,6 @@
         <a href="{{ brand_route('home') }}" class="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Anasayfaya Dön</a>
       </form>
 
-      @if(session('success'))
-      <div class="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">{{ session('success') }}</div>
-      @endif
-      @if(session('info'))
-      <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">{{ session('info') }}</div>
-      @endif
       @if($errors->any())
       <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
         <ul class="list-disc list-inside">

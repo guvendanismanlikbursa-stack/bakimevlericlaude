@@ -39,7 +39,7 @@ class PasswordResetController extends Controller
     {
         $user = FacilityUser::findOrFail((int) $request->route('id'));
 
-        abort_unless(hash_equals((string) $request->route('hash'), sha1($user->email)), 403);
+        abort_unless(hash_equals((string) $request->route('hash'), self::hashFor($user)), 403);
 
         $brand = app('currentBrand');
 
@@ -50,7 +50,7 @@ class PasswordResetController extends Controller
     {
         $user = FacilityUser::findOrFail((int) $request->route('id'));
 
-        abort_unless(hash_equals((string) $request->route('hash'), sha1($user->email)), 403);
+        abort_unless(hash_equals((string) $request->route('hash'), self::hashFor($user)), 403);
 
         $data = $request->validate(['password' => 'required|string|min:8|confirmed']);
 
@@ -64,7 +64,7 @@ class PasswordResetController extends Controller
 
     public static function send(FacilityUser $user, array $brand): void
     {
-        $params = ['id' => $user->id, 'hash' => sha1($user->email)];
+        $params = ['id' => $user->id, 'hash' => self::hashFor($user)];
         $routeName = 'facility.password.reset';
 
         if (request()->route('brand')) {
@@ -75,9 +75,17 @@ class PasswordResetController extends Controller
         $resetUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
 
         try {
-            Mail::to($user->email)->queue(new FacilityPasswordResetMail($user, $resetUrl, $brand['name']));
+            Mail::to($user->email)->sendNow(new FacilityPasswordResetMail($user, $resetUrl, $brand['name']));
         } catch (\Throwable $e) {
             Log::warning('Kurum sifre sifirlama maili gonderilemedi: ' . $e->getMessage(), ['facility_user_id' => $user->id]);
         }
+    }
+
+    // 21 Temmuz 2026: Family/PasswordResetController ile ayni fix - hash
+    // artik mevcut sifre hash'ine de bagli, sifre degisir degismez eski
+    // TUM linkler otomatik gecersiz olur (tek-kullanimlik hale gelir).
+    private static function hashFor(FacilityUser $user): string
+    {
+        return sha1($user->email.$user->password);
     }
 }

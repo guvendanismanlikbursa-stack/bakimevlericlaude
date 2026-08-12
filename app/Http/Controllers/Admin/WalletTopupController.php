@@ -34,9 +34,13 @@ class WalletTopupController extends Controller
             $facility = $topup->facility()->lockForUpdate()->firstOrFail();
             $facility->increment('balance', $topup->amount);
 
-            $package = $topup->subscription_package_id ? $topup->subscriptionPackage : null;
-            if ($package && $package->bonus_quote_credits > 0) {
-                $facility->increment('free_quote_credits', $package->bonus_quote_credits);
+            // 21 Temmuz 2026: canli $package->bonus_quote_credits yerine satin
+            // alma aninda dondurulmus snapshot okunuyor - admin onaydan once
+            // paketi duzenlerse/silerse kurum vaat edilenden farkli/sifir kredi
+            // almasin diye (bkz. migration + Facility/SubscriptionController).
+            $bonusCredits = $topup->bonus_quote_credits_snapshot ?? 0;
+            if ($bonusCredits > 0) {
+                $facility->increment('free_quote_credits', $bonusCredits);
             }
 
             $facility->refresh();
@@ -45,11 +49,11 @@ class WalletTopupController extends Controller
                 'facility_id' => $facility->id,
                 'type' => 'topup_approved',
                 'amount' => $topup->amount,
-                'credits_amount' => $package->bonus_quote_credits ?? 0,
+                'credits_amount' => $bonusCredits,
                 'balance_after' => $facility->balance,
                 'credits_after' => $facility->free_quote_credits,
                 'admin_id' => session('admin_id'),
-                'note' => $package ? "Paket onaylandi: {$package->name}" : 'Havale dekontu onaylandi.',
+                'note' => $topup->package_name_snapshot ? "Paket onaylandi: {$topup->package_name_snapshot}" : 'Havale dekontu onaylandi.',
             ]);
 
             $topup->update([
@@ -85,8 +89,10 @@ class WalletTopupController extends Controller
 
         log_admin_event('wallet_topup_rejected', $topup, ['admin_note' => $data['admin_note'] ?? null]);
 
+        // 21 Temmuz 2026: admin gerekce yazmadan reddederse kurum bos govdeli
+        // bir bildirim aliyordu - "neden reddedildi" hicbir zaman anlasilmiyordu.
         $facilityUser = $topup->facility_user_id ? \App\Models\FacilityUser::find($topup->facility_user_id) : null;
-        notify_user($facilityUser, 'topup_rejected', 'Bakiye yükleme talebiniz reddedildi', $data['admin_note'] ?? null);
+        notify_user($facilityUser, 'topup_rejected', 'Bakiye yükleme talebiniz reddedildi', $data['admin_note'] ?? 'Detay belirtilmedi, sorularınız için bize ulaşabilirsiniz.');
 
         return back()->with('success', 'Bakiye yukleme talebi reddedildi.');
     }

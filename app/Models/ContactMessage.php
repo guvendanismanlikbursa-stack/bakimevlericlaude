@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class ContactMessage extends Model
 {
-    protected $fillable = ['brand', 'name', 'email', 'subject', 'message', 'is_read'];
+    protected $fillable = ['brand', 'name', 'email', 'subject', 'message', 'is_read', 'admin_reply', 'replied_at'];
 
     protected function casts(): array
     {
-        return ['is_read' => 'boolean'];
+        return ['is_read' => 'boolean', 'replied_at' => 'datetime'];
     }
 }

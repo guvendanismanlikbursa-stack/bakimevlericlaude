@@ -186,6 +186,11 @@ class DataExtractorController extends Controller
             return back()->withErrors(['row' => $e->getMessage()]);
         }
 
+        // 21 Temmuz 2026: bu islem canli, yayinlanmis bir kurum olusturuyor
+        // ama Islem Gunlugu'ne hic yazilmiyordu - hangi admin'in ne zaman
+        // hangi veri-cekici satirindan kurum yayina aldigi izlenemiyordu.
+        log_admin_event('data_import_row_approved', $facility, ['data_import_row_id' => $row->id]);
+
         if ($request->boolean('edit')) {
             return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum oluşturuldu. Şimdi manuel revize yapabilirsiniz.');
         }

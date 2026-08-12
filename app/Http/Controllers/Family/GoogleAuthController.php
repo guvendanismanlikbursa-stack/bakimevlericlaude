@@ -55,7 +55,8 @@ class GoogleAuthController extends AuthController
 
             $request->session()->regenerate();
             $request->session()->regenerateToken();
-            session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
+            $request->session()->forget(['admin_id', 'admin_name', 'facility_user_id', 'facility_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
+        session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
 
             return $this->afterLogin($brand);
         }
@@ -107,6 +108,12 @@ class GoogleAuthController extends AuthController
             return redirect(brand_route('family.login'))->with('error', 'Bu e-posta ile zaten bir hesap var, lütfen giriş yapın.');
         }
 
+        if ($error = email_taken_by_other_account_type($pending['email'])) {
+            session()->forget('family_google_pending');
+
+            return redirect(brand_route('family.register'))->with('error', $error);
+        }
+
         $signupCityName = null;
         if ($request->filled('signup_lat') && $request->filled('signup_lng')) {
             $nearest = app(\App\Services\GeoLookupService::class)->nearestCity((float) $data['signup_lat'], (float) $data['signup_lng']);
@@ -132,10 +139,11 @@ class GoogleAuthController extends AuthController
         session()->forget('family_google_pending');
         $request->session()->regenerate();
         $request->session()->regenerateToken();
+        $request->session()->forget(['admin_id', 'admin_name', 'facility_user_id', 'facility_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
 
         try {
-            \Illuminate\Support\Facades\Mail::to($family->email)->queue(new \App\Mail\FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));
+            \Illuminate\Support\Facades\Mail::to($family->email)->sendNow(new \App\Mail\FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Aile hos geldin maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
         }

@@ -14,9 +14,20 @@
   <p style="color:#374151;">Hesabınıza tanımlanan ücretsiz teklif hakları ile talepleri yanıtlayabilirsiniz. Krediniz azaldığında panelinizden bakiye yükleyerek devam edebilirsiniz.</p>
 
   <h3 style="margin-top:20px;">4. Profilinizi Tamamlayın</h3>
-  <p style="color:#374151;">Kaliteli fotoğraflar, detaylı açıklama ve güncel fiyat aralığı eklemek profilinizin arama sonuçlarında öne çıkmasını ve ailelerin size güvenmesini doğrudan etkiler. Profilinizi ne kadar eksiksiz doldurursanız o kadar çok talep alırsınız.</p>
+  <p style="color:#374151;">Kaliteli fotoğraflar, detaylı açıklama ve güncel fiyat aralığı eklemek profilinizin arama sonuçlarında öne çıkmasını ve ailelerin size güvenmesini doğrudan etkiler.
+    @if($section)
+      {{ $section['title'] }} kategorisinde ailelerin profilinizde en çok aradığı bilgiler: <strong>{{ implode(', ', $section['profile_fields']) }}</strong>. Bunları profil sayfanızdan eksiksiz doldurun.
+    @else
+      Profilinizi ne kadar eksiksiz doldurursanız o kadar çok talep alırsınız.
+    @endif
+  </p>
 
-  <h3 style="margin-top:20px;">5. Bildirimlerinizi Takip Edin</h3>
+  @if($section)
+    <h3 style="margin-top:20px;">5. {{ $section['title'] }} Kategorisinde Öne Çıkan Hizmetler</h3>
+    <p style="color:#374151;">Ailelerin bu kategoride sıkça aradığı hizmetler: <strong>{{ implode(', ', array_slice($section['features'], 0, 8)) }}</strong>. Sunduğunuz hizmetleri profilinizdeki "Hizmetler" bölümünden işaretlerseniz, bu hizmetleri arayan aileler sizi daha kolay bulur.</p>
+  @endif
+
+  <h3 style="margin-top:20px;">{{ $section ? '6' : '5' }}. Bildirimlerinizi Takip Edin</h3>
   <p style="color:#374151;">Panelinizdeki "Bildirimler" sayfasından yeni talep, mesaj ve onay güncellemelerini anlık takip edebilirsiniz; önemli bildirimler ayrıca e-posta ile de size ulaşır.</p>
 
   <p style="margin-top:28px;"><a href="{{ $loginUrl }}" style="background:#1e6f5c;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;">Panelime Giriş Yap</a></p>

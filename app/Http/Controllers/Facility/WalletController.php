@@ -41,7 +41,22 @@ class WalletController extends Controller
             'receipt' => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:8192',
         ]);
 
-        $path = $request->file('receipt')->store('topups', 'public');
+        // 21 Temmuz 2026: dekont finansal bilgi iceriyor - 'public' yerine
+        // 'local' diskte, sadece admin.documents.show route'u uzerinden servis edilir.
+        // 3 Agustos 2026: bkz. FacilityClaimController ayni yorum - yazimdan
+        // sonra dosyanin gercekten var oldugu dogrulanir, basarisizsa
+        // topup hic olusturulmaz.
+        try {
+            $path = $request->file('receipt')->store('topups', 'local');
+            if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                throw new \RuntimeException('Dekont diske yazildiktan sonra dogrulanamadi.');
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Bakiye yukleme dekontu kaydedilemedi: ' . $e->getMessage());
+            \Sentry\captureException($e);
+
+            return back()->withErrors(['receipt' => 'Dekont yüklenirken bir sorun oluştu, lütfen tekrar deneyin.'])->withInput();
+        }
 
         WalletTopup::create([
             'facility_id' => $user->facility_id,

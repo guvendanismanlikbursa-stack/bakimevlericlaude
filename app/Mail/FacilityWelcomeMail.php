@@ -21,7 +21,16 @@ class FacilityWelcomeMail extends Mailable implements ShouldQueue
 
     public function build()
     {
+        // 16 Temmuz 2026: mail icerigi kurumun turune (yasli-bakim/cocuk/
+        // rehabilitasyon) gore ipucu gostersin diye - config/brands.php'deki
+        // service_sections zaten bu 3 bolum icin profile_fields/features
+        // tutuyor (bkz. facility profil formu, ayni veriyi kullanir), burada
+        // sadece kurumun kategorisinden bolumu bulup view'a geciriyoruz.
+        $section = $this->facility->category
+            ? service_section_for_scope($this->facility->category->brand_scope)
+            : null;
+
         return $this->subject('Sistemi En İyi Şekilde Kullanmak İçin Rehber - '.$this->brandName)
-            ->view('emails.facility-welcome');
+            ->view('emails.facility-welcome', ['section' => $section]);
     }
 }

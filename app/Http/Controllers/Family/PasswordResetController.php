@@ -37,7 +37,7 @@ class PasswordResetController extends Controller
     {
         $family = FamilyUser::findOrFail((int) $request->route('id'));
 
-        abort_unless(hash_equals((string) $request->route('hash'), sha1($family->email)), 403);
+        abort_unless(hash_equals((string) $request->route('hash'), self::hashFor($family)), 403);
 
         $brand = app('currentBrand');
 
@@ -48,7 +48,7 @@ class PasswordResetController extends Controller
     {
         $family = FamilyUser::findOrFail((int) $request->route('id'));
 
-        abort_unless(hash_equals((string) $request->route('hash'), sha1($family->email)), 403);
+        abort_unless(hash_equals((string) $request->route('hash'), self::hashFor($family)), 403);
 
         $data = $request->validate(['password' => 'required|string|min:8|confirmed']);
 
@@ -59,7 +59,7 @@ class PasswordResetController extends Controller
 
     public static function send(FamilyUser $family, array $brand): void
     {
-        $params = ['id' => $family->id, 'hash' => sha1($family->email)];
+        $params = ['id' => $family->id, 'hash' => self::hashFor($family)];
         $routeName = 'family.password.reset';
 
         if (request()->route('brand')) {
@@ -70,9 +70,21 @@ class PasswordResetController extends Controller
         $resetUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
 
         try {
-            Mail::to($family->email)->queue(new FamilyPasswordResetMail($family, $resetUrl, $brand['name']));
+            Mail::to($family->email)->sendNow(new FamilyPasswordResetMail($family, $resetUrl, $brand['name']));
         } catch (\Throwable $e) {
             Log::warning('Aile sifre sifirlama maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
         }
+    }
+
+    // 21 Temmuz 2026: hash sadece e-postaya bagliydi (sha1($email)) - sifre
+    // degismedigi surece SABIT kaldigi icin, imzali URL'nin 60 dakikalik
+    // suresi icinde link BIRDEN FAZLA kez kullanilabiliyordu (kullanici
+    // sifreyi degistirdikten SONRA bile eski linki ele gecirmis biri tekrar
+    // sifirlayabilirdi). Mevcut sifre hash'ini de karisima katarak, sifre
+    // degisir degismez eski TUM linkler otomatik gecersiz olur - ayri bir
+    // "kullanildi" tablosu gerekmeden tek-kullanimlik hale gelir.
+    private static function hashFor(FamilyUser $family): string
+    {
+        return sha1($family->email.$family->password);
     }
 }

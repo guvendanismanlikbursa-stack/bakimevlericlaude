@@ -13,7 +13,14 @@
       </div>
       @if($req->message)<p class="text-sm text-gray-600 mt-3 bg-gray-50 rounded-lg p-3">{{ $req->message }}</p>@endif
     </div>
-    <a href="{{ brand_route('facility.thread', $req) }}" class="text-xs text-primary font-semibold">Mesajlar →</a>
+    {{-- 16 Temmuz 2026: yayin talebinde teklifimiz kabul edilmeden mesajlasma
+         kapali (rakip kurumlar arasi mesaj sizintisi fix'i) - link de ayni
+         kurala uymali, yoksa tiklayinca 403 alinan bir olu link olurdu. --}}
+    @if($req->facility_id || $req->quotes->where('facility_id', $facility->id)->where('id', $req->accepted_quote_id)->isNotEmpty())
+      <a href="{{ brand_route('facility.thread', $req) }}" class="text-xs text-primary font-semibold">Mesajlar →</a>
+    @elseif($req->quotes->where('facility_id', $facility->id)->isNotEmpty())
+      <span class="text-xs text-gray-400">Teklifiniz kabul edilirse mesajlaşma açılır</span>
+    @endif
   </div>
 
   @php $already = $req->quotes->where('facility_id', $facility->id)->first(); @endphp

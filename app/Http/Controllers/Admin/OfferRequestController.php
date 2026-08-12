@@ -40,7 +40,25 @@ class OfferRequestController extends Controller
     public function update(Request $request, OfferRequest $offerRequest)
     {
         $request->validate(['status' => 'required|in:new,contacted,closed']);
+        $oldStatus = $offerRequest->status;
         $offerRequest->update(['status' => $request->status]);
+        log_admin_event('offer_request_status_changed', $offerRequest, ['old_status' => $oldStatus, 'new_status' => $request->status]);
+
+        // 12 Agustos 2026: kullanicinin talebi - talep admin tarafindan
+        // kapatildiginda gonderen kisi haberdar olmali. "yeni"/"gorusuldu"
+        // durumlari zaten kurumla dogrudan mesajlasma/teklif surecinin bir
+        // parcasi oldugu icin (aile zaten sistemden haberdar), sadece
+        // KAPANIS icin ayrica mail atiyoruz.
+        if ($request->status === 'closed' && $oldStatus !== 'closed') {
+            $email = $offerRequest->email ?: $offerRequest->familyUser?->email;
+            if ($email) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($email)->sendNow(new \App\Mail\OfferRequestClosedMail($offerRequest));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Teklif talebi kapatma maili gonderilemedi: ' . $e->getMessage(), ['offer_request_id' => $offerRequest->id]);
+                }
+            }
+        }
 
         return back()->with('success', 'Durum güncellendi.');
     }

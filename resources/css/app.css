@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 28 Temmuz 2026: bolum/sekme linkleri tam sayfa yenilemesi yaptigi icin
+   gecis "sert" hissettiriyordu (kullanici geri bildirimi). Cross-document
+   View Transitions API bunu JS'siz, tek CSS kurallyla yumusatir - destekleyen
+   tarayicilarda (Chrome/Edge) sayfa gecisinde hafif bir capraz-solma efekti
+   olusur; desteklemeyen tarayicilarda (Safari/Firefox) bu kural sessizce
+   yok sayilir, normal aninda gecis olur - hicbir tarafta hataya yol acmaz. */
+@view-transition {
+  navigation: auto;
+}
+
 /* Bolum secme kartlarinin cercevesinde gezen ince isik huzmesi (dikkat cekmek icin,
    kart icerigini kapatmaz - sadece kenarlik halkasinda gorunur). Renk her kartin
    kendi section temasindan --beam-color ile inline verilir. */
@@ -16,23 +26,30 @@
   isolation: isolate;
 }
 
+/* 4 Agustos 2026: kullanici talebiyle daha "burada bir isik var, bu karti
+   sec" hissi versin diye kalinlastirildi (1.5px->3px), parlak kesimi
+   genisletildi (44deg->74deg yay) ve karti dis-hatlariyla asan bir glow
+   (::after, blur'lu ayni conic-gradient) eklendi - oncesi cok ince/sessiz
+   kaliyordu, kullanicilar "bolum secmem gerekiyor" sinyalini kacirabiliyordu.
+   Geri almak icin: padding 1.5px, aci degerlerini 270/284/300/306/312/328/342
+   olarak, ve asagidaki ::after blogunu tamamen kaldirin. */
 .section-card-beam::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 20;
   border-radius: inherit;
-  padding: 1.5px;
+  padding: 3px;
   background: conic-gradient(
     from var(--beam-angle),
     transparent 0deg,
-    transparent 270deg,
-    color-mix(in srgb, var(--beam-color, #fff) 0%, transparent) 284deg,
-    color-mix(in srgb, var(--beam-color, #fff) 90%, transparent) 300deg,
-    var(--beam-color, #fff) 306deg,
-    color-mix(in srgb, var(--beam-color, #fff) 90%, transparent) 312deg,
-    color-mix(in srgb, var(--beam-color, #fff) 0%, transparent) 328deg,
-    transparent 342deg,
+    transparent 253deg,
+    color-mix(in srgb, var(--beam-color, #fff) 0%, transparent) 269deg,
+    color-mix(in srgb, var(--beam-color, #fff) 95%, transparent) 291deg,
+    var(--beam-color, #fff) 303deg,
+    color-mix(in srgb, var(--beam-color, #fff) 95%, transparent) 315deg,
+    color-mix(in srgb, var(--beam-color, #fff) 0%, transparent) 337deg,
+    transparent 353deg,
     transparent 360deg
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -43,12 +60,40 @@
   pointer-events: none;
 }
 
+.section-card-beam::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: 19;
+  border-radius: inherit;
+  padding: 6px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg,
+    transparent 269deg,
+    transparent 285deg,
+    color-mix(in srgb, var(--beam-color, #fff) 75%, transparent) 303deg,
+    transparent 321deg,
+    transparent 337deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  filter: blur(6px);
+  opacity: 0.85;
+  animation: section-card-beam-spin 4.5s linear infinite;
+  pointer-events: none;
+}
+
 @keyframes section-card-beam-spin {
   to { --beam-angle: 360deg; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .section-card-beam::before {
+  .section-card-beam::before,
+  .section-card-beam::after {
     animation: none;
   }
 }

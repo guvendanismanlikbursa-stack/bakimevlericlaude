@@ -37,7 +37,33 @@ class FacilityClaimController extends Controller
             'lng' => 'nullable|numeric|between:-180,180',
         ]);
 
-        $path = $request->file('document')->store('claims', 'public');
+        if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
+            return back()->withErrors(['applicant_email' => $error])->withInput();
+        }
+
+        // 21 Temmuz 2026: kimlik/ruhsat belgesi hassas - 'public' yerine
+        // 'local' (storage/app/private) diskte, sadece admin.documents.show
+        // route'u uzerinden servis edilir (bkz. Admin/DocumentController).
+        //
+        // 3 Agustos 2026: bir gercek basvuruda dosya yolu DB'ye yazildi ama
+        // dosyanin kendisi diske hic yazilmadi - 'throw'=>false sessizce
+        // yutuyordu, admin panelinde kirik gorsel olarak ortaya cikti.
+        // config/filesystems.php artik throw=>true (gercek hatalarda
+        // exception firlatir), burada da yazimdan SONRA dosyanin gercekten
+        // var oldugu ayrica dogrulanir - basarisizsa basvuru hic
+        // OLUSTURULMAZ, kullaniciya acik bir hata gosterilip tekrar
+        // denemesi istenir.
+        try {
+            $path = $request->file('document')->store('claims', 'local');
+            if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                throw new \RuntimeException('Belge diske yazildiktan sonra dogrulanamadi.');
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Sahiplenme basvurusu belgesi kaydedilemedi: ' . $e->getMessage());
+            \Sentry\captureException($e);
+
+            return back()->withErrors(['document' => 'Belge yüklenirken bir sorun oluştu, lütfen tekrar deneyin.'])->withInput();
+        }
 
         // Tarayici konumu izne bagli ve zorunlu degil (Nearby ile ayni
         // model: izin verilmezse basvuru yine de tamamlanir, sadece bu
@@ -84,7 +110,7 @@ class FacilityClaimController extends Controller
         ));
 
         return redirect(brand_route('facilities.show', ['slug' => $facility->slug]))
-            ->with('success', 'Sahiplenme basvurunuz alindi. Admin onayindan sonra e-posta ile giris bilgileriniz gonderilecek.');
+            ->with('success', 'Başvurunuz alındı! Ekibimiz belgenizi inceleyip onaylayacak, ardından giriş bilgileriniz e-postanıza gönderilecek.');
     }
 
     private function facilityForRequest(Request $request, array $categoryScope): Facility

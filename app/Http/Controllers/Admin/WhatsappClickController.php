@@ -24,6 +24,7 @@ class WhatsappClickController extends Controller
 
     public function destroy(WhatsappClick $whatsappClick)
     {
+        log_admin_event('whatsapp_click_deleted', $whatsappClick);
         $whatsappClick->delete();
 
         return back()->with('success', 'Kayıt silindi.');

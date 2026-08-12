@@ -1,4 +1,4 @@
-﻿@php
+@php
   $iconKey = $icon ?? ($section['icon'] ?? ($section['slug'] ?? ''));
   $class = $class ?? 'w-6 h-6';
 @endphp

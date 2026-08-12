@@ -38,20 +38,13 @@
 
   <div class="md:col-span-2 border-t border-gray-100 pt-4 mt-2">
     <h2 class="text-lg font-bold mb-1">Ücretlendirme Segmentleri</h2>
-    <p class="text-sm text-gray-500 mb-4">Kurumun aylık başlangıç ücreti (price_min) bu eşiklere göre 3 sitede de otomatik segment rozetiyle gösterilir. Eşiğin altı bir önceki segmenttir.</p>
-  </div>
-  <div>
-    <label class="text-sm font-medium">🟢 Ekonomik → 🔵 Standart eşiği (₺)</label>
-    <input type="number" step="1" name="price_tier_standart_min" value="{{ old('price_tier_standart_min', $settings['price_tier_standart_min']) }}" required class="border rounded-lg px-3 py-2 w-full mt-1">
-    <p class="text-xs text-gray-400 mt-1">Bu tutarın altı Ekonomik, üstü Standart.</p>
-  </div>
-  <div>
-    <label class="text-sm font-medium">🔵 Standart → 🟣 Premium eşiği (₺)</label>
-    <input type="number" step="1" name="price_tier_premium_min" value="{{ old('price_tier_premium_min', $settings['price_tier_premium_min']) }}" required class="border rounded-lg px-3 py-2 w-full mt-1">
-  </div>
-  <div>
-    <label class="text-sm font-medium">🟣 Premium → 🟡 Ultra Premium eşiği (₺)</label>
-    <input type="number" step="1" name="price_tier_ultra_min" value="{{ old('price_tier_ultra_min', $settings['price_tier_ultra_min']) }}" required class="border rounded-lg px-3 py-2 w-full mt-1">
+    <p class="text-sm text-gray-500 mb-4">
+      16 Temmuz 2026'dan itibaren segment eşikleri artık burada değil,
+      <strong>kurum türüne (kategoriye) göre ayrı ayrı</strong> ayarlanıyor —
+      çünkü farklı kurum türlerinin fiyat ölçekleri çok farklı.
+      <a href="{{ route('admin.categories.index') }}" class="text-primary font-semibold underline">Kategoriler sayfasından</a>
+      her tür için eşikleri düzenleyin.
+    </p>
   </div>
 
   <div class="md:col-span-2 border-t border-gray-100 pt-4 mt-2">
@@ -65,6 +58,12 @@
   <div class="md:col-span-2">
     <label class="text-sm font-medium">Hazır Mesaj</label>
     <textarea name="whatsapp_message" rows="2" required class="border rounded-lg px-3 py-2 w-full mt-1">{{ old('whatsapp_message', $settings['whatsapp_message']) }}</textarea>
+  </div>
+
+  <div class="md:col-span-2 border-t border-gray-100 pt-4 mt-2">
+    <h2 class="text-lg font-bold mb-1">Kurum Davet Mesajı (WhatsApp)</h2>
+    <p class="text-sm text-gray-500 mb-4">Kurum Davetleri ekranındaki "WhatsApp Aç" ve "Hızlı Gönderim" ile ön kayıtlı kurumlara gönderilen hazır mesaj. <strong>{kurum_adi}</strong> yazan yer otomatik olarak o kurumun adıyla değişir. Gönderim WhatsApp'ın kendi politikası gereği elle yapılır — bu ayar sadece hazır mesajın metnini belirler, otomatik gönderim yapmaz.</p>
+    <textarea name="facility_invitation_message" rows="5" required class="border rounded-lg px-3 py-2 w-full">{{ old('facility_invitation_message', $settings['facility_invitation_message']) }}</textarea>
   </div>
 
   <div class="md:col-span-2">

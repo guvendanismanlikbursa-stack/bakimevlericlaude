@@ -53,6 +53,13 @@ class TrashController extends Controller
         $item = $modelClass::onlyTrashed()->findOrFail($id);
         $item->restore();
 
+        // 21 Temmuz 2026: FacilityController::destroy() kurum silinince
+        // yetkilisini askiya aliyor (bkz. o yorumu) - simetrik olarak kurum
+        // geri yuklenince yetkilisi de tekrar aktif hale getirilir.
+        if ($type === 'facility') {
+            \App\Models\FacilityUser::where('facility_id', $item->id)->update(['status' => 'active']);
+        }
+
         log_admin_event('trash_restored', $item, ['type' => $type]);
 
         return back()->with('success', self::LABELS[$type].' geri yuklendi.');

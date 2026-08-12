@@ -8,12 +8,18 @@ class FacilityQuestion extends Model
 {
     protected $fillable = [
         'facility_id', 'brand', 'family_user_id', 'asker_name', 'question',
-        'answer', 'answered_by', 'answered_at', 'status',
+        'answer', 'answered_by', 'answered_at', 'status', 'reminder_sent_at',
     ];
 
+    // 28 Temmuz 2026: canli uctan uca testte bulundu - facility_id INTEGER'a
+    // cast edilmiyordu, oysa FacilityUser::facility_id ZATEN cast'li (bkz. o
+    // modeldeki 28 Temmuz 2026 yorumu, ayni hata sinifi). Sonuc: Facility/
+    // QuestionController::answer() icindeki === karsilastirmasi her zaman
+    // string("6851") === int(6851) gibi FALSE donuyordu - kurum yetkilisi
+    // ailelerin sorularina ASLA cevap veremiyordu (her zaman 403).
     protected function casts(): array
     {
-        return ['answered_at' => 'datetime'];
+        return ['facility_id' => 'integer', 'answered_at' => 'datetime', 'reminder_sent_at' => 'datetime'];
     }
 
     public function facility()

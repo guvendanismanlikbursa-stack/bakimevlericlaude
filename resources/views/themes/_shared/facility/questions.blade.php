@@ -1,9 +1,8 @@
 @extends('layouts.brand')
 @section('content')
-<div class="max-w-3xl mx-auto px-4 py-10">
-  <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">← Panele dön</a>
-  <h1 class="text-2xl font-bold mt-2 mb-6">Aile Soruları</h1>
+@include('themes._shared.partials.facility-panel-header', ['title' => 'Aile Soruları'])
 
+<div class="max-w-3xl mx-auto px-4 py-10">
   <div class="bg-white rounded-xl shadow-sm divide-y">
     @forelse($questions as $q)
       <div class="p-5">

@@ -48,7 +48,7 @@
               <div class="{{ ! $loop->first ? 'mt-1 pt-1 border-t' : '' }}">
                 <span class="font-black text-gray-900">{{ number_format($quote->price, 0, ',', '.') }} TL</span>
                 <span class="text-xs text-gray-400">/{{ $quote->price_period === 'monthly' ? 'ay' : 'tek sefer' }}</span>
-                <span class="block text-[11px] text-gray-500">{{ $quote->facility?->name }} — {{ $quote->status }}</span>
+                <span class="block text-[11px] text-gray-500">{{ $quote->facility?->name }} — {{ ['pending' => 'Beklemede', 'accepted' => 'Kabul edildi', 'declined' => 'Reddedildi'][$quote->status] ?? $quote->status }}</span>
               </div>
             @empty
               <span class="text-gray-300 text-xs">Henüz teklif yok</span>

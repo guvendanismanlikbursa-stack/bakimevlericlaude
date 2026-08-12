@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\VisitRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class VisitRequestController extends Controller
 {
@@ -31,7 +33,21 @@ class VisitRequestController extends Controller
     public function update(Request $request, VisitRequest $visitRequest)
     {
         $validated = $request->validate(['status' => 'required|in:new,contacted,completed,cancelled']);
+        $wasCancelled = $visitRequest->status === 'cancelled';
         $visitRequest->update($validated);
+
+        // 12 Agustos 2026: kullanicinin talebi - admin bir talebi iptal
+        // ederken (gercek dunyada kurumla temas kurulmus "tamamlandi"
+        // durumundan farkli olarak) talep sahibi baska hicbir kanaldan
+        // haberdar olmuyordu, sessizce kapatiliyordu. Sadece YENI iptalde
+        // gonderilir (zaten iptalliyi tekrar iptal etmek ikinci mail atmaz).
+        if ($validated['status'] === 'cancelled' && ! $wasCancelled && $visitRequest->email) {
+            try {
+                Mail::to($visitRequest->email)->sendNow(new \App\Mail\VisitRequestCancelledMail($visitRequest));
+            } catch (\Throwable $e) {
+                Log::warning('Ziyaret talebi iptal maili gonderilemedi: ' . $e->getMessage(), ['visit_request_id' => $visitRequest->id]);
+            }
+        }
 
         return back()->with('success', 'Ziyaret talebi güncellendi.');
     }

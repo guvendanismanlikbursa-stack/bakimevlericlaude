@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Panel') - Ortak Admin Panel</title>
+<link rel="manifest" href="{{ route('admin.manifest') }}">
+<meta name="theme-color" content="#111827">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logo-bakimevleri-192.png') }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo-bakimevleri-180.png') }}">
 <script>
   if (localStorage.getItem('admin-theme') === 'dark') {
     document.documentElement.classList.add('dark');
@@ -28,6 +32,10 @@
     <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.dashboard') ? 'bg-gray-700 text-white' : '' }}">Genel Bakış</a>
     <a href="{{ route('admin.site-stats.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.site-stats.*') ? 'bg-gray-700 text-white' : '' }}">Site İstatistikleri</a>
     <a href="{{ route('admin.nearby-searches.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.nearby-searches.*') ? 'bg-gray-700 text-white' : '' }}">Yakın Arama Kayıtları</a>
+
+    <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Kullanıcılar</div>
+    <a href="{{ route('admin.users.families') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.users.families*') || request()->routeIs('admin.family-users.*') ? 'bg-gray-700 text-white' : '' }}">Aileler</a>
+    <a href="{{ route('admin.users.facility-users') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.users.facility-users*') ? 'bg-gray-700 text-white' : '' }}">Kurum Yetkilileri</a>
 
     <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Kurumlar</div>
     <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
@@ -56,6 +64,13 @@
     <a href="{{ route('admin.data-extractor.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-extractor.*') ? 'bg-gray-700 text-white' : '' }}">Veri Çekici</a>
     <a href="{{ route('admin.trash.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.trash.*') ? 'bg-gray-700 text-white' : '' }}">Çöp Kutusu</a>
     <a href="{{ route('admin.audit-log.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.audit-log.*') ? 'bg-gray-700 text-white' : '' }}">İşlem Günlüğü</a>
+    <a href="{{ route('admin.platform-errors.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.platform-errors.*') ? 'bg-gray-700 text-white' : '' }}">
+      <span>Hatalar</span>
+      @php($openErrorCount = \App\Models\PlatformError::whereNull('resolved_at')->count())
+      @if($openErrorCount > 0)
+        <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $openErrorCount }}</span>
+      @endif
+    </a>
     <a href="{{ route('admin.settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.settings.*') ? 'bg-gray-700 text-white' : '' }}">Ayarlar</a>
     <a href="{{ route('admin.chat-settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat-settings.*') ? 'bg-gray-700 text-white' : '' }}">Sohbet Çalışma Saatleri</a>
 
@@ -116,6 +131,8 @@
   </main>
 
 </div>
+
+@include('themes._shared.partials.scroll-restore')
 
 <script>
   (function () {

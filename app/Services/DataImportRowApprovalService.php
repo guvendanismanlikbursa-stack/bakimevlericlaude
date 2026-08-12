@@ -8,6 +8,7 @@ use App\Models\District;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
 use App\Models\FacilityServiceOption;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -19,6 +20,38 @@ class DataImportRowApprovalService
 
     public function approve(DataImportRow $row, bool $publish = true): Facility
     {
+        // 21 Temmuz 2026: diger tum onay akislarinin (FacilityClaimController,
+        // FacilityRegistrationController, WalletTopupController) aksine bu
+        // metodda kilit/durum guard'i yoktu - telefon/adresi bos bir satirda
+        // (isDuplicate hicbir zaman yakalayamaz) cift tiklama veya iki
+        // admin'in ayni satiri ayni anda onaylamasi IKI AYRI canli Facility
+        // olusturabiliyordu. lockForUpdate + status kontrolu, tum islem tek
+        // transaction'da tutularak digerleriyle tutarli hale getirildi.
+        //
+        // "skipped" durumunu yazan iki dal (mukerrer/kamu-belediye-vakif)
+        // BILEREK transaction ICINDE degil - orada yazip sonra exception
+        // firlatsaydik, transaction rollback bu yaziyi da geri alirdi ve
+        // satir sonsuza dek "pending" gorunurdu. Bunun yerine ozel bir
+        // exception ile isaretlenip, rollback TAMAMLANDIKTAN SONRA burada
+        // ayri bir sorguyla kalici olarak yaziliyor.
+        try {
+            return DB::transaction(function () use ($row, $publish) {
+                return $this->approveLocked($row, $publish);
+            });
+        } catch (DataImportRowSkipped $e) {
+            $row->update(['status' => 'skipped', 'message' => $e->getMessage()]);
+            throw new RuntimeException($e->getMessage());
+        }
+    }
+
+    private function approveLocked(DataImportRow $row, bool $publish): Facility
+    {
+        $row = DataImportRow::whereKey($row->id)->lockForUpdate()->firstOrFail();
+
+        if ($row->status === 'approved' || $row->facility_id) {
+            throw new RuntimeException('Bu satır zaten onaylanmış.');
+        }
+
         $row->loadMissing(['batch.city', 'batch.category']);
         $batch = $row->batch;
         $city = $batch?->city;
@@ -34,14 +67,12 @@ class DataImportRowApprovalService
         }
 
         if ($this->isDuplicate($item, $city)) {
-            $row->update(['status' => 'skipped', 'message' => 'Benzer kayit var, kurum olusturulmadi.']);
-            throw new RuntimeException('Benzer kayit var, kurum olusturulmadi.');
+            throw new DataImportRowSkipped('Benzer kayit var, kurum olusturulmadi.');
         }
 
         $ownershipType = classify_facility_ownership_type($item['name']);
         if (in_array($ownershipType, ['kamu', 'belediye', 'vakif'], true)) {
-            $row->update(['status' => 'skipped', 'message' => 'Kamu/belediye/vakfa ait kurum, platform kapsami disinda.']);
-            throw new RuntimeException('Kamu/belediye/vakfa ait kurum, platform kapsami disinda.');
+            throw new DataImportRowSkipped('Kamu/belediye/vakfa ait kurum, platform kapsami disinda.');
         }
 
         $districtModel = $this->districtModel($city, $item['district']);
@@ -294,4 +325,12 @@ class DataImportRowApprovalService
 
         return $slug;
     }
+}
+
+/**
+ * "skipped" durumunu approve() icinde transaction disinda kalici olarak
+ * yazabilmek icin kullanilan isaretci exception (bkz. approve() yorumu).
+ */
+class DataImportRowSkipped extends RuntimeException
+{
 }

@@ -9,6 +9,7 @@
     <option value="pending" @selected(request('status','pending')==='pending')>Bekleyenler</option>
     <option value="revision_requested" @selected(request('status')==='revision_requested')>Revize İstenenler</option>
     <option value="approved" @selected(request('status')==='approved')>Onaylananlar</option>
+    <option value="rejected" @selected(request('status')==='rejected')>Reddedilenler</option>
   </select>
 </form>
 

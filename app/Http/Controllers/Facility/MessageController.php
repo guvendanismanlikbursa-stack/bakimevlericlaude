@@ -53,10 +53,23 @@ class MessageController extends Controller
         return back();
     }
 
+    // 16 Temmuz 2026: yayin (broadcast) taleplerde ayni talebe teklif veren
+    // BIRDEN FAZLA rakip kurum, mesajlar tablosunda kuruma ozel ayrim
+    // olmadigi icin AYNI thread'i gorup birbirinin aileyle yazismasini
+    // okuyabiliyordu. Doğrudan talepte (facility_id zaten tek kuruma sabit)
+    // risk yok, mesajlasma serbest kalir. Yayin talebinde ise aile TEK bir
+    // teklifi kabul edene kadar mesajlasma tamamen kapali; kabul edildikten
+    // sonra SADECE kabul edilen teklifin sahibi kurum erisebilir - aile
+     // panelindeki "Mesajlar" linkinin zaten varsaydigi kural artik
+    // kontrolcude de zorunlu kilinmis oluyor.
     private function canAccessThread(OfferRequest $offerRequest, int $facilityId): bool
     {
-        return $offerRequest->facility_id === $facilityId
-            || $offerRequest->quotes()->where('facility_id', $facilityId)->exists();
+        if ($offerRequest->facility_id === $facilityId) {
+            return true;
+        }
+
+        return $offerRequest->accepted_quote_id !== null
+            && $offerRequest->quotes()->where('id', $offerRequest->accepted_quote_id)->where('facility_id', $facilityId)->exists();
     }
 
     private function offerRequestFromRoute(Request $request): OfferRequest

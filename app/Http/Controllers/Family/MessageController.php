@@ -19,6 +19,7 @@ class MessageController extends Controller
 
         abort_unless($offerRequest->family_user_id === $family->id, 403);
         abort_unless($offerRequest->brand === $brand['slug'], 403);
+        abort_unless($this->canAccessThread($offerRequest), 403);
 
         $offerRequest->load(['messages', 'facility', 'quotes.facility']);
 
@@ -33,6 +34,14 @@ class MessageController extends Controller
 
         abort_unless($offerRequest->family_user_id === $family->id, 403);
         abort_unless($offerRequest->brand === $brand['slug'], 403);
+        abort_unless($this->canAccessThread($offerRequest), 403);
+
+        // 21 Temmuz 2026: FacilityUserAuth ile ayni kural - dogrulanmamis
+        // e-postali bir aile sinirsiz mesaj gonderip kurumu mesgul edebilirdi.
+        if (! $family->hasVerifiedEmail()) {
+            return redirect(brand_route('family.verify-email.notice'))
+                ->with('info', 'Mesaj gönderebilmek için önce e-posta adresinizi doğrulamanız gerekiyor.');
+        }
 
         $data = $request->validate(['body' => 'required|string|max:2000']);
 
@@ -46,6 +55,14 @@ class MessageController extends Controller
         $notifier->notifyNewMessageFromFamily($offerRequest);
 
         return back();
+    }
+
+    // 16 Temmuz 2026: dogrudan talepte (tek kurum) her zaman serbest;
+    // yayin talebinde ise bir teklif kabul edilene kadar mesajlasma kapali -
+    // bkz. Facility\MessageController::canAccessThread() ayni kural.
+    private function canAccessThread(OfferRequest $offerRequest): bool
+    {
+        return $offerRequest->facility_id !== null || $offerRequest->accepted_quote_id !== null;
     }
 
     private function offerRequestFromRoute(Request $request): OfferRequest

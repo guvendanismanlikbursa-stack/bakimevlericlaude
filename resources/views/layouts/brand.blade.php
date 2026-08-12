@@ -22,10 +22,45 @@
 <meta name="twitter:title" content="@yield('og_title', $brand['tagline'])">
 <meta name="twitter:description" content="@yield('meta_description', $brand['tagline'])">
 <meta name="twitter:image" content="@yield('og_image', seo_og_image())">
+@php
+  $brandSlug = $brand['slug'] ?? null;
+  $ga4MeasurementId = $brandSlug ? (config('services.google_analytics.ids.'.$brandSlug) ?: config('services.google_analytics.id')) : config('services.google_analytics.id');
+  $gscVerification = $brandSlug ? config('services.google_search_console.verification.'.$brandSlug) : null;
+@endphp
+@if($gscVerification)
+<meta name="google-site-verification" content="{{ $gscVerification }}">
+@endif
+{{--
+  12 Agustos 2026: kullanicinin talebi - onceki font-yukleme hatasi
+  duzeltildikten sonra, "yazi tipi kimligi" raporundaki C secenegi
+  (her markada baslik+govde font ikilisi) uygulanmaktadir:
+  - bakimevleri (kurumsal/guven): baslik Fraunces (yumusak serif),
+    govde IBM Plex Sans.
+  - bakimevibul (sicak/samimi): tek font Plus Jakarta Sans (hem
+    baslik hem govde) - raporda tek font onerilmisti.
+  - bakimeviara (ozenli/dergisel): baslik Newsreader (serif), govde
+    Manrope.
+  Baslik fontu SADECE gercek baslik etiketlerine (h1-h4) uygulanir,
+  govde fontu geri kalan her seye (p, span, div, buton vb.) miras
+  kalir - boylece tek satirlik metin/rozet gibi kucuk UI parcalari
+  govde fontunda okunakli kalir, sadece buyuk basliklar karakter kazanir.
+--}}
+@php
+  $fontConfig = [
+    'bakimevleri' => ['display' => "'Fraunces', serif", 'body' => "'IBM Plex Sans', sans-serif", 'google' => 'family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700'],
+    'bakimevibul' => ['display' => "'Plus Jakarta Sans', sans-serif", 'body' => "'Plus Jakarta Sans', sans-serif", 'google' => 'family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900'],
+    'bakimeviara' => ['display' => "'Newsreader', serif", 'body' => "'Manrope', sans-serif", 'google' => 'family=Newsreader:wght@500;600;700&family=Manrope:wght@400;500;600;700;800'],
+  ];
+  $fonts = $fontConfig[$brand['theme']] ?? $fontConfig['bakimevibul'];
+@endphp
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap">
 @vite('resources/css/app.css')
 <style>
   :root{ --primary: {{ $brand['primary_color'] }}; --secondary: {{ $brand['secondary_color'] }}; }
-  body{ font-family: {{ $brand['theme'] === 'bakimeviara' ? "'Poppins', sans-serif" : ($brand['theme'] === 'bakimevleri' ? "'Roboto', sans-serif" : "'Inter', sans-serif") }}; }
+  body{ font-family: {{ $fonts['body'] }}; }
+  h1, h2, h3, h4{ font-family: {{ $fonts['display'] }}; }
   .btn-primary{ background-color: var(--primary); color:#fff; }
   .btn-primary:hover{ filter: brightness(1.08); }
   .text-primary{ color: var(--primary); }
@@ -33,13 +68,90 @@
   .border-primary{ border-color: var(--primary); }
   .badge-secondary{ background-color: var(--secondary); }
 </style>
-@if(config('services.google_analytics.id'))
-<script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}"></script>
+@if($ga4MeasurementId)
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ $ga4MeasurementId }}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', @json(config('services.google_analytics.id')));
+  gtag('config', @json($ga4MeasurementId), {
+    page_title: document.title,
+    page_location: window.location.href,
+    page_path: window.location.pathname,
+    send_page_view: true
+  });
+
+  (function () {
+    var startedAt = Date.now();
+    var maxScroll = 0;
+    var sentScrollDepths = {};
+    var pageMeta = {
+      brand: @json($brand['slug']),
+      page_path: window.location.pathname,
+      page_title: document.title
+    };
+
+    function sendEvent(name, params) {
+      if (typeof gtag !== 'function') return;
+      gtag('event', name, Object.assign({}, pageMeta, params || {}));
+    }
+
+    function currentScrollPercent() {
+      var doc = document.documentElement;
+      var body = document.body;
+      var scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
+      var scrollHeight = Math.max(body.scrollHeight, doc.scrollHeight, body.offsetHeight, doc.offsetHeight, body.clientHeight, doc.clientHeight);
+      var viewport = window.innerHeight || doc.clientHeight || 0;
+      var available = Math.max(1, scrollHeight - viewport);
+      return Math.min(100, Math.round((scrollTop / available) * 100));
+    }
+
+    function checkScrollDepth() {
+      maxScroll = Math.max(maxScroll, currentScrollPercent());
+      [25, 50, 75, 90].forEach(function (depth) {
+        if (maxScroll >= depth && !sentScrollDepths[depth]) {
+          sentScrollDepths[depth] = true;
+          sendEvent('scroll_depth', { percent_scrolled: depth });
+        }
+      });
+    }
+
+    function sendTimeOnPage(reason) {
+      var seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+      sendEvent('time_on_page', {
+        engagement_time_seconds: seconds,
+        max_scroll_percent: maxScroll,
+        event_reason: reason || 'pagehide',
+        transport_type: 'beacon'
+      });
+    }
+
+    window.addEventListener('scroll', checkScrollDepth, { passive: true });
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a[href]');
+      if (!link) return;
+      var url = new URL(link.href, window.location.href);
+      sendEvent(url.hostname === window.location.hostname ? 'internal_link_click' : 'outbound_link_click', {
+        link_url: url.href,
+        link_text: (link.textContent || '').trim().slice(0, 120)
+      });
+    }, true);
+    document.addEventListener('focusin', function (event) {
+      var form = event.target && event.target.closest && event.target.closest('form');
+      if (!form || form.dataset.gaFormStarted === '1') return;
+      form.dataset.gaFormStarted = '1';
+      sendEvent('form_start', { form_action: form.getAttribute('action') || window.location.pathname, form_method: form.getAttribute('method') || 'GET' });
+    });
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      sendEvent('form_submit_attempt', { form_action: form.getAttribute('action') || window.location.pathname, form_method: form.getAttribute('method') || 'GET' });
+    }, true);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') sendTimeOnPage('visibility_hidden');
+    });
+    window.addEventListener('pagehide', function () { sendTimeOnPage('pagehide'); });
+    window.addEventListener('load', checkScrollDepth);
+  })();
 </script>
 @endif
 @if(config('services.meta_pixel.id'))
@@ -60,9 +172,28 @@
 @php
   $theme = $brand['theme'];
   $bodyClass = $theme === 'bakimevleri' ? 'bg-gray-100 text-gray-800' : ($theme === 'bakimeviara' ? 'bg-white text-gray-800' : 'bg-gray-50 text-gray-800');
-  $defaultSection = $brand['default_section'] ?? array_key_first(service_sections());
+  // 12 Agustos 2026: kullanicinin talebi - kafa karistirici bir kesif:
+  // "Secim Asistani/Karar Sihirbazi/Baslar" linkleri HER SAYFADA markanin
+  // SABIT varsayilan bolumune gidiyordu, kullanicinin O AN gezindigi
+  // bolumu (ör. "Cocuk") hic dikkate almadan - bir aile "Cocuk" bakim
+  // sayfasindayken bu linke tiklarsa kendini "Yasli Bakim" sihirbazinda
+  // buluyordu. Artik varsa mevcut sayfanin bolumunu ($activeSection ana
+  // sayfa/kurum listesinde, $serviceSection kurum detay sayfasinda) kullanir,
+  // yoksa (ör. iletisim/SSS gibi bolum-bagimsiz sayfalarda) markanin
+  // varsayilanina duser.
+  $defaultSection = ($activeSection['slug'] ?? null) ?? ($serviceSection['slug'] ?? null) ?? ($brand['default_section'] ?? array_key_first(service_sections()));
 @endphp
 <body class="{{ $bodyClass }}">
+
+@if(session('impersonator_admin_id'))
+<div class="bg-amber-500 text-amber-950 text-sm font-semibold px-4 py-2 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-50">
+  <span>⚠ Şu an <strong>{{ session('facility_user_name') ?? session('family_user_name') ?? 'bu kullanıcı' }}</strong> adına, admin olarak görüntülüyorsunuz.</span>
+  <form method="POST" action="{{ route('impersonation.stop') }}" class="m-0">
+    @csrf
+    <button class="bg-amber-950 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Admin Paneline Dön</button>
+  </form>
+</div>
+@endif
 
 @if($theme === 'bakimevleri')
 <header class="bg-gray-950 text-white sticky top-0 z-30 border-b border-white/10">
@@ -199,14 +330,39 @@
 </header>
 @endif
 
-@if(session('success'))
-<div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-green-100 text-green-800 px-4 py-3 rounded-lg text-sm">{{ session('success') }}</div></div>
-@endif
-@if(session('info'))
-<div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-blue-100 text-blue-800 px-4 py-3 rounded-lg text-sm">{{ session('info') }}</div></div>
-@endif
-@if(session('error'))
-<div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm">{{ session('error') }}</div></div>
+{{-- 12 Agustos 2026: kullanicinin talebi - "premium hissi" en cok kucuk
+     anlarda hissedilir; teklif talebi/sahiplenme/kayit/iletisim/yorum gibi
+     TUM formlar bu TEK paylasilan bildirimi kullaniyor, bu yuzden burada
+     yapilan tek bir iyilestirme site genelindeki her "gonderildi" anini
+     ayni anda yukseltiyor. Duz renkli bir bant yerine ikonlu, golgeli,
+     birkaç saniye sonra kendiliginden kaybolan (ama elle de kapatilabilen)
+     bir bildirim karti. --}}
+@if(session('success') || session('info') || session('error'))
+  @php
+    $flashType = session('success') ? 'success' : (session('info') ? 'info' : 'error');
+    $flashText = session('success') ?: (session('info') ?: session('error'));
+    $flashStyles = [
+      'success' => ['bg' => '#ecfdf5', 'border' => '#a7f3d0', 'text' => '#065f46', 'icon' => '#10b981', 'symbol' => '✓'],
+      'info' => ['bg' => '#eff6ff', 'border' => '#bfdbfe', 'text' => '#1e40af', 'icon' => '#3b82f6', 'symbol' => 'ℹ'],
+      'error' => ['bg' => '#fef2f2', 'border' => '#fecaca', 'text' => '#991b1b', 'icon' => '#ef4444', 'symbol' => '!'],
+    ][$flashType];
+  @endphp
+  <div id="js-flash-toast" class="fixed top-4 inset-x-4 sm:inset-x-auto sm:right-5 sm:left-auto z-50 sm:max-w-sm animate-[flash-in_.35s_ease-out]" role="status">
+    <div class="flex items-start gap-3 rounded-2xl border shadow-xl p-4" style="background: {{ $flashStyles['bg'] }}; border-color: {{ $flashStyles['border'] }};">
+      <span class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-sm" style="background: {{ $flashStyles['icon'] }};">{{ $flashStyles['symbol'] }}</span>
+      <p class="text-sm font-semibold flex-1" style="color: {{ $flashStyles['text'] }};">{{ $flashText }}</p>
+      <button type="button" onclick="document.getElementById('js-flash-toast').remove()" class="shrink-0 text-lg leading-none opacity-50 hover:opacity-100" style="color: {{ $flashStyles['text'] }};" aria-label="Kapat">×</button>
+    </div>
+  </div>
+  <style>
+    @keyframes flash-in { 0% { transform: translateY(-12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  </style>
+  <script>
+    setTimeout(function () {
+      var el = document.getElementById('js-flash-toast');
+      if (el) { el.style.transition = 'opacity .4s ease'; el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 400); }
+    }, 6000);
+  </script>
 @endif
 @if($errors->any())
 <div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm"><ul class="list-disc list-inside">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div></div>
@@ -279,6 +435,7 @@
 @include('themes._shared.partials.cookie-consent')
 @include('themes._shared.partials.panel-notification-alerts')
 @include('themes._shared.partials.organization-jsonld')
+@include('themes._shared.partials.scroll-restore')
 @yield('breadcrumb_jsonld')
 
 <script>
@@ -297,3 +454,7 @@
 
 </body>
 </html>
+
+
+
+

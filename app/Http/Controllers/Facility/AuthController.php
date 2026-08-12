@@ -27,6 +27,13 @@ class AuthController extends Controller
 
         $user = FacilityUser::where('email', $credentials['email'])->first();
 
+        // 21 Temmuz 2026: Google ile kayit olan hesaba rastgele bir sifre
+        // atanir (kullanici hic bilmez) - normal sifre girisi deneyince
+        // hep "hatali" cikip kullanici neden giremedigini anlayamiyordu.
+        if ($user && $user->google_id && ! Hash::check($credentials['password'], $user->password)) {
+            return back()->withErrors(['email' => 'Bu hesap Google ile oluşturulmuş. Lütfen "Google ile giriş yap" seçeneğini kullanın.'])->onlyInput('email');
+        }
+
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return back()->withErrors(['email' => 'E-posta veya şifre hatalı.'])->onlyInput('email');
         }
@@ -37,14 +44,21 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         $request->session()->regenerateToken();
+        // 30 Temmuz 2026: bkz. Admin\AuthController::login() ayni yorum -
+        // baska bir rolden kalma session anahtarlari burada da temizlenir.
+        $request->session()->forget(['admin_id', 'admin_name', 'family_user_id', 'family_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         session(['facility_user_id' => $user->id, 'facility_user_name' => $user->name]);
+
+        // 30 Temmuz 2026: sifre degistirme, e-posta dogrulamasindan ONCE
+        // kontrol edilir - bkz. FacilityUserAuth middleware'indeki ayni
+        // gerekce (gecici sifreyle acilan hesap once kendi sifresini
+        // belirlemeli, dogrulama linkine tiklamamis olsa bile).
+        if ($user->must_change_password) {
+            return redirect(brand_route('facility.password.change'));
+        }
 
         if (! $user->hasVerifiedEmail()) {
             return redirect(brand_route('facility.verify-email.notice'));
-        }
-
-        if ($user->must_change_password) {
-            return redirect(brand_route('facility.password.change'));
         }
 
         return redirect(brand_route('facility.dashboard'));

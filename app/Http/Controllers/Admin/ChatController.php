@@ -137,6 +137,7 @@ class ChatController extends Controller
     public function close(ChatThread $thread)
     {
         $thread->update(['status' => 'closed']);
+        log_admin_event('chat_thread_closed', $thread);
 
         return back()->with('success', 'Sohbet kapatıldı.');
     }

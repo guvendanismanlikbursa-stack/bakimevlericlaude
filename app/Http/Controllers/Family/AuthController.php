@@ -42,6 +42,10 @@ class AuthController extends Controller
             'consent.accepted' => 'Açık rıza metnini onaylamadan hesap oluşturamazsınız.',
         ]);
 
+        if ($error = email_taken_by_other_account_type($data['email'])) {
+            return back()->withErrors(['email' => $error])->withInput($request->except('password', 'password_confirmation'));
+        }
+
         $signupCityName = null;
         if ($request->filled('signup_lat') && $request->filled('signup_lng')) {
             $nearest = $geo->nearestCity((float) $data['signup_lat'], (float) $data['signup_lng']);
@@ -61,12 +65,15 @@ class AuthController extends Controller
             'signup_city_name' => $signupCityName,
         ]);
 
+        // 30 Temmuz 2026: bkz. Admin\AuthController::login() ayni yorum -
+        // baska bir rolden kalma session anahtarlari burada da temizlenir.
+        $request->session()->forget(['admin_id', 'admin_name', 'facility_user_id', 'facility_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
 
         EmailVerificationController::send($family, $brand);
 
         try {
-            Mail::to($family->email)->queue(new FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));
+            Mail::to($family->email)->sendNow(new FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));
         } catch (\Throwable $e) {
             Log::warning('Aile hos geldin maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
         }
@@ -92,6 +99,13 @@ class AuthController extends Controller
 
         $family = FamilyUser::where('email', $credentials['email'])->first();
 
+        // 21 Temmuz 2026: Google ile kayit olan hesaba rastgele bir sifre
+        // atanir (kullanici hic bilmez) - normal sifre girisi deneyince
+        // hep "hatali" cikip kullanici neden giremedigini anlayamiyordu.
+        if ($family && $family->google_id && ! Hash::check($credentials['password'], $family->password)) {
+            return back()->withErrors(['email' => 'Bu hesap Google ile oluşturulmuş. Lütfen "Google ile giriş yap" seçeneğini kullanın.'])->onlyInput('email');
+        }
+
         if (! $family || ! Hash::check($credentials['password'], $family->password)) {
             return back()->withErrors(['email' => 'E-posta veya şifre hatalı.'])->onlyInput('email');
         }
@@ -102,6 +116,9 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         $request->session()->regenerateToken();
+        // 30 Temmuz 2026: bkz. Admin\AuthController::login() ayni yorum -
+        // baska bir rolden kalma session anahtarlari burada da temizlenir.
+        $request->session()->forget(['admin_id', 'admin_name', 'facility_user_id', 'facility_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
 
         return $this->afterLogin($brand);

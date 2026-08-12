@@ -6,16 +6,9 @@
   $imageCount = $facility->images->count();
   $remainingImages = max(0, 10 - $imageCount);
 @endphp
-<div class="max-w-4xl mx-auto px-4 py-10">
-  <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">&larr; Panele dön</a>
-  <h1 class="text-2xl font-bold mt-2 mb-2">Kurum Bilgilerimi Düzenle</h1>
-  @if($serviceSection)
-    <p class="text-sm text-gray-500 mb-6">Bu kurum <strong>{{ $serviceSection['title'] }}</strong> bölümünde hizmet veriyor. Ana sayfa filtreleri ve kuruma özel detay alanları bu bölüme göre hazırlanır.</p>
-  @endif
+@include('themes._shared.partials.facility-panel-header', ['title' => 'Kurum Bilgilerimi Düzenle', 'subtitle' => $serviceSection ? $serviceSection['title'].' bölümünde hizmet veriyorsunuz. Ana sayfa filtreleri ve kuruma özel detay alanları bu bölüme göre hazırlanır.' : null])
 
-  @if(session('success'))
-    <div class="mb-5 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">{{ session('success') }}</div>
-  @endif
+<div class="max-w-4xl mx-auto px-4 py-10">
   @if($errors->any())
     <div class="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
       <div class="font-black mb-1">Lütfen alanları kontrol edin.</div>
@@ -28,13 +21,13 @@
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
-        <div class="text-sm font-semibold text-gray-500">Profil kalite puanı<span class="sr-only">Profil kalite puani</span></div>
+        <div class="text-sm font-semibold text-gray-500">Profil kalite puanı</div>
         <div class="text-3xl font-black text-gray-950 mt-1">{{ $profileQuality['score'] }}/100</div>
         <p class="text-sm text-gray-500 mt-1">Tam profil daha fazla ziyaretçi güveni, daha iyi teklif dönüşü ve daha güçlü SEO sinyali verir.</p>
       </div>
       <div class="w-full md:w-56">
         <div class="h-3 rounded-full bg-gray-100 overflow-hidden"><div class="h-full bg-primary" style="width: {{ $profileQuality['score'] }}%"></div></div>
-        <div class="text-xs text-gray-400 mt-2">{{ $profileQuality['completed'] }}/{{ $profileQuality['total'] }} alan tamamlandı<span class="sr-only">alan tamamlandi</span></div>
+        <div class="text-xs text-gray-400 mt-2">{{ $profileQuality['completed'] }}/{{ $profileQuality['total'] }} alan tamamlandı</div>
       </div>
     </div>
     @if($profileQuality['missing'])
@@ -79,8 +72,9 @@
       <textarea name="description" rows="4" class="border rounded-lg px-3 py-2 w-full mt-1">{{ old('description', $facility->description) }}</textarea>
     </div>
     <div>
-      <label class="text-sm font-medium">Min Fiyat</label>
+      <label class="text-sm font-medium">Min Fiyat <span class="align-middle">@include('themes._shared.partials.segment-info-icon', ['categories' => [$facility->category], 'id' => 'segment-info-facility-profile'])</span></label>
       <input type="number" step="0.01" name="price_min" value="{{ old('price_min', $facility->price_min) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <p class="text-xs text-gray-400 mt-1">Fiyat aralığınız hangi segment(ler)e girdiğini görmek için yukarıdaki ? işaretine tıklayın.</p>
     </div>
     <div>
       <label class="text-sm font-medium">Maks Fiyat</label>
@@ -138,10 +132,12 @@
       <span class="text-xs font-semibold rounded-full px-3 py-1 {{ $remainingImages > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500' }}">Kalan hak: {{ $remainingImages }}</span>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
+    <div id="ps-gallery-facility-profile" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
       @foreach($facility->images->take(10) as $img)
         <div class="relative group">
-          <img src="{{ asset('storage/'.$img->path) }}" class="rounded-lg h-28 w-full object-cover border border-gray-100" alt="{{ $facility->name }} görseli">
+          <a href="{{ asset('storage/'.$img->path) }}" data-pswp-width="1600" data-pswp-height="1200" target="_blank" rel="noopener">
+            <img src="{{ asset('storage/'.$img->path) }}" class="rounded-lg h-28 w-full object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} görseli">
+          </a>
           <form method="POST" action="{{ brand_route('facility.profile.image.destroy', $img) }}" class="absolute top-1 right-1">
             @csrf @method('DELETE')
             <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>
@@ -152,6 +148,8 @@
         <div class="h-28 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-center px-2 text-xs text-gray-400">Görsel alanı<br>{{ $i + 1 }}/10</div>
       @endfor
     </div>
+    @include('themes._shared.partials.image-lightbox')
+    <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('ps-gallery-facility-profile'); });</script>
 
     @if($remainingImages > 0)
       <form method="POST" action="{{ brand_route('facility.profile.image.store') }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row">

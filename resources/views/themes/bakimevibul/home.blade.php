@@ -13,6 +13,49 @@
 
 <section class="bg-white border-b border-emerald-100">
   <div class="max-w-6xl mx-auto px-4 py-10 lg:py-14">
+    {{-- 12 Agustos 2026: kullanicinin talebi - bolum secimi her seyden
+         once, en usta; mobilde de "bolum -> filtre -> bilgilendirme"
+         sirasi korunmali. --}}
+    <div class="grid sm:grid-cols-3 gap-3 mb-8">
+      @foreach($sections as $slug => $item)
+        @php $active = $item['slug'] === $section['slug']; @endphp
+        <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="relative section-card-beam rounded-lg border p-4 min-h-[118px] overflow-hidden transition hover:shadow-lg hover:-translate-y-0.5 {{ $active ? 'text-white shadow-md' : 'text-white border-gray-200' }}" style="--beam-color: {{ $active ? '#ffffff' : $item['theme']['secondary'] }}; {{ $active ? 'background: '.$colors['primary'].'; border-color: '.$colors['primary'].';' : '' }}">
+          @unless($active)
+            <img src="{{ $item['hero_image'] }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/35 to-black/10"></div>
+          @endunless
+          <div class="relative flex items-center justify-between gap-2">
+            <span class="inline-flex rounded-lg p-2 {{ $active ? 'bg-white/15' : 'bg-white/15' }}">@include('themes._shared.partials.section-icon', ['section' => $item, 'class' => 'w-7 h-7'])</span>
+            @if($active)<span class="text-[11px] font-bold rounded bg-white/20 px-2 py-1">Seçili</span>@endif
+          </div>
+          <div class="relative font-extrabold mt-3">{{ $item['title'] }}</div>
+          <div class="relative text-xs mt-1 {{ $active ? 'text-white/80' : 'text-white/85' }}">{{ implode(', ', array_slice($item['features'], 0, 2)) }}</div>
+        </a>
+      @endforeach
+    </div>
+
+    {{-- 12 Agustos 2026: form (GERCEK filtre) bilerek 3 bolum kartindan
+         HEMEN SONRA - onceki halde buraya sadece dekoratif "hero gorsel
+         kutusu" tasinmisti, GERCEK form hala en altta kalmisti; kullanici
+         "bakimevleri gibi olmali" dedi, sira mobilde/masaustunde ayni:
+         bolum -> filtre -> bilgilendirme (baslik+gorsel). --}}
+    <form id="js-quick-search" method="GET" action="{{ brand_route('home') }}" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-home-results" class="js-location-filter mb-10 bg-gray-50 border border-gray-200 rounded-lg p-4 grid md:grid-cols-7 gap-3 scroll-mt-24">
+      <input type="hidden" name="bolum" value="{{ $section['slug'] }}">
+      <input type="search" name="q" value="{{ request('q') }}" placeholder="Kurum adıyla ara" class="border rounded-md px-3 py-2.5 text-sm bg-white">
+      <select name="city" aria-label="İl" class="js-city border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">İl seçin</option>@foreach($cities as $city)<option value="{{ $city->slug }}">{{ $city->name }}</option>@endforeach</select>
+      <select name="district" aria-label="İlçe" class="js-district border rounded-md px-3 py-2.5 text-sm bg-white" disabled><option value="">Önce il seçin</option></select>
+      <select name="category" aria-label="Kurum türü" class="border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">Kurum türü</option>@foreach($categories as $cat)<option value="{{ $cat->slug }}">{{ $cat->name }}</option>@endforeach</select>
+      <select name="service" aria-label="Kurumun özellikleri" class="border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">Kurumun özellikleri</option>@foreach($sectionServices as $service)<option value="{{ $service }}">{{ $service }}</option>@endforeach</select>
+      <span class="flex items-center gap-1.5">
+        <select name="price_tier" aria-label="Fiyat segmenti" class="flex-1 border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">Tüm segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
+        @include('themes._shared.partials.segment-info-icon', ['categories' => $categories, 'id' => 'segment-info-home', 'categorySelectName' => 'category'])
+      </span>
+      <button class="rounded-md text-white font-bold px-4 py-2.5" style="background: {{ $colors['primary'] }};">Bul</button>
+      @if($isFiltering)
+        <a href="{{ brand_route('home', ['bolum' => $section['slug']]) }}" class="md:col-span-7 text-center text-xs font-bold text-gray-400 underline">Filtreleri temizle</a>
+      @endif
+    </form>
+
     <div class="grid lg:grid-cols-[1.04fr_0.96fr] gap-8 items-center">
       <div>
         <div class="inline-flex items-center gap-2 text-sm font-bold rounded-lg px-3 py-2 mb-5" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">
@@ -32,88 +75,34 @@
         </div>
 
         @include('themes._shared.partials.home-engagement-actions')
-
-        <div class="grid sm:grid-cols-3 gap-3 mb-7">
-          @foreach($sections as $slug => $item)
-            @php $active = $item['slug'] === $section['slug']; @endphp
-            <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="section-card-beam rounded-lg border p-4 min-h-[118px] transition hover:shadow-lg hover:-translate-y-0.5 {{ $active ? 'text-white shadow-md' : 'bg-white text-gray-800 border-gray-200' }}" style="--beam-color: {{ $active ? '#ffffff' : $item['theme']['primary'] }}; {{ $active ? 'background: '.$colors['primary'].'; border-color: '.$colors['primary'].';' : '' }}">
-              <div class="flex items-center justify-between gap-2">
-                <span class="inline-flex rounded-lg p-2 {{ $active ? 'bg-white/15' : 'bg-gray-50' }}" style="{{ ! $active ? 'color:'.$item['theme']['primary'].';' : '' }}">@include('themes._shared.partials.section-icon', ['section' => $item, 'class' => 'w-7 h-7'])</span>
-                @if($active)<span class="text-[11px] font-bold rounded bg-white/20 px-2 py-1">Seçili</span>@endif
-              </div>
-              <div class="font-extrabold mt-3">{{ $item['title'] }}</div>
-              <div class="text-xs mt-1 {{ $active ? 'text-white/80' : 'text-gray-500' }}">{{ implode(', ', array_slice($item['features'], 0, 2)) }}</div>
-            </a>
-          @endforeach
-        </div>
       </div>
 
       <div class="relative">
         <div class="rounded-lg overflow-hidden border border-gray-100 shadow-xl bg-gray-100 aspect-[5/4]">
           <img src="{{ $section['hero_image'] }}" alt="{{ $section['title'] }}" class="w-full h-full object-cover">
         </div>
-        <div class="absolute -bottom-5 left-5 right-5 bg-white shadow-xl border border-gray-100 rounded-lg p-4">
-          <div class="text-xs font-bold uppercase tracking-wide mb-1" style="color: {{ $colors['primary'] }};">Hızlı arama</div>
-          <div class="font-bold text-gray-900">{{ $section['search_label'] }}</div>
-        </div>
-      </div>
-    </div>
-
-    <form method="GET" action="{{ brand_route('facilities.index') }}" data-district-map='@json($districtMap)' data-count-url="{{ brand_route('facilities.count') }}" class="js-location-filter mt-12 bg-gray-50 border border-gray-200 rounded-lg p-4 grid md:grid-cols-6 gap-3">
-      <input type="hidden" name="bolum" value="{{ $section['slug'] }}">
-      <select name="city" aria-label="İl" class="js-city border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">İl seçin</option>@foreach($cities as $city)<option value="{{ $city->slug }}">{{ $city->name }}</option>@endforeach</select>
-      <select name="district" aria-label="İlçe" class="js-district border rounded-md px-3 py-2.5 text-sm bg-white" disabled><option value="">Önce il seçin</option></select>
-      <select name="category" aria-label="Kurum türü" class="border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">Kurum türü</option>@foreach($categories as $cat)<option value="{{ $cat->slug }}">{{ $cat->name }}</option>@endforeach</select>
-      <select name="service" aria-label="Kurumun özellikleri" class="border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">Kurumun özellikleri</option>@foreach($sectionServices as $service)<option value="{{ $service }}">{{ $service }}</option>@endforeach</select>
-      <select name="price_tier" aria-label="Fiyat segmenti" class="border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">Tüm segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
-      <button class="rounded-md text-white font-bold px-4 py-2.5" style="background: {{ $colors['primary'] }};">Bul</button>
-      <div class="js-live-count md:col-span-6 text-xs font-bold text-gray-500 text-center"></div>
-    </form>
-  </div>
-</section>
-
-
-<section class="max-w-6xl mx-auto px-4 py-12">
-  <div class="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 items-start">
-    <div class="bg-white border border-gray-100 rounded-lg p-6 shadow-sm">
-      <div class="text-sm font-bold mb-2" style="color: {{ $colors['primary'] }};">{{ $content['audience'] ?? '' }}</div>
-      <h2 class="text-2xl font-extrabold text-gray-950 mb-3">{{ $content['headline'] ?? 'Rehber' }}</h2>
-      <p class="text-gray-600 leading-relaxed">{{ $content['intro'] ?? '' }}</p>
-      <div class="mt-5 grid sm:grid-cols-2 gap-2">
-        @foreach(($content['checks'] ?? []) as $check)
-          <div class="rounded-md border border-gray-100 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700">{{ $check }}</div>
-        @endforeach
-      </div>
-    </div>
-    <div class="grid sm:grid-cols-2 gap-4">
-      @foreach(($content['articles'] ?? []) as $article)
-        <a href="{{ brand_route('pages.show', ['slug' => $article['slug']]) }}" class="bg-white border border-gray-100 rounded-lg p-5 shadow-sm hover:shadow-lg transition">
-          <div class="text-xs font-extrabold uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">Bilgilendirme</div>
-          <h3 class="font-extrabold text-gray-950 mb-2">{{ $article['title'] }}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">{{ $article['summary'] }}</p>
+        {{-- 12 Agustos 2026: kullanicinin talebi - bu kart salt dekoratifti,
+             tiklanamiyordu, kullanici "hizli arama filtresi yok" diye
+             kafasi karisti. Artik yukaridaki GERCEK filtre formuna
+             tiklanabilir/kaydiran bir baglanti. --}}
+        <a href="#js-quick-search" class="absolute -bottom-5 left-5 right-5 bg-white shadow-xl border border-gray-100 rounded-lg p-4 flex items-center justify-between gap-3 hover:shadow-2xl transition group">
+          <span>
+            <span class="block text-xs font-bold uppercase tracking-wide mb-1" style="color: {{ $colors['primary'] }};">Hızlı arama</span>
+            <span class="block font-bold text-gray-900">{{ $section['search_label'] }}</span>
+          </span>
+          <span class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white group-hover:-translate-y-0.5 transition" style="background: {{ $colors['primary'] }};">↑</span>
         </a>
-      @endforeach
+      </div>
     </div>
   </div>
 </section>
-@include('themes._shared.partials.pre-registered-facilities')
-<section class="max-w-6xl mx-auto px-4 py-12">
-  <div class="flex items-end justify-between mb-6">
-    <div><div class="text-sm font-bold mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div><h2 class="text-2xl font-extrabold text-gray-950">Öne çıkan kurumlar</h2></div>
-    <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-bold" style="color: {{ $colors['primary'] }};">Tümünü gör →</a>
-  </div>
-  <div class="grid md:grid-cols-3 gap-5">
-    @forelse($featured as $facility)
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition group">
-        @php $cardImage = facility_card_image($facility, $section); @endphp
-        <div class="h-40 flex items-center justify-center overflow-hidden" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
-        <div class="p-4"><h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p><div class="flex justify-between text-sm"><span class="text-amber-500 font-bold">★ {{ number_format($facility->rating, 1) }}</span><span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div></div>
-      </a>
-    @empty
-      <div class="md:col-span-3 border border-dashed rounded-lg p-8 text-center text-gray-500 bg-white">Bu bölüm için öne çıkan kurum eklenmedi.</div>
-    @endforelse
-  </div>
-</section>
+
+
+@include('themes._shared.partials.trust-stats')
+
+<div id="js-home-results">
+  @include('themes.bakimevibul.home._results')
+</div>
 
 @include('themes._shared.partials.discover-links')
 @include('themes._shared.partials.location-filter-script')

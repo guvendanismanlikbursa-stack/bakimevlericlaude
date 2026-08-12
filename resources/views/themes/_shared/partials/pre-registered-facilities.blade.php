@@ -1,4 +1,4 @@
-﻿<section class="max-w-6xl mx-auto px-4 py-10">
+<section class="max-w-6xl mx-auto px-4 py-10">
   <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
     <div>
       <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Yeni eklenen ön kayıtlar</div>

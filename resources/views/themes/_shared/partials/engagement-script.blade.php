@@ -66,5 +66,10 @@
     paint();
   });
   paint();
+  // AJAX ile sayfa yenilenmeden yeni kurum kartlari eklendiginde (aninda
+  // filtreleme), o kartlardaki favori/karsilastir butonlarinin da mevcut
+  // localStorage durumuna gore boyanmasi icin disaridan cagrilabilir hale
+  // getiriyoruz.
+  window.paintEngagementToggles = paint;
 })();
 </script>

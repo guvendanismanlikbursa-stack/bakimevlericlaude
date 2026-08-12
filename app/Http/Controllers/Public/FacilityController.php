@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Public\Concerns\FiltersFacilities;
 use App\Models\City;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
@@ -12,6 +13,8 @@ use Illuminate\Http\Request;
 
 class FacilityController extends Controller
 {
+    use FiltersFacilities;
+
     public function index(Request $request, GeoLookupService $geo)
     {
         $brand = current_brand();
@@ -41,16 +44,36 @@ class FacilityController extends Controller
             ));
         }
 
-        $query = $this->filteredQuery($request, $scope)->with(['city', 'category', 'images']);
+        $query = $this->filteredQuery($request, $scope, $brand['category_scope'])->with(['city', 'category', 'images']);
 
-        $perPage = $request->boolean('pre_registered') ? 12 : 9;
+        // 12 Agustos 2026: kullanicinin talebi - her sayfada tutarli 21
+        // kurum (3 sutunlu gride tam sigan bir sayi), fazlasi icin normal
+        // sayfalama linkleri.
+        $perPage = 21;
         $facilities = $query->orderByDesc('is_featured')->orderByDesc('rating')->paginate($perPage)->withQueryString();
+
+        // 12 Agustos 2026 (2): isim aramasi (`q`) tum bolumlerde arandigi
+        // icin, "kac kurum hangi bolumden" dagilimini de hesaplayip sonuc
+        // parcasina gonderiyoruz (bkz. FiltersFacilities::sectionBreakdown).
+        $sectionBreakdown = $this->sectionBreakdown($request, $brand['category_scope']);
+
+        // 12 Agustos 2026: anlik filtreleme (kullanici her harf yazdikca/
+        // secim degistikce AJAX ile sonuc guncellenmesi) - sayfa yenilenmeden
+        // sadece kart+sayfalama parcasini dondurur, bolgesel dagilim gibi
+        // agir aggregate sorgulari ve arama loglamasini atlar (her tus
+        // basisinda gereksiz yuk bindirmemek icin).
+        if ($request->ajax()) {
+            return response()->json([
+                'count' => $facilities->total(),
+                'html' => view('themes._shared.facilities._results', compact('facilities', 'activeSection', 'sectionBreakdown'))->render(),
+            ]);
+        }
 
         // "Harita mantiginda bolgesel dagilim" TUM filtrelenmis sonuclar
         // uzerinden hesaplanmali, sadece o anki sayfadaki 9 kayittan degil;
         // bu yuzden aggregate icin filtreyi tekrar (sayfalama olmadan) kurup
         // sehir+ilce bazinda ayri bir count sorgusu calistiriyoruz.
-        $regionGroups = $this->filteredQuery($request, $scope)
+        $regionGroups = $this->filteredQuery($request, $scope, $brand['category_scope'])
             ->join('cities', 'cities.id', '=', 'facilities.city_id')
             ->selectRaw('cities.name as city_name, cities.slug as city_slug, facilities.district, count(*) as total')
             ->groupBy('cities.name', 'cities.slug', 'facilities.district')
@@ -91,7 +114,8 @@ class FacilityController extends Controller
             'districtsByCity',
             'sectionServices',
             'nearbyFacilities',
-            'regionGroups'
+            'regionGroups',
+            'sectionBreakdown'
         ));
     }
 
@@ -99,6 +123,11 @@ class FacilityController extends Controller
      * Ana sayfa ve kurum listesindeki filtre formlari, secim yapildikca
      * (Filtrele'ye basmadan) kac kurum eslestigini gostermek icin bu
      * endpoint'i cagirir. Sorgu mantigi index() ile birebir aynidir.
+     *
+     * 12 Agustos 2026: kullanicinin talebi - sadece sayi degil, filtreye
+     * uyan ilk birkac kurumun KENDISI de (kucuk bir onizleme karti seti)
+     * anlik gorunmeli, "Kurumları listele"ye basmadan once - bkz.
+     * location-filter-script.blade.php'deki JS render.
      */
     public function count(Request $request)
     {
@@ -106,82 +135,30 @@ class FacilityController extends Controller
         $activeSection = $request->query('bolum') ? active_service_section($request->query('bolum'), $brand) : null;
         $scope = $activeSection ? $activeSection['scopes'] : $brand['category_scope'];
 
+        $query = $this->filteredQuery($request, $scope);
+        $count = (clone $query)->count();
+
+        $preview = (clone $query)
+            ->with(['city', 'category', 'images'])
+            ->orderByDesc('is_featured')
+            ->orderByDesc('rating')
+            ->limit(6)
+            ->get()
+            ->map(fn (Facility $facility) => [
+                'name' => $facility->name,
+                'url' => brand_route('facilities.show', ['slug' => $facility->slug]),
+                'image' => facility_card_image($facility, $activeSection),
+                'city' => $facility->city->name ?? '',
+                'category' => $facility->category->name ?? '',
+                'price' => $facility->price_min ? number_format($facility->price_min, 0, ',', '.').' TL' : 'Fiyat iste',
+                'rating' => (float) $facility->rating,
+                'is_claimed' => (bool) $facility->is_claimed,
+            ]);
+
         return response()->json([
-            'count' => $this->filteredQuery($request, $scope)->count(),
+            'count' => $count,
+            'preview' => $preview,
         ]);
-    }
-
-    private function filteredQuery(Request $request, array $scope)
-    {
-        $query = Facility::published()->forBrand($scope);
-
-        if ($request->filled('city')) {
-            $query->whereHas('city', fn ($q) => $q->where('slug', $request->city));
-        }
-
-        if ($request->filled('district')) {
-            $query->where('district', $request->district);
-        }
-
-        if ($request->filled('category')) {
-            $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
-        }
-
-        if ($request->filled('service')) {
-            $query->whereJsonContains('services', $request->service);
-        }
-
-        if ($request->boolean('pre_registered')) {
-            $query->where('is_claimed', false)->where('source', 'google_maps_veri_cekici');
-        }
-
-        if ($request->filled('price_tier') || $request->filled('budget')) {
-            [$standartMin, $premiumMin, $ultraMin] = $this->priceTierThresholds();
-
-            $tierKey = $request->filled('price_tier')
-                ? $request->price_tier
-                : $this->tierForBudget((float) $request->budget, $standartMin, $premiumMin, $ultraMin);
-
-            $query->whereNotNull('price_min')->where(function ($qq) use ($tierKey, $standartMin, $premiumMin, $ultraMin) {
-                match ($tierKey) {
-                    'ekonomik' => $qq->where('price_min', '<', $standartMin),
-                    'standart' => $qq->where('price_min', '>=', $standartMin)->where('price_min', '<', $premiumMin),
-                    'premium' => $qq->where('price_min', '>=', $premiumMin)->where('price_min', '<', $ultraMin),
-                    'ultra_premium' => $qq->where('price_min', '>=', $ultraMin),
-                    default => null,
-                };
-            });
-        }
-
-        return $query;
-    }
-
-    /**
-     * Facility::priceTier() ile ayni esikler -- kullanicinin serbest metin
-     * girdigi "bütçe" rakaminin hangi segmente (Ekonomik/Standart/Premium/
-     * Ultra Premium) denk geldigini bulmak icin kullanilir.
-     *
-     * @return array{0: float, 1: float, 2: float}
-     */
-    private function priceTierThresholds(): array
-    {
-        $defaults = config('platform.default_price_tiers');
-
-        return [
-            (float) \App\Models\Setting::get('price_tier_standart_min', $defaults['standart_min']),
-            (float) \App\Models\Setting::get('price_tier_premium_min', $defaults['premium_min']),
-            (float) \App\Models\Setting::get('price_tier_ultra_min', $defaults['ultra_min']),
-        ];
-    }
-
-    private function tierForBudget(float $budget, float $standartMin, float $premiumMin, float $ultraMin): string
-    {
-        return match (true) {
-            $budget >= $ultraMin => 'ultra_premium',
-            $budget >= $premiumMin => 'premium',
-            $budget >= $standartMin => 'standart',
-            default => 'ekonomik',
-        };
     }
 
     public function show(Request $request)
@@ -218,6 +195,7 @@ class FacilityController extends Controller
             ->where('facility_category_id', $facility->facility_category_id)
             ->where('id', '!=', $facility->id)
             ->with(['city', 'category', 'images'])
+            ->orderByRaw('CASE WHEN city_id = ? THEN 0 ELSE 1 END', [$facility->city_id])
             ->limit(3)
             ->get();
 

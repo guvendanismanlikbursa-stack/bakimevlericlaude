@@ -124,14 +124,39 @@ class ProfileController extends Controller
             throw ValidationException::withMessages(['images' => "En fazla 10 görsel eklenebilir. Kalan yükleme hakkı: {$remaining}."]);
         }
 
-        foreach ($files as $i => $file) {
-            $path = app(ImageCompressionService::class)->store($file, 'facilities');
+        // 3 Agustos 2026: bkz. FacilityClaimController ayni yorum - disk
+        // yazma hatasi eskiden ('throw'=>false ile) sessizce yutulup DB'ye
+        // gecerli gorunen ama gercekte var olmayan bir dosya yolu
+        // yaziliyordu (admin panelinde/kurum kartinda kirik gorsel).
+        // Simdi her dosya icin yazimdan sonra ayrica dogrulama yapilir;
+        // BIR gorsel bile basarisiz olursa TUM istek geri alinir (hicbir
+        // kurumun bazi gorselleri sessizce eksik kalmasin diye), kullaniciya
+        // acik bir hata gosterilip tekrar denemesi istenir.
+        $uploaded = [];
+        try {
+            foreach ($files as $i => $file) {
+                $path = app(ImageCompressionService::class)->store($file, 'facilities');
+                if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                    throw new \RuntimeException('Gorsel diske yazildiktan sonra dogrulanamadi.');
+                }
+                $uploaded[] = $path;
 
-            FacilityImage::create([
-                'facility_id' => $user->facility_id,
-                'path' => $path,
-                'sort_order' => $currentCount + $i,
-            ]);
+                FacilityImage::create([
+                    'facility_id' => $user->facility_id,
+                    'path' => $path,
+                    'sort_order' => $currentCount + $i,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            foreach ($uploaded as $path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+            }
+            FacilityImage::where('facility_id', $user->facility_id)->whereIn('path', $uploaded)->delete();
+
+            \Illuminate\Support\Facades\Log::error('Kurum galeri gorseli kaydedilemedi: ' . $e->getMessage(), ['facility_id' => $user->facility_id]);
+            \Sentry\captureException($e);
+
+            return back()->withErrors(['images' => 'Görsel(ler) yüklenirken bir sorun oluştu, lütfen tekrar deneyin.']);
         }
 
         return back()->with('success', 'Görseller eklendi.');
@@ -145,7 +170,7 @@ class ProfileController extends Controller
             $image = FacilityImage::findOrFail($image);
         }
 
-        abort_unless($image->facility_id === $user->facility_id, 403);
+        abort_unless((int) $image->facility_id === (int) $user->facility_id, 403);
 
         Storage::disk('public')->delete($image->path);
         $image->delete();

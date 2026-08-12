@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ChatSettingsController as AdminChatSettingsContro
 use App\Http\Controllers\Admin\ContentPageController as AdminContentPageController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DataExtractorController as AdminDataExtractorController;
+use App\Http\Controllers\Admin\DocumentController as AdminDocumentController;
 use App\Http\Controllers\Admin\FacilityCategoryController as AdminFacilityCategoryController;
 use App\Http\Controllers\Admin\FacilityClaimController as AdminFacilityClaimController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\SiteStatsController as AdminSiteStatsController;
 use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptionPackageController;
 use App\Http\Controllers\Admin\TrashController as AdminTrashController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\WalletTopupController as AdminWalletTopupController;
 use App\Http\Controllers\Facility\AuthController as FacilityAuthController;
 use App\Http\Controllers\Facility\PasswordResetController as FacilityPasswordResetController;
@@ -104,6 +106,11 @@ $siteRoutes = function () {
     Route::post('/toplu-teklif-talebi', [OfferRequestController::class, 'storeBulk'])->middleware('throttle:public-form')->name('offer-requests.store-bulk');
     Route::get('/iletisim', [ContactController::class, 'create'])->name('contact.create');
     Route::post('/iletisim', [ContactController::class, 'store'])->middleware('throttle:public-form')->name('contact.store');
+    // 12 Agustos 2026: kullanicinin talebi - "Hakkımızda" ozel, zengin
+    // tasarimli bir sayfa olmali; genel {slug} joker route'undan ONCE
+    // tanimlanmali ki ContentPage'deki eski duz metin/markdown kaydi
+    // yerine bu ozel controller devreye girsin.
+    Route::get('/sayfa/hakkimizda', [\App\Http\Controllers\Public\AboutController::class, 'show'])->name('pages.about');
     Route::get('/sayfa/{slug}', [PageController::class, 'show'])->name('pages.show');
     Route::get('/sss', [FaqController::class, 'index'])->name('faq.index');
 
@@ -264,6 +271,12 @@ Route::get('/_internal/cron-runner', [CronRunnerController::class, 'run'])->name
 Route::get('/_saglik', [HealthController::class, 'check'])->name('health-check');
 // Deploy script'inin migrate/cache-refresh tetiklemesi icin token korumali uc - bkz. OpsController.
 Route::post('/_ops/{action}', [OpsController::class, 'run'])->middleware('throttle:public-sensitive')->name('ops.run');
+// Admin'in kurum/aile panelini "onlarin gozuyle" goruntulemesinden (impersonation)
+// cikip kendi paneline donmesi icin - bkz. Admin\UserController::impersonateFacilityUser/
+// -FamilyUser ve ImpersonationController. Bilerek facility.auth/family.auth
+// disinda, tek/brand-siz bir uc - askiya alinmis/dogrulanmamis bir hesabi
+// goruntulerken bile admin'in cikabilmesi gerekiyor.
+Route::post('/impersonation/dur', [\App\Http\Controllers\Public\ImpersonationController::class, 'stop'])->name('impersonation.stop');
 
 Route::middleware('track.visit')->group($siteRoutes);
 
@@ -276,6 +289,7 @@ Route::prefix('site/{brand}')->name('brand.')->middleware('track.visit')->group(
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/manifest.json', [\App\Http\Controllers\Public\AdminManifestController::class, 'show'])->name('manifest');
     Route::get('/giris', [AdminAuthController::class, 'showLogin'])->name('login');
     Route::post('/giris', [AdminAuthController::class, 'login'])->middleware('throttle:auth-attempt')->name('login.attempt');
     Route::get('/giris/dogrula', [AdminAuthController::class, 'showVerify'])->name('login.verify');
@@ -295,6 +309,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
 
         Route::get('/kurum-davetleri', [AdminFacilityInvitationController::class, 'index'])->name('invitations.index');
+        Route::get('/kurum-davetleri/hizli-gonderim', [AdminFacilityInvitationController::class, 'quickSend'])->name('invitations.quick-send');
         Route::get('/kurum-davetleri/{facility}/whatsapp-ac', [AdminFacilityInvitationController::class, 'openWhatsapp'])->name('invitations.whatsapp');
         Route::post('/kurum-davetleri/{facility}/durum', [AdminFacilityInvitationController::class, 'updateStatus'])->name('invitations.update-status');
 
@@ -307,6 +322,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/kurum-kayit-basvurulari/{registration}', [AdminFacilityRegistrationController::class, 'show'])->name('registrations.show');
         Route::post('/kurum-kayit-basvurulari/{registration}/onayla', [AdminFacilityRegistrationController::class, 'approve'])->name('registrations.approve');
         Route::post('/kurum-kayit-basvurulari/{registration}/revize-iste', [AdminFacilityRegistrationController::class, 'requestRevision'])->name('registrations.request-revision');
+        Route::post('/kurum-kayit-basvurulari/{registration}/reddet', [AdminFacilityRegistrationController::class, 'reject'])->name('registrations.reject');
         Route::delete('/kurum-kayit-basvurulari/{registration}', [AdminFacilityRegistrationController::class, 'destroy'])->name('registrations.destroy');
 
         Route::get('/ayarlar', [AdminSettingController::class, 'edit'])->name('settings.edit');
@@ -340,6 +356,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/mesajlar', [AdminContactMessageController::class, 'index'])->name('contact-messages.index');
         Route::patch('/mesajlar/{contactMessage}/okundu', [AdminContactMessageController::class, 'markRead'])->name('contact-messages.read');
+        Route::post('/mesajlar/{contactMessage}/cevapla', [AdminContactMessageController::class, 'reply'])->name('contact-messages.reply');
         Route::delete('/mesajlar/{contactMessage}', [AdminContactMessageController::class, 'destroy'])->name('contact-messages.destroy');
 
         Route::get('/whatsapp-tiklamalari', [AdminWhatsappClickController::class, 'index'])->name('whatsapp-clicks.index');
@@ -358,8 +375,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/sehirler', [AdminCityController::class, 'store'])->name('cities.store');
         Route::delete('/sehirler/{city}', [AdminCityController::class, 'destroy'])->name('cities.destroy');
 
+        Route::get('/belge/{type}/{id}', [AdminDocumentController::class, 'show'])->where(['type' => 'claim|topup', 'id' => '[0-9]+'])->name('documents.show');
+
+        Route::get('/kullanicilar/aileler', [AdminUserController::class, 'families'])->name('users.families');
+        Route::post('/kullanicilar/aileler/{familyUser}/durum', [AdminUserController::class, 'toggleFamilyStatus'])->name('users.families.toggle-status');
+        Route::post('/kullanicilar/aileler/{familyUser}/giris-yap', [AdminUserController::class, 'impersonateFamilyUser'])->name('users.families.impersonate');
+        Route::get('/kullanicilar/kurum-yetkilileri', [AdminUserController::class, 'facilityUsers'])->name('users.facility-users');
+        Route::post('/kullanicilar/kurum-yetkilileri/{facilityUser}/durum', [AdminUserController::class, 'toggleFacilityUserStatus'])->name('users.facility-users.toggle-status');
+        Route::post('/kullanicilar/kurum-yetkilileri/{facilityUser}/sifre-sifirla', [AdminUserController::class, 'resetFacilityUserPassword'])->name('users.facility-users.reset-password');
+        Route::post('/kullanicilar/kurum-yetkilileri/{facilityUser}/giris-yap', [AdminUserController::class, 'impersonateFacilityUser'])->name('users.facility-users.impersonate');
+        Route::delete('/kullanicilar/kurum-yetkilileri/{facilityUser}', [AdminUserController::class, 'destroyFacilityUser'])->name('users.facility-users.destroy');
+
         Route::get('/kategoriler', [AdminFacilityCategoryController::class, 'index'])->name('categories.index');
         Route::post('/kategoriler', [AdminFacilityCategoryController::class, 'store'])->name('categories.store');
+        Route::put('/kategoriler/{category}/segment-esikleri', [AdminFacilityCategoryController::class, 'updatePriceTiers'])->name('categories.price-tiers.update');
         Route::delete('/kategoriler/{category}', [AdminFacilityCategoryController::class, 'destroy'])->name('categories.destroy');
 
         Route::get('/sayfalar', [AdminContentPageController::class, 'index'])->name('content-pages.index');
@@ -382,6 +411,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/cop-kutusu/{type}/{id}/kalici-sil', [AdminTrashController::class, 'forceDestroy'])->name('trash.force-destroy');
 
         Route::get('/islem-gunlugu', [AdminAuditLogController::class, 'index'])->name('audit-log.index');
+
+        Route::get('/hatalar', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'index'])->name('platform-errors.index');
+        Route::post('/hatalar/{platformError}/coz', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'resolve'])->name('platform-errors.resolve');
+        Route::delete('/hatalar/{platformError}', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'destroy'])->name('platform-errors.destroy');
 
         Route::get('/aile-sorulari', [AdminFacilityQuestionController::class, 'index'])->name('questions.index');
         Route::delete('/aile-sorulari/{question}', [AdminFacilityQuestionController::class, 'destroy'])->name('questions.destroy');

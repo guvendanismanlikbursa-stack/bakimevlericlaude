@@ -1,6 +1,7 @@
 @extends('admin.layout')
 @section('title','Ziyaret Talepleri')
 @section('content')
+@php $visitStatusLabels = ['new' => 'Yeni', 'contacted' => 'Arandı', 'completed' => 'Tamamlandı', 'cancelled' => 'İptal']; @endphp
 <div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-2xl font-bold text-gray-900">Ziyaret Talepleri</h1>
@@ -25,7 +26,7 @@
           <td class="p-3"><div class="font-bold text-gray-900">{{ $visit->facility?->name }}</div><div class="text-xs text-gray-500">{{ $visit->brand }} · {{ $visit->facility?->city?->name }}</div><span class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-bold {{ $visit->type === 'kontenjan' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600' }}">{{ $visit->type === 'kontenjan' ? 'Kontenjan Sorusu' : 'Ziyaret Talebi' }}</span></td>
           <td class="p-3"><div class="font-semibold">{{ $visit->full_name }}</div><div class="text-xs text-gray-500">{{ $visit->phone }} {{ $visit->email ? '· '.$visit->email : '' }}</div><div class="text-gray-600 mt-1">{{ $visit->message }}</div></td>
           <td class="p-3">{{ $visit->preferred_day ?: '-' }}<div class="text-xs text-gray-500">{{ $visit->preferred_time ?: '' }}</div></td>
-          <td class="p-3"><span class="rounded-full px-2 py-1 text-xs font-bold bg-blue-100 text-blue-700">{{ $visit->status }}</span></td>
+          <td class="p-3"><span class="rounded-full px-2 py-1 text-xs font-bold {{ match($visit->status) { 'completed' => 'bg-green-100 text-green-700', 'cancelled' => 'bg-red-100 text-red-700', 'contacted' => 'bg-blue-100 text-blue-700', default => 'bg-gray-100 text-gray-600' } }}">{{ $visitStatusLabels[$visit->status] ?? $visit->status }}</span></td>
           <td class="p-3 text-right">
             <form method="POST" action="{{ route('admin.visit-requests.update', $visit) }}" class="inline-flex gap-2">@csrf @method('PUT')<select name="status" class="border rounded px-2 py-1 text-xs"><option value="new" @selected($visit->status==='new')>Yeni</option><option value="contacted" @selected($visit->status==='contacted')>Arandı</option><option value="completed" @selected($visit->status==='completed')>Tamamlandı</option><option value="cancelled" @selected($visit->status==='cancelled')>İptal</option></select><button class="bg-gray-900 text-white rounded px-3 py-1 text-xs font-bold">Kaydet</button></form>
             <form method="POST" action="{{ route('admin.visit-requests.destroy', $visit) }}" class="inline">@csrf @method('DELETE')<button class="text-red-600 text-xs font-bold ml-2">Sil</button></form>

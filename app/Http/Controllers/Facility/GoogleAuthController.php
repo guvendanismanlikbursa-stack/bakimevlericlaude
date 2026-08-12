@@ -55,6 +55,7 @@ class GoogleAuthController extends AuthController
 
         $request->session()->regenerate();
         $request->session()->regenerateToken();
+        $request->session()->forget(['admin_id', 'admin_name', 'family_user_id', 'family_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         session(['facility_user_id' => $user->id, 'facility_user_name' => $user->name]);
 
         return redirect(brand_route('facility.dashboard'));

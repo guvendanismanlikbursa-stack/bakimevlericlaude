@@ -43,7 +43,10 @@ class EmailVerificationController extends Controller
                 ->with('success', 'E-posta adresiniz zaten doğrulandı.');
         }
 
-        return view('themes.' . app('currentBrand')['theme'] . '.facility.verify-email-notice', [
+        // 28 Temmuz 2026: Family tarafiyla ayni hata (bkz. Family\
+        // EmailVerificationController) - bu view de sadece _shared
+        // altinda var, marka temasiyla aranirsa 500 verir.
+        return view('themes._shared.facility.verify-email-notice', [
             'user' => $user,
         ]);
     }
@@ -94,8 +97,14 @@ class EmailVerificationController extends Controller
             $verificationUrl = URL::temporarySignedRoute($routeName, now()->addMinutes(60), $params);
         }
 
+        // 31 Temmuz 2026: bu static send(), SADECE admin onay akislarindan
+        // cagriliyor (FacilityClaimController/FacilityRegistrationController
+        // approve()) - kamuya acik/yuksek hacimli bir yol yok. queue() diger
+        // admin-tetiklemeli maillerle ayni cron-bagimliligi sorununu
+        // tasiyordu (bkz. Admin/*Controller'daki 31 Temmuz duzeltmesi) -
+        // burada da senkron gonderime cevrildi.
         try {
-            Mail::to($user->email)->queue(new FacilityEmailVerificationMail($user, $verificationUrl, $brandName));
+            Mail::to($user->email)->sendNow(new FacilityEmailVerificationMail($user, $verificationUrl, $brandName));
         } catch (\Throwable $e) {
             Log::warning('Kurum e-posta dogrulama maili gonderilemedi: ' . $e->getMessage(), ['facility_user_id' => $user->id]);
         }

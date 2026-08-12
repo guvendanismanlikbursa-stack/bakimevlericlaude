@@ -15,30 +15,42 @@
     <p class="text-sm"><strong>Kapasite:</strong> {{ $registration->capacity ?? '-' }}</p>
     <p class="text-sm"><strong>Fiyat Aralığı:</strong> {{ $registration->price_min ?? '-' }} - {{ $registration->price_max ?? '-' }}</p>
     <p class="text-sm mt-2"><strong>Açıklama:</strong> {{ $registration->description ?: '-' }}</p>
-    <p class="text-sm mt-2"><strong>Durum:</strong> {{ $registration->status }}</p>
+    <p class="text-sm mt-2"><strong>Durum:</strong> {{ ['pending' => 'Bekliyor', 'approved' => 'Onaylandı', 'revision_requested' => 'Revize İstendi', 'rejected' => 'Reddedildi'][$registration->status] ?? $registration->status }}</p>
 
-    @if($registration->admin_note)
+    @if($registration->status === 'rejected')
+      <div class="mt-3 p-3 rounded-lg bg-red-50 border border-red-100">
+        <p class="text-xs font-semibold text-red-700 mb-1">Daha önce reddedildi{{ $registration->reviewed_at ? ' — '.$registration->reviewed_at->format('d.m.Y H:i') : '' }}</p>
+        <p class="text-sm text-red-800">{{ $registration->admin_note ?: 'Red sebebi girilmemiş.' }}</p>
+      </div>
+    @elseif($registration->admin_note)
       <div class="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
         <p class="text-xs font-semibold text-amber-700 mb-1">Gönderilen düzeltme notu</p>
         <p class="text-sm text-amber-800">{{ $registration->admin_note }}</p>
       </div>
     @endif
 
-    @if($registration->status === 'pending')
+    @if($registration->status === 'pending' || $registration->status === 'rejected')
       <div class="flex flex-wrap gap-3 mt-6">
-        <form method="POST" action="{{ route('admin.registrations.approve', $registration) }}" onsubmit="return confirm('Onaylanırsa kurum ve hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?');">
+        <form method="POST" action="{{ route('admin.registrations.approve', $registration) }}" onsubmit="return confirm('{{ $registration->status === 'rejected' ? 'Bu başvuru daha önce reddedilmişti. Şimdi onaylanırsa kurum ve hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' : 'Onaylanırsa kurum ve hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' }}');">
           @csrf
-          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">Onayla</button>
+          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">{{ $registration->status === 'rejected' ? 'Yeniden Onayla' : 'Onayla' }}</button>
         </form>
-        <form method="POST" action="{{ route('admin.registrations.request-revision', $registration) }}" class="flex items-start gap-2">
-          @csrf
-          <textarea name="admin_note" placeholder="Düzeltilmesi gereken nokta (zorunlu)" required rows="2" class="border rounded-lg px-3 py-2 text-sm"></textarea>
-          <button class="bg-amber-500 text-white px-5 py-2 rounded-lg font-semibold text-sm">Revize İste</button>
-        </form>
-        <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Silinsin mi?');">
-          @csrf @method('DELETE')
-          <button class="bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">Sil</button>
-        </form>
+        @if($registration->status === 'pending')
+          <form method="POST" action="{{ route('admin.registrations.request-revision', $registration) }}" class="flex items-start gap-2">
+            @csrf
+            <textarea name="admin_note" placeholder="Düzeltilmesi gereken nokta (zorunlu)" required rows="2" class="border rounded-lg px-3 py-2 text-sm"></textarea>
+            <button class="bg-amber-500 text-white px-5 py-2 rounded-lg font-semibold text-sm">Revize İste</button>
+          </form>
+          <form method="POST" action="{{ route('admin.registrations.reject', $registration) }}" class="flex items-start gap-2">
+            @csrf
+            <textarea name="reject_note" placeholder="Red sebebi (opsiyonel)" rows="2" class="border rounded-lg px-3 py-2 text-sm"></textarea>
+            <button class="bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">Reddet</button>
+          </form>
+          <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Bu basvuru kalici olarak silinecek ve basvuru sahibine HICBIR bildirim gitmeyecek - spam/hatali kayitlar disinda \'Reddet\' kullanin. Silinsin mi?');">
+            @csrf @method('DELETE')
+            <button class="text-gray-400 text-xs underline self-center">Kalıcı Sil (bildirim gitmez)</button>
+          </form>
+        @endif
       </div>
     @endif
   </div>
@@ -48,7 +60,7 @@
     <p class="text-sm"><strong>Ad Soyad:</strong> {{ $registration->applicant_name }}</p>
     <p class="text-sm"><strong>E-posta:</strong> {{ $registration->applicant_email }}</p>
     <p class="text-sm"><strong>Telefon:</strong> {{ $registration->applicant_phone }}</p>
-    <p class="text-sm mt-2"><strong>Başvuru Markası:</strong> {{ $registration->brand }}</p>
+    <p class="text-sm mt-2"><strong>Başvuru Markası:</strong> {{ config('brands.brands.'.$registration->brand.'.name', $registration->brand) }}</p>
   </div>
 </div>
 @endsection

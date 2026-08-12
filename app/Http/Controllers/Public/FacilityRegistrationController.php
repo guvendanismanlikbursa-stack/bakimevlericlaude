@@ -27,6 +27,10 @@ class FacilityRegistrationController extends Controller
         $brand = current_brand();
         $data = $this->validateData($request, $brand);
 
+        if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
+            return back()->withErrors(['applicant_email' => $error])->withInput();
+        }
+
         $applicantLat = $data['lat'] ?? null;
         $applicantLng = $data['lng'] ?? null;
         unset($data['lat'], $data['lng']);
@@ -79,6 +83,10 @@ class FacilityRegistrationController extends Controller
 
         $brand = current_brand();
         $data = $this->validateData($request, $brand);
+
+        if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
+            return back()->withErrors(['applicant_email' => $error])->withInput();
+        }
 
         $applicantLat = $data['lat'] ?? null;
         $applicantLng = $data['lng'] ?? null;

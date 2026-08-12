@@ -2,6 +2,10 @@
 @section('title', 'Genel Bakış')
 
 @section('content')
+@php
+  $offerStatusLabels = ['new' => 'Yeni talep', 'contacted' => 'İletişime geçildi', 'closed' => 'Kapandı'];
+  $extraClaimsCount = max(0, $pendingClaims - $latestClaims->count());
+@endphp
 <h1 class="text-2xl font-bold mb-6">Genel Bakış</h1>
 
 @if($pendingClaims > 0 || $pendingTopups > 0)
@@ -9,6 +13,9 @@
   @if($pendingClaims > 0)
     <a href="{{ route('admin.claims.index') }}" class="block bg-orange-50 border border-orange-200 text-orange-800 px-5 py-4 rounded-xl">
       <strong>{{ $pendingClaims }}</strong> sahiplenme başvurusu onay bekliyor →
+      @if($latestClaims->isNotEmpty())
+        <div class="mt-2 text-xs font-normal text-orange-700">{{ $latestClaims->pluck('facility.name')->filter()->implode(', ') }}{{ $extraClaimsCount > 0 ? ' ve '.$extraClaimsCount.' diğeri' : '' }}</div>
+      @endif
     </a>
   @endif
   @if($pendingTopups > 0)
@@ -46,7 +53,7 @@
           <td class="p-3">{{ $offer->full_name }}</td>
           <td class="p-3">{{ $offer->phone }}</td>
           <td class="p-3">{{ $offer->facility?->name ?? '-' }}</td>
-          <td class="p-3">{{ $offer->status }}</td>
+          <td class="p-3">{{ $offerStatusLabels[$offer->status] ?? $offer->status }}</td>
           <td class="p-3">{{ $offer->created_at->format('d.m.Y H:i') }}</td>
         </tr>
       @empty

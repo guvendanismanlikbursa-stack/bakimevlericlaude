@@ -24,7 +24,7 @@
 
   @unless($family->hasVerifiedEmail())
     <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-      <span>E-posta adresinizi henüz doğrulamadınız. Gelen kutunuzu kontrol edin.</span>
+      <span>E-posta adresinizi henüz doğrulamadınız. Yeni talep gönderme, teklif kabul etme ve mesajlaşma için doğrulama gerekiyor — gelen kutunuzu kontrol edin.</span>
       <form method="POST" action="{{ brand_route('family.verify-email.resend') }}">
         @csrf
         <button class="font-semibold underline whitespace-nowrap">Doğrulama e-postasını tekrar gönder</button>

@@ -45,10 +45,18 @@ class WebPushService
             ],
         ]);
 
+        // Admin bildirimleri (sahiplenme basvurusu, kayit basvurusu, bakiye
+        // yuklemesi vb.) is-kritik oldugu icin tarayicida birkac saniyede
+        // otomatik kaybolmamali, admin fark edip tiklayana kadar ekranda
+        // kalmali - bkz. public/sw.js. Aile/kurum bildirimleri icin bu
+        // agresif davranis gerekmedigi icin sadece Admin'e ozel.
+        $urgent = $notifiable instanceof \App\Models\Admin;
+
         $payload = json_encode([
             'title' => $title,
             'body' => $body,
             'url' => $actionUrl,
+            'urgent' => $urgent,
         ]);
 
         foreach ($subscriptions as $subscription) {

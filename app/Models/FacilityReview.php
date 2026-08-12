@@ -13,6 +13,8 @@ class FacilityReview extends Model
     protected function casts(): array
     {
         return [
+            'facility_id' => 'integer',
+            'family_user_id' => 'integer',
             'approved_at' => 'datetime',
             'rating' => 'integer',
         ];

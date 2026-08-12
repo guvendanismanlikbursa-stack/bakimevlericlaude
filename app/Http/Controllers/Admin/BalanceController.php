@@ -77,6 +77,6 @@ class BalanceController extends Controller
             return back()->withErrors(['balance' => 'Bu islem mevcut bakiye/hak degerini degistirmiyor.']);
         }
 
-        return back()->with('success', 'Kurum bakiyesi/hak sayüsü güncellendi.');
+        return back()->with('success', 'Kurum bakiyesi/hak sayısı güncellendi.');
     }
 }

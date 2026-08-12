@@ -1,10 +1,19 @@
 @extends('layouts.brand')
 
 @section('content')
-<div class="max-w-3xl mx-auto px-4 py-10">
-  <a href="{{ brand_route('facility.dashboard') }}" class="text-sm text-gray-500">← Panele dön</a>
-  <h1 class="text-2xl font-bold mt-2 mb-6">Bakiyem</h1>
+@php
+  $topupStatusLabels = ['pending' => 'Onay bekliyor', 'approved' => 'Onaylandı', 'rejected' => 'Reddedildi'];
+  $logTypeLabels = [
+    'claim_bonus_credits' => 'Sahiplenme bonus hakkı',
+    'registration_bonus_credits' => 'Kayıt bonus hakkı',
+    'quote_charge_credit' => 'Teklif ücreti (ücretsiz hak)',
+    'quote_charge_balance' => 'Teklif ücreti (bakiyeden)',
+    'topup_approved' => 'Bakiye yüklemesi onaylandı',
+  ];
+@endphp
+@include('themes._shared.partials.facility-panel-header', ['title' => 'Bakiyem'])
 
+<div class="max-w-3xl mx-auto px-4 py-10">
   <div class="grid grid-cols-2 gap-4 mb-8">
     <div class="bg-white rounded-xl shadow-sm p-4">
       <div class="text-gray-500 text-sm">Ücretsiz Hak</div>
@@ -39,7 +48,7 @@
       <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Tutar</th><th class="p-3">Durum</th><th class="p-3">Tarih</th></tr></thead>
       <tbody class="divide-y">
         @forelse($topups as $t)
-          <tr><td class="p-3">{{ number_format($t->amount,2,',','.') }}₺</td><td class="p-3">{{ $t->status }}</td><td class="p-3 text-gray-400">{{ $t->created_at->format('d.m.Y H:i') }}</td></tr>
+          <tr><td class="p-3">{{ number_format($t->amount,2,',','.') }}₺</td><td class="p-3">{{ $topupStatusLabels[$t->status] ?? $t->status }}</td><td class="p-3 text-gray-400">{{ $t->created_at->format('d.m.Y H:i') }}</td></tr>
         @empty
           <tr><td class="p-3 text-gray-400" colspan="3">Henüz yükleme talebiniz yok.</td></tr>
         @endforelse
@@ -54,7 +63,7 @@
       <tbody class="divide-y">
         @forelse($logs as $log)
           <tr>
-            <td class="p-3">{{ $log->type }}</td>
+            <td class="p-3">{{ $logTypeLabels[$log->type] ?? $log->type }}</td>
             <td class="p-3">{{ $log->amount != 0 ? number_format($log->amount,2,',','.').'₺' : '-' }}</td>
             <td class="p-3">{{ $log->credits_amount != 0 ? $log->credits_amount : '-' }}</td>
             <td class="p-3 text-gray-400">{{ $log->note }}</td>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
     'mail' => [
@@ -28,8 +28,21 @@ return [
     // surece layouts/brand.blade.php hicbir script render etmez.
     'google_analytics' => [
         'id' => env('GA4_MEASUREMENT_ID'),
+        'ids' => [
+            'bakimevibul' => env('GA4_MEASUREMENT_ID_BAKIMEVIBUL'),
+            'bakimeviara' => env('GA4_MEASUREMENT_ID_BAKIMEVIARA'),
+            'bakimevleri' => env('GA4_MEASUREMENT_ID_BAKIMEVLERI'),
+        ],
+    ],
+    'google_search_console' => [
+        'verification' => [
+            'bakimevibul' => env('GOOGLE_SEARCH_CONSOLE_BAKIMEVIBUL'),
+            'bakimeviara' => env('GOOGLE_SEARCH_CONSOLE_BAKIMEVIARA'),
+            'bakimevleri' => env('GOOGLE_SEARCH_CONSOLE_BAKIMEVLERI'),
+        ],
     ],
     'meta_pixel' => [
         'id' => env('META_PIXEL_ID'),
     ],
 ];
+

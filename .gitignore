@@ -33,6 +33,11 @@ storage/app/public/silinenler
 storage/app/public/font_test.png
 storage/app/public/claims
 
+# 12 Agustos 2026: veritabani yedekleri (BackupDatabase komutu) ve sahiplenme
+# basvurularindaki kimlik/belge gorselleri (storage/app/private/claims) - ikisi
+# de gercek kullanici verisi/KVKK kapsaminda, asla repoya girmemeli.
+storage/app/private
+
 # Buyuk scrape yedekleri: kaynak veri, ayri saklanmali
 database/backups
 

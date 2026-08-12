@@ -30,6 +30,15 @@ self.addEventListener('push', function (event) {
     data: { url: data.url || '/' },
   };
 
+  // Admin'e giden is-kritik bildirimler (sahiplenme/kayit basvurusu, bakiye
+  // yuklemesi vb.) tarayicinin varsayilan birkac saniyelik otomatik
+  // kaybolma davranisiyla kacirilabiliyordu - "urgent" isaretliyse admin
+  // kapatana kadar ekranda kalir ve titresim ekler.
+  if (data.urgent) {
+    options.requireInteraction = true;
+    options.vibrate = [200, 100, 200];
+  }
+
   event.waitUntil(self.registration.showNotification(title, options));
 });
 

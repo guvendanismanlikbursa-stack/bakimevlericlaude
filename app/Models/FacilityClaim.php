@@ -22,6 +22,7 @@ class FacilityClaim extends Model
     protected function casts(): array
     {
         return [
+            'facility_id' => 'integer',
             'reviewed_at' => 'datetime',
             'applicant_lat' => 'float',
             'applicant_lng' => 'float',

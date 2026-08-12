@@ -10,17 +10,14 @@ class SettingController extends Controller
 {
     public function edit()
     {
-        $tierDefaults = config('platform.default_price_tiers');
         $whatsappDefaults = config('platform.default_whatsapp');
         $brands = config('brands.brands');
 
         $settings = [
             'quote_price' => Setting::get('quote_price', config('platform.default_quote_price')),
-            'price_tier_standart_min' => Setting::get('price_tier_standart_min', $tierDefaults['standart_min']),
-            'price_tier_premium_min' => Setting::get('price_tier_premium_min', $tierDefaults['premium_min']),
-            'price_tier_ultra_min' => Setting::get('price_tier_ultra_min', $tierDefaults['ultra_min']),
             'whatsapp_number' => Setting::get('whatsapp_number', $whatsappDefaults['number']),
             'whatsapp_message' => Setting::get('whatsapp_message', $whatsappDefaults['message']),
+            'facility_invitation_message' => Setting::get('facility_invitation_message', facility_invitation_message_default()),
         ];
 
         // Her marka/site kendi banka hesap bilgisini gosterir (bkz. kurum panelindeki
@@ -44,11 +41,9 @@ class SettingController extends Controller
 
         $rules = [
             'quote_price' => 'required|numeric|min:0',
-            'price_tier_standart_min' => 'required|numeric|min:0',
-            'price_tier_premium_min' => 'required|numeric|gt:price_tier_standart_min',
-            'price_tier_ultra_min' => 'required|numeric|gt:price_tier_premium_min',
             'whatsapp_number' => 'required|string|max:20|regex:/^[0-9]+$/',
             'whatsapp_message' => 'required|string|max:300',
+            'facility_invitation_message' => 'required|string|max:600',
         ];
 
         foreach ($brandSlugs as $slug) {

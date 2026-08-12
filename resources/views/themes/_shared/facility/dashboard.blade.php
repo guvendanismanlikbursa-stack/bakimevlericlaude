@@ -7,26 +7,72 @@
     'accepted' => 'Kabul edildi',
     'declined' => 'Reddedildi',
   ];
+  $profileQuality = $facility->profileQuality();
+  $missingExtraCount = max(0, count($profileQuality['missing']) - 3);
 @endphp
 
-<div class="max-w-6xl mx-auto px-4 py-10">
-  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+@php $primary = current_brand()['primary_color']; @endphp
+{{-- 12 Agustos 2026: kullanicinin talebi - kurum paneli sayfalari duz
+     beyaz basliklarla "kod odakli/hazir kalip" hissi veriyordu; artik
+     diger sayfalarla ayni gorsel dili (renkli gradyan serit) kullaniyor. --}}
+<div style="background: linear-gradient(135deg, {{ $primary }}, {{ $primary }}cc);" class="text-white">
+  <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
     <div>
-      <p class="text-sm text-gray-500">Kurum Paneli</p>
-      <h1 class="text-2xl font-bold">{{ $facility->name }}</h1>
-      <p class="text-sm text-gray-500 mt-1">{{ $user->name }} · {{ $facility->category->name ?: 'Kategori yok' }} · {{ $facility->city->name ?: 'Şehir yok' }}</p>
+      <p class="text-sm text-white/70">Kurum Paneli</p>
+      <h1 class="text-2xl font-black">{{ $facility->name }}</h1>
+      <p class="text-sm text-white/80 mt-1">{{ $user->name }} · {{ $facility->category->name ?: 'Kategori yok' }} · {{ $facility->city->name ?: 'Şehir yok' }}</p>
     </div>
     <div class="flex items-center gap-3">
-      <a href="{{ brand_route('facility.profile.edit') }}" class="border border-primary text-primary px-4 py-2 rounded-lg text-sm font-semibold">Profili Düzenle</a>
-      <form method="POST" action="{{ brand_route('facility.logout') }}">@csrf<button class="text-sm text-red-600">Çıkış Yap</button></form>
+      <a href="{{ brand_route('facility.profile.edit') }}" class="bg-white px-4 py-2 rounded-lg text-sm font-black" style="color: {{ $primary }};">Profili Düzenle</a>
+      <form method="POST" action="{{ brand_route('facility.logout') }}">@csrf<button class="text-sm font-semibold text-white/80 hover:text-white">Çıkış Yap</button></form>
     </div>
   </div>
+</div>
+
+<div class="max-w-6xl mx-auto px-4 py-10">
 
   @if(isset($facilityInBrandScope) && ! $facilityInBrandScope)
     <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
       Bu kurum hesabı bu sitede açılabilir, ancak kurum kategorisi aktif sitenin hizmet kapsamına girmediği için bu siteden yeni talep alamaz veya teklif veremez.
     </div>
   @endif
+
+  @if($profileQuality['score'] < 100)
+    <a href="{{ brand_route('facility.profile.edit') }}" class="block mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5 hover:bg-amber-100 transition">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div class="text-sm font-black text-amber-800">Profiliniz %{{ $profileQuality['score'] }} tamamlandı</div>
+          <p class="text-sm text-amber-700 mt-1">
+            Tam profil daha fazla ziyaretçi güveni ve daha çok teklif talebi demektir. Eksik:
+            <strong>{{ implode(', ', array_slice($profileQuality['missing'], 0, 3)) }}</strong>{{ $missingExtraCount > 0 ? ' ve '.$missingExtraCount.' eksik daha' : '' }}.
+          </p>
+        </div>
+        <div class="w-full sm:w-48 shrink-0">
+          <div class="h-2.5 rounded-full bg-amber-200 overflow-hidden"><div class="h-full bg-amber-600" style="width: {{ $profileQuality['score'] }}%"></div></div>
+          <div class="text-xs font-semibold text-amber-700 mt-2 text-right">Şimdi tamamla →</div>
+        </div>
+      </div>
+    </a>
+  @endif
+
+  <div class="mb-8 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <h2 class="font-bold text-lg mb-1">Profiliniz Ne Kadar İlgi Görüyor</h2>
+    <p class="text-sm text-gray-500 mb-4">Ailelerin kurum profilinizle ilgili gerçek etkileşimleri.</p>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="text-center">
+        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['views_count']) }}</div>
+        <div class="text-xs text-gray-500 mt-1">Profil Görüntülenme</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['favorites_count']) }}</div>
+        <div class="text-xs text-gray-500 mt-1">Favoriye Eklenme</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['reviews_count']) }}</div>
+        <div class="text-xs text-gray-500 mt-1">Onaylı Yorum</div>
+      </div>
+    </div>
+  </div>
 
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
@@ -120,7 +166,13 @@
               <td class="p-3 text-gray-500">{{ $q->offerRequest->category->name ?? '-' }} · {{ $q->offerRequest->city->name ?? '-' }}</td>
               <td class="p-3">{{ number_format($q->price,0,',','.') }}₺</td>
               <td class="p-3">{{ $quoteStatus[$q->status] ?? $q->status }}</td>
-              <td class="p-3"><a href="{{ brand_route('facility.thread', $q->offerRequest) }}" class="text-primary font-semibold">Mesajlar</a></td>
+              <td class="p-3">
+                @if($q->offerRequest->facility_id || $q->offerRequest->accepted_quote_id === $q->id)
+                  <a href="{{ brand_route('facility.thread', $q->offerRequest) }}" class="text-primary font-semibold">Mesajlar</a>
+                @else
+                  <span class="text-gray-400 text-xs">Kabul edilirse açılır</span>
+                @endif
+              </td>
             </tr>
           @empty
             <tr><td class="p-3 text-gray-400" colspan="5">Henüz teklif göndermediniz.</td></tr>

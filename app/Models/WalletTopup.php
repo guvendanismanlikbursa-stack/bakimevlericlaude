@@ -11,12 +11,13 @@ class WalletTopup extends Model
 
     protected $fillable = [
         'facility_id', 'facility_user_id', 'subscription_package_id', 'amount', 'receipt_path',
+        'bonus_quote_credits_snapshot', 'package_name_snapshot',
         'note', 'status', 'admin_note', 'reviewed_by', 'reviewed_at',
     ];
 
     protected function casts(): array
     {
-        return ['amount' => 'float', 'reviewed_at' => 'datetime'];
+        return ['facility_id' => 'integer', 'amount' => 'float', 'reviewed_at' => 'datetime'];
     }
 
     public function facility()

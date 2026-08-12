@@ -13,7 +13,7 @@ class NotificationController extends Controller
         $user = FacilityUser::findOrFail(session('facility_user_id'));
         $notifications = $user->notifications()->paginate(20);
 
-        return view('themes._shared.facility.notifications', compact('notifications'));
+        return view('themes._shared.facility.notifications', compact('notifications', 'user'));
     }
 
     public function markRead(Request $request, int $notification)

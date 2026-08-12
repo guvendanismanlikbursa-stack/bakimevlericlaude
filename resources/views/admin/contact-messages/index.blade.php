@@ -20,12 +20,27 @@
       </div>
       <div class="text-sm font-medium mt-1">{{ $m->subject }}</div>
       <p class="text-sm text-gray-600 mt-2">{{ $m->message }}</p>
-      <div class="mt-3 flex gap-3 text-xs">
+
+      @if($m->admin_reply)
+        <div class="mt-3 bg-green-50 border border-green-100 rounded-lg p-3">
+          <div class="text-xs font-semibold text-green-800 mb-1">Verilen cevap ({{ $m->replied_at?->format('d.m.Y H:i') }}):</div>
+          <p class="text-sm text-green-900 whitespace-pre-line">{{ $m->admin_reply }}</p>
+        </div>
+      @endif
+
+      <div class="mt-3 flex gap-3 text-xs items-center">
         @unless($m->is_read)
           <form method="POST" action="{{ route('admin.contact-messages.read', $m) }}">@csrf @method('PATCH')<button class="text-blue-600">Okundu işaretle</button></form>
         @endunless
         <form method="POST" action="{{ route('admin.contact-messages.destroy', $m) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600">Sil</button></form>
+        <button type="button" class="text-primary font-semibold" onclick="document.getElementById('reply-form-{{ $m->id }}').classList.toggle('hidden')">{{ $m->admin_reply ? 'Tekrar Cevapla' : 'Cevapla' }}</button>
       </div>
+
+      <form id="reply-form-{{ $m->id }}" method="POST" action="{{ route('admin.contact-messages.reply', $m) }}" class="hidden mt-3 flex gap-2">
+        @csrf
+        <textarea name="body" rows="3" required placeholder="Cevabınızı buraya yazın..." class="flex-1 border rounded-lg px-3 py-2 text-sm"></textarea>
+        <button class="bg-gray-900 text-white rounded-lg px-4 py-2 text-sm font-bold self-start">Gönder</button>
+      </form>
     </div>
   @empty
     <p class="text-gray-400">Kayıt yok.</p>

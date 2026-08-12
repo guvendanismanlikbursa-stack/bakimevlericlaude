@@ -2,13 +2,17 @@
 @section('title', $title)
 @section('meta_description', ($subtitle ?? $title).' | '.current_brand()['name'])
 @section('content')
-@php $brand = current_brand(); @endphp
-<div class="max-w-6xl mx-auto px-4 py-10">
-  <div class="mb-6">
-    <h1 class="text-3xl font-black text-gray-950">{{ $title }}</h1>
-    @if($subtitle ?? null)<p class="text-sm text-gray-500 mt-1">{{ $subtitle }}</p>@endif
+@php $brand = current_brand(); $primary = $brand['primary_color']; @endphp
+{{-- 12 Agustos 2026: kullanicinin talebi - "zaten iyi" kesif sayfalarini
+     da maksimum seviyeye tasimak icin, duz siyah basligin yerine diger
+     premium sayfalarla ayni renkli baslik seridi eklendi. --}}
+<section style="background: linear-gradient(135deg, {{ $primary }}, {{ $primary }}cc);" class="text-white">
+  <div class="max-w-6xl mx-auto px-4 py-12">
+    <h1 class="text-2xl md:text-3xl font-black">{{ $title }}</h1>
+    @if($subtitle ?? null)<p class="text-white/85 mt-2 max-w-2xl">{{ $subtitle }}</p>@endif
   </div>
-
+</section>
+<div class="max-w-6xl mx-auto px-4 py-10">
   @isset($statsBar){!! $statsBar !!}@endisset
 
   @if(isset($sections))

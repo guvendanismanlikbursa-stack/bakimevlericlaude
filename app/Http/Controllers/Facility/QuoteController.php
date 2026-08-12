@@ -21,10 +21,21 @@ class QuoteController extends Controller
         abort_unless($offerRequest->brand === $brand['slug'], 403);
         abort_unless($user->facility->isInBrandScope($brand['category_scope']), 403);
 
-        $eligible = $offerRequest->facility_id === $user->facility_id
+        // 28 Temmuz 2026: canli uctan uca testte bulundu - FacilityUser::
+        // facility_id modelde INTEGER'a cast edilmiyordu (MySQL/PDO bunu
+        // string doner), oysa OfferRequest::facility_id ZATEN cast'li
+        // (bkz. o modeldeki 13 Temmuz 2026 yorumu - ayni hata sinifi
+        // family_user_id icin orada once bulunup duzeltilmisti). Sonuc:
+        // asagidaki === her zaman int(6844) === string("6844") gibi
+        // FALSE donuyordu - kurum yetkilisi DOGRUDAN kendisine gelen HICBIR
+        // teklif talebine asla fiyat teklifi veremiyordu (403). Kesin cozum
+        // FacilityUser modeline facility_id icin 'integer' cast eklemek
+        // (bkz. o dosyadaki degisiklik) - burada da (int) ile kesin garanti
+        // altina aliniyor, iki taraftan biri gelecekte tekrar bozulursa bile.
+        $eligible = (int) $offerRequest->facility_id === (int) $user->facility_id
             || (is_null($offerRequest->facility_id)
-                && $offerRequest->city_id === $user->facility->city_id
-                && $offerRequest->facility_category_id === $user->facility->facility_category_id);
+                && (int) $offerRequest->city_id === (int) $user->facility->city_id
+                && (int) $offerRequest->facility_category_id === (int) $user->facility->facility_category_id);
 
         abort_unless($eligible, 403);
 

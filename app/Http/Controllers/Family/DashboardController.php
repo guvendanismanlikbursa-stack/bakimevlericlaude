@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Family;
 use App\Http\Controllers\Controller;
 use App\Models\FamilyUser;
 use App\Models\Quote;
+use App\Services\OfferRequestNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -52,15 +53,31 @@ class DashboardController extends Controller
         abort_unless($offerRequest && $offerRequest->family_user_id === $family->id, 403);
         abort_unless($offerRequest->brand === $brand['slug'], 403);
 
+        // 21 Temmuz 2026: dogrulanmamis e-postali aile bir teklifi kabul edip
+        // kurumla mesajlasma acamamali - kurum panelindeki ayni kuralla tutarli.
+        if (! $family->hasVerifiedEmail()) {
+            return redirect(brand_route('family.verify-email.notice'))
+                ->with('info', 'Teklifi kabul edebilmek için önce e-posta adresinizi doğrulamanız gerekiyor.');
+        }
+
         if ($offerRequest->accepted_quote_id && $offerRequest->accepted_quote_id !== $quote->id) {
             return back()->withErrors(['quote' => 'Bu talep için daha önce başka bir teklif kabul edilmiş.']);
         }
 
-        DB::transaction(function () use ($offerRequest, $quote) {
+        $declinedQuotes = DB::transaction(function () use ($offerRequest, $quote) {
             $offerRequest->update(['accepted_quote_id' => $quote->id, 'status' => 'contacted']);
             $quote->update(['status' => 'accepted']);
+            $declined = $offerRequest->quotes()->where('id', '!=', $quote->id)->get();
             $offerRequest->quotes()->where('id', '!=', $quote->id)->update(['status' => 'declined']);
+
+            return $declined;
         });
+
+        $notifier = app(OfferRequestNotificationService::class);
+        $notifier->notifyQuoteAccepted($quote);
+        if ($declinedQuotes->isNotEmpty()) {
+            $notifier->notifyQuotesDeclined($declinedQuotes);
+        }
 
         return back()->with('success', 'Teklifi kabul ettiniz. Kurumla mesajlaşma ekranından iletişime geçebilirsiniz.');
     }

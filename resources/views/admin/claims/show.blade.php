@@ -12,7 +12,14 @@
     <p class="text-sm"><strong>E-posta:</strong> {{ $claim->applicant_email }}</p>
     <p class="text-sm"><strong>Telefon:</strong> {{ $claim->applicant_phone }}</p>
     <p class="text-sm mt-2"><strong>Not:</strong> {{ $claim->note ?: '-' }}</p>
-    <p class="text-sm mt-2"><strong>Durum:</strong> {{ $claim->status }}</p>
+    <p class="text-sm mt-2"><strong>Durum:</strong> {{ ['pending' => 'Bekliyor', 'approved' => 'Onaylandı', 'rejected' => 'Reddedildi'][$claim->status] ?? $claim->status }}</p>
+
+    @if($claim->status === 'rejected')
+      <div class="mt-3 p-3 rounded-lg bg-red-50 border border-red-100">
+        <p class="text-xs font-semibold text-red-700 mb-1">Daha önce reddedildi{{ $claim->reviewed_at ? ' — '.$claim->reviewed_at->format('d.m.Y H:i') : '' }}</p>
+        <p class="text-sm text-red-800">{{ $claim->admin_note ?: 'Red sebebi girilmemiş.' }}</p>
+      </div>
+    @endif
 
     <div class="mt-3 p-3 rounded-lg {{ $claim->distance_km !== null && $claim->distance_km > 50 ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50' }}">
       <p class="text-xs font-semibold text-gray-500 mb-1">Konum (sahtecilik kontrolü)</p>
@@ -30,24 +37,26 @@
       @endif
     </div>
 
-    @if($claim->status === 'pending')
+    @if($claim->status === 'pending' || $claim->status === 'rejected')
       <div class="flex gap-3 mt-6">
-        <form method="POST" action="{{ route('admin.claims.approve', $claim) }}" onsubmit="return confirm('Onaylanırsa kurum hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?');">
+        <form method="POST" action="{{ route('admin.claims.approve', $claim) }}" onsubmit="return confirm('{{ $claim->status === 'rejected' ? 'Bu başvuru daha önce reddedilmişti. Şimdi onaylanırsa kurum hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' : 'Onaylanırsa kurum hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' }}');">
           @csrf
-          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">Onayla</button>
+          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">{{ $claim->status === 'rejected' ? 'Yeniden Onayla' : 'Onayla' }}</button>
         </form>
-        <form method="POST" action="{{ route('admin.claims.reject', $claim) }}">
-          @csrf
-          <input type="text" name="admin_note" placeholder="Red sebebi (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm">
-          <button class="bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">Reddet</button>
-        </form>
+        @if($claim->status === 'pending')
+          <form method="POST" action="{{ route('admin.claims.reject', $claim) }}">
+            @csrf
+            <input type="text" name="admin_note" placeholder="Red sebebi (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm">
+            <button class="bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">Reddet</button>
+          </form>
+        @endif
       </div>
     @endif
   </div>
 
   <div class="bg-white rounded-xl shadow-sm p-6">
     <h2 class="font-bold mb-3">Yüklenen Evrak</h2>
-    <img src="{{ asset('storage/'.$claim->document_path) }}" class="rounded-lg w-full">
+    <img src="{{ route('admin.documents.show', ['type' => 'claim', 'id' => $claim->id]) }}" class="rounded-lg w-full">
   </div>
 </div>
 @endsection

@@ -10,7 +10,7 @@ class DataImportRow extends Model
 
     protected function casts(): array
     {
-        return ['payload' => 'array'];
+        return ['facility_id' => 'integer', 'payload' => 'array'];
     }
 
     public function batch()

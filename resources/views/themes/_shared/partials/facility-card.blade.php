@@ -1,18 +1,27 @@
 @php
   $section = service_section_for_scope($facility->category->brand_scope);
   $cardImage = facility_card_image($facility, $section);
+  $ownImagePath = $facility->relationLoaded('images') ? $facility->images->first()?->path : null;
+  // 12 Agustos 2026: kullanicinin talebi - listeleme "sahte" hissettiriyordu
+  // cunku cogu kart ayni ornek gorseli kullaniyor; gorseli gercek kurum
+  // yuklemesi olmayan kartlarda kucuk, durust bir "Ornek gorsel" etiketi
+  // gosteriyoruz - gizlemek yerine seffaf olmak guveni artirir.
+  $isSampleImage = ! $ownImagePath || str_starts_with($ownImagePath, 'facilities/demo/');
   // Sahiplenilmemis (is_claimed=false) HER kurum on kayitli sayilir; kaynagi
   // veri cekici olsun ya da olmasin, karsilastirma/fiyat talebi gibi
   // aksiyonlar sadece sahiplenilmis kurumlarda anlamli.
   $isPreRegisteredCard = ! $facility->is_claimed;
 @endphp
-<article class="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden border border-gray-100 group relative">
+<article class="bg-white rounded-xl shadow-sm hover:shadow-lg transition overflow-hidden border border-gray-100 group relative">
   @unless($isPreRegisteredCard)
     <button type="button" class="js-engagement-toggle absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-lg text-gray-400" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}" data-icon="1" aria-label="Favori">♥</button>
   @endunless
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
-    <div class="h-44 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center">
+    <div class="h-44 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center relative">
       <img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+      @if($isSampleImage)
+        <span class="absolute bottom-2 left-2 bg-gray-950/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Örnek görsel</span>
+      @endif
     </div>
     <div class="p-4">
       <div class="flex items-center gap-2 mb-2 flex-wrap">
@@ -25,7 +34,15 @@
         @isset($badge){!! $badge !!}@endisset
       </div>
       <h2 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h2>
-      <p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
+      <p class="text-sm text-gray-500 mb-1">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
+      @if($facility->views_count > 0)
+        <p class="text-xs text-gray-400 mb-3 flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path d="M10 3.5c-4.5 0-7.5 3.5-8.5 6.5 1 3 4 6.5 8.5 6.5s7.5-3.5 8.5-6.5c-1-3-4-6.5-8.5-6.5Zm0 10.5a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/><circle cx="10" cy="10" r="2"/></svg>
+          {{ number_format($facility->views_count) }} kez görüntülendi
+        </p>
+      @else
+        <div class="mb-3"></div>
+      @endif
       <p class="text-sm text-gray-600 line-clamp-2 mb-4">{{ $facility->description }}</p>
       <div class="flex items-center justify-between">
         @if($facility->rating > 0)

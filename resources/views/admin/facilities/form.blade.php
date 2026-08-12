@@ -124,7 +124,7 @@
   </div>
 
   <div class="flex gap-6 md:col-span-2">
-    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" value="1" @checked(old('is_published', $facility->is_published))> Yayında</label>
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" value="1" @checked(old('is_published', $facility->exists ? $facility->is_published : true))> Yayında</label>
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_featured" value="1" @checked(old('is_featured', $facility->is_featured))> Öne çıkar</label>
   </div>
 
@@ -210,6 +210,54 @@
             <button type="submit" name="clear_quote_price_override" value="1" class="bg-white border border-gray-300 text-gray-600 px-4 py-1.5 rounded-lg text-sm font-semibold">Genel ücrete dön</button>
           @endif
         </form>
+      </div>
+
+      @php
+        $balanceLogTypeLabels = [
+            'topup_approved' => 'Bakiye yükleme onaylandı',
+            'registration_bonus_credits' => 'Kayıt bonus hakkı',
+            'claim_bonus_credits' => 'Sahiplenme bonus hakkı',
+            'admin_adjust_balance' => 'Admin bakiye düzenlemesi',
+            'admin_adjust_credits' => 'Admin hak düzenlemesi',
+            'quote_charge_credit' => 'Teklif verildi (ücretsiz hak kullanıldı)',
+            'quote_charge_balance' => 'Teklif verildi (bakiyeden düşüldü)',
+        ];
+      @endphp
+
+      <div class="border-t border-gray-100 mt-4 pt-4">
+        <h3 class="font-semibold text-sm mb-2">Bakiye / Hak Geçmişi</h3>
+        @if($facility->balanceLogs->isEmpty())
+          <p class="text-sm text-gray-500">Henüz bir hareket kaydı yok.</p>
+        @else
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-500 border-b border-gray-100">
+                  <th class="py-1.5 pr-3">Tarih</th>
+                  <th class="py-1.5 pr-3">İşlem</th>
+                  <th class="py-1.5 pr-3 text-right">Tutar</th>
+                  <th class="py-1.5 pr-3 text-right">Hak</th>
+                  <th class="py-1.5 pr-3 text-right">Bakiye Sonrası</th>
+                  <th class="py-1.5 pr-3 text-right">Hak Sonrası</th>
+                  <th class="py-1.5">Not</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach($facility->balanceLogs->sortByDesc('created_at') as $log)
+                  <tr class="border-b border-gray-50">
+                    <td class="py-1.5 pr-3 whitespace-nowrap text-gray-500">{{ $log->created_at->format('d.m.Y H:i') }}</td>
+                    <td class="py-1.5 pr-3">{{ $balanceLogTypeLabels[$log->type] ?? $log->type }}</td>
+                    <td class="py-1.5 pr-3 text-right {{ $log->amount < 0 ? 'text-red-600' : ($log->amount > 0 ? 'text-green-700' : '') }}">{{ $log->amount != 0 ? number_format($log->amount, 2, ',', '.').' TL' : '—' }}</td>
+                    <td class="py-1.5 pr-3 text-right {{ $log->credits_amount < 0 ? 'text-red-600' : ($log->credits_amount > 0 ? 'text-green-700' : '') }}">{{ $log->credits_amount != 0 ? $log->credits_amount : '—' }}</td>
+                    <td class="py-1.5 pr-3 text-right text-gray-600">{{ number_format($log->balance_after, 2, ',', '.') }} TL</td>
+                    <td class="py-1.5 pr-3 text-right text-gray-600">{{ $log->credits_after }}</td>
+                    <td class="py-1.5 text-gray-500">{{ $log->note }}</td>
+                  </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+        @endif
       </div>
     </div>
 

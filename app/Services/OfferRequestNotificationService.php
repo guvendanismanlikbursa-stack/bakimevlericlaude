@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\FacilityUser;
 use App\Models\OfferRequest;
+use App\Models\Quote;
+use Illuminate\Support\Collection;
 
 /**
  * Yeni bir teklif talebi (dogrudan tek kuruma veya sehir/kategoriye yayin)
@@ -28,20 +30,51 @@ class OfferRequestNotificationService
     }
 
     /**
-     * Aile bu talebe yeni bir mesaj yazdiginda, talebi gorebilen TUM kurum
-     * yetkililerine (offer_request::messages() thread'i erisebilenlerle ayni
-     * recipients() mantigi) bildirim gonderir.
+     * Aile bu talebe yeni bir mesaj yazdiginda bildirim gonderir. 16 Temmuz
+     * 2026 oncesi burada da recipients() (sehir/kategori eslesen TUM kurumlar)
+     * kullaniliyordu - yayin talebine teklif veren rakip kurumlarin ayni
+     * mesaj thread'ini gorebildigi hatayla ayni kokten: SADECE dogrudan
+     * talebin tek kurumuna veya (yayin talebiyse) KABUL EDILEN teklifin
+     * sahibi kuruma bildirim gitmeli, teklif vermis/vermemis diger kurumlara degil.
      */
     public function notifyNewMessageFromFamily(OfferRequest $offerRequest): void
     {
-        $offerRequest->loadMissing('familyUser');
+        $offerRequest->loadMissing('familyUser', 'acceptedQuote.facility');
         $familyName = $offerRequest->familyUser->name ?? $offerRequest->full_name;
 
-        $this->recipients($offerRequest)->each(
+        $recipientFacilityId = $offerRequest->facility_id ?? $offerRequest->acceptedQuote?->facility_id;
+        if (! $recipientFacilityId) {
+            return;
+        }
+
+        FacilityUser::where('facility_id', $recipientFacilityId)->get()->each(
             fn (FacilityUser $user) => notify_user($user, 'new_message', 'Yeni mesaj', $familyName.' size mesaj gönderdi.', [
                 'offer_request_id' => $offerRequest->id,
             ])
         );
+    }
+
+    // 21 Temmuz 2026: aile bir teklifi kabul ettiginde ne kazanan kuruma
+    // ("mesajlasma acildi, iletisime gecebilirsiniz") ne de kaybeden
+    // kurumlara ("talep baska kurumca karsilandi") HICBIR bildirim gitmiyordu
+    // - kurum panele bakmadan haberi olmuyordu. Diger bildirim akislariyla
+    // ayni desen: sadece o kurumun tum yetkililerine.
+    public function notifyQuoteAccepted(Quote $quote): void
+    {
+        FacilityUser::where('facility_id', $quote->facility_id)->get()->each(
+            fn (FacilityUser $user) => notify_user($user, 'quote_accepted', 'Teklifiniz kabul edildi', 'Aile teklifinizi kabul etti, mesajlaşma ekranından iletişime geçebilirsiniz.', [
+                'offer_request_id' => $quote->offer_request_id,
+            ])
+        );
+    }
+
+    public function notifyQuotesDeclined(Collection $declinedQuotes): void
+    {
+        $declinedQuotes->each(function (Quote $quote) {
+            FacilityUser::where('facility_id', $quote->facility_id)->get()->each(
+                fn (FacilityUser $user) => notify_user($user, 'quote_declined', 'Talep başka kurum tarafından karşılandı', 'Aile bu talep için başka bir kurumun teklifini kabul etti.')
+            );
+        });
     }
 
     public function recipients(OfferRequest $offerRequest)

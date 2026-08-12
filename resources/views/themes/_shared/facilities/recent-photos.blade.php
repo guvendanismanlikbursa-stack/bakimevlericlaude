@@ -1,9 +1,13 @@
 @extends('layouts.brand')
 @section('content')
+@php $primary = current_brand()['primary_color']; @endphp
+<section style="background: linear-gradient(135deg, {{ $primary }}, {{ $primary }}cc);" class="text-white">
+  <div class="max-w-6xl mx-auto px-4 py-12">
+    <h1 class="text-2xl md:text-3xl font-black">Son Eklenen Fotoğraflar</h1>
+    <p class="text-white/85 mt-2">Kurumların galerilerine en son eklenen görseller.</p>
+  </div>
+</section>
 <div class="max-w-6xl mx-auto px-4 py-10">
-  <h1 class="text-3xl font-black text-gray-950 mb-1">Son Eklenen Fotoğraflar</h1>
-  <p class="text-sm text-gray-500 mb-6">Kurumların galerilerine en son eklenen görseller.</p>
-
   @if(isset($sections))
     <div class="grid sm:grid-cols-4 gap-2 mb-6">
       <a href="{{ url()->current() }}" class="rounded-xl border px-4 py-3 text-sm font-black {{ ! ($activeSection ?? null) ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700' }}">Tüm Bölümler</a>

@@ -1,5 +1,29 @@
 <?php
 
+if (! function_exists('email_taken_by_other_account_type')) {
+    /**
+     * 16 Temmuz 2026: aile ve kurum hesaplari ayri tablolarda oldugu icin
+     * eskiden e-posta benzersizligi sadece KENDI tablosu icinde kontrol
+     * ediliyordu - ayni e-posta ile hem aile hem kurum hesabi (veya
+     * sahiplenme) acilabiliyordu. Hesap olusturulan/sahiplenme onaylanan
+     * HER noktada bu kontrol kullanilmali. $excludeFamilyId/$excludeFacilityId
+     * ayni hesabin kendi kaydini guncellerken yanlislikla kendine
+     * carpmamasi icin (su an kullanilmiyor ama ileride gerekebilir).
+     */
+    function email_taken_by_other_account_type(string $email): ?string
+    {
+        if (\App\Models\FamilyUser::where('email', $email)->exists()) {
+            return 'Bu e-posta zaten bir aile hesabına ait. Aynı e-posta ile kurum hesabı/sahiplenme yapılamaz.';
+        }
+
+        if (\App\Models\FacilityUser::where('email', $email)->exists()) {
+            return 'Bu e-posta zaten bir kurum hesabına ait. Aynı e-posta ile aile hesabı oluşturulamaz.';
+        }
+
+        return null;
+    }
+}
+
 if (! function_exists('brand_route')) {
     /**
      * Aktif istek /site/{brand}/... prefix'inden geldiyse "brand.X" ismini,
@@ -60,7 +84,7 @@ if (! function_exists('service_sections')) {
 }
 
 if (! function_exists('service_section')) {
-    function service_section(string $slug = null): array
+    function service_section(?string $slug = null): array
     {
         $sections = service_sections();
 
@@ -73,7 +97,7 @@ if (! function_exists('service_section')) {
 }
 
 if (! function_exists('active_service_section')) {
-    function active_service_section(string $slug = null, array $brand = null): array
+    function active_service_section(?string $slug = null, ?array $brand = null): array
     {
         $brand = current_brand();
         $sections = service_sections();
@@ -209,7 +233,7 @@ if (! function_exists('seo_og_image')) {
 }
 
 if (! function_exists('facility_card_image')) {
-    function facility_card_image($facility, array $section = null): string
+    function facility_card_image($facility, ?array $section = null): string
     {
         $image = null;
         if ($facility) {
@@ -291,9 +315,22 @@ if (! function_exists('notify_user')) {
 
         $actionUrl = notification_action_url($notifiable, $type, $data);
 
-        if (! empty($notifiable->email)) {
+        // 31 Temmuz 2026: 'claim_approved'/'registration_approved' icin
+        // FacilityClaimController/FacilityRegistrationController zaten kendi
+        // ozel, GERCEK giris bilgilerini (e-posta+gecici sifre) iceren daha
+        // detayli bir mail gonderiyor (bkz. facility-claim-approved.blade.php,
+        // facility-registration-approved.blade.php). Bu genel bildirim maili
+        // de AYRICA gidince kullanici "Kurum kaydınız onaylandı" diye IKINCI
+        // bir mail aliyor - butonu sadece BOS bir giris sayfasina goturuyor
+        // (icinde sifre yok), kullanici hangi maildeki sifreyi kullanacagini
+        // bilemeyip kafasi karisiyordu. Bu iki tur icin sadece e-posta kanali
+        // bastirilir - uygulama-ici bildirim ve push bildirimi (asagida)
+        // gibi hala calisir, sadece kafa karistiran ikinci/eksik mail gitmez.
+        $suppressEmailForTypes = ['claim_approved', 'registration_approved'];
+
+        if (! in_array($type, $suppressEmailForTypes, true) && ! empty($notifiable->email)) {
             try {
-                \Illuminate\Support\Facades\Mail::to($notifiable->email)->queue(
+                \Illuminate\Support\Facades\Mail::to($notifiable->email)->sendNow(
                     new \App\Mail\NotificationMail($title, $body, $actionUrl)
                 );
             } catch (\Throwable $e) {
@@ -333,14 +370,38 @@ if (! function_exists('notification_action_url')) {
             $isFamilyUser = $notifiable instanceof \App\Models\FamilyUser;
 
             return match ($type) {
-                'offer_request', 'new_question' => isset($data['offer_request_id'])
-                    ? brand_route('facility.thread', $data['offer_request_id']) : null,
-                'quote_received', 'new_message' => isset($data['offer_request_id'])
+                // 16 Temmuz 2026: 'new_question' burada 'offer_request' ile ayni
+                // koldaydi ama hicbir zaman offer_request_id tasimiyor (bkz.
+                // FacilityQuestionController) - link hep null'a duserdu, sorulan
+                // soruya gitmek yerine hicbir yere gitmiyordu. Ayrica facility
+                // henuz teklif vermemisken 'offer_request' (yeni firsat)
+                // bildirimini tiklayip dogrudan mesaj thread'ine gitmesi - rakip
+                // kurum mesaj sizintisi fix'inden sonra - artik 403 veriyordu;
+                // teklif verebilecegi panele yonlendirilmesi dogrusu.
+                'new_question' => brand_route('facility.questions.index'),
+                'offer_request' => brand_route('facility.dashboard'),
+                // 'quote_received': yayin talebinde teklif kabul edilene kadar
+                // mesajlasma kapali oldugundan (ayni fix), aile burada da
+                // dogrudan thread'e degil, teklifi gorup kabul edebilecegi
+                // panele yonlendirilir.
+                'quote_received' => brand_route('family.dashboard'),
+                // 21 Temmuz 2026: teklif kabul edilince mesajlasma o kurum icin
+                // acildigindan (accepted_quote_id sahipligi), kazanan kurum
+                // dogrudan thread'e yonlendirilebilir; kaybeden kurumun ise
+                // artik erisimi olmadigindan panele yonlendirilir.
+                'quote_accepted' => isset($data['offer_request_id'])
+                    ? brand_route('facility.thread', $data['offer_request_id']) : brand_route('facility.dashboard'),
+                'quote_declined' => brand_route('facility.dashboard'),
+                'question_answered' => isset($data['facility_slug'])
+                    ? brand_route('facilities.show', $data['facility_slug']) : null,
+                'question_reminder' => brand_route('facility.questions.index'),
+                'new_message' => isset($data['offer_request_id'])
                     ? brand_route($isFamilyUser ? 'family.thread' : 'facility.thread', $data['offer_request_id']) : null,
                 'claim_approved', 'registration_approved' => brand_route('facility.login'),
                 'topup_approved', 'topup_rejected' => brand_route('facility.wallet.index'),
                 'claim_submitted' => route('admin.claims.index'),
                 'registration_submitted' => route('admin.registrations.index'),
+                'contact_message_submitted' => route('admin.contact-messages.index'),
                 'topup_requested' => route('admin.topups.index'),
                 'chat_message' => isset($data['chat_thread_id']) ? route('admin.chat.show', $data['chat_thread_id']) : route('admin.chat.index'),
                 default => null,
@@ -466,9 +527,22 @@ if (! function_exists('facility_invitation_statuses')) {
 }
 
 if (! function_exists('facility_invitation_message')) {
+    // 30 Temmuz 2026: admin panelinden (Platform Ayarlari) elle
+    // degistirilebilir - bkz. SettingController, admin.settings.edit.
+    // {kurum_adi} yer tutucusu gonderim aninda gercek kurum adiyla
+    // degistirilir. Ayar hic girilmemisse eski sabit metin varsayilan olarak kullanilir.
     function facility_invitation_message(\App\Models\Facility $facility): string
     {
-        return "Merhaba, {$facility->name} için bakimevibul.com / bakimeviara.com / bakimevleri.com üzerinde ücretsiz kurum profiliniz oluşturuldu.\n\n"
+        $template = \App\Models\Setting::get('facility_invitation_message', facility_invitation_message_default());
+
+        return str_replace('{kurum_adi}', $facility->name, $template);
+    }
+}
+
+if (! function_exists('facility_invitation_message_default')) {
+    function facility_invitation_message_default(): string
+    {
+        return "Merhaba, {kurum_adi} için bakimevibul.com / bakimeviara.com / bakimevleri.com üzerinde ücretsiz kurum profiliniz oluşturuldu.\n\n"
             .'Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak ön kayıtlı kurumlardan kolayca sahiplenme başvurusu yapabilirsiniz.'
             ."\n\nBu mesajı almak istemiyorsanız lütfen \"istemiyorum\" yazmanız yeterlidir.";
     }
@@ -491,6 +565,32 @@ if (! function_exists('facility_whatsapp_url')) {
         }
 
         return 'https://wa.me/'.$digits.'?text='.rawurlencode(facility_invitation_message($facility));
+    }
+}
+
+if (! function_exists('sanitize_admin_html')) {
+    /**
+     * ContentPage::body gibi admin tarafindan yazilan ama sitede TUM
+     * ziyaretcilere {!! !!} (escape'siz) gosterilen HTML alanlari icin.
+     * 21 Temmuz 2026 guvenlik denetiminde bulundu: admin hesabi ele
+     * gecirilirse (veya yanlislikla yapistirilan bir script) bu alana
+     * <script>/onclick vb. yazilip TUM sitenin ziyaretcilerine calistirilan
+     * stored XSS'e donusebiliyordu. Bu icerik turu sadece baslik/paragraf/
+     * liste/kalin-italik metin icerdigi icin (bkz. page.blade.php .page-
+     * content CSS'i) - hicbir zaman link/gorsel/stil gerekmiyor - once
+     * izin verilen etiket disindakiler tamamen kaldirilir (strip_tags),
+     * SONRA kalan etiketlerdeki TUM ozellikler (onclick gibi olay
+     * yakalayicilar dahil) silinir. HTML Purifier gibi bir kutuphane
+     * kurulu degil (composer.lock/vendor degisikligi FTP-only bu hostingte
+     * agir bir deploy adimi olurdu) - bu dar/sabit etiket kumesi icin
+     * kutuphanesiz de guvenli, cunku hicbir izinli etikte ozellige ihtiyac yok.
+     */
+    function sanitize_admin_html(string $html): string
+    {
+        $allowedTags = '<h2><h3><h4><p><ul><ol><li><strong><em><b><i><br>';
+        $stripped = strip_tags($html, $allowedTags);
+
+        return preg_replace('/<([a-z0-9]+)[^>]*>/i', '<$1>', $stripped);
     }
 }
 
@@ -553,6 +653,50 @@ if (! function_exists('notify_admin_of_exception')) {
             // Mail gonderimi de basarisiz olursa (ör. mail sunucusu coktuyse) sessizce
             // yut - hata zaten Laravel'in varsayilan log kanalina yazilmis olacak.
         }
+
+        // 11 Agustos 2026: kullanicinin acik talebi - "herhangi bir hatada
+        // admin paneline dussun ve admine bildirim gelsin". Yukaridaki mail
+        // (admin_alert_email) genelde bana/gelistiriciye gidiyordu, admin
+        // panelinde HICBIR kalici iz birakmiyordu. Ayni throttle penceresini
+        // (yukaridaki cache kontrolu) kullanarak simdi ayrica platform_errors
+        // tablosuna da kaydediyor ve GERCEK admin hesap(lar)ina (Admin
+        // tablosu, admin panelini kullanan kisi) mail atiyor.
+        record_platform_error(
+            'exception',
+            get_class($e).' — '.$host,
+            $body,
+            ['exception_class' => get_class($e), 'file' => $e->getFile(), 'line' => $e->getLine(), 'url' => $url]
+        );
+    }
+}
+
+if (! function_exists('record_platform_error')) {
+    /**
+     * Genel amacli hata kayit mekanizmasi: hem notify_admin_of_exception()
+     * (tum beklenmeyen uygulama hatalari) hem de ozel kontrol komutlari
+     * (ör. gallery:check-health) tarafindan kullanilir. platform_errors
+     * tablosuna KALICI bir kayit birakir (admin panelinde "Hatalar"
+     * ekraninda gorunur) ve her Admin hesabina (gercek admin panelini
+     * kullanan kisi) mail atar.
+     */
+    function record_platform_error(string $source, string $title, string $message, array $context = []): void
+    {
+        \App\Models\PlatformError::create([
+            'source' => $source,
+            'title' => $title,
+            'message' => $message,
+            'context' => $context,
+        ]);
+
+        \App\Models\Admin::all()->each(function (\App\Models\Admin $admin) use ($title, $message, $source) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($admin->email)->send(
+                    new \App\Mail\PlatformErrorAlertMail($title, $message, $source)
+                );
+            } catch (\Throwable $mailError) {
+                \Illuminate\Support\Facades\Log::warning('Hata bildirim maili gonderilemedi: '.$mailError->getMessage(), ['admin_id' => $admin->id]);
+            }
+        });
     }
 }
 

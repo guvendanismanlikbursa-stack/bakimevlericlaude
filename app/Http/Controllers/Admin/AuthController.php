@@ -34,13 +34,24 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'E-posta veya şifre hatalı.'])->onlyInput('email');
         }
 
-        $this->sendLoginCode($admin);
-
+        // 30 Temmuz 2026: mobil PWA'da 2FA kod giris ekrani (giris/dogrula)
+        // acilmiyordu - kullanici talebiyle 2FA GECICI olarak devre disi
+        // birakildi. Tekrar acmak icin: bu bloğu kaldirip yerine eski
+        // sendLoginCode() + admin_2fa_pending_id session + admin.login.verify
+        // yonlendirmesini geri getir (showVerify/verify/resendCode metodlari
+        // ve route'lari dokunulmadan asagida duruyor, hemen kullanilabilir).
+        $admin->update(['last_login_at' => now()]);
         $request->session()->regenerate();
         $request->session()->regenerateToken();
-        session(['admin_2fa_pending_id' => $admin->id]);
+        // 30 Temmuz 2026: ayni cihaz/tarayicida daha once (impersonation ya
+        // da dogrudan giris ile) birakilmis facility_user_id/family_user_id
+        // varsa, PushSubscriptionController::currentSubscribable() gibi rol
+        // kontrolleri gecerli admin_id'yi hic gormeden bunlara takiliyordu -
+        // bir role giris yapinca diger rollerin izini burada temizliyoruz.
+        $request->session()->forget(['facility_user_id', 'facility_user_name', 'family_user_id', 'family_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
+        session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
 
-        return redirect()->route('admin.login.verify');
+        return redirect()->route('admin.dashboard');
     }
 
     public function showVerify(Request $request)
@@ -111,7 +122,7 @@ class AuthController extends Controller
         ]);
 
         try {
-            Mail::to($admin->email)->send(new AdminLoginCodeMail($code));
+            Mail::to($admin->email)->sendNow(new AdminLoginCodeMail($code));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Admin giris kodu maili gonderilemedi: '.$e->getMessage(), ['admin_id' => $admin->id]);
             \Sentry\captureException($e);

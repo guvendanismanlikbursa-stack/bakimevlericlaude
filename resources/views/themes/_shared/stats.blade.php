@@ -91,8 +91,24 @@
     var name = names[slug] || slug;
     var count = counts[slug] || 0;
     var ratio = count > 0 ? Math.min(1, 0.18 + (count / maxCount) * 0.82) : 0;
-    if (ratio > 0) {
-      group.style.fill = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + ratio.toFixed(2) + ')';
+    var baseFill = ratio > 0 ? ('rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + ratio.toFixed(2) + ')') : '';
+    var hoverFill = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+    // 12 Agustos 2026: BULUNAN GERCEK HATA - <g id="{slug}">'nin KENDI
+    // uzerine style.fill atamak hicbir zaman calismiyordu, cunku asagidaki
+    // '#js-turkiye-harita svg path {...}' CSS kurali her <path>'in KENDI
+    // fill'ini dogrudan belirliyor - bir path, ebeveyn <g>'den fill miras
+    // ALMAZ eger kendi uzerinde (CSS'ten bile olsa) baska bir fill degeri
+    // varsa. Sonuc: harita hicbir zaman yogunluga gore renklenmiyordu
+    // (haritanin duz gri gorunmesinin asil sebebi buydu), hover'da renk
+    // yanmasi da ayni sebeple calismiyordu. Fill artik <g> yerine ICINDEKI
+    // her <path>'e DOGRUDAN yaziliyor - inline stil, CSS kuralindan once
+    // gelir, boylece gercekten calisir.
+    var paths = group.querySelectorAll('path');
+    var applyFill = function (value) {
+      paths.forEach(function (p) { p.style.fill = value; });
+    };
+    if (baseFill) {
+      applyFill(baseFill);
     }
     group.addEventListener('mousemove', function (e) {
       var hostRect = svgHost.getBoundingClientRect();
@@ -101,10 +117,12 @@
       tooltip.style.top = (e.clientY - hostRect.top + 8) + 'px';
       tooltip.classList.remove('hidden');
       group.classList.add('is-hover');
+      applyFill(hoverFill);
     });
     group.addEventListener('mouseleave', function () {
       tooltip.classList.add('hidden');
       group.classList.remove('is-hover');
+      applyFill(baseFill);
     });
     group.addEventListener('click', function () {
       if (!counts.hasOwnProperty(slug)) return;

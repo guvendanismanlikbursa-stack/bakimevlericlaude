@@ -1,3 +1,16 @@
+# 30 Temmuz 2026: sunucunun varsayilan PHP ayari (upload_max_filesize=2M)
+# uygulamanin kendi kabul ettigi 5MB'lik gorsel yuklemesinden kucuktu - gercek
+# telefon fotograflari (genelde 3-8MB) PHP tarafindan Laravel'e hic ulasmadan
+# sessizce reddediliyordu. Sunucu LiteSpeed (PHP_SAPI=litespeed) kullaniyor -
+# .user.ini denendi ama LSAPI'nin kendi ini onbellegi (300s bekleyip
+# dogrulanmasina ragmen) degeri yenilemedi; LiteSpeed'in kendisi .htaccess
+# icindeki php_value/php_admin_value satirlarini Apache mod_php taklit ederek
+# DOGRUDAN kendisi isler (FastCGI/PHP-FPM'in aksine, burada "bilinmeyen
+# direktif" hatasiyla tum siteyi 500'e dusurme riski YOK) - bu yuzden burada
+# guvenle kullanilabilir.
+php_value upload_max_filesize 10M
+php_value post_max_size 60M
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
@@ -7,6 +20,13 @@
 
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # 13 Temmuz 2026: admin.bakimevleri.com subdomain'i cPanel'de olusturulmus
+    # ama ortak admin paneli kodda subdomain degil /admin path-prefix olarak
+    # calisiyor (bkz. routes/web.php). Bu host'a gelen istekler admin paneli
+    # yerine varsayilan marka (bakimevibul) genel sitesini gosteriyordu.
+    RewriteCond %{HTTP_HOST} ^(www\.)?admin\.bakimevleri\.com$ [NC]
+    RewriteRule ^ https://bakimevleri.com/admin/giris [R=301,L]
 
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
@@ -41,4 +61,12 @@
             Header set Cache-Control "public, max-age=31536000, immutable"
         </If>
     </FilesMatch>
+</IfModule>
+
+# 13 Temmuz 2026: build/ altindaki CSS/JS zaten sikistirilarak (br) sunuluyordu
+# ama dinamik Laravel sayfalari (HTML) hic sikistirilmiyordu - ana sayfa ~100KB
+# gibi tam boyutuyla gidiyordu. Bu, sadece metin tabanli response'lari sikistirir,
+# gorseller (zaten sikistirilmis format) etkilenmez.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml
 </IfModule>

@@ -40,7 +40,13 @@ class EmailVerificationController extends Controller
                 ->with('success', 'E-posta adresiniz zaten doğrulandı.');
         }
 
-        return view('themes.' . app('currentBrand')['theme'] . '.family.verify-email-notice', [
+        // 28 Temmuz 2026: bu view SADECE _shared altinda var (marka bazli
+        // kopyalari hic olusturulmadi) - dinamik marka temasi ('bakimevleri'
+        // vb.) ile aranirsa "View not found" ile 500 verir (canli hata
+        // mailiyle dogrulandi). Diger tum marka-bazli view'lardan farkli
+        // olarak bu sayfa kasitli olarak _shared - icerik markaya gore
+        // degismiyor.
+        return view('themes._shared.family.verify-email-notice', [
             'family' => $family,
         ]);
     }
@@ -77,7 +83,7 @@ class EmailVerificationController extends Controller
         // kayit/giris gibi kritik islemin 500 hatasiyla cokmesini engellemek icin
         // hata sadece loglanir, kullanici akisi kesintiye ugramaz.
         try {
-            Mail::to($family->email)->queue(new FamilyEmailVerificationMail($family, $verificationUrl, $brand['name']));
+            Mail::to($family->email)->sendNow(new FamilyEmailVerificationMail($family, $verificationUrl, $brand['name']));
         } catch (\Throwable $e) {
             Log::warning('Aile e-posta dogrulama maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
         }

@@ -28,7 +28,9 @@ class FacilityQuestionController extends Controller
 
     public function destroy(FacilityQuestion $question)
     {
+        $facilityName = $question->facility->name ?? 'kurum';
         log_admin_event('facility_question_deleted', $question, ['question' => $question->question]);
+        notify_user($question->familyUser, 'question_removed', 'Sorunuz kaldırıldı', "\"{$facilityName}\" kurumuna sorduğunuz soru platformdan kaldırıldı.");
         $question->delete();
 
         return back()->with('success', 'Soru/cevap silindi.');

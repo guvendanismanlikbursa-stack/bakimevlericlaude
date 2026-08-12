@@ -87,8 +87,8 @@
           </select>
         </div>
         <label class="md:col-span-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" name="is_published" value="1" checked>
-          <span>Aktarılan kurumları yayında oluştur</span>
+          <input type="checkbox" name="is_published" value="1">
+          <span>Aktarılan kurumları yayında oluştur (işaretlemezseniz taslak/yayın dışı oluşur, tek tek kontrol edip siz yayına alırsınız)</span>
         </label>
         <div class="md:col-span-2">
           <button class="bg-white border border-gray-300 text-gray-900 px-5 py-2 rounded-lg text-sm font-semibold">Excel'i Iceri Aktar</button>

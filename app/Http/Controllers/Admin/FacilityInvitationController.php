@@ -17,6 +17,17 @@ use Illuminate\Http\Request;
 class FacilityInvitationController extends Controller
 {
     private const GROUPS = [
+        // 28 Temmuz 2026: kullanici bir il+kategori sectiginde "bu ildeki
+        // TUM kurumlari gormek" bekliyordu ('Kurumlar' sayfasindaki gibi),
+        // ama varsayilan sekme sadece 'not_started' (Gonderilecekler)
+        // durumundakileri gosteriyordu - digerleri (sabit hatli, kamu
+        // oldugu icin haric tutulmus vb.) "kayboluyor" gibi goruniyordu.
+        // Bu yeni 'all' grubu durum filtresi UYGULAMAZ, secili il/ilce/
+        // kategoriye uyan TUM ozel-vakif kurumlari (durumu ne olursa
+        // olsun, tablodaki "Durum" kolonuyla birlikte) gosterir ve
+        // varsayilan sekme yapildi - eski durum-bazli sekmeler (toplu
+        // WhatsApp gonderim is akisi icin) oldugu gibi duruyor.
+        'all' => ['title' => 'Kurumlar (Tümü)', 'statuses' => null],
         'to_send' => ['title' => 'Gönderilecekler', 'statuses' => ['not_started']],
         'opened' => ['title' => 'WhatsApp açılanlar', 'statuses' => ['opened']],
         'sent' => ['title' => 'Gönderildi', 'statuses' => ['sent']],
@@ -35,25 +46,39 @@ class FacilityInvitationController extends Controller
 
     public function index(Request $request)
     {
-        $group = $request->query('group', 'to_send');
+        $group = $request->query('group', 'all');
         if (! isset(self::GROUPS[$group])) {
-            $group = 'to_send';
+            $group = 'all';
         }
 
-        $query = Facility::with(['city', 'category'])
-            ->whereIn('ownership_type', ['ozel', 'vakif'])
-            ->whereIn('invitation_status', self::GROUPS[$group]['statuses']);
+        // 30 Temmuz 2026: kullanici il/kategori filtresi secince sekmelerdeki
+        // sayilarin (ve "Cep telefonu olanlar" sayacinin) HALA ulke geneli
+        // gostermesi "mantiksiz" bulundu, cunku listenin kendisi filtreliyken
+        // sekme sayilari filtrelenmiyordu - ikisi tutarsizdi. $baseQuery
+        // olusturucusu il/ilce/kategori filtrelerini (durum ve cep-telefon
+        // filtresi HARIC) hem tabloya hem sekme sayaclarina AYNI sekilde
+        // uygular ki "hangi sekmeye/filtreye bakiliyorsa o sayiyi gostersin"
+        // beklentisi karsilansin.
+        $baseQuery = function () use ($request) {
+            $q = Facility::whereIn('ownership_type', ['ozel', 'vakif']);
 
-        if ($request->filled('city')) {
-            $query->whereHas('city', fn ($q) => $q->where('slug', $request->city));
-        }
+            if ($request->filled('city')) {
+                $q->whereHas('city', fn ($c) => $c->where('slug', $request->city));
+            }
+            if ($request->filled('district')) {
+                $q->where('district', $request->district);
+            }
+            if ($request->filled('category')) {
+                $q->whereHas('category', fn ($c) => $c->where('slug', $request->category));
+            }
 
-        if ($request->filled('district')) {
-            $query->where('district', $request->district);
-        }
+            return $q;
+        };
 
-        if ($request->filled('category')) {
-            $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
+        $query = $baseQuery()->with(['city', 'category']);
+
+        if (self::GROUPS[$group]['statuses'] !== null) {
+            $query->whereIn('invitation_status', self::GROUPS[$group]['statuses']);
         }
 
         if ($request->boolean('has_mobile')) {
@@ -62,17 +87,19 @@ class FacilityInvitationController extends Controller
 
         $facilities = $query->latest()->paginate(20)->withQueryString();
 
-        $counts = Facility::whereIn('ownership_type', ['ozel', 'vakif'])
+        $counts = $baseQuery()
             ->selectRaw('invitation_status, count(*) as total')
             ->groupBy('invitation_status')
             ->pluck('total', 'invitation_status');
 
         $groupCounts = [];
         foreach (self::GROUPS as $key => $def) {
-            $groupCounts[$key] = collect($def['statuses'])->sum(fn ($s) => $counts[$s] ?? 0);
+            $groupCounts[$key] = $def['statuses'] === null
+                ? $counts->sum()
+                : collect($def['statuses'])->sum(fn ($s) => $counts[$s] ?? 0);
         }
 
-        $mobileCount = Facility::whereIn('ownership_type', ['ozel', 'vakif'])->where('phone_type', 'mobile')->count();
+        $mobileCount = $baseQuery()->where('phone_type', 'mobile')->count();
 
         $cities = City::orderBy('name')->get();
         $categories = FacilityCategory::orderBy('name')->get();
@@ -98,13 +125,45 @@ class FacilityInvitationController extends Controller
         abort_if(! $url, 404, 'Bu kurumun cep telefonu yok.');
 
         if (in_array($facility->invitation_status, ['not_started', 'opened'], true)) {
+            $oldStatus = $facility->invitation_status;
             $facility->update(['invitation_status' => 'opened', 'invitation_status_at' => now()]);
             log_admin_event('facility_invitation_status_changed', $facility, [
-                'old_status' => 'not_started', 'new_status' => 'opened',
+                'old_status' => $oldStatus, 'new_status' => 'opened',
             ]);
         }
 
         return redirect()->away($url);
+    }
+
+    // 30 Temmuz 2026: WhatsApp'in kendi politikasi geregi toplu otomatik
+    // gonderim yapilamiyor (bkz. kullaniciyla yapilan konusma - resmi API
+    // sablonlari onaysiz gonderime izin vermiyor, resmi olmayan otomasyon
+    // ise numarayi banlatma riski tasiyor). Bunun yerine INSANIN elle
+    // gonderdigi ama kurum kurum ARAMAK ZORUNDA KALMADAN, tek ekrandan
+    // art arda hizlica ilerleyebilecegi bir "Hizli Gonderim" modu: her
+    // seferinde SIRADAKI 'not_started' (mobil telefonlu, hic gonderilmemis)
+    // kurumu tek basina gosterir - WhatsApp'ta Ac yeni sekmede acilir (bu
+    // sekme kaybolmaz), Siradaki butonu bir sonrakine gecer.
+    public function quickSend(Request $request)
+    {
+        $query = Facility::with(['city', 'category'])
+            ->whereIn('ownership_type', ['ozel', 'vakif'])
+            ->where('invitation_status', 'not_started');
+
+        if ($request->filled('city')) {
+            $query->whereHas('city', fn ($q) => $q->where('slug', $request->city));
+        }
+        if ($request->filled('category')) {
+            $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
+        }
+
+        $facility = (clone $query)->orderBy('id')->first();
+        $remaining = $query->count();
+
+        $cities = City::orderBy('name')->get();
+        $categories = FacilityCategory::orderBy('name')->get();
+
+        return view('admin.invitations.quick-send', compact('facility', 'remaining', 'cities', 'categories'));
     }
 
     public function updateStatus(Request $request, Facility $facility)

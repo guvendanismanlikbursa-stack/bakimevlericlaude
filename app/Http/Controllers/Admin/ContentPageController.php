@@ -67,12 +67,19 @@ class ContentPageController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'brand' => ['required', 'string', Rule::in(array_keys(config('brands.brands')))],
             'type' => 'required|in:page,guide',
             'title' => 'required|string|max:180',
             'summary' => 'nullable|string|max:300',
             'body' => 'required|string',
         ]);
+
+        // 21 Temmuz 2026: bu icerik sitede {!! !!} ile (escape'siz) TUM
+        // ziyaretcilere gosteriliyor - kaydetme aninda temizlenir ki
+        // hicbir zaman <script>/onclick vb. icerik canliya gitmesin.
+        $data['body'] = sanitize_admin_html($data['body']);
+
+        return $data;
     }
 }

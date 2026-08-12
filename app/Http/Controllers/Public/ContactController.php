@@ -27,7 +27,19 @@ class ContactController extends Controller
         $brand = app('currentBrand');
         $validated['brand'] = $brand['slug'];
 
-        ContactMessage::create($validated);
+        $message = ContactMessage::create($validated);
+
+        // 28 Temmuz 2026: guvenlik taramasi sirasinda bulundu - bu form
+        // sadece veritabanina yaziyordu, admin'e HICBIR gercek zamanli
+        // bildirim (mail/uygulama-ici/push) gitmiyordu; admin farkina
+        // varmak icin elle /admin/mesajlar sayfasini ziyaret etmek zorundaydi.
+        // Diger basvuru formlariyla (sahiplenme, kurum kaydi) ayni desen.
+        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+            $admin,
+            'contact_message_submitted',
+            'Yeni iletişim mesajı',
+            $message->name.' size bir mesaj gönderdi.',
+        ));
 
         return back()->with('success', 'Mesajınız iletildi, teşekkür ederiz.');
     }

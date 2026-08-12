@@ -13,9 +13,19 @@ class FacilityUser extends Model
 
     protected $hidden = ['password', 'signup_lat', 'signup_lng'];
 
+    // 28 Temmuz 2026: facility_id cast'siz oldugu icin MySQL/PDO'dan STRING
+    // donuyordu; Facility\QuoteController::store() bunu OfferRequest::
+    // facility_id (ORADA cast'li, int) ile === (strict) kiyaslayinca
+    // int(6844) === string("6844") HER ZAMAN false donup kurum yetkilisi
+    // kendisine dogrudan gelen HICBIR teklif talebine fiyat teklifi
+    // veremiyordu (403) - canli uctan uca testte bulundu. Ayni hata sinifi
+    // OfferRequest::family_user_id icin 13 Temmuz 2026'da zaten bir kere
+    // bulunup duzeltilmisti (bkz. o modeldeki yorum), bu kez diger taraftaki
+    // (FacilityUser) eksik cast'ti.
     protected function casts(): array
     {
         return [
+            'facility_id' => 'integer',
             'must_change_password' => 'boolean',
             'email_verified_at' => 'datetime',
         ];

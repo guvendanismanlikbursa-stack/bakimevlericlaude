@@ -14,12 +14,18 @@
   $chatIconSvg = $chatIcons[$brand['slug']] ?? $chatIcons['bakimevibul'];
 @endphp
 {{-- Canli destek ikonu: tek ikon, WhatsApp'a erisim asagidaki menude --}}
+{{-- 12 Agustos 2026: kullanicinin talebi - sohbet ikonu yesil (canli/
+     WhatsApp tarzi "aktif destek" rengi) olmali; marka rengiyle
+     karisinca "aktif bir destek kanali" hissi zayifliyordu. Konum bir
+     CSS degiskeniyle veriliyor ki mobilde alt sabit CTA cubugu olan
+     sayfalar (bkz. facilities/show.blade.php) ikonu ustune binmeden
+     yukari itebilsin. --}}
 <button
   type="button"
   id="js-chat-toggle"
   aria-label="Canlı destek"
-  class="fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg animate-[wa-bounce-in_.5s_ease-out] hover:scale-105 transition-transform"
-  style="background: {{ $brand['primary_color'] }};"
+  class="fixed right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg animate-[wa-bounce-in_.5s_ease-out] hover:scale-105 transition-transform"
+  style="background: #25D366; bottom: var(--chat-toggle-bottom, 1.25rem);"
 >
   <svg viewBox="0 0 24 24" class="w-7 h-7 fill-white" aria-hidden="true">
     {!! $chatIconSvg !!}

@@ -73,6 +73,14 @@ class PlatformFeatureTest extends TestCase
             'email' => 'aile@test.local',
             'phone' => '05550000000',
             'password' => Hash::make('Aile12345!'),
+            // 3 Agustos 2026: 21 Temmuz 2026'da eklenen blockIfUnverified()/
+            // hasVerifiedEmail() korumalari (teklif talebi + teklif kabul +
+            // kurum panel girisi) dogrulanmamis bu fixture'i sessizce
+            // engelliyordu - offer_requests hic olusmuyor, quote hic kabul
+            // edilmiyordu, testler yanlislikla "bildirim/akis calismiyor"
+            // gibi gorunuyordu. Gercek kullanicilar dogrulanmis e-postayla
+            // panele erisir; fixture da bunu yansitmali.
+            'email_verified_at' => now(),
         ]);
 
         $this->facilityUser = FacilityUser::create([
@@ -104,8 +112,14 @@ class PlatformFeatureTest extends TestCase
 
     public function test_admin_correct_password_requires_2fa_code_before_dashboard_access(): void
     {
-        // 12 Temmuz 2026'da eklendi: en hassas panel sadece sifreyle
-        // korunuyordu, artik dogru sifre TEK BASINA panele erisim vermiyor.
+        // 30 Temmuz 2026: kullanici talebiyle 2FA GECICI olarak devre disi
+        // birakildi (bkz. Admin\AuthController::login() ayni tarihli yorum) -
+        // login() artik dogrudan admin_id set edip /admin'e yonlendiriyor,
+        // /admin/giris/dogrula adimina hic ugramiyor. Kod/route'lar
+        // dokunulmadan duruyor, 2FA tekrar acildiginda bu test de geri
+        // aktif edilmeli.
+        $this->markTestSkipped('2FA kullanici talebiyle gecici olarak devre disi (bkz. Admin\\AuthController::login() 30 Temmuz 2026 yorumu).');
+
         $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!'])
             ->assertRedirect('/admin/giris/dogrula');
 
@@ -119,6 +133,8 @@ class PlatformFeatureTest extends TestCase
 
     public function test_admin_can_complete_login_with_correct_2fa_code(): void
     {
+        $this->markTestSkipped('2FA kullanici talebiyle gecici olarak devre disi (bkz. Admin\\AuthController::login() 30 Temmuz 2026 yorumu).');
+
         $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!']);
         $this->admin->refresh();
 
@@ -139,6 +155,8 @@ class PlatformFeatureTest extends TestCase
 
     public function test_admin_2fa_rejects_wrong_code(): void
     {
+        $this->markTestSkipped('2FA kullanici talebiyle gecici olarak devre disi (bkz. Admin\\AuthController::login() 30 Temmuz 2026 yorumu).');
+
         $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!']);
         $this->admin->update(['two_factor_code' => Hash::make('123456'), 'two_factor_expires_at' => now()->addMinutes(10)]);
 
@@ -150,6 +168,8 @@ class PlatformFeatureTest extends TestCase
 
     public function test_admin_2fa_rejects_expired_code(): void
     {
+        $this->markTestSkipped('2FA kullanici talebiyle gecici olarak devre disi (bkz. Admin\\AuthController::login() 30 Temmuz 2026 yorumu).');
+
         $this->post('/admin/giris', ['email' => 'admin@test.local', 'password' => 'Admin12345!']);
         $this->admin->update(['two_factor_code' => Hash::make('123456'), 'two_factor_expires_at' => now()->subMinute()]);
 
@@ -878,7 +898,12 @@ class PlatformFeatureTest extends TestCase
 
     public function test_claim_and_wallet_upload_flows_accept_real_png_files(): void
     {
+        // Claim belgesi ve dekont 'local' diskine yaziliyor (bkz.
+        // Public\FacilityClaimController / Facility\WalletController), 'public'
+        // diskine degil - sadece 'public' fake'lemek gercek dosya sistemine
+        // yazmaya calisip test ortaminda "dosya bulunamadi" hatasi veriyordu.
         Storage::fake('public');
+        Storage::fake('local');
         Mail::fake();
 
         $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
@@ -889,7 +914,7 @@ class PlatformFeatureTest extends TestCase
         ])->assertRedirect();
 
         $claim = FacilityClaim::firstOrFail();
-        Storage::disk('public')->assertExists($claim->document_path);
+        Storage::disk('local')->assertExists($claim->document_path);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->post('/admin/sahiplenme-basvurulari/'.$claim->id.'/onayla')
@@ -900,7 +925,7 @@ class PlatformFeatureTest extends TestCase
 
         $user = FacilityUser::where('email', 'yetkili@test.local')->firstOrFail();
 
-        Mail::assertQueued(FacilityEmailVerificationMail::class, fn ($mail) => $mail->user->email === $user->email);
+        Mail::assertSent(FacilityEmailVerificationMail::class, fn ($mail) => $mail->user->email === $user->email);
 
         $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
             'brand.facility.verify-email',
@@ -920,7 +945,7 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect();
 
         $topup = WalletTopup::firstOrFail();
-        Storage::disk('public')->assertExists($topup->receipt_path);
+        Storage::disk('local')->assertExists($topup->receipt_path);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->post('/admin/bakiye-yuklemeleri/'.$topup->id.'/onayla')
@@ -955,20 +980,25 @@ class PlatformFeatureTest extends TestCase
         // Admin, kurumun kendi markasiyla ilgisiz bir istekten (admin paneli)
         // onayladigi icin, mailin marka adi/linki mevcut request baglamindan
         // degil DOGRUDAN basvurunun kendi $claim->brand alanindan gelmeli.
-        Mail::assertQueued(FacilityEmailVerificationMail::class, function ($mail) {
+        Mail::assertSent(FacilityEmailVerificationMail::class, function ($mail) {
             return $mail->user->email === 'dogrulama@test.local'
                 && $mail->brandName === 'bakimevleri.com'
                 && str_contains($mail->verificationUrl, 'bakimevleri');
         });
 
-        Mail::assertQueued(FacilityClaimApprovedMail::class, fn ($mail) => str_contains($mail->loginUrl, 'bakimevleri'));
+        Mail::assertSent(FacilityClaimApprovedMail::class, fn ($mail) => str_contains($mail->loginUrl, 'bakimevleri'));
 
+        // must_change_password=true oldugu icin (bkz. FacilityClaimController::
+        // approve()), giris sonrasi ONCE sifre degistirme ekranina duser -
+        // bkz. Facility\AuthController::login() 30 Temmuz 2026 yorumu:
+        // "sifre degistirme, e-posta dogrulamasindan ONCE kontrol edilir".
+        $this->assertTrue($user->must_change_password);
         $user->update(['password' => Hash::make('Kurum12345!')]);
 
         $this->post('/site/bakimevleri/kurum-panel/giris', [
             'email' => 'dogrulama@test.local',
             'password' => 'Kurum12345!',
-        ])->assertRedirect('/site/bakimevleri/kurum-panel/email-dogrulama');
+        ])->assertRedirect('/site/bakimevleri/kurum-panel/sifre-degistir');
     }
 
     public function test_nearby_facilities_use_real_coordinates_when_available(): void
@@ -1102,6 +1132,7 @@ class PlatformFeatureTest extends TestCase
                 'price_tier_ultra_min' => 50000,
                 'whatsapp_number' => '905001234567',
                 'whatsapp_message' => 'TESTMESAJI12345 {marka}',
+                'facility_invitation_message' => 'Test davet mesaji {marka}',
             ]))->assertRedirect();
 
         $this->assertSame('905001234567', \App\Models\Setting::get('whatsapp_number'));
@@ -1178,7 +1209,7 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect();
 
         // 7) Tek seferlik sifre e-postasi kuyruga alinmis olmali.
-        Mail::assertQueued(FacilityClaimApprovedMail::class, function ($mail) {
+        Mail::assertSent(FacilityClaimApprovedMail::class, function ($mail) {
             return $mail->hasTo('yetkili.uskudar@test.local');
         });
 
@@ -1534,8 +1565,8 @@ class PlatformFeatureTest extends TestCase
 
         $family = FamilyUser::where('email', 'yeniaile@test.local')->firstOrFail();
 
-        Mail::assertQueued(FamilyEmailVerificationMail::class, fn ($mail) => $mail->family->is($family));
-        Mail::assertQueued(FamilyWelcomeMail::class, fn ($mail) => $mail->family->is($family));
+        Mail::assertSent(FamilyEmailVerificationMail::class, fn ($mail) => $mail->family->is($family));
+        Mail::assertSent(FamilyWelcomeMail::class, fn ($mail) => $mail->family->is($family));
     }
 
     public function test_quote_submission_notifies_family_in_app_and_by_mail(): void
@@ -1559,7 +1590,7 @@ class PlatformFeatureTest extends TestCase
             ->first();
         $this->assertNotNull($notification);
 
-        Mail::assertQueued(NotificationMail::class, fn ($mail) => $mail->title === $notification->title);
+        Mail::assertSent(NotificationMail::class, fn ($mail) => $mail->title === $notification->title);
     }
 
     public function test_guide_page_content_is_deterministic_and_varies_by_input(): void
@@ -2110,7 +2141,13 @@ class PlatformFeatureTest extends TestCase
     {
         config(['platform.ops_secret' => 'dogru-sifre', 'queue.default' => 'database']);
 
-        notify_user($this->family, 'topup_approved', 'Kuyruk Testi', 'Govde');
+        // 3 Agustos 2026: notify_user() artik mail'i sendNow ile senkron
+        // gonderdigi icin (kuyruga hic girmiyor) is kuyrugunu doldurmuyor -
+        // /_ops/queue-work'un GERCEKTEN bekleyen bir isi isleyip
+        // dusurdugunu test etmek icin dogrudan bir dummy is kuyruklaniyor.
+        dispatch(function () {
+            \Illuminate\Support\Facades\Log::info('queue-work testi: dummy is calisti');
+        });
         $this->assertDatabaseCount('jobs', 1);
 
         $this->postJson('/_ops/queue-work', [], ['Authorization' => 'Bearer dogru-sifre'])

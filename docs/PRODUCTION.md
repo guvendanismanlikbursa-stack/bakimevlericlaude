@@ -127,6 +127,15 @@ Kontrol:
 
 HTTPS zorunlu olmalidir. HTTP istekleri HTTPS'e yonlendirilmelidir.
 
+**KRITIK**: Bu hostingde doc-root `public/` alt klasorune ayarlanamiyor, bu yuzden
+uygulama koku dogrudan web-erisimli klasore yuklendi ve `deploy/server-root.htaccess`
+(bu repoda) TUM istekleri `public/`'e yonlendiren ve hassas klasorlere (app,
+config, vendor vb.) dogrudan erisimi engelleyen dosyayi icerir. Bu dosyanin
+sunucudaki 4 kopyasi (`public_html/.htaccess`, `bakimeviara.com/.htaccess`,
+`public_html_bakimevibul/.htaccess`, `public_html_staging/.htaccess`) GIT
+DISINDADIR - normal deploy akisiyla gitmez, elle yuklenmesi/korunmasi gerekir.
+Bu dosya sunucuda kaybolur/bozulursa site aninda tamamen 404 verir.
+
 ## 7. Cron / Scheduler
 
 Bu paylasimli (cPanel) hostingde dogrudan `php artisan schedule:run` cron'u
