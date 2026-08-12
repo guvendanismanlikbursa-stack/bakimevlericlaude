@@ -11,6 +11,28 @@ use Illuminate\Support\Str;
 
 class LocationGuideController extends Controller
 {
+    /**
+     * "Tum iller" rehber hub sayfasi: /rehber/{sectionSlug}/{citySlug} sayfalari
+     * sitemap'te olsa da, siteyi gezen gercek bir ziyaretci (ve normal crawl
+     * yapan Googlebot) onlara TIKLAYARAK ulasabilecegi bir sayfa yoktu -
+     * sadece sitemap.xml'den bilinebiliyorlardi. 12 Agustos 2026: kullanicinin
+     * talebi uzerine, 81 ilin TAMAMINA gercek <a href> linki veren bu hub
+     * eklendi (footer'daki "Kesfet" bolumunden her sayfadan erisilebilir).
+     */
+    public function index(Request $request)
+    {
+        $brand = current_brand();
+        $sectionSlug = $request->route('sectionSlug');
+
+        $section = active_service_section($sectionSlug, $brand);
+        abort_if(($section['slug'] ?? null) !== $sectionSlug, 404);
+
+        $cities = City::orderBy('name')->get(['slug', 'name']);
+        $sections = service_sections();
+
+        return view("themes.{$brand['theme']}.location-guide-index", compact('brand', 'section', 'sections', 'cities'));
+    }
+
     public function show(Request $request)
     {
         $brand = current_brand();

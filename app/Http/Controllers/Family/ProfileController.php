@@ -18,8 +18,9 @@ class ProfileController extends Controller
     {
         $brand = current_brand();
         $family = FamilyUser::findOrFail(session('family_user_id'));
+        $notificationGroups = notification_preference_groups('family');
 
-        return view("themes.{$brand['theme']}.family.profile", ['family' => $family]);
+        return view("themes.{$brand['theme']}.family.profile", compact('family', 'notificationGroups'));
     }
 
     public function update(Request $request)
@@ -44,5 +45,30 @@ class ProfileController extends Controller
         session(['family_user_name' => $family->name]);
 
         return back()->with('success', 'Hesap bilgileriniz güncellendi.');
+    }
+
+    /**
+     * 12 Agustos 2026: kullanicinin talebi - "hangi olaylar icin e-posta/push
+     * gelsin secemiyorum". Bilerek ANA profil formundan (update(), name
+     * zorunlu alanli) AYRI, kendi rotasi olan kucuk bir islem - bkz.
+     * Facility\ProfileController::updateNotifications() ayni tasarim.
+     */
+    public function updateNotifications(Request $request)
+    {
+        $family = FamilyUser::findOrFail(session('family_user_id'));
+
+        $prefs = [];
+        foreach (notification_preference_groups('family') as $group => $meta) {
+            foreach ($meta['types'] as $type) {
+                $prefs[$type] = [
+                    'email' => $request->boolean("notifications.{$group}.email"),
+                    'push' => $request->boolean("notifications.{$group}.push"),
+                ];
+            }
+        }
+
+        $family->update(['notification_preferences' => $prefs]);
+
+        return back()->with('success', 'Bildirim tercihleriniz güncellendi.');
     }
 }

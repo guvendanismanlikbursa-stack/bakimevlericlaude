@@ -21,6 +21,12 @@
 @section('og_title', $title)
 @section('meta_description', $brand['name'].' ile '.$placeTitle.' bölgesindeki '.$topicTitle.' kurumlarını karşılaştırın, ücretsiz teklif alın.')
 @section('og_image', seo_og_image($section))
+@if($section['slug'] !== ($brand['default_section'] ?? null))
+  {{-- bkz. layouts/brand.blade.php - 3 marka ayni envanteri paylastigi icin
+       bir markanin KENDI bolumu disindaki rehber sayfalari kopya icerik
+       riski tasir, bu yuzden Google'a bildirilmez (site icinde yine gezilebilir). --}}
+  @section('robots_meta', 'noindex,follow')
+@endif
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => $breadcrumbItems])
   @include('themes._shared.partials.itemlist-jsonld', ['facilities' => $facilities])

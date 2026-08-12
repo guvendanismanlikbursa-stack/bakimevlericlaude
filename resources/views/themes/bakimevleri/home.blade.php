@@ -10,6 +10,9 @@
 @endphp
 @section('title', $section['hero_title'].' | '.$brand['name'])
 @section('meta_description', $section['hero_subtitle'].' | '.$brand['name'])
+@if($section['slug'] !== ($brand['default_section'] ?? null))
+  @section('robots_meta', 'noindex,follow')
+@endif
 
 <section class="bg-gray-100">
   <div class="max-w-6xl mx-auto px-4 py-10">

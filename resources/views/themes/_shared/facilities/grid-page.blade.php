@@ -1,6 +1,13 @@
 @extends('layouts.brand')
 @section('title', $title)
 @section('meta_description', ($subtitle ?? $title).' | '.current_brand()['name'])
+@if(! ($activeSection['slug'] ?? null) || $activeSection['slug'] !== (current_brand()['default_section'] ?? null))
+  {{-- bkz. layouts/brand.blade.php - bolum secilmemis (TUM kategoriler
+       karisik) hali VEYA baska markanin bolumu, 3 markada da ayni cikan
+       kopya icerik; sadece markanin KENDI bolumune gore filtrelenmis hali
+       indexlenir. --}}
+  @section('robots_meta', 'noindex,follow')
+@endif
 @section('content')
 @php $brand = current_brand(); $primary = $brand['primary_color']; @endphp
 {{-- 12 Agustos 2026: kullanicinin talebi - "zaten iyi" kesif sayfalarini

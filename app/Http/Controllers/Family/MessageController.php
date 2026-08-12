@@ -45,7 +45,7 @@ class MessageController extends Controller
 
         $data = $request->validate(['body' => 'required|string|max:2000']);
 
-        Message::create([
+        $message = Message::create([
             'offer_request_id' => $offerRequest->id,
             'sender_type' => 'family',
             'sender_id' => $family->id,
@@ -54,7 +54,43 @@ class MessageController extends Controller
 
         $notifier->notifyNewMessageFromFamily($offerRequest);
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $this->serializeMessage($message)]);
+        }
+
         return back();
+    }
+
+    /**
+     * 12 Agustos 2026: bkz. Facility\MessageController::poll() ayni yorum -
+     * "canli hissetmeyen" mesajlasma icin polling tabanli yenileme.
+     */
+    public function poll(Request $request)
+    {
+        $brand = current_brand();
+        $offerRequest = $this->offerRequestFromRoute($request);
+        $family = FamilyUser::findOrFail(session('family_user_id'));
+
+        abort_unless($offerRequest->family_user_id === $family->id, 403);
+        abort_unless($offerRequest->brand === $brand['slug'], 403);
+        abort_unless($this->canAccessThread($offerRequest), 403);
+
+        $afterId = (int) $request->query('after_id', 0);
+        $messages = $offerRequest->messages()->where('id', '>', $afterId)->orderBy('id')->get();
+
+        return response()->json([
+            'messages' => $messages->map(fn ($m) => $this->serializeMessage($m))->all(),
+        ]);
+    }
+
+    private function serializeMessage(Message $message): array
+    {
+        return [
+            'id' => $message->id,
+            'sender_type' => $message->sender_type,
+            'body' => $message->body,
+            'created_at' => $message->created_at->format('d.m.Y H:i'),
+        ];
     }
 
     // 16 Temmuz 2026: dogrudan talepte (tek kurum) her zaman serbest;

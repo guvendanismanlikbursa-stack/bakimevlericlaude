@@ -1,5 +1,11 @@
 @extends('layouts.brand')
 @section('title', $facility->name.' - '.($facility->city->name ?? '').' '.($facility->district ?? ''))
+@if(($serviceSection['slug'] ?? null) !== (current_brand()['default_section'] ?? null))
+  {{-- bkz. layouts/brand.blade.php - envanter 3 markada da paylasildigi
+       icin bu kurum kendi bolumune ait OLMAYAN markada da erisilebiliyor;
+       kopya icerik olarak indekslenmesin, sadece kendi markasinda indexlensin. --}}
+  @section('robots_meta', 'noindex,follow')
+@endif
 @section('og_title', $facility->name.' - '.($facility->city->name ?? '').' '.($facility->district ?? ''))
 @section('meta_description', \Illuminate\Support\Str::limit(strip_tags($facility->description), 100).' '.facility_brand_framing($facility, current_brand())['meta_suffix'])
 @section('og_image', facility_card_image($facility))
@@ -266,6 +272,12 @@
             <div class="rounded-lg bg-gray-50 border border-gray-100 p-4">
               <div class="flex items-center justify-between"><div class="font-black text-gray-950">{{ $review->reviewer_name }}</div><div class="text-amber-500 font-black">★ {{ $review->rating }}</div></div>
               <p class="text-sm text-gray-600 mt-2">{{ $review->body }}</p>
+              @if($review->facility_reply)
+                <div class="mt-3 rounded-lg bg-white border border-gray-200 p-3">
+                  <div class="text-xs font-black" style="color: {{ $colors['primary'] }};">Kurum Yanıtı</div>
+                  <p class="text-sm text-gray-600 mt-1">{{ $review->facility_reply }}</p>
+                </div>
+              @endif
             </div>
           @empty
             <div class="rounded-lg p-5 text-sm text-gray-600 flex items-center gap-3" style="background: {{ $colors['soft'] }};">

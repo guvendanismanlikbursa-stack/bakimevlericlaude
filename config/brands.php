@@ -12,7 +12,7 @@ return [
             'short_title' => 'Yaşlı',
             'icon' => 'elderly-care',
             'scopes' => ['yasli-bakim'],
-            'hero_title' => 'Yaşlı bakım ve huzurevi seçeneklerini güvenle karşılaştırın',
+            'hero_title' => 'Bakımevi, huzurevi ve yaşlı bakım seçeneklerini güvenle karşılaştırın',
             'hero_subtitle' => 'Bakımevi, huzurevi, Alzheimer bakımı ve yaşlı yaşam merkezlerini tek ekranda inceleyin; aile ihtiyacınıza uygun kurumlardan teklif alın.',
             'search_label' => 'Bakımevi, huzurevi veya yaşlı bakım merkezi ara',
             'hero_image' => '/images/hero-yasli-bakim.webp',
@@ -31,7 +31,7 @@ return [
             'short_title' => 'Çocuk',
             'icon' => 'child-care',
             'scopes' => ['cocuk-bakim', 'ozel-egitim'],
-            'hero_title' => 'Çocuk bakımı, kreş, anaokulu ve özel eğitim kurumlarını bulun',
+            'hero_title' => 'Kreş, anaokulu, gündüz bakımevi ve özel eğitim kurumlarını bulun',
             'hero_subtitle' => 'Kreş, gündüz bakım evi, anaokulu ve özel eğitim merkezlerini yaş grubu, şehir ve hizmetlere göre karşılaştırın.',
             'search_label' => 'Kreş, anaokulu veya özel eğitim merkezi ara',
             'hero_image' => '/images/hero-cocuk.webp',
@@ -66,40 +66,52 @@ return [
     ],
 
     'brands' => [
+        // 12 Agustos 2026: kullanicinin talebi - 3 marka artik BIRBIRIYLE
+        // CAKISMAYAN 3 ayri varsayilan bolume sahip (yasli-bakim/cocuk/
+        // rehabilitasyon), her biri kendi anahtar kelime kumesinde "bayrak
+        // site" oluyor - toplamda tum SEO yuzeyini 3 site arasinda bolusup
+        // topluyoruz (bkz. bakimevleri'nin default_section'i asagida).
         'bakimevibul' => [
             'slug' => 'bakimevibul',
             'name' => 'bakimevibul.com',
-            'tagline' => 'Bakım kurumlarını güvenle bul',
+            'tagline' => 'Kreş, anaokulu ve çocuk bakım kurumlarını güvenle bul',
             'theme' => 'bakimevibul',
             'domains' => ['bakimevibul.com', 'www.bakimevibul.com', 'bakimevibul.test', 'bakimevibul.local', 'localhost:8000'],
             'primary_color' => '#1e6f5c',
             'secondary_color' => '#f4a259',
             'category_scope' => $allCategoryScopes,
-            'default_section' => 'yasli-bakim',
+            'default_section' => 'cocuk',
             'logo_text' => 'bakimevibul.com',
         ],
         'bakimeviara' => [
             'slug' => 'bakimeviara',
             'name' => 'bakimeviara.com',
-            'tagline' => 'Doğru bakım ve eğitim kurumunu karşılaştır',
+            'tagline' => 'Rehabilitasyon ve fizik tedavi merkezlerini karşılaştır',
             'theme' => 'bakimeviara',
             'domains' => ['bakimeviara.com', 'www.bakimeviara.com', 'bakimeviara.test', 'bakimeviara.local'],
             'primary_color' => '#5b3a8e',
             'secondary_color' => '#ffd166',
             'category_scope' => $allCategoryScopes,
-            'default_section' => 'cocuk',
+            'default_section' => 'rehabilitasyon',
             'logo_text' => 'bakimeviara.com',
         ],
         'bakimevleri' => [
             'slug' => 'bakimevleri',
             'name' => 'bakimevleri.com',
-            'tagline' => 'Bakım ve rehabilitasyon merkezleri için kapsamlı rehber',
+            // 12 Agustos 2026: kullanicinin talebi - bu alan adi tam olarak
+            // "bakimevi/bakimevleri" kelimesini tasidigi halde varsayilan
+            // bolum 'rehabilitasyon' idi; anasayfa basligi/aciklamasi hic
+            // "bakimevi" gecmiyordu. Bu, sitenin kendi ana anahtar kelimesiyle
+            // (Google'in en cok agirlik verdigi kok sayfada) dogrudan
+            // celisiyordu - "bakimevi/bakimevleri/huzurevi" aramalarinda
+            // cikmama sorununun en olasi nedeniydi.
+            'tagline' => 'Bakımevi, huzurevi ve yaşlı bakım merkezlerini güvenle karşılaştırın',
             'theme' => 'bakimevleri',
             'domains' => ['bakimevleri.com', 'www.bakimevleri.com', 'bakimevleri.test', 'bakimevleri.local'],
             'primary_color' => '#0b5d8c',
             'secondary_color' => '#e63946',
             'category_scope' => $allCategoryScopes,
-            'default_section' => 'rehabilitasyon',
+            'default_section' => 'yasli-bakim',
             'logo_text' => 'bakimevleri.com',
         ],
     ],

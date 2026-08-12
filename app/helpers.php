@@ -328,7 +328,7 @@ if (! function_exists('notify_user')) {
         // gibi hala calisir, sadece kafa karistiran ikinci/eksik mail gitmez.
         $suppressEmailForTypes = ['claim_approved', 'registration_approved'];
 
-        if (! in_array($type, $suppressEmailForTypes, true) && ! empty($notifiable->email)) {
+        if (! in_array($type, $suppressEmailForTypes, true) && ! empty($notifiable->email) && notification_channel_enabled($notifiable, $type, 'email')) {
             try {
                 \Illuminate\Support\Facades\Mail::to($notifiable->email)->sendNow(
                     new \App\Mail\NotificationMail($title, $body, $actionUrl)
@@ -342,15 +342,62 @@ if (! function_exists('notify_user')) {
             }
         }
 
-        try {
-            app(\App\Services\WebPushService::class)->sendToNotifiable($notifiable, $title, $body, $actionUrl);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Push bildirimi gonderilemedi: ' . $e->getMessage(), [
-                'notifiable_type' => get_class($notifiable),
-                'notifiable_id' => $notifiable->getKey(),
-                'type' => $type,
-            ]);
+        if (notification_channel_enabled($notifiable, $type, 'push')) {
+            try {
+                app(\App\Services\WebPushService::class)->sendToNotifiable($notifiable, $title, $body, $actionUrl);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Push bildirimi gonderilemedi: ' . $e->getMessage(), [
+                    'notifiable_type' => get_class($notifiable),
+                    'notifiable_id' => $notifiable->getKey(),
+                    'type' => $type,
+                ]);
+            }
         }
+    }
+}
+
+if (! function_exists('notification_channel_enabled')) {
+    /**
+     * 12 Agustos 2026: kullanicinin talebi - "hangi olaylar icin e-posta/push
+     * gelsin secemiyorum, hepsi ya acik ya kapali". family_users/facility_users.
+     * notification_preferences (JSON) bos/eksikse VARSAYILAN HER ZAMAN ACIK
+     * (opt-out) - boylece tercihini hic degistirmemis mevcut kullanicilar
+     * icin davranis sessizce degismez, sadece acikca kapatilirsa susar.
+     */
+    function notification_channel_enabled($notifiable, string $type, string $channel): bool
+    {
+        $prefs = $notifiable->notification_preferences ?? [];
+
+        return (bool) ($prefs[$type][$channel] ?? true);
+    }
+}
+
+if (! function_exists('notification_preference_groups')) {
+    /**
+     * Bildirim tercihi ekraninda (aile/kurum profil sayfalari) TEK TEK
+     * dahili "type" anahtarlarini degil, kullanicinin anlayacagi birkac
+     * anlamli grubu gosterir - her grup kaydederken ayni ayari altindaki
+     * TUM dahili turlere uygular (bkz. Family/Facility ProfileController).
+     *
+     * @return array<string, array{label: string, types: array<int, string>}>
+     */
+    function notification_preference_groups(string $for): array
+    {
+        if ($for === 'family') {
+            return [
+                'quotes' => ['label' => 'Yeni teklif geldiğinde', 'types' => ['quote_received']],
+                'messages' => ['label' => 'Kurum mesaj gönderdiğinde', 'types' => ['new_message']],
+                'updates' => ['label' => 'Talebim/sorum güncellendiğinde', 'types' => ['quote_accepted', 'quote_declined', 'question_answered']],
+                'review_invite' => ['label' => 'Yorum yazma daveti', 'types' => ['review_invite']],
+            ];
+        }
+
+        return [
+            'leads' => ['label' => 'Yeni talep veya soru geldiğinde', 'types' => ['offer_request', 'new_question']],
+            'messages' => ['label' => 'Aile mesaj gönderdiğinde', 'types' => ['new_message']],
+            'wallet' => ['label' => 'Bakiye işlemlerimde', 'types' => ['topup_approved', 'topup_rejected']],
+            'reminders' => ['label' => 'Hatırlatmalarda', 'types' => ['question_reminder']],
+        ];
     }
 }
 
@@ -395,6 +442,7 @@ if (! function_exists('notification_action_url')) {
                 'question_answered' => isset($data['facility_slug'])
                     ? brand_route('facilities.show', $data['facility_slug']) : null,
                 'question_reminder' => brand_route('facility.questions.index'),
+                'review_invite' => isset($data['facility_slug']) ? brand_route('facilities.show', $data['facility_slug']) : null,
                 'new_message' => isset($data['offer_request_id'])
                     ? brand_route($isFamilyUser ? 'family.thread' : 'facility.thread', $data['offer_request_id']) : null,
                 'claim_approved', 'registration_approved' => brand_route('facility.login'),

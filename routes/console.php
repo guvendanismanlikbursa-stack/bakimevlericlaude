@@ -34,6 +34,17 @@ Schedule::command('gallery:check-health')->dailyAt('09:00');
 // tamamlansin.
 Schedule::command('platform:check-user-flows')->dailyAt('08:45');
 
+// 12 Agustos 2026: kullanicinin talebi - kurum performans panelindeki
+// "gecen aya gore" trend gorunumu icin her gece kurumlarin o gunku
+// goruntulenme/favori/talep/teklif sayilarini kaydeder (bkz.
+// App\Console\Commands\SnapshotFacilityDailyStats).
+Schedule::command('facility:snapshot-daily-stats')->dailyAt('23:55');
+
+// 12 Agustos 2026: kullanicinin talebi - "yorum yazmaya davet edilmiyorum".
+// Teklifi kabul edip bir sure gecen ama hic yorum yazmamis aileleri
+// otomatik davet eder (bkz. App\Console\Commands\InviteFamiliesToReview).
+Schedule::command('reviews:invite-families')->dailyAt('10:30');
+
 // Bakim: paylasimli (cPanel) hosting'de kalici bir "queue:work" daemon'i
 // (supervisor/systemd) kurulamadigindan, kuyruk mevcut "* * * * * schedule:run"
 // cron'una binerek her dakika en fazla ~50 saniye boyunca tuketilir. Kuyruk

@@ -35,7 +35,7 @@ class MessageController extends Controller
 
         $data = $request->validate(['body' => 'required|string|max:2000']);
 
-        Message::create([
+        $message = Message::create([
             'offer_request_id' => $offerRequest->id,
             'sender_type' => 'facility',
             'sender_id' => $user->facility_id,
@@ -50,7 +50,46 @@ class MessageController extends Controller
             ['offer_request_id' => $offerRequest->id]
         );
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $this->serializeMessage($message)]);
+        }
+
         return back();
+    }
+
+    /**
+     * 12 Agustos 2026: kullanicinin talebi - "mesajlasma canli hissetmiyor,
+     * sayfayi yenilemem gerekiyor". Gercek WebSocket paylasimli hosting'de
+     * kurulamadigi icin (bkz. CheckUserFlows/backup ile ayni kisit), guest
+     * destek sohbetinde zaten kullanilan ayni "after_id ile kisa araliklarla
+     * yoklama (polling)" deseni burada da uygulanir - bkz.
+     * support-chat-widget.blade.php pollUrlTemplate mantigi.
+     */
+    public function poll(Request $request)
+    {
+        $brand = current_brand();
+        $offerRequest = $this->offerRequestFromRoute($request);
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+
+        abort_unless($offerRequest->brand === $brand['slug'], 403);
+        abort_unless($this->canAccessThread($offerRequest, $user->facility_id), 403);
+
+        $afterId = (int) $request->query('after_id', 0);
+        $messages = $offerRequest->messages()->where('id', '>', $afterId)->orderBy('id')->get();
+
+        return response()->json([
+            'messages' => $messages->map(fn ($m) => $this->serializeMessage($m))->all(),
+        ]);
+    }
+
+    private function serializeMessage(Message $message): array
+    {
+        return [
+            'id' => $message->id,
+            'sender_type' => $message->sender_type,
+            'body' => $message->body,
+            'created_at' => $message->created_at->format('d.m.Y H:i'),
+        ];
     }
 
     // 16 Temmuz 2026: yayin (broadcast) taleplerde ayni talebe teklif veren

@@ -21,13 +21,16 @@ use App\Models\Quote;
 use App\Models\VisitRequest;
 use App\Mail\FacilityClaimApprovedMail;
 use App\Mail\FacilityEmailVerificationMail;
+use App\Mail\FacilityStaffInvitedMail;
 use App\Mail\FacilityWelcomeMail;
 use App\Mail\FamilyEmailVerificationMail;
 use App\Mail\FamilyWelcomeMail;
 use App\Mail\NotificationMail;
+use App\Models\FacilityDailyStat;
 use App\Models\WalletTopup;
 use App\Services\FacilityImportImageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -524,11 +527,17 @@ class PlatformFeatureTest extends TestCase
     {
         // Sitemap artik marka basina uretilir (Host header'a gore); her marka
         // sadece kendi gercek alan adiyla uretilmis URL'leri icermeli.
+        // 12 Agustos 2026: kullanicinin talebi - 3 marka artik birbiriyle
+        // cakismayan 3 ayri bolume sahip (kopya icerik riskini onlemek
+        // icin), bu yuzden sitemap de SADECE markanin kendi bolumunu
+        // icerir; bakimevleri artik yasli-bakim'in evi (rehabilitasyon
+        // degil) - bkz. config/brands.php.
         $this->get('http://bakimevleri.com/sitemap.xml')
             ->assertOk()
             ->assertHeader('content-type', 'application/xml; charset=UTF-8')
-            ->assertSee('bakimevleri.com/rehber/rehabilitasyon/istanbul', false)
-            ->assertSee('bakimevleri.com/kurumlar/'.$this->rehabFacility->slug, false)
+            ->assertSee('bakimevleri.com/rehber/yasli-bakim/istanbul', false)
+            ->assertSee('bakimevleri.com/kurumlar/'.$this->elderlyFacility->slug, false)
+            ->assertDontSee('bakimevleri.com/rehber/rehabilitasyon/', false)
             ->assertDontSee('bakimevibul.com', false);
 
         $this->get('http://bakimevleri.com/robots.txt')
@@ -544,8 +553,8 @@ class PlatformFeatureTest extends TestCase
         $this->withSession(['facility_user_id' => $this->facilityUser->id])
             ->get('/site/bakimeviara/kurum-panel/profil')
             ->assertOk()
-            ->assertSee('Profil kalite puani')
-            ->assertSee('alan tamamlandi');
+            ->assertSee('Profil kalite puanı')
+            ->assertSee('alan tamamlandı');
 
         $this->withSession(['family_user_id' => $this->family->id])
             ->get('/site/bakimevibul/aile/panel')
@@ -703,7 +712,11 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Veri Cekici Rehab Merkezi')
             ->assertSee('Sahiplen');
 
-        $this->get('/site/bakimevleri')
+        // 12 Agustos 2026: kullanicinin talebi - 3 marka artik birbiriyle
+        // cakismayan 3 ayri varsayilan bolume sahip (bkz. config/brands.php);
+        // bakimevleri'nin varsayilani rehabilitasyon'dan yasli-bakim'a
+        // tasindi, bu yuzden burada da bolum acikca belirtiliyor.
+        $this->get('/site/bakimevleri?bolum=rehabilitasyon')
             ->assertOk()
             ->assertSee('On Kayitli Kurumlar')
             ->assertSee('Veri Cekici Rehab Merkezi');
@@ -2166,5 +2179,315 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('bekleyen=1');
 
         $this->assertDatabaseCount('jobs', 1);
+    }
+
+    // 12 Agustos 2026: kullanicinin talebi uzerine eklenen yeni ozellikler
+    // icin testler (yorum cevaplama, ekip yonetimi, bildirim tercihleri,
+    // mesajlasma polling, yorum daveti, gunluk performans anlik goruntusu).
+
+    public function test_facility_owner_can_reply_to_approved_review_and_it_shows_publicly(): void
+    {
+        $review = FacilityReview::create([
+            'facility_id' => $this->childFacility->id,
+            'family_user_id' => $this->family->id,
+            'brand' => 'bakimeviara',
+            'reviewer_name' => $this->family->name,
+            'rating' => 5,
+            'body' => 'Harika bir kurum.',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimeviara/kurum-panel/yorumlar')
+            ->assertOk()
+            ->assertSee('Harika bir kurum.');
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/yorumlar/'.$review->id.'/cevapla', [
+                'facility_reply' => 'Teşekkür ederiz!',
+            ])->assertRedirect();
+
+        $this->assertSame('Teşekkür ederiz!', $review->fresh()->facility_reply);
+        $this->assertNotNull($review->fresh()->facility_replied_at);
+
+        $this->get('/site/bakimeviara/kurumlar/'.$this->childFacility->slug)
+            ->assertOk()
+            ->assertSee('Kurum Yanıtı')
+            ->assertSee('Teşekkür ederiz!');
+    }
+
+    public function test_facility_cannot_reply_to_another_facilitys_review(): void
+    {
+        $review = FacilityReview::create([
+            'facility_id' => $this->elderlyFacility->id,
+            'family_user_id' => $this->family->id,
+            'brand' => 'bakimevleri',
+            'reviewer_name' => $this->family->name,
+            'rating' => 4,
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        // $this->facilityUser childFacility'ye ait, elderlyFacility'ye degil.
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimevleri/kurum-panel/yorumlar/'.$review->id.'/cevapla', [
+                'facility_reply' => 'Yetkisiz cevap',
+            ])->assertForbidden();
+
+        $this->assertNull($review->fresh()->facility_reply);
+    }
+
+    public function test_facility_owner_can_add_and_remove_staff_member(): void
+    {
+        Mail::fake();
+
+        $this->assertSame('owner', $this->facilityUser->role);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/ekip', [
+                'name' => 'Yeni Personel',
+                'email' => 'personel@test.local',
+            ])->assertRedirect();
+
+        $staff = FacilityUser::where('email', 'personel@test.local')->firstOrFail();
+        $this->assertSame('staff', $staff->role);
+        $this->assertSame($this->childFacility->id, $staff->facility_id);
+        $this->assertTrue($staff->must_change_password);
+
+        Mail::assertSent(FacilityStaffInvitedMail::class, fn ($mail) => $mail->hasTo('personel@test.local'));
+
+        // FacilityUserAuth middleware'i e-posta dogrulanmamis her istegi
+        // dogrulama sayfasina yonlendirir (bkz. o middleware) - burada rol
+        // bazli yetki mantigini test ettigimiz icin (e-posta dogrulama
+        // akisini degil) personeli elle dogrulanmis sayiyoruz.
+        $staff->update(['email_verified_at' => now()]);
+
+        // Personel ekip yonetimi ekranina giremez (sadece owner).
+        $this->withSession(['facility_user_id' => $staff->id])
+            ->get('/site/bakimeviara/kurum-panel/ekip')
+            ->assertForbidden();
+
+        // Ama panelin geri kalanina (dashboard) erisebilir.
+        $this->withSession(['facility_user_id' => $staff->id])
+            ->get('/site/bakimeviara/kurum-panel/panel')
+            ->assertOk();
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->delete('/site/bakimeviara/kurum-panel/ekip/'.$staff->id)
+            ->assertRedirect();
+
+        $this->assertNull(FacilityUser::find($staff->id));
+    }
+
+    public function test_staff_cannot_manage_team(): void
+    {
+        $staff = FacilityUser::create([
+            'facility_id' => $this->childFacility->id,
+            'role' => 'staff',
+            'name' => 'Personel',
+            'email' => 'personel2@test.local',
+            'password' => Hash::make('Personel12345!'),
+            'must_change_password' => false,
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->withSession(['facility_user_id' => $staff->id])
+            ->post('/site/bakimeviara/kurum-panel/ekip', ['name' => 'X', 'email' => 'x@test.local'])
+            ->assertForbidden();
+    }
+
+    public function test_family_can_disable_email_channel_for_a_notification_type(): void
+    {
+        Mail::fake();
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->put('/site/bakimeviara/aile/profil/bildirim-tercihleri', [
+                'notifications' => ['quotes' => ['push' => '1']], // email alani gonderilmedi = checkbox isaretsiz
+            ])->assertRedirect();
+
+        $this->family->refresh();
+        $this->assertFalse($this->family->notification_preferences['quote_received']['email']);
+        $this->assertTrue($this->family->notification_preferences['quote_received']['push']);
+
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Tercih Testi'));
+        $request->update(['family_user_id' => $this->family->id]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/talep/'.$request->id.'/teklif-ver', [
+                'price' => 9000,
+                'price_period' => 'monthly',
+            ]);
+
+        // Uygulama-ici bildirim yine olusmali, sadece e-posta kanali susturulmali.
+        $this->assertDatabaseHas('platform_notifications', [
+            'notifiable_type' => FamilyUser::class,
+            'notifiable_id' => $this->family->id,
+            'type' => 'quote_received',
+        ]);
+        Mail::assertNotSent(NotificationMail::class);
+    }
+
+    public function test_facility_message_poll_returns_only_messages_after_given_id(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Poll Testi'));
+        $request->update(['facility_id' => $this->childFacility->id]);
+
+        $first = Message::create(['offer_request_id' => $request->id, 'sender_type' => 'family', 'sender_id' => $this->family->id, 'body' => 'Birinci mesaj']);
+        $second = Message::create(['offer_request_id' => $request->id, 'sender_type' => 'family', 'sender_id' => $this->family->id, 'body' => 'İkinci mesaj']);
+
+        $response = $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->getJson('/site/bakimeviara/kurum-panel/talep/'.$request->id.'/mesajlar/yeni?after_id='.$first->id);
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('messages'));
+        $this->assertSame('İkinci mesaj', $response->json('messages.0.body'));
+        $this->assertSame($second->id, $response->json('messages.0.id'));
+    }
+
+    public function test_facility_message_store_returns_json_message_when_ajax_requested(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'AJAX Testi'));
+        $request->update(['facility_id' => $this->childFacility->id]);
+
+        $response = $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->postJson('/site/bakimeviara/kurum-panel/talep/'.$request->id.'/mesajlar', ['body' => 'Merhaba']);
+
+        $response->assertOk();
+        $this->assertSame('Merhaba', $response->json('message.body'));
+        $this->assertSame('facility', $response->json('message.sender_type'));
+    }
+
+    public function test_review_invitation_command_notifies_eligible_family_only_once(): void
+    {
+        Mail::fake();
+
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Davet Testi'));
+        $quote = Quote::create([
+            'offer_request_id' => $request->id,
+            'facility_id' => $this->childFacility->id,
+            'facility_user_id' => $this->facilityUser->id,
+            'price' => 5000,
+            'price_period' => 'monthly',
+            'status' => 'accepted',
+        ]);
+
+        // Eloquent update() 'updated_at'i otomatik simdiki zamana cektigi
+        // icin (3 gunluk esigi test edebilmek amaciyla) DB::table ile
+        // dogrudan gecmis bir tarih yaziyoruz.
+        DB::table('offer_requests')->where('id', $request->id)->update([
+            'accepted_quote_id' => $quote->id,
+            'family_user_id' => $this->family->id,
+            'updated_at' => now()->subDays(5),
+        ]);
+
+        $this->artisan('reviews:invite-families')->assertSuccessful();
+
+        $this->assertDatabaseHas('platform_notifications', [
+            'notifiable_type' => FamilyUser::class,
+            'notifiable_id' => $this->family->id,
+            'type' => 'review_invite',
+        ]);
+        $this->assertNotNull($request->fresh()->review_invited_at);
+
+        $countBefore = PlatformNotification::count();
+        $this->artisan('reviews:invite-families');
+        $this->assertSame($countBefore, PlatformNotification::count(), 'Ayni talebe ikinci kez davet gitmemeli.');
+    }
+
+    public function test_review_invitation_command_skips_family_that_already_reviewed(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Zaten Yorumlu'));
+        $quote = Quote::create([
+            'offer_request_id' => $request->id,
+            'facility_id' => $this->childFacility->id,
+            'facility_user_id' => $this->facilityUser->id,
+            'price' => 5000,
+            'price_period' => 'monthly',
+            'status' => 'accepted',
+        ]);
+        DB::table('offer_requests')->where('id', $request->id)->update([
+            'accepted_quote_id' => $quote->id,
+            'family_user_id' => $this->family->id,
+            'updated_at' => now()->subDays(5),
+        ]);
+
+        FacilityReview::create([
+            'facility_id' => $this->childFacility->id,
+            'family_user_id' => $this->family->id,
+            'brand' => 'bakimeviara',
+            'reviewer_name' => $this->family->name,
+            'rating' => 5,
+            'status' => 'pending',
+        ]);
+
+        $this->artisan('reviews:invite-families');
+
+        $this->assertDatabaseMissing('platform_notifications', [
+            'notifiable_type' => FamilyUser::class,
+            'notifiable_id' => $this->family->id,
+            'type' => 'review_invite',
+        ]);
+        $this->assertNotNull($request->fresh()->review_invited_at);
+    }
+
+    public function test_snapshot_command_records_daily_stats_only_for_claimed_facilities(): void
+    {
+        $this->childFacility->update(['views_count' => 42, 'favorites_count' => 3]);
+
+        $this->artisan('facility:snapshot-daily-stats')->assertSuccessful();
+
+        // 'date' sutunu sqlite'da tam datetime string olarak saklanabiliyor
+        // (ör. "2026-08-12 00:00:00") - assertDatabaseHas'in tam metin
+        // eslesmesi yerine model uzerinden (cast'lenmis) dogruluyoruz.
+        $stat = FacilityDailyStat::where('facility_id', $this->childFacility->id)
+            ->whereDate('date', now()->toDateString())
+            ->first();
+
+        $this->assertNotNull($stat);
+        $this->assertSame(42, $stat->views_count);
+        $this->assertSame(3, $stat->favorites_count);
+
+        $this->assertDatabaseMissing('facility_daily_stats', ['facility_id' => $this->rehabFacility->id]);
+    }
+
+    public function test_facility_dashboard_shows_performance_trend_with_lead_value(): void
+    {
+        FacilityDailyStat::create([
+            'facility_id' => $this->childFacility->id,
+            'date' => now()->subDays(10)->toDateString(),
+            'views_count' => 10,
+            'favorites_count' => 0,
+            'offer_requests_count' => 1,
+            'quotes_sent_count' => 1,
+            'quotes_accepted_count' => 0,
+        ]);
+        FacilityDailyStat::create([
+            'facility_id' => $this->childFacility->id,
+            'date' => now()->toDateString(),
+            'views_count' => 25,
+            'favorites_count' => 1,
+            'offer_requests_count' => 2,
+            'quotes_sent_count' => 2,
+            'quotes_accepted_count' => 1,
+        ]);
+
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Deger Testi'));
+        Quote::create([
+            'offer_request_id' => $request->id,
+            'facility_id' => $this->childFacility->id,
+            'facility_user_id' => $this->facilityUser->id,
+            'price' => 7500,
+            'price_period' => 'monthly',
+            'status' => 'accepted',
+        ]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimeviara/kurum-panel/panel')
+            ->assertOk()
+            ->assertSee('Performans Trendi')
+            ->assertSee('7.500')
+            ->assertSee('Bu ay kabul edilen tekliflerin toplam değeri');
     }
 }

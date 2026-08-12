@@ -74,6 +74,54 @@
     </div>
   </div>
 
+  {{-- 12 Agustos 2026: kullanicinin talebi - "gecen aya gore nasilim
+       goremiyorum, para harcayip sonucunu goremiyorum" --}}
+  <div class="mb-8 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <h2 class="font-bold text-lg mb-1">Performans Trendi</h2>
+    <p class="text-sm text-gray-500 mb-4">Son 7 gün, önceki 7 günle karşılaştırıldığında.</p>
+
+    @if(!$trend['has_data'])
+      <p class="text-sm text-gray-400">Trend verisi birikmeye başladı, birkaç gün sonra burada görünecek.</p>
+    @else
+      <div class="grid sm:grid-cols-3 gap-3 mb-5">
+        @php
+          $viewsDiff = $trend['views_this_week'] - $trend['views_last_week'];
+          $viewsPct = $trend['views_last_week'] > 0 ? round($viewsDiff / $trend['views_last_week'] * 100) : ($trend['views_this_week'] > 0 ? 100 : 0);
+          $offersDiff = $trend['offer_requests_this_week'] - $trend['offer_requests_last_week'];
+          $offersPct = $trend['offer_requests_last_week'] > 0 ? round($offersDiff / $trend['offer_requests_last_week'] * 100) : ($trend['offer_requests_this_week'] > 0 ? 100 : 0);
+        @endphp
+        <div class="rounded-lg bg-gray-50 p-4">
+          <div class="text-xs text-gray-500">Bu hafta görüntülenme</div>
+          <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($trend['views_this_week']) }}</div>
+          <div class="text-xs font-bold mt-1 {{ $viewsDiff >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ $viewsDiff >= 0 ? '▲' : '▼' }} %{{ abs($viewsPct) }} geçen haftaya göre</div>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <div class="text-xs text-gray-500">Bu hafta gelen talep</div>
+          <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($trend['offer_requests_this_week']) }}</div>
+          <div class="text-xs font-bold mt-1 {{ $offersDiff >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ $offersDiff >= 0 ? '▲' : '▼' }} %{{ abs($offersPct) }} geçen haftaya göre</div>
+        </div>
+        <div class="rounded-lg bg-primary/10 p-4">
+          <div class="text-xs text-gray-500">Bu ay kabul edilen tekliflerin toplam değeri</div>
+          <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($trend['lead_value_this_month'], 0, ',', '.') }} ₺</div>
+          <div class="text-xs text-gray-500 mt-1">Ödediğiniz bakiyenin karşılığı</div>
+        </div>
+      </div>
+
+      @if(count($trend['daily_deltas']) > 1)
+        @php $maxDelta = max(1, collect($trend['daily_deltas'])->max('views_delta')); @endphp
+        <div class="text-xs font-black text-gray-500 mb-2">Günlük görüntülenme (son 14 gün)</div>
+        <div class="flex items-end gap-1.5 h-20">
+          @foreach($trend['daily_deltas'] as $day)
+            <div class="flex-1 flex flex-col items-center gap-1" title="{{ $day['date'] }}: {{ $day['views_delta'] }} görüntülenme">
+              <div class="w-full rounded-t bg-primary/70" style="height: {{ max(3, round($day['views_delta'] / $maxDelta * 64)) }}px;"></div>
+              <div class="text-[10px] text-gray-400">{{ $day['date'] }}</div>
+            </div>
+          @endforeach
+        </div>
+      @endif
+    @endif
+  </div>
+
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Ücretsiz Hak</div>
@@ -98,6 +146,10 @@
     <a href="{{ brand_route('facility.wallet.index') }}" class="bg-primary text-white rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Bakiye Yükle →</a>
     <a href="{{ brand_route('facility.packages.index') }}" class="border border-primary text-primary rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Paketler →</a>
     <a href="{{ brand_route('facility.questions.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Aile Soruları →</a>
+    <a href="{{ brand_route('facility.reviews.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Yorumlarım →</a>
+    @if($user->role === 'owner')
+      <a href="{{ brand_route('facility.team.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Ekip Yönetimi →</a>
+    @endif
     <a href="{{ brand_route('facility.notifications.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Bildirimler →</a>
     <a href="{{ brand_route('facility.password.change') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Şifre Değiştir →</a>
   </div>

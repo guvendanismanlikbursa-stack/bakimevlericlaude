@@ -32,7 +32,23 @@ class SitemapController extends Controller
         $prefix = $this->brandBaseUrl($brandSlug);
         $sections = service_sections();
         $cities = City::orderBy('slug')->get(['id', 'slug', 'name', 'updated_at']);
-        $categories = FacilityCategory::whereIn('brand_scope', $brand['category_scope'])->get();
+
+        // 12 Agustos 2026: kullanicinin talebi - "3 farkli bolum 3 farkli
+        // siteden toplansin, birebir ayni SEO/kopya tehlikesi olmasin". 3
+        // marka AYNI envanteri (category_scope hepsinde full) paylastigi
+        // icin, bir markanin KENDI bolumu DISINDAKI il/ilce rehberi, fiyat
+        // rehberi, vitrin ve kurum sayfalarini sitemap'e eklemek digerinde
+        // BIREBIR AYNI icerigi iki kez Google'a bildirmek anlamina gelirdi.
+        // Bu yuzden sitemap'teki bolum-bazli URL'ler SADECE markanin kendi
+        // varsayilan bolumunu kapsar (digerleri hala sitede gezilebilir,
+        // sadece Google'a ayrica bildirilmez - ayrica bkz.
+        // layouts/brand.blade.php'deki noindex korumasi, otoriter katman
+        // odur, bu sadece kesif/oncelik katmanidir).
+        $ownSection = $sections[$brand['default_section']] ?? null;
+        $sectionsForSitemap = $ownSection ? [$ownSection] : [];
+        $ownScopes = $ownSection['scopes'] ?? $brand['category_scope'];
+        $categories = FacilityCategory::whereIn('brand_scope', $ownScopes)->get();
+        $bolumQuery = $ownSection ? '?bolum='.$ownSection['slug'] : '';
 
         $urls->push($this->url($prefix, 'daily', '1.0'));
         $urls->push($this->url($prefix.'/kurumlar', 'daily', '0.9'));
@@ -44,27 +60,37 @@ class SitemapController extends Controller
         $urls->push($this->url($prefix.'/bakim-rehberi', 'weekly', '0.7'));
         $urls->push($this->url($prefix.'/fiyat-rehberi', 'weekly', '0.7'));
         $urls->push($this->url($prefix.'/istatistikler', 'weekly', '0.5'));
-        $urls->push($this->url($prefix.'/dogrulanmis-kurumlar', 'daily', '0.6'));
-        $urls->push($this->url($prefix.'/son-guncellenen-kurumlar', 'daily', '0.6'));
-        $urls->push($this->url($prefix.'/yeni-eklenen-kurumlar', 'daily', '0.6'));
-        $urls->push($this->url($prefix.'/son-sahiplenilen-kurumlar', 'daily', '0.5'));
-        $urls->push($this->url($prefix.'/en-cok-goruntulenen-kurumlar', 'daily', '0.5'));
-        $urls->push($this->url($prefix.'/son-eklenen-fotograflar', 'daily', '0.4'));
+        // Vitrin (kesif) sayfalari: bolumsuz hali TUM kategorileri karistirip
+        // 3 markada da ayni cikardigi icin artik markanin KENDI bolumune
+        // qualifiy edilmis halde sitemap'e giriyor (bkz. grid-page.blade.php
+        // ve recent-photos.blade.php'deki noindex esleseni).
+        $urls->push($this->url($prefix.'/dogrulanmis-kurumlar'.$bolumQuery, 'daily', '0.6'));
+        $urls->push($this->url($prefix.'/son-guncellenen-kurumlar'.$bolumQuery, 'daily', '0.6'));
+        $urls->push($this->url($prefix.'/yeni-eklenen-kurumlar'.$bolumQuery, 'daily', '0.6'));
+        $urls->push($this->url($prefix.'/son-sahiplenilen-kurumlar'.$bolumQuery, 'daily', '0.5'));
+        $urls->push($this->url($prefix.'/en-cok-goruntulenen-kurumlar'.$bolumQuery, 'daily', '0.5'));
+        $urls->push($this->url($prefix.'/son-eklenen-fotograflar'.$bolumQuery, 'daily', '0.4'));
 
         $districtCombos = $this->districtCombosBySection();
         $categoryCityCombos = $this->categoryCityCombos();
         $categoryDistrictCombos = $this->categoryCityDistrictCombos();
 
-        foreach ($sections as $section) {
+        foreach ($sectionsForSitemap as $section) {
             $urls->push($this->url($prefix.'?bolum='.$section['slug'], 'daily', '0.9'));
             $urls->push($this->url($prefix.'/kurumlar?bolum='.$section['slug'], 'daily', '0.9'));
+            $urls->push($this->url($prefix.'/rehber/'.$section['slug'], 'weekly', '0.7'));
 
             foreach ($cities as $city) {
                 $urls->push($this->url($prefix.'/rehber/'.$section['slug'].'/'.$city->slug, 'weekly', '0.6', $city->updated_at));
                 $urls->push($this->url($prefix.'/fiyat-rehberi/'.$section['slug'].'/'.$city->slug, 'weekly', '0.6', $city->updated_at));
 
-                foreach ($districtCombos[$section['slug']][$city->slug] ?? [] as $districtSlug) {
-                    $urls->push($this->url($prefix.'/rehber/'.$section['slug'].'/'.$city->slug.'/'.$districtSlug, 'weekly', '0.55', $city->updated_at));
+                foreach ($districtCombos[$section['slug']][$city->slug] ?? [] as $district) {
+                    $urls->push($this->url(
+                        $prefix.'/rehber/'.$section['slug'].'/'.$city->slug.'/'.$district['slug'],
+                        $district['has_facilities'] ? 'weekly' : 'monthly',
+                        $district['has_facilities'] ? '0.55' : '0.35',
+                        $city->updated_at
+                    ));
                 }
             }
 
@@ -77,7 +103,7 @@ class SitemapController extends Controller
 
         foreach ($categories as $category) {
             $section = service_section_for_scope($category->brand_scope);
-            if (! $section) {
+            if (! $section || $section['slug'] !== ($ownSection['slug'] ?? null)) {
                 continue;
             }
 
@@ -96,7 +122,11 @@ class SitemapController extends Controller
             $urls->push($this->url($prefix.'/sayfa/'.$page->slug, 'monthly', '0.6', $page->updated_at));
         });
 
-        Facility::published()->forBrand($brand['category_scope'])->orderBy('updated_at', 'desc')
+        // 12 Agustos 2026: kullanicinin talebi - kopya icerik korumasi kurum
+        // detay sayfalarina da genisletildi: sitemap artik markanin KENDI
+        // bolumune ait kurumlari bildirir (digerleri hala calisir/gezilebilir,
+        // sadece noindex - bkz. facilities/show.blade.php).
+        Facility::published()->forBrand($ownScopes)->orderBy('updated_at', 'desc')
             ->chunk(200, function ($facilities) use ($urls, $prefix) {
                 foreach ($facilities as $facility) {
                     $urls->push($this->url($prefix.'/kurumlar/'.$facility->slug, 'weekly', '0.8', $facility->updated_at));
@@ -107,12 +137,20 @@ class SitemapController extends Controller
     }
 
     /**
-     * Il+ilce (bolum bazli) kombinasyonlari: bir bolumun kapsadigi tum
-     * kategorilerin (brand_scope) o il+ilcedeki toplam kurum sayisi >= 3 ise.
-     * LocationGuideController::show() zaten {districtSlug?} destekliyor,
-     * burada sadece sitemap'e eklenecek gercek/eslenebilir kombinasyonlar hesaplanir.
+     * Il+ilce (bolum bazli) kombinasyonlari.
      *
-     * @return array<string, array<string, array<int, string>>> [sectionSlug => [citySlug => [districtSlug, ...]]]
+     * 12 Agustos 2026: kullanicinin acik talebi - "81 il ve ilcelerinde
+     * gecerli olacak": eskiden SADECE gercek kurumu (>=3) olan ilceler
+     * sitemap'e giriyordu, geri kalan ~973 ilcenin buyuk cogunlugu Google'a
+     * hic bildirilmiyordu (LocationGuideController::show() sayfayi 0 kurumla
+     * da render eder, ama sitemap'te olmayan bir sayfayi Google kolay kolay
+     * kesfetmez). Artik HER (bolum x il x gercek ilce) kombinasyonu sitemap'e
+     * giriyor - gercek kurumu olanlar onceki gibi 'weekly'/0.55 ile, kurumu
+     * olmayanlar (henuz) daha dusuk sinyalli 'monthly'/0.35 ile. Boylece
+     * mevcut guclu sayfalarin onceligi ASLA dusurulmez, sadece eksik il/ilce
+     * kapsami tamamlanir (bkz. buildXml() cagrisi).
+     *
+     * @return array<string, array<string, array<int, array{slug: string, has_facilities: bool}>>> [sectionSlug => [citySlug => [{slug, has_facilities}, ...]]]
      */
     private function districtCombosBySection(): array
     {
@@ -138,9 +176,9 @@ class SitemapController extends Controller
             $bucketed[$key]['districts'][$row->district] = ($bucketed[$key]['districts'][$row->district] ?? 0) + $row->cnt;
         }
 
-        $result = [];
+        // Gercek kurumu (>=3) olan ilceler: [sectionSlug|citySlug][districtSlug] = true
+        $withFacilities = [];
         foreach ($bucketed as $key => $data) {
-            [$sectionSlug, $citySlug] = explode('|', $key, 2);
             $validDistricts = collect(districts_for_city($data['city_name']));
 
             foreach ($data['districts'] as $districtName => $count) {
@@ -153,7 +191,25 @@ class SitemapController extends Controller
                     continue;
                 }
 
-                $result[$sectionSlug][$citySlug][] = $slug;
+                $withFacilities[$key][$slug] = true;
+            }
+        }
+
+        $sections = service_sections();
+        $cities = City::orderBy('slug')->get(['slug', 'name']);
+
+        $result = [];
+        foreach ($sections as $section) {
+            foreach ($cities as $city) {
+                $key = $section['slug'].'|'.$city->slug;
+
+                foreach (districts_for_city($city->name) as $districtName) {
+                    $slug = Str::slug($districtName);
+                    $result[$section['slug']][$city->slug][] = [
+                        'slug' => $slug,
+                        'has_facilities' => isset($withFacilities[$key][$slug]),
+                    ];
+                }
             }
         }
 

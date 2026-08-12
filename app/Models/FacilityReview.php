@@ -8,6 +8,7 @@ class FacilityReview extends Model
 {
     protected $fillable = [
         'facility_id', 'family_user_id', 'brand', 'reviewer_name', 'reviewer_phone', 'rating', 'body', 'status', 'approved_at',
+        'facility_reply', 'facility_replied_at',
     ];
 
     protected function casts(): array
@@ -17,6 +18,7 @@ class FacilityReview extends Model
             'family_user_id' => 'integer',
             'approved_at' => 'datetime',
             'rating' => 'integer',
+            'facility_replied_at' => 'datetime',
         ];
     }
 

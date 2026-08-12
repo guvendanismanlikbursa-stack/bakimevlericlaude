@@ -92,6 +92,7 @@ $siteRoutes = function () {
     Route::get('/bakim-danismani/sonuclar', [CareAdvisorController::class, 'results'])->name('care-advisor.results');
     Route::get('/karsilastir', [EngagementController::class, 'compare'])->name('engagement.compare');
     Route::get('/favoriler', [EngagementController::class, 'favorites'])->middleware('family.auth')->name('engagement.favorites');
+    Route::get('/rehber/{sectionSlug}', [LocationGuideController::class, 'index'])->name('location-guide.index');
     Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->name('location-guide.category');
     Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->name('location-guide.show');
     Route::get('/kurumlar', [FacilityController::class, 'index'])->name('facilities.index');
@@ -201,10 +202,12 @@ $siteRoutes = function () {
             Route::post('/teklif/{quote}/kabul-et', [FamilyDashboardController::class, 'acceptQuote'])->name('quotes.accept');
             Route::get('/talep/{offerRequest}/mesajlar', [FamilyMessageController::class, 'index'])->name('thread');
             Route::post('/talep/{offerRequest}/mesajlar', [FamilyMessageController::class, 'store'])->name('thread.store');
+            Route::get('/talep/{offerRequest}/mesajlar/yeni', [FamilyMessageController::class, 'poll'])->middleware('throttle:public-light')->name('thread.poll');
             Route::get('/bildirimler', [FamilyNotificationController::class, 'index'])->name('notifications.index');
             Route::post('/bildirimler/{notification}/okundu', [FamilyNotificationController::class, 'markRead'])->name('notifications.read');
             Route::get('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'edit'])->name('profile.edit');
             Route::put('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'update'])->name('profile.update');
+            Route::put('/profil/bildirim-tercihleri', [\App\Http\Controllers\Family\ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
             Route::get('/bildirimler/sayi', [FamilyNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
         });
     });
@@ -240,11 +243,13 @@ $siteRoutes = function () {
             Route::post('/talep/{offerRequest}/teklif-ver', [FacilityQuoteController::class, 'store'])->name('quotes.store');
             Route::get('/talep/{offerRequest}/mesajlar', [FacilityMessageController::class, 'index'])->name('thread');
             Route::post('/talep/{offerRequest}/mesajlar', [FacilityMessageController::class, 'store'])->name('thread.store');
+            Route::get('/talep/{offerRequest}/mesajlar/yeni', [FacilityMessageController::class, 'poll'])->middleware('throttle:public-light')->name('thread.poll');
 
             Route::get('/profil', [FacilityProfileController::class, 'edit'])->name('profile.edit');
             Route::put('/profil', [FacilityProfileController::class, 'update'])->name('profile.update');
             Route::post('/profil/gorsel', [FacilityProfileController::class, 'uploadImage'])->name('profile.image.store');
             Route::delete('/profil/gorsel/{image}', [FacilityProfileController::class, 'deleteImage'])->name('profile.image.destroy');
+            Route::put('/profil/bildirim-tercihleri', [FacilityProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
 
             Route::get('/bakiyem', [FacilityWalletController::class, 'index'])->name('wallet.index');
             Route::post('/bakiyem', [FacilityWalletController::class, 'store'])->name('wallet.store');
@@ -258,6 +263,13 @@ $siteRoutes = function () {
 
             Route::get('/sorular', [FacilityQuestionPanelController::class, 'index'])->name('questions.index');
             Route::post('/sorular/{question}/cevapla', [FacilityQuestionPanelController::class, 'answer'])->name('questions.answer');
+
+            Route::get('/yorumlar', [\App\Http\Controllers\Facility\ReviewController::class, 'index'])->name('reviews.index');
+            Route::post('/yorumlar/{review}/cevapla', [\App\Http\Controllers\Facility\ReviewController::class, 'reply'])->name('reviews.reply');
+
+            Route::get('/ekip', [\App\Http\Controllers\Facility\TeamController::class, 'index'])->name('team.index');
+            Route::post('/ekip', [\App\Http\Controllers\Facility\TeamController::class, 'store'])->name('team.store');
+            Route::delete('/ekip/{member}', [\App\Http\Controllers\Facility\TeamController::class, 'destroy'])->name('team.destroy');
         });
     });
 };

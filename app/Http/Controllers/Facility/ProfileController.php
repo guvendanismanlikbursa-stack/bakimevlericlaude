@@ -44,7 +44,33 @@ class ProfileController extends Controller
             'profileQuality' => $facility->profileQuality(),
             'sectionDetailFields' => $sectionDetailFields,
             'sectionDetails' => $sectionDetails,
+            'notificationGroups' => notification_preference_groups('facility'),
         ]);
+    }
+
+    /**
+     * 12 Agustos 2026: kullanicinin talebi - bilerek ANA profil formundan
+     * (update()) AYRI, kendi <form>'u ve rotasi olan kucuk bir islem -
+     * o formun buyuk/karmasik validasyonuna hic dokunmadan, yanlislikla
+     * profil verisini bozma riski olmadan bildirim tercihlerini kaydeder.
+     */
+    public function updateNotifications(Request $request)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+
+        $prefs = [];
+        foreach (notification_preference_groups('facility') as $group => $meta) {
+            foreach ($meta['types'] as $type) {
+                $prefs[$type] = [
+                    'email' => $request->boolean("notifications.{$group}.email"),
+                    'push' => $request->boolean("notifications.{$group}.push"),
+                ];
+            }
+        }
+
+        $user->update(['notification_preferences' => $prefs]);
+
+        return back()->with('success', 'Bildirim tercihleriniz güncellendi.');
     }
 
     public function update(Request $request)

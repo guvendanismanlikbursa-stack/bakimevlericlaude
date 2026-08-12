@@ -8,10 +8,20 @@ class FacilityUser extends Model
 {
     protected $fillable = [
         'facility_id', 'name', 'email', 'phone', 'password', 'must_change_password', 'status', 'email_verified_at',
-        'signup_lat', 'signup_lng', 'signup_city_name', 'signup_ip', 'google_id', 'avatar_url',
+        'signup_lat', 'signup_lng', 'signup_city_name', 'signup_ip', 'google_id', 'avatar_url', 'role',
+        'notification_preferences',
     ];
 
     protected $hidden = ['password', 'signup_lat', 'signup_lng'];
+
+    // 12 Agustos 2026: migration'daki DB-seviyesi ->default('owner') mevcut
+    // (sahiplenme onayi/kayit onayi gibi) tum FacilityUser::create() cagri
+    // noktalarinda tutarli sekilde uygulanmadi (SQLite'ta yeni eklenen bir
+    // kolonun DB-default'u bazi durumlarda guvenilmez cikti - testte
+    // yakalandi). Uygulama seviyesinde bir varsayilan, DB motorundan bagimsiz
+    // olarak HER yeni FacilityUser'in (aksi acikca belirtilmedikce) 'owner'
+    // olmasini garantiler.
+    protected $attributes = ['role' => 'owner'];
 
     // 28 Temmuz 2026: facility_id cast'siz oldugu icin MySQL/PDO'dan STRING
     // donuyordu; Facility\QuoteController::store() bunu OfferRequest::
@@ -28,6 +38,7 @@ class FacilityUser extends Model
             'facility_id' => 'integer',
             'must_change_password' => 'boolean',
             'email_verified_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
     }
 

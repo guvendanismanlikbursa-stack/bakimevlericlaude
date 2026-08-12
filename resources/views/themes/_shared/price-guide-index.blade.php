@@ -50,6 +50,20 @@
       @endforeach
     </div>
   </div>
+
+  {{-- 12 Agustos 2026: kullanicinin talebi - "81 il/ilcede gecerli olsun".
+       Yukaridaki 6 sehir disinda kalan iller SADECE JS'li <select> ile
+       erisilebiliyordu (Googlebot bunu guvenilir bir link olarak takip
+       etmez) - asagidaki gercek <a href> listesi 81 ilin tamamini
+       taranabilir/tiklanabilir hale getirir. --}}
+  <div class="mt-10">
+    <div class="text-sm font-black text-gray-500 mb-3">Tüm iller</div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      @foreach($cities as $city)
+        <a href="{{ brand_route('price-guide.show', ['sectionSlug' => $defaultSectionSlug, 'citySlug' => $city->slug]) }}" class="rounded-lg border border-gray-100 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:shadow-sm hover:text-primary transition">{{ $city->name }}</a>
+      @endforeach
+    </div>
+  </div>
 </div>
 <script>
   var priceGuideUrlTemplate = @json(brand_route('price-guide.show', ['sectionSlug' => '__SECTION__', 'citySlug' => '__CITY__']));

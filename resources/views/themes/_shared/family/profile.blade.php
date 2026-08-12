@@ -38,5 +38,11 @@
 
     <button class="btn-primary w-full py-2.5 rounded-lg font-bold">Kaydet</button>
   </form>
+
+  @include('themes._shared.partials.notification-preferences-form', [
+      'notificationGroups' => $notificationGroups,
+      'preferences' => $family->notification_preferences ?? [],
+      'notificationFormAction' => brand_route('family.profile.notifications.update'),
+  ])
 </div>
 @endsection

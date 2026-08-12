@@ -17,6 +17,9 @@
 @section('og_title', $placeTitle.' '.$topicTitle.' Fiyatları')
 @section('meta_description', $placeTitle.' bölgesinde '.$topicTitle.' kurumlarının ortalama, en düşük ve en yüksek fiyat bilgileri.')
 @section('og_image', seo_og_image($section))
+@if($section['slug'] !== ($brand['default_section'] ?? null))
+  @section('robots_meta', 'noindex,follow')
+@endif
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => $breadcrumbItems])
   @include('themes._shared.partials.itemlist-jsonld', ['facilities' => $facilities])

@@ -1,4 +1,7 @@
 @extends('layouts.brand')
+@if(! ($activeSection['slug'] ?? null) || $activeSection['slug'] !== (current_brand()['default_section'] ?? null))
+  @section('robots_meta', 'noindex,follow')
+@endif
 @section('content')
 @php $primary = current_brand()['primary_color']; @endphp
 <section style="background: linear-gradient(135deg, {{ $primary }}, {{ $primary }}cc);" class="text-white">

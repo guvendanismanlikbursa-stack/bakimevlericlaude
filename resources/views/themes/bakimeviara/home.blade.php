@@ -10,6 +10,9 @@
 @endphp
 @section('title', $section['hero_title'].' | '.$brand['name'])
 @section('meta_description', $section['hero_subtitle'].' | '.$brand['name'])
+@if($section['slug'] !== ($brand['default_section'] ?? null))
+  @section('robots_meta', 'noindex,follow')
+@endif
 
 <section class="relative overflow-hidden bg-white">
   <div class="absolute inset-x-0 top-0 h-[420px]" style="background: {{ $colors['soft'] }};"></div>

@@ -7,6 +7,20 @@
 <title>@yield('title', $brand['tagline']) · {{ $brand['name'] }}</title>
 <meta name="description" content="@yield('meta_description', $brand['tagline'])">
 <link rel="canonical" href="@yield('canonical', canonical_url())">
+{{--
+  12 Agustos 2026: kullanicinin talebi - 3 marka ayni veritabanini/ayni
+  kurum envanterini paylastigi icin (category_scope hepsinde full), bir
+  markanin KENDI varsayilan bolumu DISINDAKI il/ilce rehberi, fiyat
+  rehberi ve kurum listeleme sayfalari, DIGER bir markada BIREBIR AYNI
+  kurum listesiyle de erisilebilir - bu "3 farkli sitede 3 farkli bolumu
+  index'letme" stratejisiyle dogrudan celisen bir duplicate content
+  riski. Sitemap'ten cikarmak tek basina yetmez (disaridan link/manuel
+  ziyaretle Google yine bulup indeksleyebilir) - bu yuzden asil/otoriter
+  koruma budur: o sayfa o markanin kendi bolumu DEGILSE noindex,follow
+  gonderilir (kullanicilar yine gezebilir, sadece Google o kopyayi
+  indekslemez - bkz. themes._shared.location-guide/price-guide/facilities/index).
+--}}
+<meta name="robots" content="@yield('robots_meta', 'index,follow')">
 <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/logo-'.$brand['slug'].'-32.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logo-'.$brand['slug'].'-192.png') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo-'.$brand['slug'].'-180.png') }}">
@@ -389,6 +403,7 @@
         <li><a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="hover:text-primary">Karar sihirbazı</a></li>
         <li><a href="{{ brand_route('engagement.compare') }}" class="hover:text-primary">Karşılaştırma</a></li>
         @if(session('family_user_id'))<li><a href="{{ brand_route('engagement.favorites') }}" class="hover:text-primary">Favoriler</a></li>@endif
+        <li><a href="{{ brand_route('location-guide.index', ['sectionSlug' => $defaultSection]) }}" class="hover:text-primary">İl / İlçe Rehberi</a></li>
         <li><a href="{{ brand_route('price-guide.index') }}" class="hover:text-primary">Ücret Rehberi</a></li>
         <li><a href="{{ brand_route('guides.index') }}" class="hover:text-primary">Bakım Rehberi</a></li>
         <li><a href="{{ brand_route('stats.index') }}" class="hover:text-primary">Türkiye İstatistikleri</a></li>

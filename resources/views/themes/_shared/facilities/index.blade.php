@@ -1,6 +1,12 @@
 @extends('layouts.brand')
 @section('title', ($activeSection['title'] ?? 'Kurumlar').(request('city') ? ' - '.optional($cities->firstWhere('slug', request('city')))->name : '').' | Kurumları Bul')
 @section('meta_description', ($activeSection['hero_subtitle'] ?? 'Bakım kurumlarını il, ilçe, hizmet ve bütçeye göre karşılaştırın.'))
+@if($activeSection && $activeSection['slug'] !== (current_brand()['default_section'] ?? null))
+  {{-- bkz. layouts/brand.blade.php - bu markanin kendi bolumu disindaki
+       kurum listesi, envanteri paylasan diger markada da ayni sekilde
+       cikiyor; kopya icerik olarak indekslenmesin. --}}
+  @section('robots_meta', 'noindex,follow')
+@endif
 @section('content')
 @php
   $brand = current_brand();

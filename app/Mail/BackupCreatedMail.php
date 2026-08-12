@@ -19,6 +19,7 @@ class BackupCreatedMail extends Mailable implements ShouldQueue
         public string $filename,
         public string $sizeLabel,
         public ?string $attachmentPath = null,
+        public ?string $filesZipPath = null,
     ) {}
 
     public function build()
@@ -28,6 +29,10 @@ class BackupCreatedMail extends Mailable implements ShouldQueue
 
         if ($this->attachmentPath) {
             $mail->attach($this->attachmentPath, ['as' => $this->filename, 'mime' => 'application/gzip']);
+        }
+
+        if ($this->filesZipPath) {
+            $mail->attach($this->filesZipPath, ['as' => basename($this->filesZipPath), 'mime' => 'application/zip']);
         }
 
         return $mail;

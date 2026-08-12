@@ -163,4 +163,10 @@
     @endif
   </div>
 </div>
+
+@include('themes._shared.partials.notification-preferences-form', [
+    'notificationGroups' => $notificationGroups,
+    'preferences' => $user->notification_preferences ?? [],
+    'notificationFormAction' => brand_route('facility.profile.notifications.update'),
+])
 @endsection
