@@ -28,7 +28,7 @@
      olmasi FormData/URL siralamasini belirsizlestiriyordu, kaldirildi;
      secili deger zaten asagidaki select uzerinde tutuluyor. -->
 <form method="GET" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-admin-facility-results" data-count-target="js-result-count" class="js-location-filter mb-4 flex gap-2 flex-wrap">
-  <input type="search" name="q" value="{{ request('q') }}" placeholder="Kurum adında ara..." class="border rounded-lg px-3 py-2 text-sm w-56">
+  <input type="search" name="q" value="{{ request('q') }}" oninput="this.form.submit()" onfocus="this.value = this.value;" autofocus placeholder="Kurum adında ara..." class="border rounded-lg px-3 py-2 text-sm w-56">
   <button type="submit" class="border rounded-lg px-3 py-2 text-sm font-semibold bg-white">Ara</button>
   <select name="brand" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm Markalar</option>
