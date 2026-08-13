@@ -2620,4 +2620,27 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('landline_only', $this->rehabFacility->fresh()->invitation_status);
         $this->assertFalse($this->rehabFacility->fresh()->is_claimed);
     }
+
+    public function test_claim_approved_before_2027_automatically_grants_featured_status(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+
+        $this->assertFalse($this->rehabFacility->is_featured);
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
+            'applicant_name' => 'Yetkili One Cikan',
+            'applicant_email' => 'onecikan@test.local',
+            'applicant_phone' => '05557778899',
+            'document' => $this->fakePngUpload('ruhsat-onecikan.png'),
+        ])->assertRedirect();
+
+        $claim = FacilityClaim::where('applicant_email', 'onecikan@test.local')->firstOrFail();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/sahiplenme-basvurulari/'.$claim->id.'/onayla')
+            ->assertRedirect();
+
+        $this->assertTrue($this->rehabFacility->fresh()->is_featured);
+    }
 }

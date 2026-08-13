@@ -10,6 +10,7 @@
     ['title' => 'Profilinizi siz yönetin', 'text' => 'Görsel, açıklama, hizmet ve fiyat bilgilerini istediğiniz zaman güncelleyin — yanlış bilgi varsa da düzeltme yetkisi sadece sahiplenince size geçer.'],
     ['title' => 'Ailelerden doğrudan talep alın, aramanıza gerek kalmaz', 'text' => 'Google Haritalar\'da sadece görünürsünüz; burada aileler fiyat/ziyaret talebini doğrudan panelinize bırakır, siz de doğrudan panelden yanıtlarsınız.'],
     ['title' => 'Doğrulanmış rozeti kazanın', 'text' => 'Sahiplenilen kurumlar ziyaretçilere "Onaylı" rozetiyle gösterilir, güven artar.'],
+    ['title' => '🌟 Ücretsiz "Öne Çıkan" listelemesi — sınırlı süre', 'text' => 'Şimdi sahiplenirseniz, kurumunuz arama sonuçlarında diğerlerinin önüne geçerek "Öne Çıkan" rozetiyle gösterilir — daha çok görüntülenme, daha çok teklif talebi demek. Bu fırsat sadece 2026 yıl sonuna kadar ve tamamen ücretsiz, sonra bu kapı kapanabilir.'],
     ['title' => '2026 yıl sonuna kadar tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır. Sizinle önceden konuşulmadan hiçbir ücret kesilmez, sürpriz fatura çıkmaz.'],
     ['title' => 'Telefonunuzdan da rahatça yönetin', 'text' => 'Panelinizi bilgisayardan olduğu kadar telefonunuzdan da kullanabilirsiniz — sahada olsanız bile talepleri kaçırmazsınız.'],
     ['title' => 'Hiçbir taahhüt yok', 'text' => 'Sözleşme veya kilitlenme söz konusu değil, istediğiniz zaman kullanmayı bırakabilirsiniz.'],
@@ -41,6 +42,7 @@
       <div class="flex flex-wrap items-center gap-2 mb-3">
         <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">Kurumunuzu Sahiplenin</div>
         <div class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-black">🎉 2026 yıl sonuna kadar ücretsiz</div>
+        <div class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-black">🌟 Ücretsiz Öne Çıkan Rozeti</div>
       </div>
       <h1 class="text-2xl md:text-3xl font-black text-gray-950 mb-4">"{{ $facility->name }}" kurumunu sahiplenerek profilin kontrolünü alın</h1>
 
@@ -129,6 +131,9 @@
         <textarea name="note" placeholder="Eklemek istediğiniz not (opsiyonel)" rows="3" class="border rounded-lg px-3 py-2.5 w-full">{{ old('note') }}</textarea>
         <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $colors['primary'] }};">Başvuruyu Gönder</button>
         <p class="text-xs text-gray-400">Tarayıcınız konum izni isteyebilir; bu, başvurunuzun kurum adresine yakınlığını admin incelemesinde göstermek içindir. İzin vermezseniz başvurunuz yine de gönderilir.</p>
+        {{-- 13 Agustos 2026: kullanicinin talebi - genel bir KVKK/veri
+             guvenligi guvencesi hic yoktu (belgeye ozel guvence disinda). --}}
+        <p class="text-xs text-gray-400">Girdiğiniz kişisel bilgiler <a href="{{ brand_route('pages.show', ['slug' => 'kvkk']) }}" class="underline" target="_blank" rel="noopener">KVKK</a> kapsamında korunur, üçüncü taraflarla paylaşılmaz.</p>
       </form>
 
       {{-- 13 Agustos 2026: kullanicinin talebi - "bir sorun olursa kime

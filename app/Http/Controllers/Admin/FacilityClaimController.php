@@ -115,13 +115,21 @@ class FacilityClaimController extends Controller
                 'signup_ip' => $claim->applicant_ip,
             ]);
 
-            $facility->update([
+            // 13 Agustos 2026: kullanicinin talebi - "yil sonuna kadar
+            // sahiplenenler ucretsiz olarak one cikan kurumlarda listelenecek".
+            // Sadece 2026 yil sonundan ONCE onaylanan basvurularda gecerli -
+            // bu tarihten sonra onaylanan basvurular otomatik one cikarilmaz.
+            $update = [
                 'is_claimed' => true,
                 'claimed_at' => now(),
                 'free_quote_credits' => (int) $facility->free_quote_credits + $freeCredits,
                 'invitation_status' => 'approved',
                 'invitation_status_at' => now(),
-            ]);
+            ];
+            if (now()->lt(\Illuminate\Support\Carbon::create(2027, 1, 1))) {
+                $update['is_featured'] = true;
+            }
+            $facility->update($update);
 
             // 10 Agustos 2026: kurum sahiplenildiginde artik gercek bir
             // sahibi var - veri cekiciden/on-kayittan kalma 'facilities/
