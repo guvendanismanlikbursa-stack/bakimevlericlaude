@@ -8,9 +8,11 @@
   $colors = $section['theme'] ?? ['primary' => $brand['primary_color'], 'secondary' => $brand['secondary_color'], 'soft' => '#f8fafc'];
   $benefits = [
     ['title' => 'Profilinizi siz yönetin', 'text' => 'Görsel, açıklama, hizmet ve fiyat bilgilerini istediğiniz zaman güncelleyin — yanlış bilgi varsa da düzeltme yetkisi sadece sahiplenince size geçer.'],
-    ['title' => 'Ailelerden doğrudan talep alın', 'text' => 'Fiyat, ziyaret ve kontenjan taleplerini panelinizden takip edin, doğrudan yanıtlayın.'],
+    ['title' => 'Ailelerden doğrudan talep alın, aramanıza gerek kalmaz', 'text' => 'Google Haritalar\'da sadece görünürsünüz; burada aileler fiyat/ziyaret talebini doğrudan panelinize bırakır, siz de doğrudan panelden yanıtlarsınız.'],
     ['title' => 'Doğrulanmış rozeti kazanın', 'text' => 'Sahiplenilen kurumlar ziyaretçilere "Onaylı" rozetiyle gösterilir, güven artar.'],
-    ['title' => '2026 yıl sonuna kadar tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır, yıl sonuna kadar hiçbir ücret ödemeden kullanabilirsiniz.'],
+    ['title' => '2026 yıl sonuna kadar tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır. Sizinle önceden konuşulmadan hiçbir ücret kesilmez, sürpriz fatura çıkmaz.'],
+    ['title' => 'Telefonunuzdan da rahatça yönetin', 'text' => 'Panelinizi bilgisayardan olduğu kadar telefonunuzdan da kullanabilirsiniz — sahada olsanız bile talepleri kaçırmazsınız.'],
+    ['title' => 'Hiçbir taahhüt yok', 'text' => 'Sözleşme veya kilitlenme söz konusu değil, istediğiniz zaman kullanmayı bırakabilirsiniz.'],
   ];
 @endphp
 <div class="max-w-5xl mx-auto px-4 py-12">
@@ -128,6 +130,12 @@
         <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $colors['primary'] }};">Başvuruyu Gönder</button>
         <p class="text-xs text-gray-400">Tarayıcınız konum izni isteyebilir; bu, başvurunuzun kurum adresine yakınlığını admin incelemesinde göstermek içindir. İzin vermezseniz başvurunuz yine de gönderilir.</p>
       </form>
+
+      {{-- 13 Agustos 2026: kullanicinin talebi - "bir sorun olursa kime
+           ulasirim" belirsizligi. Sag-alt canli sohbet zaten TUM sitede
+           mevcut (bkz. layouts/brand.blade.php), burada sadece varligina
+           acikca dikkat cekiliyor. --}}
+      <p class="text-xs text-gray-400 mt-4 text-center">Bir sorunuz mu var? Sağ alttaki 💬 sohbet ikonuna tıklayıp bize anında ulaşabilirsiniz.</p>
     </div>
   </div>
 </div>
