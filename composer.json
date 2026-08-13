@@ -38,6 +38,13 @@
                    "preferred-install":  "dist",
                    "sort-packages":  true
                },
+    "extra":  {
+                  "laravel":  {
+                                  "dont-discover":  [
+                                                         "laravel/sail"
+                                                     ]
+                              }
+              },
     "minimum-stability":  "stable",
     "prefer-stable":  true,
     "autoload-dev":  {
