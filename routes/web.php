@@ -429,6 +429,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/hatalar/{platformError}/coz', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'resolve'])->name('platform-errors.resolve');
         Route::delete('/hatalar/{platformError}', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'destroy'])->name('platform-errors.destroy');
 
+        Route::get('/veri-denetimi', [\App\Http\Controllers\Admin\DataQualityController::class, 'index'])->name('data-quality.index');
+        Route::post('/veri-denetimi/kategori-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixMiscategory'])->name('data-quality.fix-miscategory');
+        Route::post('/veri-denetimi/telefon-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixPhoneType'])->name('data-quality.fix-phone-type');
+        Route::post('/veri-denetimi/ilce-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixDistrict'])->name('data-quality.fix-district');
+        Route::post('/veri-denetimi/isim-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixNameCleanup'])->name('data-quality.fix-name-cleanup');
+        Route::post('/veri-denetimi/sahiplik-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixOwnership'])->name('data-quality.fix-ownership');
+
         Route::get('/aile-sorulari', [AdminFacilityQuestionController::class, 'index'])->name('questions.index');
         Route::delete('/aile-sorulari/{question}', [AdminFacilityQuestionController::class, 'destroy'])->name('questions.destroy');
 

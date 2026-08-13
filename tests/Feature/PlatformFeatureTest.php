@@ -2526,4 +2526,41 @@ class PlatformFeatureTest extends TestCase
         $response->assertOk();
         $this->assertSame(1, substr_count($response->getContent(), 'name="claim_status"'));
     }
+
+    public function test_data_quality_page_detects_and_fixes_issues(): void
+    {
+        $kresCategory = FacilityCategory::create(['name' => 'Kreş ve Anaokulu', 'slug' => 'kres-ve-anaokulu', 'brand_scope' => 'cocuk-bakim']);
+        $miscategorized = $this->facility('Merkez Kreş ve Anaokulu', $this->elderlyCategory, false);
+        // 13 Agustos 2026: SQLite'in LOWER() fonksiyonu 'Ö' gibi ASCII-disi
+        // Turkce buyuk harfleri kucultemiyor (yalnizca test ortami - gercek
+        // MySQL/MariaDB'de sorun yok), bu yuzden aranan kelime kucuk harfle.
+        $suspiciousOwnership = Facility::create([
+            'name' => 'Şehir özel Bakım Vakfı', 'slug' => 'sehir-ozel-bakim-vakfi', 'city_id' => $this->city->id,
+            'facility_category_id' => $this->elderlyCategory->id, 'district' => 'Merkez', 'address' => 'Adres',
+            'phone' => '02120000001', 'description' => 'Aciklama', 'capacity' => 10, 'price_min' => 1000, 'price_max' => 2000,
+            'services' => ['bakim'], 'is_published' => true, 'is_claimed' => false, 'ownership_type' => 'kamu',
+        ]);
+        $badName = $this->facility('  Fazla   Boşluklu İsim  ', $this->elderlyCategory, false);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/veri-denetimi');
+        $response->assertOk()
+            ->assertSee('Merkez Kreş ve Anaokulu')
+            ->assertSee('Şehir özel Bakım Vakfı')
+            ->assertSee('Fazla');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/veri-denetimi/kategori-duzelt')
+            ->assertRedirect();
+        $this->assertSame('kres-ve-anaokulu', $miscategorized->fresh()->category->slug);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/veri-denetimi/sahiplik-duzelt', ['id' => $suspiciousOwnership->id, 'type' => 'ozel'])
+            ->assertRedirect();
+        $this->assertSame('ozel', $suspiciousOwnership->fresh()->ownership_type);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/veri-denetimi/isim-duzelt')
+            ->assertRedirect();
+        $this->assertSame('Fazla Boşluklu İsim', $badName->fresh()->name);
+    }
 }

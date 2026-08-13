@@ -64,6 +64,7 @@
     <a href="{{ route('admin.data-extractor.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-extractor.*') ? 'bg-gray-700 text-white' : '' }}">Veri Çekici</a>
     <a href="{{ route('admin.trash.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.trash.*') ? 'bg-gray-700 text-white' : '' }}">Çöp Kutusu</a>
     <a href="{{ route('admin.audit-log.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.audit-log.*') ? 'bg-gray-700 text-white' : '' }}">İşlem Günlüğü</a>
+    <a href="{{ route('admin.data-quality.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-quality.*') ? 'bg-gray-700 text-white' : '' }}">Veri Denetimi</a>
     <a href="{{ route('admin.platform-errors.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.platform-errors.*') ? 'bg-gray-700 text-white' : '' }}">
       <span>Hatalar</span>
       @php($openErrorCount = \App\Models\PlatformError::whereNull('resolved_at')->count())
