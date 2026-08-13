@@ -41,7 +41,7 @@
       <div class="flex gap-3 mt-6">
         <form method="POST" action="{{ route('admin.claims.approve', $claim) }}" onsubmit="return confirm('{{ $claim->status === 'rejected' ? 'Bu başvuru daha önce reddedilmişti. Şimdi onaylanırsa kurum hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' : 'Onaylanırsa kurum hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' }}');">
           @csrf
-          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">{{ $claim->status === 'rejected' ? 'Yeniden Onayla' : 'Onayla' }}</button>
+          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm" @if(! $claim->document_path) disabled title="Once evrak eklenmeli" @endif>{{ $claim->status === 'rejected' ? 'Yeniden Onayla' : 'Onayla' }}</button>
         </form>
         @if($claim->status === 'pending')
           <form method="POST" action="{{ route('admin.claims.reject', $claim) }}">
@@ -56,7 +56,24 @@
 
   <div class="bg-white rounded-xl shadow-sm p-6">
     <h2 class="font-bold mb-3">Yüklenen Evrak</h2>
-    <img src="{{ route('admin.documents.show', ['type' => 'claim', 'id' => $claim->id]) }}" class="rounded-lg w-full">
+    @if($claim->document_path)
+      <img src="{{ route('admin.documents.show', ['type' => 'claim', 'id' => $claim->id]) }}" class="rounded-lg w-full">
+    @else
+      {{-- 13 Agustos 2026: kullanicinin talebi - belge basvuru aninda
+           zorunlu degil artik; henuz yoksa admin WhatsApp/e-posta ile
+           gelen belgeyi buradan kurum adina yukleyebilir. 24 saat icinde
+           hic eklenmezse basvuru otomatik silinir (bkz.
+           App\Console\Commands\ExpireUndocumentedClaims). --}}
+      <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 mb-4">
+        Bu başvuruda henüz evrak yok. Başvuru sahibi belgeyi WhatsApp/e-posta ile gönderdiyse aşağıdan siz ekleyebilirsiniz.
+        <strong>24 saat içinde evrak eklenmezse başvuru otomatik olarak silinir.</strong>
+      </div>
+      <form method="POST" action="{{ route('admin.claims.upload-document', $claim) }}" enctype="multipart/form-data" class="flex gap-2">
+        @csrf
+        <input type="file" name="document" accept="image/*" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+        <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Evrak Ekle</button>
+      </form>
+    @endif
   </div>
 </div>
 @endsection

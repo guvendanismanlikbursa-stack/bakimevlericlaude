@@ -45,6 +45,12 @@ Schedule::command('facility:snapshot-daily-stats')->dailyAt('23:55');
 // otomatik davet eder (bkz. App\Console\Commands\InviteFamiliesToReview).
 Schedule::command('reviews:invite-families')->dailyAt('10:30');
 
+// 13 Agustos 2026: kullanicinin talebi - belge yuklemesi basvuru aninda
+// zorunlu olmaktan cikarildi, suistimali onlemek icin 24 saat icinde
+// belge eklenmezse basvuru otomatik silinir (bkz. App\Console\Commands\
+// ExpireUndocumentedClaims).
+Schedule::command('claims:expire-undocumented')->hourly();
+
 // Bakim: paylasimli (cPanel) hosting'de kalici bir "queue:work" daemon'i
 // (supervisor/systemd) kurulamadigindan, kuyruk mevcut "* * * * * schedule:run"
 // cron'una binerek her dakika en fazla ~50 saniye boyunca tuketilir. Kuyruk

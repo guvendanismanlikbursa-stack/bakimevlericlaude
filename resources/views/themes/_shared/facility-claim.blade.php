@@ -74,11 +74,40 @@
           </div>
         @endforeach
       </div>
+
+      {{-- 13 Agustos 2026: kullanicinin talebi - "panelin nasil gorunecegini
+           gormeden karar veriyorum" - gercek dashboard'un sadelestirilmis,
+           gercekci bir onizlemesi (gercek ekran goruntusu degil, ayni
+           gorsel dili tasiyan bir maket). --}}
+      <div class="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <p class="text-xs font-black uppercase tracking-wide text-gray-400 mb-3">Sahiplenince Panelinizde Göreceğiniz Bazı Şeyler</p>
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="bg-white rounded-lg p-2.5 text-center border border-gray-100">
+              <div class="text-lg font-black" style="color: {{ $colors['primary'] }};">{{ max($facility->views_count, 42) }}</div>
+              <div class="text-[10px] text-gray-400 font-semibold">Görüntülenme</div>
+            </div>
+            <div class="bg-white rounded-lg p-2.5 text-center border border-gray-100">
+              <div class="text-lg font-black" style="color: {{ $colors['primary'] }};">3</div>
+              <div class="text-[10px] text-gray-400 font-semibold">Teklif Talebi</div>
+            </div>
+            <div class="bg-white rounded-lg p-2.5 text-center border border-gray-100">
+              <div class="text-lg font-black" style="color: {{ $colors['primary'] }};">5</div>
+              <div class="text-[10px] text-gray-400 font-semibold">Ücretsiz Hak</div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg p-2.5 border border-gray-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-gray-600">Ayşe Y. — "Fiyat bilgisi alabilir miyim?"</span>
+            <span class="text-[10px] font-black text-white px-2 py-0.5 rounded-full" style="background: {{ $colors['primary'] }};">Yanıtla</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:sticky lg:top-24">
       <h2 class="font-black text-gray-950 text-lg mb-1">Başvuru Formu</h2>
-      <p class="text-gray-500 text-sm mb-5">Bu kurumun yetkilisi olduğunuzu kanıtlayan bir evrak (vergi levhası, fatura, ruhsat vb.) görseli yükleyin. Admin onayından sonra giriş bilgileriniz e-postanıza gönderilecek.</p>
+      <p class="text-gray-500 text-sm mb-1">Ad, e-posta ve telefon bilgilerinizi girip başvurun — evrak olmadan da başlatabilirsiniz.</p>
+      <p class="text-xs font-semibold mb-5" style="color: {{ $colors['primary'] }};">⏱️ Genellikle 24 saat içinde incelenir.</p>
 
       <form method="POST" action="{{ brand_route('facility-claim.store', ['slug' => $facility->slug]) }}" enctype="multipart/form-data" class="space-y-4">
         @csrf
@@ -88,8 +117,12 @@
         <input type="email" name="applicant_email" value="{{ old('applicant_email') }}" placeholder="E-posta (giriş bilgileri buraya gönderilecek)" required class="border rounded-lg px-3 py-2.5 w-full">
         <input type="text" name="applicant_phone" value="{{ old('applicant_phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2.5 w-full">
         <div>
-          <label class="text-sm font-medium block mb-1">Evrak / Fatura Görseli</label>
-          <input type="file" name="document" accept="image/*" required class="border rounded-lg px-3 py-2.5 w-full text-sm">
+          <label class="text-sm font-medium block mb-1">Evrak / Fatura Görseli <span class="text-gray-400 font-normal">(opsiyonel, daha sonra da ekleyebilirsiniz)</span></label>
+          <input type="file" name="document" accept="image/*" class="border rounded-lg px-3 py-2.5 w-full text-sm">
+          {{-- 13 Agustos 2026: kullanicinin talebi - belge neden istendigi
+               ve nasil kullanildigi acikca yazilmali, aksi halde yabanci
+               bir platforma kimlik belgesi yuklerken tereddut olusur. --}}
+          <p class="text-xs text-gray-400 mt-1">Bu belge sadece kurum yetkilisi olduğunuzu doğrulamak için kullanılır, sitede yayınlanmaz, sadece yetkili adminler görebilir. Şimdi eklemezseniz 24 saat içinde WhatsApp veya e-posta ile gönderebilirsiniz — aksi halde başvurunuz otomatik iptal edilir (kurum sahibi olmayan kişilerin kurumları ele geçirmesini önlemek için).</p>
         </div>
         <textarea name="note" placeholder="Eklemek istediğiniz not (opsiyonel)" rows="3" class="border rounded-lg px-3 py-2.5 w-full">{{ old('note') }}</textarea>
         <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $colors['primary'] }};">Başvuruyu Gönder</button>

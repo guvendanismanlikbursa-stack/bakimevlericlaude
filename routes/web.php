@@ -330,6 +330,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/sahiplenme-basvurulari/{claim}', [AdminFacilityClaimController::class, 'show'])->name('claims.show');
         Route::post('/sahiplenme-basvurulari/{claim}/onayla', [AdminFacilityClaimController::class, 'approve'])->name('claims.approve');
         Route::post('/sahiplenme-basvurulari/{claim}/reddet', [AdminFacilityClaimController::class, 'reject'])->name('claims.reject');
+        Route::post('/sahiplenme-basvurulari/{claim}/belge-yukle', [AdminFacilityClaimController::class, 'uploadDocument'])->name('claims.upload-document');
 
         Route::get('/kurum-kayit-basvurulari', [AdminFacilityRegistrationController::class, 'index'])->name('registrations.index');
         Route::get('/kurum-kayit-basvurulari/{registration}', [AdminFacilityRegistrationController::class, 'show'])->name('registrations.show');

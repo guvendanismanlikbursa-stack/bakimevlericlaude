@@ -2563,4 +2563,61 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect();
         $this->assertSame('Fazla Boşluklu İsim', $badName->fresh()->name);
     }
+
+    public function test_claim_without_document_cannot_be_approved_until_document_added(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
+            'applicant_name' => 'Belgesiz Yetkili',
+            'applicant_email' => 'belgesiz@test.local',
+            'applicant_phone' => '05553334444',
+        ])->assertRedirect();
+
+        $claim = FacilityClaim::firstOrFail();
+        $this->assertNull($claim->document_path);
+        $this->assertSame('claimed', $this->rehabFacility->fresh()->invitation_status);
+
+        // Belge olmadan onay kesinlikle reddedilmeli (suistimal koruması).
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/sahiplenme-basvurulari/'.$claim->id.'/onayla')
+            ->assertStatus(400);
+        $this->assertSame('pending', $claim->fresh()->status);
+        $this->assertFalse($this->rehabFacility->fresh()->is_claimed);
+
+        // Admin belgeyi sonradan ekleyebilir, ardindan onay calisir.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/sahiplenme-basvurulari/'.$claim->id.'/belge-yukle', [
+                'document' => $this->fakePngUpload('sonradan-eklenen.png'),
+            ])->assertRedirect();
+        $this->assertNotNull($claim->fresh()->document_path);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/sahiplenme-basvurulari/'.$claim->id.'/onayla')
+            ->assertRedirect();
+        $this->assertSame('approved', $claim->fresh()->status);
+        $this->assertTrue($this->rehabFacility->fresh()->is_claimed);
+    }
+
+    public function test_expire_undocumented_claims_command_deletes_stale_claims_and_reverts_status(): void
+    {
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
+            'applicant_name' => 'Eski Belgesiz',
+            'applicant_email' => 'eski.belgesiz@test.local',
+            'applicant_phone' => '05559998877',
+        ])->assertRedirect();
+
+        $claim = FacilityClaim::firstOrFail();
+        $claim->forceFill(['created_at' => now()->subHours(30)])->save();
+        $this->assertSame('claimed', $this->rehabFacility->fresh()->invitation_status);
+
+        $this->artisan('claims:expire-undocumented')->assertSuccessful();
+
+        $this->assertDatabaseMissing('facility_claims', ['id' => $claim->id]);
+        // rehabFacility fixture telefonu '02120000000' (sabit hat) - bu yuzden
+        // geri donus 'landline_only' olur, 'not_started' degil.
+        $this->assertSame('landline_only', $this->rehabFacility->fresh()->invitation_status);
+        $this->assertFalse($this->rehabFacility->fresh()->is_claimed);
+    }
 }

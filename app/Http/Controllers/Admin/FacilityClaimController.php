@@ -38,8 +38,46 @@ class FacilityClaimController extends Controller
         return view('admin.claims.show', compact('claim'));
     }
 
+    /**
+     * 13 Agustos 2026: kullanicinin talebi - belge yukleme artik basvuru
+     * ANINDA zorunlu degil (surtunmeyi azaltmak icin), ama bu tek basli
+     * bir gevseklik degil: admin belgesiz bir basvuruyu ASLA onaylayamaz.
+     * Belge sonradan WhatsApp/e-posta ile gelirse admin bu formdan
+     * kuruma ekler, sonra normal sekilde onaylar. 24 saat icinde belge
+     * hala gelmezse App\Console\Commands\ExpireUndocumentedClaims basvuruyu
+     * zaten otomatik siler.
+     */
+    public function uploadDocument(Request $request, FacilityClaim $claim)
+    {
+        abort_if($claim->status !== 'pending', 400, 'Bu basvuru artik bekleyen durumda degil.');
+
+        $data = $request->validate([
+            'document' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $path = $request->file('document')->store('claims', 'local');
+        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+            return back()->withErrors(['document' => 'Belge yüklenirken bir sorun oluştu, lütfen tekrar deneyin.']);
+        }
+
+        $oldPath = $claim->document_path;
+        $claim->update(['document_path' => $path]);
+        if ($oldPath) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($oldPath);
+        }
+
+        log_admin_event('facility_claim_document_uploaded', $claim);
+
+        return back()->with('success', 'Belge eklendi, şimdi başvuruyu onaylayabilirsiniz.');
+    }
+
     public function approve(Request $request, FacilityClaim $claim)
     {
+        // GUVENLIK: belgesiz hicbir basvuru onaylanamaz - suistimal
+        // (baskasinin kurumunu belgesiz sahiplenmeye kalkma) riskine karsi
+        // tek sabit kapi budur (bkz. store() ve ExpireUndocumentedClaims).
+        abort_if(! $claim->document_path, 400, 'Bu başvuruda henüz evrak yok, önce evrak eklenmeli.');
+
         $temporaryPassword = Str::password(14);
         $freeCredits = (int) config('platform.free_claim_credits', 5);
 
@@ -158,7 +196,38 @@ class FacilityClaimController extends Controller
         // paneli mail gecikirse/gitmezse (bkz. Gmail SMTP gecikme sorunu)
         // hicbir yerde goremiyordu - basvuru sahibine telefonla vb. manuel
         // iletebilecegi bir yol yoktu. Artik onay ekraninda da gosteriliyor.
+        //
+        // 13 Agustos 2026: kullanicinin talebi - kurum yetkilisi mailini
+        // sik kontrol etmeyebilir ama zaten WhatsApp'tan geldi. Admin tek
+        // tikla ayni giris bilgilerini WhatsApp'tan da gonderebilsin diye
+        // hazir mesajli bir wa.me linki oturuma tasiniyor (bkz.
+        // admin.layout'taki genel basari banner'i).
+        session()->flash('claim_whatsapp_link', $this->buildCredentialsWhatsappUrl(
+            $claim->applicant_phone, $mailPayload['facility']->name, $mailPayload['email'], $mailPayload['password'], $mailPayload['login_url']
+        ));
+
         return redirect()->route('admin.claims.index')->with('success', "Başvuru onaylandı, giriş bilgileri e-posta ile gönderildi. E-posta ulaşmazsa şu bilgileri kullanıcıya siz iletebilirsiniz — E-posta: {$mailPayload['email']} / Geçici şifre: {$mailPayload['password']}");
+    }
+
+    private function buildCredentialsWhatsappUrl(?string $phone, string $facilityName, string $email, string $password, string $loginUrl): ?string
+    {
+        if (! $phone || classify_phone_type($phone) !== 'mobile') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone);
+        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+            // zaten ulke koduyla birlikte
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = '90'.substr($digits, 1);
+        } else {
+            $digits = '90'.$digits;
+        }
+
+        $message = "Merhaba, \"{$facilityName}\" kurumunun sahiplenme başvurusu onaylandı!\n\n"
+            ."Giriş bilgileriniz:\nE-posta: {$email}\nGeçici şifre: {$password}\n\nGiriş yapmak için: {$loginUrl}";
+
+        return 'https://wa.me/'.$digits.'?text='.rawurlencode($message);
     }
 
     /**
