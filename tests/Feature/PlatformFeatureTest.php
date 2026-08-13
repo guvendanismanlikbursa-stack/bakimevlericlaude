@@ -500,9 +500,14 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(0, FacilityReview::count());
         $this->assertSame(0, OfferRequest::count());
 
+        // 13 Agustos 2026: "data-mode=compare" genel metnini tum sayfada aramak
+        // yanlisti - ayni kategoride bulunan sahiplenilmis "Rehab Kurum Onayli"
+        // (bkz. rehabFacilityClaimed) "Benzer Kurumlar" bolumunde MESRU sekilde
+        // kendi Karsilastir butonuyla goruntuleniyor. Asil kontrol edilmesi
+        // gereken, SADECE rehabFacility'nin KENDI butonunun gizli olmasi.
         $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
             ->assertOk()
-            ->assertDontSee('data-mode="compare"', false)
+            ->assertDontSee('data-mode="compare" data-id="'.$this->rehabFacility->id.'"', false)
             ->assertDontSee('Ücret / Teklif Bilgisi Al')
             ->assertSee('Bu kurum henüz sahiplenilmedi');
     }
@@ -2489,5 +2494,36 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Performans Trendi')
             ->assertSee('7.500')
             ->assertSee('Bu ay kabul edilen tekliflerin toplam değeri');
+    }
+
+    public function test_marking_a_gallery_image_as_viewed_increments_its_counter_and_shows_on_dashboard(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/gorsel-test.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII='));
+        $image = FacilityImage::create(['facility_id' => $this->childFacility->id, 'path' => 'facilities/gorsel-test.png', 'sort_order' => 0]);
+
+        $this->postJson('/site/bakimeviara/kurumlar/'.$this->childFacility->slug.'/gorsel/'.$image->id.'/goruntulendi')
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $this->assertSame(1, $image->fresh()->views_count);
+
+        // Baska bir kuruma ait gorsel icin 404 donmeli (kurum-gorsel eslesmesi kontrolu).
+        $this->postJson('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug.'/gorsel/'.$image->id.'/goruntulendi')
+            ->assertNotFound();
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimeviara/kurum-panel/panel')
+            ->assertOk()
+            ->assertSee('En Çok İlgi Gören Görselleriniz')
+            ->assertSee('1 görüntülenme');
+    }
+
+    public function test_admin_facilities_filter_form_has_no_duplicate_claim_status_field(): void
+    {
+        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurumlar?claim_status=claimed');
+
+        $response->assertOk();
+        $this->assertSame(1, substr_count($response->getContent(), 'name="claim_status"'));
     }
 }

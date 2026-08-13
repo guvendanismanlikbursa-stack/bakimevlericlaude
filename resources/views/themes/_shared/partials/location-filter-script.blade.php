@@ -72,8 +72,21 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
       const params = new URLSearchParams(new FormData(form));
       const url = (form.getAttribute('action') || window.location.pathname) + '?' + params.toString();
 
+      // 13 Agustos 2026: admin oturumu suresi dolmus/gecersizse AdminAuth
+      // middleware'i AJAX istegini de sessizce giris sayfasina (HTML, 200)
+      // yonlendiriyor - fetch bu yonlendirmeyi otomatik takip ettigi icin
+      // eskiden r.json() sessizce patliyor, kullaniciya "filtre hic
+      // calismiyor" gibi goruniyordu (hicbir hata da gozukmuyordu). Artik
+      // JSON olmayan/basarisiz her yanitta tam sayfa navigasyonuna
+      // dusuyoruz - boylece filtre HER ZAMAN gorunur sekilde uygulanir
+      // (oturum dusmusse kullanici giris sayfasina yonlenir).
       fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: controller.signal })
-        .then((r) => r.json())
+        .then((r) => {
+          if (! r.ok) throw new Error('HTTP ' + r.status);
+          const contentType = r.headers.get('content-type') || '';
+          if (! contentType.includes('application/json')) throw new Error('JSON degil');
+          return r.json();
+        })
         .then((data) => {
           hideSpinner();
           resultsEl.innerHTML = data.html;
@@ -81,7 +94,11 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
           window.history.replaceState(null, '', url);
           if (window.paintEngagementToggles) window.paintEngagementToggles();
         })
-        .catch((err) => { if (err.name !== 'AbortError') { hideSpinner(); } });
+        .catch((err) => {
+          if (err.name === 'AbortError') return;
+          hideSpinner();
+          window.location = url;
+        });
     };
 
     form.querySelectorAll('input[type="search"], input[type="text"]').forEach((input) => {

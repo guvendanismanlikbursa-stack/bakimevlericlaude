@@ -9,13 +9,38 @@
 <script>
   window.facilityGalleries = window.facilityGalleries || {};
 
-  window.initFacilityGallery = function (containerId) {
+  // 13 Agustos 2026: kullanicinin talebi - "hangi gorselim daha cok ilgi
+  // cekiyor goremiyorum". viewedUrlTemplate verilirse, bir gorsel
+  // buyutulup acildikca (PhotoSwipe'in kendi 'change' olayi - hem
+  // dogrudan <a> tiklamasi hem openFacilityGalleryAt() ile acilan
+  // durumlari da kapsar) o gorselin sayaci sunucuda 1 artirilir. Ayni
+  // gorsel ayni oturumda tekrar tekrar sayilmasin diye basit bir
+  // "gorulenler" seti tutulur.
+  window.initFacilityGallery = function (containerId, viewedUrlTemplate) {
     var lightbox = new PhotoSwipeLightbox({
       gallery: '#' + containerId,
       children: 'a',
       pswpModule: PhotoSwipe,
       padding: { top: 20, bottom: 40, left: 20, right: 20 },
     });
+
+    if (viewedUrlTemplate) {
+      var seen = {};
+      lightbox.on('change', function () {
+        try {
+          var slide = lightbox.pswp && lightbox.pswp.currSlide;
+          var imageId = slide && slide.data && slide.data.element && slide.data.element.dataset.imageId;
+          if (!imageId || seen[imageId]) return;
+          seen[imageId] = true;
+          var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+          fetch(viewedUrlTemplate.replace('__IMAGE_ID__', imageId), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+          }).catch(function () {});
+        } catch (e) {}
+      });
+    }
+
     lightbox.init();
     window.facilityGalleries[containerId] = lightbox;
     return lightbox;

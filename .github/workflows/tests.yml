@@ -1,12 +1,15 @@
 name: Testler
 
-# Deploy'u otomatiklestirmiyor (barindirma FTP-only, bkz. deploy/deploy.py) -
-# amac kirik kodun master'a sessizce girmesini engellemek. 11 Temmuz 2026'da
-# yasadigimiz kesintiler (composer dev/no-dev autoload karisikligi, Sail
-# service provider'inin --no-dev ortaminda instantiate edilmeye calisilmasi)
-# yerel testlerde hic yakalanmiyordu cunku yerel gelistirme ortami hep
-# dev-dahil calisiyor - production-boot-check job'u TAM OLARAK bu sinif
-# hatalari, production'a hic dokunmadan, her push'ta otomatik yakalar.
+# 13 Agustos 2026: kullanicinin acik talebi uzerine, testler/boot-check/
+# deploy-script-testleri (asagidaki 3 job) GECERSE master'a yapilan HER
+# push otomatik olarak canliya cikar (bkz. en alttaki "deploy" job'u).
+# Deploy adimi deploy/deploy.py'nin KENDISINI cagirir - yani zaten var olan
+# TUM guvenlik katmanlari (yerel test tekrari, --no-dev autoload sizinti
+# kontrolu, bootstrap dumani, deploy sonrasi /_saglik kontrolu) otomatik
+# akiste de aynen gecerlidir. deploy job'u FTP_HOST/FTP_USER/FTP_PASS/
+# OPS_SECRET/DOC_ROOTS/DOMAINS GitHub Secrets'lari TANIMLI DEGILSE guvenli
+# sekilde BASARISIZ olur (production'a HICBIR SEY yazilmadan) - bu yuzden
+# secrets eklenene kadar bu is kirmizi gorunur ama zararsizdir.
 on:
   push:
     branches: [master]
@@ -112,3 +115,74 @@ jobs:
 
       - name: deploy.py birim testlerini calistir
         run: cd deploy && python3 -m unittest test_deploy -v
+
+  deploy:
+    needs: [test, production-boot-check, deploy-script-tests]
+    # Sadece master'a GERCEK push'ta (PR'da asla) calisir - fork/PR'lardan
+    # gelen kod hic bir zaman secrets'a erisemez, bu GitHub'in kendi guvenlik
+    # kurali, ayrica burada da acikca belirtiliyor.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    # deploy.py basarili olursa deploy/.last_deployed_sha guncellenir ve
+    # geri commit+push edilir (bkz. son adim) - repoya yazma izni gerekir.
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PHP kurulumu
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, gd, zip
+          coverage: none
+
+      - name: .env hazirla
+        run: cp .env.example .env
+
+      - name: Composer bagimliliklarini kur (dev dahil - deploy.py --no-dev'i kendi ureteceginden)
+        run: composer install --no-interaction --prefer-dist
+
+      - name: APP_KEY uret
+        run: php artisan key:generate
+
+      - name: Node kurulumu
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Frontend derle (deploy.py public/build'i sunucuya senkronize eder)
+        run: npm ci && npm run build
+
+      - name: composer.phar indir (yerel deploy.py ile ayni arac, repo'da tutulmuyor)
+        run: curl -sS https://getcomposer.org/installer | php
+
+      - name: deploy/.env.deploy dosyasini GitHub Secrets'tan olustur
+        run: |
+          cat > deploy/.env.deploy <<EOF
+          FTP_HOST=${{ secrets.DEPLOY_FTP_HOST }}
+          FTP_USER=${{ secrets.DEPLOY_FTP_USER }}
+          FTP_PASS=${{ secrets.DEPLOY_FTP_PASS }}
+          OPS_SECRET=${{ secrets.DEPLOY_OPS_SECRET }}
+          DOC_ROOTS=${{ secrets.DEPLOY_DOC_ROOTS }}
+          DOMAINS=${{ secrets.DEPLOY_DOMAINS }}
+          EOF
+
+      - name: Git kullanici bilgisi (deploy.py commit atmiyor ama guvence icin)
+        run: |
+          git config --global user.email "deploy-bot@bakimevleri.com"
+          git config --global user.name "Otomatik Deploy"
+
+      - name: deploy.py calistir (testler + autoload guvenlik + FTP yukleme + migrate/cache-refresh + /_saglik kontrolu)
+        run: python deploy/deploy.py
+
+      - name: deploy/.last_deployed_sha guncellemesini geri gonder
+        run: |
+          if ! git diff --quiet -- deploy/.last_deployed_sha; then
+            git add deploy/.last_deployed_sha
+            git commit -m "deploy/.last_deployed_sha guncelle [otomatik]"
+            git push
+          fi

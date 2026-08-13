@@ -27,12 +27,20 @@ use Illuminate\Support\Facades\Http;
 // yasandi) yakalanir.
 //
 // TUM test verisi qatest-*/@example.com kurallarina uyar (bkz. OpsController
-// qaSetup/qaTeardown) ve calisma sonunda TEMIZLENIR - gercek kullaniciya/
-// veriye asla dokunulmaz. Bulunan HER hata TEK bir record_platform_error()
-// cagrisinda birlestirilir (admin paneli + mail) - her hata icin ayri mail
-// atmak (once CheckGalleryHealth'te yasandigi gibi) gereksiz spam'e yol
-// acar; detay kaybi olmasin diye tum bulgular TEK mesajin icinde satir
-// satir listelenir.
+// qaSetup/qaTeardown) - gercek kullaniciya/veriye asla dokunulmaz. Bulunan
+// HER hata TEK bir record_platform_error() cagrisinda birlestirilir (admin
+// paneli + mail) - her hata icin ayri mail atmak (once CheckGalleryHealth'te
+// yasandigi gibi) gereksiz spam'e yol acar; detay kaybi olmasin diye tum
+// bulgular TEK mesajin icinde satir satir listelenir.
+//
+// 13 Agustos 2026: kullanicinin talebi - test verisi temizligi artik TOPLU
+// degil, AKIS BAZLI: her checkX() akisi BASARILIYSA kendi urettigi veriyi
+// hemen siler; BASARISIZSA (bir sorun bulunduysa) o veri ELLE incelenip
+// duzeltilene kadar veritabaninda birakilir - boylece bir hata "Hatalar"
+// panelinde sadece metin olarak degil, GERCEK kayitla birlikte incelenebilir.
+// Bu yuzden ayni akisin e-postalari artik GUNE OZEL (ör. ...claim.20260813@
+// example.com) - sabit olsaydi, dunku BASARISIZ (bilerek silinmemis) bir
+// kayit, bugunku calismanin "once temizle" adimiyla sessizce silinirdi.
 class CheckUserFlows extends Command
 {
     protected $signature = 'platform:check-user-flows';
@@ -79,8 +87,17 @@ class CheckUserFlows extends Command
             $this->safeRun($brandSlug, 'Kurum Girişi', fn () => $this->checkFacilityLogin($brandSlug, $baseUrl, $facilityUserEmail));
         }
 
-        $this->cleanupFixtures();
-
+        // 13 Agustos 2026: kullanicinin talebi - "her testten sonra basarili
+        // olanlarin verisi silinsin, basarisiz/hatali olanlar duzeltilmesi
+        // icin kalsin". Eskiden burada TEK bir toplu cleanupFixtures()
+        // cagrisi TUM qatest-daily-% verisini (basarisiz olanlar dahil)
+        // siliyordu - artik her checkX() KENDI urettigi veriyi, SADECE o
+        // akis basariliysa, kendi icinde hemen siliyor (bkz. yukarida her
+        // metodun sonundaki else/basari dallari). Sabit test-altyapisi
+        // (qatest-daily-{brand}-claimed/-unclaimed kurumlari ve kurum
+        // yetkilisi - ensureClaimedFacility/ensureUnclaimedFacility/
+        // ensureFacilityUser) zaten her gun idempotent olarak yeniden
+        // kullanildigi icin hic silinmez.
         if ($this->failures) {
             $this->error(count($this->failures).' hata bulundu.');
             record_platform_error(
@@ -265,38 +282,6 @@ class CheckUserFlows extends Command
         return $email;
     }
 
-    private function cleanupFixtures(): void
-    {
-        $facilityIds = DB::table('facilities')->where('slug', 'like', 'qatest-daily-%')->pluck('id');
-        foreach ($facilityIds as $fid) {
-            $offerRequestIds = DB::table('offer_requests')->where('facility_id', $fid)->pluck('id');
-            DB::table('messages')->whereIn('offer_request_id', $offerRequestIds)->delete();
-            DB::table('quotes')->whereIn('offer_request_id', $offerRequestIds)->delete();
-            DB::table('offer_requests')->whereIn('id', $offerRequestIds)->delete();
-            DB::table('platform_notifications')->where('notifiable_type', 'App\\Models\\FacilityUser')
-                ->whereIn('notifiable_id', DB::table('facility_users')->where('facility_id', $fid)->pluck('id'))
-                ->delete();
-            DB::table('facility_users')->where('facility_id', $fid)->delete();
-            DB::table('facility_questions')->where('facility_id', $fid)->delete();
-            DB::table('visit_requests')->where('facility_id', $fid)->delete();
-        }
-        DB::table('facilities')->whereIn('id', $facilityIds)->delete();
-
-        DB::table('facility_claims')->where('applicant_email', 'like', 'qatest.daily.%@example.com')->delete();
-        DB::table('facility_registrations')->where('applicant_email', 'like', 'qatest.daily.%@example.com')->delete();
-        DB::table('contact_messages')->where('email', 'like', 'qatest.daily.%@example.com')->delete();
-
-        $familyIds = DB::table('family_users')->where('email', 'like', 'qatest.daily.%@example.com')->pluck('id');
-        foreach ($familyIds as $famId) {
-            $orIds = DB::table('offer_requests')->where('family_user_id', $famId)->pluck('id');
-            DB::table('messages')->whereIn('offer_request_id', $orIds)->delete();
-            DB::table('quotes')->whereIn('offer_request_id', $orIds)->delete();
-            DB::table('offer_requests')->whereIn('id', $orIds)->delete();
-            DB::table('platform_notifications')->where('notifiable_type', 'App\\Models\\FamilyUser')->where('notifiable_id', $famId)->delete();
-        }
-        DB::table('family_users')->whereIn('id', $familyIds)->delete();
-    }
-
     // ------------------------------------------------------------------
     // Akis kontrolleri
     // ------------------------------------------------------------------
@@ -357,17 +342,30 @@ class CheckUserFlows extends Command
 
         [$checkClient] = $this->newClient($jar, followRedirects: false);
         $dash = $checkClient->get("{$baseUrl}/aile/panel");
+        $failuresBefore = count($this->failures);
         if ($dash->status() >= 500) {
             $this->recordFailure($brandSlug, 'Aile Girişi', "Panel sayfası sunucu hatası döndü (HTTP {$dash->status()}).");
         } elseif ($dash->status() === 302 && str_contains((string) $dash->header('Location'), 'giris')) {
             $this->recordFailure($brandSlug, 'Aile Girişi', 'Kayıt sonrası doğru bilgilerle giriş yapılamadı, panel yerine giriş sayfasına yönlendirildi.');
         }
+
+        // 13 Agustos 2026: kullanicinin talebi - akis (kayit + giris) ucdan
+        // uca basariliysa urettigi test verisi hemen silinir; herhangi bir
+        // adimi basarisizsa (yukarida recordFailure cagrildiysa) kayit
+        // ELLE incelenip duzeltilene kadar veritabaninda birakilir.
+        if (count($this->failures) === $failuresBefore) {
+            DB::table('family_users')->where('id', $user->id)->delete();
+        }
     }
 
     private function checkFacilityClaim(string $brandSlug, string $baseUrl, string $unclaimedSlug): void
     {
-        $email = "qatest.daily.{$brandSlug}.claim@example.com";
-        DB::table('facility_claims')->where('applicant_email', $email)->delete();
+        // 13 Agustos 2026: kullanicinin talebi - "basarili testin verisi
+        // silinsin, basarisiz olan incelenmek uzere kalsin" isteginin
+        // gercekten calismasi icin e-posta artik GUNE OZEL (once sabitti,
+        // dunku BASARISIZ bir kaydi bugunku "once temizle" adimi sessizce
+        // silerdi - kullanicinin istegini fiilen 1 gunle sinirlardi).
+        $email = "qatest.daily.{$brandSlug}.claim.".now()->format('Ymd')."@example.com";
 
         [$client] = $this->newClient();
         $page = $client->get("{$baseUrl}/kurumlar/{$unclaimedSlug}/sahiplen");
@@ -403,13 +401,18 @@ class CheckUserFlows extends Command
         $claim = DB::table('facility_claims')->where('applicant_email', $email)->first();
         if (! $claim) {
             $this->recordFailure($brandSlug, 'Kurum Sahiplenme Başvurusu', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir başvuru oluşmadı.");
+        } else {
+            // 13 Agustos 2026: bkz. checkFamilyRegisterAndLogin ayni yorum -
+            // basarili akisin verisi hemen silinir, basarisiz olan (yukarida)
+            // incelenmek uzere kalir.
+            DB::table('facility_claims')->where('id', $claim->id)->delete();
         }
     }
 
     private function checkFacilityRegistration(string $brandSlug, string $baseUrl): void
     {
-        $email = "qatest.daily.{$brandSlug}.register@example.com";
-        DB::table('facility_registrations')->where('applicant_email', $email)->delete();
+        // 13 Agustos 2026: bkz. checkFacilityClaim ayni yorum - gune ozel e-posta.
+        $email = "qatest.daily.{$brandSlug}.register.".now()->format('Ymd')."@example.com";
 
         [$client] = $this->newClient();
         $page = $client->get("{$baseUrl}/kurum-kaydi");
@@ -444,13 +447,15 @@ class CheckUserFlows extends Command
         $registration = DB::table('facility_registrations')->where('applicant_email', $email)->first();
         if (! $registration) {
             $this->recordFailure($brandSlug, 'Kurum Kaydı (Sıfırdan Başvuru)', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir kayıt başvurusu oluşmadı.");
+        } else {
+            DB::table('facility_registrations')->where('id', $registration->id)->delete();
         }
     }
 
     private function checkOfferRequest(string $brandSlug, string $baseUrl, string $claimedSlug): void
     {
-        $email = "qatest.daily.{$brandSlug}.offer@example.com";
-        DB::table('family_users')->where('email', $email)->delete();
+        // 13 Agustos 2026: bkz. checkFacilityClaim ayni yorum - gune ozel e-posta.
+        $email = "qatest.daily.{$brandSlug}.offer.".now()->format('Ymd')."@example.com";
         DB::table('family_users')->insert([
             'name' => 'QATEST Daily Teklif Ailesi',
             'email' => $email,
@@ -497,9 +502,14 @@ class CheckUserFlows extends Command
             return;
         }
 
-        $exists = DB::table('offer_requests')->where('facility_id', $facilityId)->where('email', $email)->exists();
-        if (! $exists) {
+        $offerRequestId = DB::table('offer_requests')->where('facility_id', $facilityId)->where('email', $email)->value('id');
+        if (! $offerRequestId) {
             $this->recordFailure($brandSlug, 'Ücret / Teklif Talebi', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir talep oluşmadı.");
+        } else {
+            DB::table('messages')->where('offer_request_id', $offerRequestId)->delete();
+            DB::table('quotes')->where('offer_request_id', $offerRequestId)->delete();
+            DB::table('offer_requests')->where('id', $offerRequestId)->delete();
+            DB::table('family_users')->where('email', $email)->delete();
         }
     }
 
@@ -533,6 +543,8 @@ class CheckUserFlows extends Command
         $exists = DB::table('visit_requests')->where('facility_id', $facilityId)->where('phone', $phone)->exists();
         if (! $exists) {
             $this->recordFailure($brandSlug, 'Ziyaret Talebi', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir kayıt oluşmadı.");
+        } else {
+            DB::table('visit_requests')->where('facility_id', $facilityId)->where('phone', $phone)->delete();
         }
     }
 
@@ -564,13 +576,15 @@ class CheckUserFlows extends Command
         $exists = DB::table('facility_questions')->where('question', $marker)->exists();
         if (! $exists) {
             $this->recordFailure($brandSlug, 'Kurum Sorusu', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir soru oluşmadı.");
+        } else {
+            DB::table('facility_questions')->where('question', $marker)->delete();
         }
     }
 
     private function checkContact(string $brandSlug, string $baseUrl): void
     {
-        $email = "qatest.daily.{$brandSlug}.contact@example.com";
-        DB::table('contact_messages')->where('email', $email)->delete();
+        // 13 Agustos 2026: bkz. checkFacilityClaim ayni yorum - gune ozel e-posta.
+        $email = "qatest.daily.{$brandSlug}.contact.".now()->format('Ymd')."@example.com";
 
         [$client] = $this->newClient();
         $page = $client->get("{$baseUrl}/iletisim");
@@ -598,6 +612,8 @@ class CheckUserFlows extends Command
         $exists = DB::table('contact_messages')->where('email', $email)->exists();
         if (! $exists) {
             $this->recordFailure($brandSlug, 'İletişim Formu', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir mesaj oluşmadı.");
+        } else {
+            DB::table('contact_messages')->where('email', $email)->delete();
         }
     }
 

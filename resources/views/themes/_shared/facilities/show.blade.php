@@ -175,7 +175,7 @@
 
       <div id="{{ $galleryId }}" class="grid grid-cols-5 sm:grid-cols-10 gap-2 mt-3">
         @foreach($galleryImages as $img)
-          <a href="{{ asset('storage/'.$img->path) }}" data-pswp-width="1600" data-pswp-height="1200" target="_blank" rel="noopener">
+          <a href="{{ asset('storage/'.$img->path) }}" data-pswp-width="1600" data-pswp-height="1200" data-image-id="{{ $img->id }}" target="_blank" rel="noopener">
             <img src="{{ asset('storage/'.$img->path) }}" class="h-16 w-full rounded-lg object-cover border border-gray-100 cursor-zoom-in hover:opacity-80 transition" alt="{{ $facility->name }} küçük görsel">
           </a>
         @endforeach
@@ -185,7 +185,7 @@
       </div>
     </section>
     @include('themes._shared.partials.image-lightbox')
-    <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $galleryId }}'); });</script>
+    <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $galleryId }}', @json(brand_route('facilities.image.viewed', ['slug' => $facility->slug, 'image' => '__IMAGE_ID__']))); });</script>
 
     <div class="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
       <div class="text-sm font-black mb-3" style="color: {{ $colors['primary'] }};">Bu bölümde sorulacak aksiyonlar</div>

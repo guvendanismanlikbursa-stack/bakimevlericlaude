@@ -58,6 +58,11 @@ class DashboardController extends Controller
         $performance = $facility->performanceSummary();
         $trend = $this->performanceTrend($facility);
 
+        // 13 Agustos 2026: kullanicinin talebi - "hangi gorselim daha cok
+        // ilgi cekiyor goremiyorum" - bkz. Public\FacilityImageController,
+        // themes._shared.partials.image-lightbox'taki sayac artirma.
+        $topImages = $facility->images()->where('views_count', '>', 0)->orderByDesc('views_count')->limit(3)->get();
+
         return view("themes.{$brand['theme']}.facility.dashboard", compact(
             'user',
             'facility',
@@ -67,7 +72,8 @@ class DashboardController extends Controller
             'facilityInBrandScope',
             'stats',
             'performance',
-            'trend'
+            'trend',
+            'topImages'
         ));
     }
 

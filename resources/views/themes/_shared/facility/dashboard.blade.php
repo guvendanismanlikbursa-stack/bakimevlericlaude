@@ -122,6 +122,23 @@
     @endif
   </div>
 
+  {{-- 13 Agustos 2026: kullanicinin talebi - "hangi gorselim daha cok
+       ilgi cekiyor goremiyorum". --}}
+  @if($topImages->isNotEmpty())
+    <div class="mb-8 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <h2 class="font-bold text-lg mb-1">En Çok İlgi Gören Görselleriniz</h2>
+      <p class="text-sm text-gray-500 mb-4">Ziyaretçilerin galeride büyütüp incelediği görseller.</p>
+      <div class="grid grid-cols-3 gap-3">
+        @foreach($topImages as $img)
+          <div class="relative rounded-lg overflow-hidden border border-gray-100">
+            <img src="{{ asset('storage/'.$img->path) }}" class="w-full h-24 object-cover" alt="Kurum görseli">
+            <div class="absolute bottom-0 inset-x-0 bg-gray-950/70 text-white text-xs font-bold text-center py-1">{{ number_format($img->views_count) }} görüntülenme</div>
+          </div>
+        @endforeach
+      </div>
+    </div>
+  @endif
+
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Ücretsiz Hak</div>
