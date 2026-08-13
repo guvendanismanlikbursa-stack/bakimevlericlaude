@@ -7,10 +7,10 @@
   $section = service_section_for_scope($facility->category->brand_scope);
   $colors = $section['theme'] ?? ['primary' => $brand['primary_color'], 'secondary' => $brand['secondary_color'], 'soft' => '#f8fafc'];
   $benefits = [
-    ['title' => 'Profilinizi siz yönetin', 'text' => 'Görsel, açıklama, hizmet ve fiyat bilgilerini istediğiniz zaman güncelleyin.'],
+    ['title' => 'Profilinizi siz yönetin', 'text' => 'Görsel, açıklama, hizmet ve fiyat bilgilerini istediğiniz zaman güncelleyin — yanlış bilgi varsa da düzeltme yetkisi sadece sahiplenince size geçer.'],
     ['title' => 'Ailelerden doğrudan talep alın', 'text' => 'Fiyat, ziyaret ve kontenjan taleplerini panelinizden takip edin, doğrudan yanıtlayın.'],
     ['title' => 'Doğrulanmış rozeti kazanın', 'text' => 'Sahiplenilen kurumlar ziyaretçilere "Onaylı" rozetiyle gösterilir, güven artar.'],
-    ['title' => 'Ücretsiz başlangıç hakkı', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır, hemen kullanmaya başlayın.'],
+    ['title' => '2026 yıl sonuna kadar tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır, yıl sonuna kadar hiçbir ücret ödemeden kullanabilirsiniz.'],
   ];
 @endphp
 <div class="max-w-5xl mx-auto px-4 py-12">
@@ -36,8 +36,30 @@
         </div>
       </div>
 
-      <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black mb-3" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">Kurumunuzu Sahiplenin</div>
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">Kurumunuzu Sahiplenin</div>
+        <div class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-black">🎉 2026 yıl sonuna kadar ücretsiz</div>
+      </div>
       <h1 class="text-2xl md:text-3xl font-black text-gray-950 mb-4">"{{ $facility->name }}" kurumunu sahiplenerek profilin kontrolünü alın</h1>
+
+      {{-- 13 Agustos 2026: kullanicinin talebi - "kurumu goren mutlaka
+           sahiplenmek istemeli" - soyut vaat yerine bu kurumun KENDI
+           gercek goruntulenme rakamini ve bolgesindeki sosyal kaniti
+           (kac benzer kurum zaten sahiplenildi) on plana cikarir. --}}
+      @if($facility->views_count > 0 || $nearbyClaimedCount > 0 || $categoryClaimedCount > 0)
+        <div class="rounded-xl border p-4 mb-5" style="background: {{ $colors['soft'] }}; border-color: {{ $colors['primary'] }}33;">
+          @if($facility->views_count > 0)
+            <p class="text-sm font-bold" style="color: {{ $colors['primary'] }};">
+              👀 Kurumunuz şu ana kadar <span class="text-lg">{{ number_format($facility->views_count) }}</span> kez görüntülendi — ama sahiplenmediğiniz için ailelerden gelen fiyat/ziyaret taleplerini göremiyorsunuz.
+            </p>
+          @endif
+          @if($nearbyClaimedCount > 0)
+            <p class="text-sm text-gray-600 mt-1.5">📍 {{ $facility->city->name ?? 'Bölgenizde' }}'de aynı kategoride <strong>{{ $nearbyClaimedCount }}</strong> kurum zaten sahiplenildi ve aktif teklif alıyor.</p>
+          @elseif($categoryClaimedCount > 0)
+            <p class="text-sm text-gray-600 mt-1.5">📍 Aynı kategoride Türkiye genelinde <strong>{{ $categoryClaimedCount }}</strong> kurum zaten sahiplenildi ve aktif teklif alıyor.</p>
+          @endif
+        </div>
+      @endif
 
       <div class="space-y-3">
         @foreach($benefits as $b)

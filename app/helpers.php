@@ -583,7 +583,15 @@ if (! function_exists('facility_invitation_message')) {
     {
         $template = \App\Models\Setting::get('facility_invitation_message', facility_invitation_message_default());
 
-        return str_replace('{kurum_adi}', $facility->name, $template);
+        // 13 Agustos 2026: kullanicinin talebi - davet mesaji artik kurumun
+        // KENDI gercek goruntulenme sayisini iceriyor ki soyut bir cagri
+        // yerine somut bir kayip hissi ("bu kadar kisi seni gordu ama
+        // teklif alamadin") versin.
+        return str_replace(
+            ['{kurum_adi}', '{goruntulenme}'],
+            [$facility->name, number_format($facility->views_count)],
+            $template
+        );
     }
 }
 
@@ -591,7 +599,8 @@ if (! function_exists('facility_invitation_message_default')) {
     function facility_invitation_message_default(): string
     {
         return "Merhaba, {kurum_adi} için bakimevibul.com / bakimeviara.com / bakimevleri.com üzerinde ücretsiz kurum profiliniz oluşturuldu.\n\n"
-            .'Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak ön kayıtlı kurumlardan kolayca sahiplenme başvurusu yapabilirsiniz.'
+            .'Kurumunuz şu ana kadar {goruntulenme} kez görüntülendi, ama profilinizi henüz siz yönetmediğiniz için ailelerden gelen fiyat/ziyaret taleplerini göremiyorsunuz.'
+            ."\n\n2026 yıl sonuna kadar TAMAMEN ÜCRETSİZ kullanabilirsiniz. Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak ön kayıtlı kurumlardan kolayca sahiplenme başvurusu yapabilirsiniz."
             ."\n\nBu mesajı almak istemiyorsanız lütfen \"istemiyorum\" yazmanız yeterlidir.";
     }
 }

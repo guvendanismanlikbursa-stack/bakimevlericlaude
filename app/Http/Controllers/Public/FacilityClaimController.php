@@ -17,7 +17,23 @@ class FacilityClaimController extends Controller
 
         abort_if($facility->is_claimed, 404, 'Bu kurum zaten sahiplenilmis.');
 
-        return view("themes.{$brand['theme']}.facility-claim", compact('facility'));
+        // 13 Agustos 2026: kullanicinin talebi - sahiplenme sayfasi artik
+        // soyut vaatler yerine bu KURUMUN kendi gercek rakamini (kac kez
+        // goruntulendi) ve bolgesindeki sosyal kaniti (ayni il+kategoride
+        // zaten sahiplenilmis kac kurum var) gosteriyor - "ben sahiplenmezsem
+        // geride kalirim" hissi soyut cagridan cok daha ikna edici.
+        $nearbyClaimedCount = Facility::where('city_id', $facility->city_id)
+            ->where('facility_category_id', $facility->facility_category_id)
+            ->where('is_claimed', true)
+            ->where('id', '!=', $facility->id)
+            ->count();
+
+        $categoryClaimedCount = $nearbyClaimedCount > 0 ? $nearbyClaimedCount : Facility::where('facility_category_id', $facility->facility_category_id)
+            ->where('is_claimed', true)
+            ->where('id', '!=', $facility->id)
+            ->count();
+
+        return view("themes.{$brand['theme']}.facility-claim", compact('facility', 'nearbyClaimedCount', 'categoryClaimedCount'));
     }
 
     public function store(Request $request, GeoLookupService $geo)
