@@ -3224,4 +3224,38 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertLessThan(30, $queryCount, "Beklenenden fazla sorgu ({$queryCount}) - Fiyat Rehberi'nde N+1 geri gelmis olabilir.");
     }
+
+    // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis site
+    // denetiminde bulunan sorun - bkz. Public\FacilityController::index ayni
+    // tarihli yorum. Eski bir yer imi/paylasilan link menzil disi bir sayfaya
+    // (orn. filtre degisip sayfa sayisi azaldiktan sonra) isaret ediyorsa,
+    // filtreye uyan kurum GERCEKTEN varken yanlislikla "kriterlere uygun
+    // kurum bulunamadi" gosteriliyordu. Artik son gecerli sayfaya yonlendirir.
+    public function test_facility_listing_redirects_out_of_range_page_to_last_valid_page(): void
+    {
+        for ($i = 0; $i < 22; $i++) {
+            $this->facility("Rehab Sayfalama Kurum {$i}", $this->rehabCategory, true);
+        }
+
+        $response = $this->get('/site/bakimevleri/kurumlar?bolum=rehabilitasyon&page=5');
+
+        $response->assertRedirect('/site/bakimevleri/kurumlar?bolum=rehabilitasyon&page=2');
+        $this->get($response->headers->get('Location'))
+            ->assertOk()
+            ->assertSee('Rehab Sayfalama Kurum', false);
+    }
+
+    public function test_price_guide_redirects_out_of_range_page_to_last_valid_page(): void
+    {
+        for ($i = 0; $i < 13; $i++) {
+            $this->facility("Fiyat Sayfalama Kurum {$i}", $this->elderlyCategory, true);
+        }
+
+        $response = $this->get('/site/bakimevleri/fiyat-rehberi/yasli-bakim/'.$this->city->slug.'?page=9');
+
+        $response->assertRedirect();
+        $this->get($response->headers->get('Location'))
+            ->assertOk()
+            ->assertSee('Fiyat Sayfalama Kurum', false);
+    }
 }

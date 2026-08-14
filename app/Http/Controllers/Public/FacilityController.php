@@ -52,6 +52,15 @@ class FacilityController extends Controller
         $perPage = 21;
         $facilities = $query->orderByDesc('is_featured')->orderByDesc('rating')->paginate($perPage)->withQueryString();
 
+        // 14 Agustos 2026: menzil disi bir sayfaya gidilirse (eski bir
+        // yer imi/paylasilan link, filtre degisiminden sonra sayfa sayisi
+        // azalmis olabilir) "kriterlere uygun kurum bulunamadi" yanlis
+        // mesaji goruniyordu - oysa filtreye uyan kurum GERCEKTEN var,
+        // sadece o sayfada degil. Son gecerli sayfaya yonlendiriyoruz.
+        if ($facilities->isEmpty() && $facilities->total() > 0 && $facilities->currentPage() > $facilities->lastPage()) {
+            return redirect($request->fullUrlWithQuery(['page' => $facilities->lastPage()]));
+        }
+
         // 12 Agustos 2026 (2): isim aramasi (`q`) tum bolumlerde arandigi
         // icin, "kac kurum hangi bolumden" dagilimini de hesaplayip sonuc
         // parcasina gonderiyoruz (bkz. FiltersFacilities::sectionBreakdown).

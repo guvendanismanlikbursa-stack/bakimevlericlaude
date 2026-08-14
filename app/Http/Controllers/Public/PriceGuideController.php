@@ -120,7 +120,15 @@ class PriceGuideController extends Controller
             ->with(['city', 'category', 'images'])
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
+
+        // 14 Agustos 2026: bkz. Public\FacilityController::index ayni yorum -
+        // menzil disi sayfaya gidilince yanlis "sonuc yok" mesaji yerine
+        // son gecerli sayfaya yonlendiriyoruz.
+        if ($facilities->isEmpty() && $facilities->total() > 0 && $facilities->currentPage() > $facilities->lastPage()) {
+            return redirect(request()->fullUrlWithQuery(['page' => $facilities->lastPage()]));
+        }
 
         $sectionCategories = FacilityCategory::whereIn('brand_scope', $section['scopes'])->orderBy('name')->get();
         $nearDistricts = collect(districts_for_city($city->name))->take(18)->values();
