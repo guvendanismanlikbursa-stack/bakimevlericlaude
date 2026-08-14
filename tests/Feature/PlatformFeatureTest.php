@@ -2710,6 +2710,27 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()->assertDontSee('Öne Çıkan Kurum');
     }
 
+    public function test_home_featured_section_paginates_six_per_page(): void
+    {
+        // 14 Agustos 2026: kullanicinin talebi - anasayfadaki "Öne
+        // Çıkanlar" bolumu sinirsiz uzamamali, 6'sar sayfalanmali (bkz.
+        // HomeController::index() - 'featured_page' parametresi).
+        $names = [];
+        for ($i = 1; $i <= 7; $i++) {
+            $name = "Rehab One Cikan {$i}";
+            $names[] = $name;
+            $this->facility($name, $this->rehabCategory, true)->update(['is_featured' => true]);
+        }
+
+        $page1Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon')->assertOk()->getContent();
+        $onPage1 = collect($names)->filter(fn ($n) => str_contains($page1Body, $n))->count();
+        $this->assertSame(6, $onPage1, 'Anasayfada bir sayfada tam 6 one cikan kurum gorunmeli.');
+
+        $page2Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon&featured_page=2')->assertOk()->getContent();
+        $onPage2 = collect($names)->filter(fn ($n) => str_contains($page2Body, $n))->count();
+        $this->assertSame(1, $onPage2, 'Kalan 1 one cikan kurum 2. sayfada gorunmeli.');
+    }
+
     // 14 Agustos 2026: kullanicinin bildirdigi canli hata - 3 marka ayni
     // veritabanini paylastigi ve gunluk kontrolu ayni saatte tetikledigi
     // icin baska bir surec ayni "qatest-daily-*" kaydini az once

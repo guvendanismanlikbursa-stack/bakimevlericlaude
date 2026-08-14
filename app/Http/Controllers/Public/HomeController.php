@@ -20,12 +20,19 @@ class HomeController extends Controller
         $activeSection = active_service_section($request->query('bolum'), $brand);
         $sectionScopes = $activeSection['scopes'];
 
+        // 14 Agustos 2026: kullanicinin talebi - anasayfada "Öne Çıkanlar"
+        // sayisi arttikca liste uzayip gitmemeli, 6'sar 6'sar sayfalanmali
+        // (2., 3. sayfa...). Ayri bir 'featured_page' parametresi
+        // kullaniliyor ki asagidaki $filteredFacilities->paginate()
+        // (varsayilan 'page' parametresi) ile cakismasin.
         $featured = Facility::published()
             ->forBrand($sectionScopes)
             ->where('is_featured', true)
             ->with(['city', 'category', 'images'])
-            ->limit(6)
-            ->get();
+            ->orderByDesc('rating')
+            ->orderByDesc('id')
+            ->paginate(6, ['*'], 'featured_page')
+            ->withQueryString();
 
         $preRegistered = Facility::published()
             ->forBrand($sectionScopes)

@@ -73,7 +73,7 @@
   </div>
 </section>
 @include('themes._shared.partials.pre-registered-facilities')
-<section class="max-w-6xl mx-auto px-4 py-12">
+<section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
   <div class="flex items-end justify-between mb-6">
     <div><div class="text-sm font-bold mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div><h2 class="text-2xl font-extrabold text-gray-950">Öne çıkan kurumlar</h2></div>
     <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-bold" style="color: {{ $colors['primary'] }};">Tümünü gör →</a>
@@ -90,5 +90,6 @@
       <div class="md:col-span-3 border border-dashed rounded-lg p-8 text-center text-gray-500 bg-white">Bu bölüm için öne çıkan kurum eklenmedi.</div>
     @endforelse
   </div>
+  @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
 </section>
 @endif

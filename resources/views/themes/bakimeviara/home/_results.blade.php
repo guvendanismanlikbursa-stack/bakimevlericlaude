@@ -69,7 +69,7 @@
     @endforeach
   </div>
 </section>
-<section class="max-w-6xl mx-auto px-4 py-12">
+<section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
   <div class="text-center max-w-2xl mx-auto mb-8">
     <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div>
     <h2 class="text-3xl font-black text-gray-950">Ailelerin incelediği kurumlar</h2>
@@ -86,5 +86,6 @@
       <div class="md:col-span-3 bg-white border border-dashed rounded-2xl p-8 text-center text-gray-500">Bu bölüm için öne çıkan kurum eklenmedi.</div>
     @endforelse
   </div>
+  @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
 </section>
 @endif

@@ -411,11 +411,26 @@
        detaylari ve islemler BITTIKTEN SONRA, sayfanin gercek sonunda,
        tam genislikte ayri bir kesif bolumu olarak gorunmeli - 2 sutunlu
        izlem/form alaninin ortasina sikismis olmamali. --}}
+  {{-- 14 Agustos 2026: kullanicinin talebi - burada listeleme sayfasindaki
+       BUYUK karti (foto+aciklama+4 buton) kullanmak, ozellikle mobilde,
+       kurumlarin "ic ice gecmis" gibi hissettiren, ekran boyu kartlar
+       yiginina yol aciyordu. Bu sadece bir kesif/yonlendirme listesi -
+       kucuk, yatay mini-kartlar (kucuk gorsel + isim + ilce) yeterli. --}}
   <div class="max-w-6xl mx-auto px-4 pb-10">
     <h2 class="font-black text-xl mt-4 mb-4">Benzer Kurumlar</h2>
-    <div class="grid md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       @foreach($related as $r)
-        @include('themes._shared.partials.facility-card', ['facility' => $r])
+        @php $rImg = facility_card_image($r, $section); @endphp
+        <a href="{{ brand_route('facilities.show', ['slug' => $r->slug]) }}" class="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition group">
+          <div class="w-14 h-14 shrink-0 rounded-md overflow-hidden bg-gray-50">
+            <img src="{{ $rImg }}" alt="{{ $r->name }}" class="w-full h-full object-cover group-hover:scale-105 transition">
+          </div>
+          <div class="min-w-0">
+            <div class="text-sm font-black text-gray-950 line-clamp-1">{{ $r->name }}</div>
+            <div class="text-xs text-gray-500 line-clamp-1">{{ $r->city->name }} · {{ $r->district }}</div>
+            @if($r->is_featured)<span class="inline-block mt-0.5 text-[10px] font-black text-amber-700">⭐ Öne Çıkan</span>@endif
+          </div>
+        </a>
       @endforeach
     </div>
   </div>

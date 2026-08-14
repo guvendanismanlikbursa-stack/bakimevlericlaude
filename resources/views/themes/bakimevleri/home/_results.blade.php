@@ -90,7 +90,7 @@
         @endforeach
       </div>
     </aside>
-    <div>
+    <div id="one-cikanlar">
       <div class="flex items-end justify-between mb-6"><div><div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Seçilmiş kurumlar</div><h2 class="text-3xl font-black text-gray-950">Öne çıkanlar</h2></div><a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-black" style="color: {{ $colors['primary'] }};">Listeye git →</a></div>
       <div class="grid md:grid-cols-2 gap-5">
         @forelse($featured as $facility)
@@ -104,6 +104,7 @@
           <div class="md:col-span-2 bg-white border border-dashed rounded-xl p-8 text-center text-gray-500">Bu bölüm için öne çıkan kurum eklenmedi.</div>
         @endforelse
       </div>
+      @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
     </div>
   </div>
 </section>
