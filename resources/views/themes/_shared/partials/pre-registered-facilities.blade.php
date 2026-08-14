@@ -15,7 +15,7 @@
         <article class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition min-w-0">
           <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
             <div class="h-40 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};">
-              <img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover">
+              <img src="{{ $cardImage }}" alt="{{ $facility->name }}" loading="lazy" class="w-full h-full object-cover">
             </div>
             <div class="p-4 min-w-0">
               <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600 mb-2">Ön kayıtlı</span>

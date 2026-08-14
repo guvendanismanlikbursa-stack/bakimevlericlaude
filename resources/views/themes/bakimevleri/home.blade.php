@@ -29,7 +29,11 @@
                  saydamdi, arka plandaki fotograf neredeyse hic gorunmuyordu.
                  Overlay'i (gradient) hafifletip gorseli belirginlestirdik,
                  metin okunurlugu icin sadece alt kismi koyulastiriyoruz. --}}
-            <img src="{{ $item['hero_image'] }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+            {{-- 14 Agustos 2026: Lighthouse denetiminde bu kart gorseli LCP
+                 (en buyuk icerik boyamasi) elementi cikti ama fetchpriority
+                 belirtilmemisti - tarayiciya bu gorseli oncelikli getirmesini
+                 soyleyerek LCP suresini kisaltir. --}}
+            <img src="{{ $item['hero_image'] }}" alt="" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/35 to-black/10"></div>
           @endunless
           <div class="relative flex items-center justify-between gap-2">

@@ -33,7 +33,7 @@
   @endunless
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
     <div class="h-44 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center relative">
-      <img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+      <img src="{{ $cardImage }}" alt="{{ $facility->name }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
       @if($isSampleImage)
         <span class="absolute bottom-2 left-2 bg-gray-950/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Örnek görsel</span>
       @endif

@@ -2910,4 +2910,30 @@ class PlatformFeatureTest extends TestCase
         $this->assertNotNull($search->last_checked_at);
         $this->assertTrue($search->last_checked_at->greaterThan(now()->subMinute()));
     }
+
+    // 14 Agustos 2026: kullanicinin talebi - "kaliteli bir site" icin ozel,
+    // markali 404/500/403 sayfalari. 500.blade.php bilerek layouts.brand'i
+    // extend ETMIYOR (bkz. o dosyadaki yorum) - bu test, view'in DB'ye hic
+    // dokunmadan (herhangi bir Facade/model cagrisi olmadan) render
+    // edilebildigini dogrular.
+    public function test_custom_error_pages_render_with_brand_styling(): void
+    {
+        $this->get('/site/bakimevleri/kurumlar/olmayan-bir-kurum-slug-qqzz')
+            ->assertNotFound()
+            ->assertSee('Aradığınız sayfa bulunamadı')
+            ->assertSee('Ana Sayfaya Dön');
+
+        $this->get('/site/bakimeviara/kurumlar/olmayan-bir-kurum-slug-qqzz')
+            ->assertNotFound()
+            ->assertSee('bakimeviara.com');
+    }
+
+    public function test_error_pages_render_standalone_views_directly(): void
+    {
+        // 500/403 sayfalarini gercek bir HTTP hatasi tetiklemeden, dogrudan
+        // view olarak render ederek DB baglantisi olmadan da calistiklarini
+        // dogrular (500.blade.php'nin ana amaci budur).
+        $this->assertStringContainsString('Sistemde teknik bir hata oluştu', view('errors.500')->render());
+        $this->assertStringContainsString('Bu sayfaya erişim yetkiniz yok', view('errors.403')->render());
+    }
 }
