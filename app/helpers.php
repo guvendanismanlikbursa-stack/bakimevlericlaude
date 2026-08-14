@@ -595,12 +595,36 @@ if (! function_exists('facility_invitation_message')) {
     }
 }
 
+if (! function_exists('facility_featured_campaign_deadline')) {
+    /**
+     * 14 Agustos 2026: kullanicinin talebi - "yil sonuna kadar ucretsiz"
+     * belirsiz/uzak bir vaatti, gercek bir son tarih ("ay sonuna kadar
+     * sahiplenirseniz") aciliyet hissi yaratir. Sahiplenme sayfasi,
+     * WhatsApp daveti ve admin onay mantigi (bkz. Admin\FacilityClaimController::approve)
+     * HEPSI bu TEK fonksiyonu kullanir - kampanya uzatilmak/yenilenmek
+     * istendiginde SADECE burasi degistirilir.
+     */
+    function facility_featured_campaign_deadline(): \Illuminate\Support\Carbon
+    {
+        return \Illuminate\Support\Carbon::create(2026, 9, 1, 0, 0, 0);
+    }
+}
+
+if (! function_exists('facility_featured_campaign_active')) {
+    function facility_featured_campaign_active(): bool
+    {
+        return now()->lt(facility_featured_campaign_deadline());
+    }
+}
+
 if (! function_exists('facility_invitation_message_default')) {
     function facility_invitation_message_default(): string
     {
+        $deadline = facility_featured_campaign_deadline()->subDay()->translatedFormat('d F Y');
+
         return "Merhaba, {kurum_adi} için bakimevibul.com / bakimeviara.com / bakimevleri.com üzerinde ücretsiz kurum profiliniz oluşturuldu.\n\n"
             .'Kurumunuz şu ana kadar {goruntulenme} kez görüntülendi, ama profilinizi henüz siz yönetmediğiniz için ailelerden gelen fiyat/ziyaret taleplerini göremiyorsunuz.'
-            ."\n\n2026 yıl sonuna kadar TAMAMEN ÜCRETSİZ kullanabilirsiniz. Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak ön kayıtlı kurumlardan kolayca sahiplenme başvurusu yapabilirsiniz."
+            ."\n\n{$deadline} tarihine kadar sahiplenirseniz, kurumunuz yıl başına kadar ÜCRETSİZ olarak \"Öne Çıkan\" kurumlar arasında listelenir ve tamamen ücretsiz kullanabilirsiniz. Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak ön kayıtlı kurumlardan kolayca sahiplenme başvurusu yapabilirsiniz."
             ."\n\nBu mesajı almak istemiyorsanız lütfen \"istemiyorum\" yazmanız yeterlidir.";
     }
 }

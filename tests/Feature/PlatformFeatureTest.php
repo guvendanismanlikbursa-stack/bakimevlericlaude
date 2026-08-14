@@ -2621,12 +2621,13 @@ class PlatformFeatureTest extends TestCase
         $this->assertFalse($this->rehabFacility->fresh()->is_claimed);
     }
 
-    public function test_claim_approved_before_2027_automatically_grants_featured_status(): void
+    public function test_claim_approved_during_active_campaign_grants_featured_status(): void
     {
         Storage::fake('local');
         Mail::fake();
 
         $this->assertFalse($this->rehabFacility->is_featured);
+        $this->assertTrue(facility_featured_campaign_active(), 'Bu test yalnizca kampanya son tarihinden ONCE anlamlidir.');
 
         $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
             'applicant_name' => 'Yetkili One Cikan',
@@ -2642,6 +2643,53 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect();
 
         $this->assertTrue($this->rehabFacility->fresh()->is_featured);
+    }
+
+    // 14 Agustos 2026: kullanicinin talebi - "one cikan" ucretsiz rozeti
+    // artik "yil sonu" gibi belirsiz/uzak degil, GERCEK bir son tarihe
+    // bagli (bkz. facility_featured_campaign_deadline()). Bu tarihten
+    // SONRA onaylanan basvurular otomatik one cikarilmamali.
+    public function test_claim_approved_after_campaign_deadline_does_not_grant_featured_status(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+
+        \Illuminate\Support\Carbon::setTestNow(facility_featured_campaign_deadline()->addDay());
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
+            'applicant_name' => 'Yetkili Kampanya Sonrasi',
+            'applicant_email' => 'kampanyasonrasi@test.local',
+            'applicant_phone' => '05557778800',
+            'document' => $this->fakePngUpload('ruhsat-kampanyasonrasi.png'),
+        ])->assertRedirect();
+
+        $claim = FacilityClaim::where('applicant_email', 'kampanyasonrasi@test.local')->firstOrFail();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/sahiplenme-basvurulari/'.$claim->id.'/onayla')
+            ->assertRedirect();
+
+        $this->assertTrue($this->rehabFacility->fresh()->is_claimed);
+        $this->assertFalse($this->rehabFacility->fresh()->is_featured);
+
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
+    public function test_featured_facility_card_shows_premium_ribbon(): void
+    {
+        // facility-card.blade.php SADECE "Benzer Kurumlar" (ayni kategori)
+        // bolumunde kullanilir - rehabFacilityClaimed'i one cikan yapip
+        // AYNI kategorideki rehabFacility'nin sayfasinda kart olarak
+        // gorunmesini test ediyoruz.
+        $this->rehabFacilityClaimed->update(['is_featured' => true]);
+
+        $response = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug);
+        $response->assertOk()->assertSee('ÖNE ÇIKAN');
+
+        // childFacility'nin "Benzer Kurumlar" bolumunde one cikan hicbir
+        // kurum yok (farkli kategori) - ribbon hic gorunmemeli.
+        $response2 = $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug);
+        $response2->assertOk()->assertDontSee('ÖNE ÇIKAN');
     }
 
     // 14 Agustos 2026: kullanicinin bildirdigi canli hata - 3 marka ayni

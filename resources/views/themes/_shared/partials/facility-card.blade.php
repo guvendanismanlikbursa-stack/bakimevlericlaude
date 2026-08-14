@@ -12,7 +12,22 @@
   // aksiyonlar sadece sahiplenilmis kurumlarda anlamli.
   $isPreRegisteredCard = ! $facility->is_claimed;
 @endphp
-<article class="bg-white rounded-xl shadow-sm hover:shadow-lg transition overflow-hidden border border-gray-100 group relative">
+{{--
+  14 Agustos 2026: kullanicinin talebi - "one cikan" kurumlar gorsel
+  olarak da fark edilmeli, diger kartlarla ayni gorunmemeli (aksi halde
+  kurum yetkilisi "one cikan"in gercek bir deger oldugunu hissetmez).
+  Altin/amber tonlu bir cerceve + kose seridi ekleniyor - marka rengine
+  bagli degil (premium = altin, evrensel bir dil), digerlerinden aciyor.
+--}}
+<article class="bg-white rounded-xl overflow-hidden group relative transition
+  {{ $facility->is_featured
+      ? 'border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50'
+      : 'border border-gray-100 shadow-sm hover:shadow-lg' }}">
+  @if($facility->is_featured)
+    <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">
+      ⭐ ÖNE ÇIKAN
+    </div>
+  @endif
   @unless($isPreRegisteredCard)
     <button type="button" class="js-engagement-toggle absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-lg text-gray-400" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}" data-icon="1" aria-label="Favori">♥</button>
   @endunless
@@ -26,7 +41,6 @@
     <div class="p-4">
       <div class="flex items-center gap-2 mb-2 flex-wrap">
         @if($section)<span class="bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $section['title'] }}</span>@endif
-        @if($facility->is_featured)<span class="badge-secondary text-white text-xs font-semibold px-2 py-0.5 rounded-full">Öne çıkan</span>@endif
         @if($facility->is_claimed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Onaylı</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
         @if($isPreRegisteredCard)<span class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">Ön Kayıtlı</span>@endif

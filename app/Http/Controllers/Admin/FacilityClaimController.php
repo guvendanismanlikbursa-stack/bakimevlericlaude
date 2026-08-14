@@ -115,10 +115,10 @@ class FacilityClaimController extends Controller
                 'signup_ip' => $claim->applicant_ip,
             ]);
 
-            // 13 Agustos 2026: kullanicinin talebi - "yil sonuna kadar
-            // sahiplenenler ucretsiz olarak one cikan kurumlarda listelenecek".
-            // Sadece 2026 yil sonundan ONCE onaylanan basvurularda gecerli -
-            // bu tarihten sonra onaylanan basvurular otomatik one cikarilmaz.
+            // 14 Agustos 2026: kullanicinin talebi - "ay sonuna kadar
+            // sahiplenenler ucretsiz olarak one cikan kurumlarda listelenecek"
+            // (bkz. facility_featured_campaign_deadline() - TEK kaynak,
+            // sahiplenme sayfasi ve WhatsApp daveti de ayni tarihi kullanir).
             $update = [
                 'is_claimed' => true,
                 'claimed_at' => now(),
@@ -126,7 +126,7 @@ class FacilityClaimController extends Controller
                 'invitation_status' => 'approved',
                 'invitation_status_at' => now(),
             ];
-            if (now()->lt(\Illuminate\Support\Carbon::create(2027, 1, 1))) {
+            if (facility_featured_campaign_active()) {
                 $update['is_featured'] = true;
             }
             $facility->update($update);

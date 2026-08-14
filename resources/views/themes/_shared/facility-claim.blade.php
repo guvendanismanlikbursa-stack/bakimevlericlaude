@@ -6,15 +6,33 @@
   $brand = current_brand();
   $section = service_section_for_scope($facility->category->brand_scope);
   $colors = $section['theme'] ?? ['primary' => $brand['primary_color'], 'secondary' => $brand['secondary_color'], 'soft' => '#f8fafc'];
+
+  // 14 Agustos 2026: kullanicinin talebi - "yil sonuna kadar" belirsiz/uzak
+  // bir vaatti, yakin ve GERCEK bir son tarih ("ay sonuna kadar
+  // sahiplenirseniz") aciliyet hissi yaratir. Tarih TEK bir yerden
+  // (facility_featured_campaign_deadline()) geliyor - kampanya uzatilirsa
+  // sadece orasi degisir, bu sayfa otomatik guncel kalir.
+  $campaignDeadline = facility_featured_campaign_deadline();
+  $campaignActive = facility_featured_campaign_active();
+  $campaignDeadlineLabel = $campaignDeadline->copy()->subDay()->translatedFormat('d F Y');
+  $campaignDaysLeft = max(0, now()->diffInDays($campaignDeadline, false));
+
   $benefits = [
     ['title' => 'Profilinizi siz yönetin', 'text' => 'Görsel, açıklama, hizmet ve fiyat bilgilerini istediğiniz zaman güncelleyin — yanlış bilgi varsa da düzeltme yetkisi sadece sahiplenince size geçer.'],
     ['title' => 'Ailelerden doğrudan talep alın, aramanıza gerek kalmaz', 'text' => 'Google Haritalar\'da sadece görünürsünüz; burada aileler fiyat/ziyaret talebini doğrudan panelinize bırakır, siz de doğrudan panelden yanıtlarsınız.'],
     ['title' => 'Doğrulanmış rozeti kazanın', 'text' => 'Sahiplenilen kurumlar ziyaretçilere "Onaylı" rozetiyle gösterilir, güven artar.'],
-    ['title' => '🌟 Ücretsiz "Öne Çıkan" listelemesi — sınırlı süre', 'text' => 'Şimdi sahiplenirseniz, kurumunuz arama sonuçlarında diğerlerinin önüne geçerek "Öne Çıkan" rozetiyle gösterilir — daha çok görüntülenme, daha çok teklif talebi demek. Bu fırsat sadece 2026 yıl sonuna kadar ve tamamen ücretsiz, sonra bu kapı kapanabilir.'],
-    ['title' => '2026 yıl sonuna kadar tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır. Sizinle önceden konuşulmadan hiçbir ücret kesilmez, sürpriz fatura çıkmaz.'],
-    ['title' => 'Telefonunuzdan da rahatça yönetin', 'text' => 'Panelinizi bilgisayardan olduğu kadar telefonunuzdan da kullanabilirsiniz — sahada olsanız bile talepleri kaçırmazsınız.'],
-    ['title' => 'Hiçbir taahhüt yok', 'text' => 'Sözleşme veya kilitlenme söz konusu değil, istediğiniz zaman kullanmayı bırakabilirsiniz.'],
   ];
+
+  if ($campaignActive) {
+    $benefits[] = [
+      'title' => "🌟 Ücretsiz \"Öne Çıkan\" listelemesi — sadece {$campaignDeadlineLabel}'e kadar",
+      'text' => "{$campaignDeadlineLabel} tarihine kadar sahiplenirseniz, kurumunuz yıl başına kadar ücretsiz olarak \"Öne Çıkan\" kurumlar arasında, diğerlerinin ÖNÜNDE listelenir — daha çok görüntülenme, daha çok teklif talebi demek. Bu tarihten sonra başvuranlar bu fırsattan yararlanamaz.",
+    ];
+  }
+
+  $benefits[] = ['title' => 'Tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır. Sizinle önceden konuşulmadan hiçbir ücret kesilmez, sürpriz fatura çıkmaz.'];
+  $benefits[] = ['title' => 'Telefonunuzdan da rahatça yönetin', 'text' => 'Panelinizi bilgisayardan olduğu kadar telefonunuzdan da kullanabilirsiniz — sahada olsanız bile talepleri kaçırmazsınız.'];
+  $benefits[] = ['title' => 'Hiçbir taahhüt yok', 'text' => 'Sözleşme veya kilitlenme söz konusu değil, istediğiniz zaman kullanmayı bırakabilirsiniz.'];
 @endphp
 <div class="max-w-5xl mx-auto px-4 py-12">
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="text-sm font-semibold text-gray-500">← {{ $facility->name }} sayfasına dön</a>
@@ -41,8 +59,10 @@
 
       <div class="flex flex-wrap items-center gap-2 mb-3">
         <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">Kurumunuzu Sahiplenin</div>
-        <div class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-black">🎉 2026 yıl sonuna kadar ücretsiz</div>
-        <div class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-black">🌟 Ücretsiz Öne Çıkan Rozeti</div>
+        <div class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-black">🎉 Tamamen ücretsiz</div>
+        @if($campaignActive)
+          <div class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-black">🌟 Son {{ $campaignDaysLeft }} gün: Ücretsiz Öne Çıkan Rozeti</div>
+        @endif
       </div>
       <h1 class="text-2xl md:text-3xl font-black text-gray-950 mb-4">"{{ $facility->name }}" kurumunu sahiplenerek profilin kontrolünü alın</h1>
 
