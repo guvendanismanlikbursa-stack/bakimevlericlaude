@@ -105,6 +105,28 @@
       <button class="btn-primary rounded-lg px-4 py-2.5 font-black">Filtrele</button>
     </form>
 
+    {{-- 14 Agustos 2026: kullanicinin talebi - aile bu aramayi kaydedip,
+         kriterlere uyan YENI bir kurum eklendiginde bildirim alabilsin
+         (bkz. Family\SavedSearchController, App\Console\Commands\
+         NotifyFamilySavedSearches). --}}
+    <div class="flex justify-end mb-6 -mt-4">
+      @if(session('family_user_id'))
+        <form method="POST" action="{{ brand_route('family.saved-searches.store') }}">
+          @csrf
+          <input type="hidden" name="section_slug" value="{{ $activeSection['slug'] }}">
+          <input type="hidden" name="q" value="{{ request('q') }}">
+          <input type="hidden" name="city" value="{{ request('city') }}">
+          <input type="hidden" name="district" value="{{ request('district') }}">
+          <input type="hidden" name="category" value="{{ request('category') }}">
+          <input type="hidden" name="service" value="{{ request('service') }}">
+          <input type="hidden" name="price_tier" value="{{ request('price_tier') }}">
+          <button class="text-sm font-black rounded-lg border border-gray-200 bg-white px-4 py-2.5 hover:shadow-sm">🔔 Bu aramayı kaydet, yeni kurum eklenince haber ver</button>
+        </form>
+      @else
+        <a href="{{ brand_route('family.login') }}" class="text-sm font-black rounded-lg border border-gray-200 bg-white px-4 py-2.5 hover:shadow-sm">🔔 Giriş yapıp bu aramayı kaydedin</a>
+      @endif
+    </div>
+
     <section class="bg-white border border-gray-100 rounded-xl shadow-sm p-5 mb-8">
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
         <div>

@@ -40,6 +40,17 @@ Schedule::command('platform:check-user-flows')->dailyAt('08:45');
 // App\Console\Commands\SnapshotFacilityDailyStats).
 Schedule::command('facility:snapshot-daily-stats')->dailyAt('23:55');
 
+// 14 Agustos 2026: kullanicinin talebi - "hizli yanit veren kurum" rozeti
+// icin her gece son 90 gundeki ortalama teklif yanit suresini hesaplar
+// (bkz. App\Console\Commands\CalculateFacilityResponseTime,
+// Facility::hasFastResponseBadge()).
+Schedule::command('facility:calculate-response-time')->dailyAt('23:50');
+
+// 14 Agustos 2026: kullanicinin talebi - "kayitli arama" ozelligi. Kriterlere
+// uyan yeni kurum eklendiginde aileye bildirim gonderir (bkz.
+// App\Console\Commands\NotifyFamilySavedSearches, Family\SavedSearchController).
+Schedule::command('family:notify-saved-searches')->dailyAt('09:15');
+
 // 12 Agustos 2026: kullanicinin talebi - "yorum yazmaya davet edilmiyorum".
 // Teklifi kabul edip bir sure gecen ama hic yorum yazmamis aileleri
 // otomatik davet eder (bkz. App\Console\Commands\InviteFamiliesToReview).

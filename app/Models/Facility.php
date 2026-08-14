@@ -40,6 +40,8 @@ class Facility extends Model
             'lat' => 'float',
             'lng' => 'float',
             'rating' => 'float',
+            'avg_response_minutes' => 'integer',
+            'response_sample_count' => 'integer',
             'balance' => 'float',
             'quote_price_override' => 'float',
             'invitation_status_at' => 'datetime',
@@ -272,6 +274,20 @@ class Facility extends Model
         }
 
         return $this->images()->count();
+    }
+
+    /**
+     * 14 Agustos 2026: kullanicinin talebi - "hizli yanit veren kurum"
+     * rozeti. En az 3 ornek + ortalama 2 saatin (120 dk) altinda yanit
+     * SART - tek bir sansli hizli yanitla rozet kazanilmamali (bkz.
+     * CalculateFacilityResponseTime komutu, response_sample_count < 3
+     * icin avg_response_minutes'i zaten null birakiyor).
+     */
+    public function hasFastResponseBadge(): bool
+    {
+        return $this->avg_response_minutes !== null
+            && $this->response_sample_count >= 3
+            && $this->avg_response_minutes <= 120;
     }
 
     /**

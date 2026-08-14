@@ -210,6 +210,8 @@ $siteRoutes = function () {
             Route::put('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'update'])->name('profile.update');
             Route::put('/profil/bildirim-tercihleri', [\App\Http\Controllers\Family\ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
             Route::get('/bildirimler/sayi', [FamilyNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+            Route::post('/kayitli-aramalar', [\App\Http\Controllers\Family\SavedSearchController::class, 'store'])->name('saved-searches.store');
+            Route::delete('/kayitli-aramalar/{savedSearch}', [\App\Http\Controllers\Family\SavedSearchController::class, 'destroy'])->name('saved-searches.destroy');
         });
     });
 

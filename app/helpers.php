@@ -443,6 +443,7 @@ if (! function_exists('notification_action_url')) {
                     ? brand_route('facilities.show', $data['facility_slug']) : null,
                 'question_reminder' => brand_route('facility.questions.index'),
                 'review_invite' => isset($data['facility_slug']) ? brand_route('facilities.show', $data['facility_slug']) : null,
+                'saved_search_match' => isset($data['facility_slug']) ? brand_route('facilities.show', $data['facility_slug']) : brand_route('family.dashboard'),
                 'new_message' => isset($data['offer_request_id'])
                     ? brand_route($isFamilyUser ? 'family.thread' : 'facility.thread', $data['offer_request_id']) : null,
                 'claim_approved', 'registration_approved' => brand_route('facility.login'),

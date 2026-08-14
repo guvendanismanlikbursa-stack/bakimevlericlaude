@@ -58,6 +58,9 @@
       @if($facility->is_featured)
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
+      @if($facility->hasFastResponseBadge())
+        <span class="bg-blue-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
+      @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full bg-white text-gray-950">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
       @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-1 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
@@ -79,6 +82,9 @@
       @endif
       @if($facility->is_featured)
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
+      @endif
+      @if($facility->hasFastResponseBadge())
+        <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
       @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])

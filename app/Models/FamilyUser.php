@@ -40,6 +40,11 @@ class FamilyUser extends Model
         return $this->hasMany(FamilySavedFacility::class);
     }
 
+    public function savedSearches()
+    {
+        return $this->hasMany(FamilySavedSearch::class);
+    }
+
     public function notifications()
     {
         return $this->morphMany(PlatformNotification::class, 'notifiable')->latest();

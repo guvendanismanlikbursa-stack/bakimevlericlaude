@@ -2788,4 +2788,126 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Sistemde teknik bir hata oluştu')
             ->assertSee('Teknik detay');
     }
+
+    // 14 Agustos 2026: kullanicinin talebi - "hizli yanit veren kurum"
+    // rozeti. En az 3 ornek + ortalama 2 saatin (120 dk) altinda yanit
+    // sart (bkz. Facility::hasFastResponseBadge(),
+    // App\Console\Commands\CalculateFacilityResponseTime).
+    public function test_fast_response_badge_shows_after_calculating_response_time(): void
+    {
+        for ($i = 1; $i <= 3; $i++) {
+            $req = OfferRequest::create($this->offerData('bakimevleri', $this->rehabCategory, "Yanit Talebi {$i}"));
+            $req->forceFill(['created_at' => now()->subMinutes(200)])->save();
+
+            $quote = Quote::create([
+                'offer_request_id' => $req->id,
+                'facility_id' => $this->rehabFacilityClaimed->id,
+                'facility_user_id' => $this->facilityUser->id,
+                'price' => 1000,
+                'price_period' => 'monthly',
+                'status' => 'pending',
+            ]);
+            $quote->forceFill(['created_at' => now()->subMinutes(170)])->save(); // 30 dk yanit suresi
+        }
+
+        $this->artisan('facility:calculate-response-time')->assertSuccessful();
+
+        $this->rehabFacilityClaimed->refresh();
+        $this->assertTrue($this->rehabFacilityClaimed->hasFastResponseBadge());
+        $this->assertSame(30, $this->rehabFacilityClaimed->avg_response_minutes);
+
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
+            ->assertOk()->assertSee('Hızlı Yanıt');
+    }
+
+    public function test_fast_response_badge_hidden_with_insufficient_samples(): void
+    {
+        // Sadece 1 ornek (min 3 sart) - hizli olsa bile rozet kazanmamali.
+        $req = OfferRequest::create($this->offerData('bakimevleri', $this->rehabCategory, 'Tek Yanit Talebi'));
+        $req->forceFill(['created_at' => now()->subMinutes(200)])->save();
+
+        $quote = Quote::create([
+            'offer_request_id' => $req->id,
+            'facility_id' => $this->rehabFacilityClaimed->id,
+            'facility_user_id' => $this->facilityUser->id,
+            'price' => 1000,
+            'price_period' => 'monthly',
+            'status' => 'pending',
+        ]);
+        $quote->forceFill(['created_at' => now()->subMinutes(190)])->save();
+
+        $this->artisan('facility:calculate-response-time')->assertSuccessful();
+
+        $this->rehabFacilityClaimed->refresh();
+        $this->assertFalse($this->rehabFacilityClaimed->hasFastResponseBadge());
+        $this->assertNull($this->rehabFacilityClaimed->avg_response_minutes);
+
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
+            ->assertOk()->assertDontSee('Hızlı Yanıt');
+    }
+
+    // 14 Agustos 2026: kullanicinin talebi - "kayitli arama" ozelligi.
+    // Aile bir aramayi kaydedip, kriterlere uyan yeni bir kurum
+    // eklendiginde bildirim alabilsin (bkz. Family\SavedSearchController,
+    // App\Console\Commands\NotifyFamilySavedSearches).
+    public function test_family_can_save_and_delete_search(): void
+    {
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/aile/kayitli-aramalar', [
+                'section_slug' => 'rehabilitasyon',
+                'city' => $this->city->slug,
+            ])->assertRedirect();
+
+        $search = \App\Models\FamilySavedSearch::where('family_user_id', $this->family->id)->firstOrFail();
+        $this->assertSame($this->city->name, str($search->label)->after(' · ')->toString());
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevleri/aile/panel')
+            ->assertOk()->assertSee($search->label);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->delete('/site/bakimevleri/aile/kayitli-aramalar/'.$search->id)
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('family_saved_searches', ['id' => $search->id]);
+    }
+
+    public function test_saved_search_notifies_family_of_new_matching_facility(): void
+    {
+        $checkpoint = now();
+
+        $search = \App\Models\FamilySavedSearch::create([
+            'family_user_id' => $this->family->id,
+            'brand' => 'bakimevleri',
+            'section_slug' => 'rehabilitasyon',
+            'filters' => ['city' => $this->city->slug],
+            'label' => 'Fizik Tedavi ve Rehabilitasyon · '.$this->city->name,
+            'last_checked_at' => $checkpoint,
+        ]);
+
+        // last_checked_at'ten ONCE olusturulmus kurum (rehabFacilityClaimed,
+        // setUp'ta olusturuldu) bildirime konu OLMAMALI.
+        $this->rehabFacilityClaimed->forceFill(['created_at' => $checkpoint->copy()->subDay()])->save();
+
+        // last_checked_at'ten SONRA eklenen kurum bildirime konu OLMALI.
+        $newFacility = $this->facility('Yeni Rehab Merkezi', $this->rehabCategory, false);
+        $newFacility->forceFill(['created_at' => $checkpoint->copy()->addMinute()])->save();
+
+        $this->artisan('family:notify-saved-searches')->assertSuccessful();
+
+        $this->assertDatabaseHas('platform_notifications', [
+            'notifiable_type' => \App\Models\FamilyUser::class,
+            'notifiable_id' => $this->family->id,
+            'type' => 'saved_search_match',
+        ]);
+
+        $notification = \App\Models\PlatformNotification::where('notifiable_id', $this->family->id)
+            ->where('type', 'saved_search_match')->firstOrFail();
+        $this->assertStringContainsString($newFacility->name, $notification->body);
+        $this->assertStringNotContainsString($this->rehabFacilityClaimed->name, $notification->body);
+
+        $search->refresh();
+        $this->assertNotNull($search->last_checked_at);
+        $this->assertTrue($search->last_checked_at->greaterThan(now()->subMinute()));
+    }
 }

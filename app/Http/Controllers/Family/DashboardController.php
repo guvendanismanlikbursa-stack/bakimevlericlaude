@@ -39,7 +39,11 @@ class DashboardController extends Controller
             'message_count' => $requests->sum(fn ($req) => $req->messages->count()),
         ];
 
-        return view("themes.{$brand['theme']}.family.dashboard", compact('family', 'requests', 'stats'));
+        // 14 Agustos 2026: kullanicinin talebi - "kayitli arama" ozelligi,
+        // bkz. Family\SavedSearchController.
+        $savedSearches = $family->savedSearches()->where('brand', $brand['slug'])->latest()->get();
+
+        return view("themes.{$brand['theme']}.family.dashboard", compact('family', 'requests', 'stats', 'savedSearches'));
     }
 
     public function acceptQuote(Request $request)

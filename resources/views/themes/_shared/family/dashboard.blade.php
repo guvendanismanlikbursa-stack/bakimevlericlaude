@@ -83,6 +83,29 @@
     </a>
   </div>
 
+  {{-- 14 Agustos 2026: kullanicinin talebi - kaydedilen aramalar burada
+       listelenir; kriterlere uyan yeni bir kurum eklendiginde bildirim
+       gonderilir (bkz. Family\SavedSearchController, App\Console\Commands\
+       NotifyFamilySavedSearches). --}}
+  @if($savedSearches->isNotEmpty())
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-8">
+      <h2 class="font-bold text-lg mb-1">🔔 Kayıtlı Aramalarım</h2>
+      <p class="text-sm text-gray-500 mb-4">Bu kriterlere uyan yeni bir kurum eklendiğinde size haber veririz.</p>
+      <div class="space-y-2">
+        @foreach($savedSearches as $search)
+          <div class="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+            <span class="text-sm font-semibold text-gray-800">{{ $search->label }}</span>
+            <form method="POST" action="{{ brand_route('family.saved-searches.destroy', $search) }}" onsubmit="return confirm('Bu kayıtlı aramayı silmek istediğinize emin misiniz?');">
+              @csrf
+              @method('DELETE')
+              <button class="text-xs font-semibold text-red-600 whitespace-nowrap">Sil</button>
+            </form>
+          </div>
+        @endforeach
+      </div>
+    </div>
+  @endif
+
   @if($requests->isEmpty())
     <div class="bg-white rounded-lg shadow-sm border border-dashed border-gray-300 p-8 text-center">
       <h2 class="font-bold text-lg">Henüz teklif talebiniz yok</h2>
