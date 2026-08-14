@@ -304,8 +304,8 @@
         @if($canReview)
           <form method="POST" action="{{ brand_route('reviews.store', ['slug' => $facility->slug]) }}" class="space-y-3">
             @csrf
-            <select name="rating" required class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Puan seçin</option><option value="5">5 - Çok iyi</option><option value="4">4 - İyi</option><option value="3">3 - Orta</option><option value="2">2 - Zayıf</option><option value="1">1 - Kötü</option></select>
-            <textarea name="body" placeholder="Deneyiminizi veya görüşme notunuzu yazın" rows="4" class="border rounded-lg px-3 py-2 w-full"></textarea>
+            <select name="rating" required class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Puan seçin</option><option value="5" @selected(old('rating')=='5')>5 - Çok iyi</option><option value="4" @selected(old('rating')=='4')>4 - İyi</option><option value="3" @selected(old('rating')=='3')>3 - Orta</option><option value="2" @selected(old('rating')=='2')>2 - Zayıf</option><option value="1" @selected(old('rating')=='1')>1 - Kötü</option></select>
+            <textarea name="body" placeholder="Deneyiminizi veya görüşme notunuzu yazın" rows="4" class="border rounded-lg px-3 py-2 w-full">{{ old('body') }}</textarea>
             <button class="btn-primary w-full rounded-lg py-2 font-black">Yorumu Gönder</button>
             <p class="text-xs text-gray-400">Yorumlar admin onayından sonra yayınlanır.</p>
           </form>
@@ -335,8 +335,8 @@
       @if($facility->is_claimed)
         <form method="POST" action="{{ brand_route('questions.store', ['slug' => $facility->slug]) }}" class="flex flex-col sm:flex-row gap-2">
           @csrf
-          <input type="text" name="asker_name" placeholder="Adınız (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm sm:w-48">
-          <input type="text" name="question" placeholder="Örn: Alzheimer hastası kabul ediyor musunuz?" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+          <input type="text" name="asker_name" value="{{ old('asker_name') }}" placeholder="Adınız (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm sm:w-48">
+          <input type="text" name="question" value="{{ old('question') }}" placeholder="Örn: Alzheimer hastası kabul ediyor musunuz?" required class="border rounded-lg px-3 py-2 text-sm flex-1">
           <button class="btn-primary rounded-lg px-5 py-2 text-sm font-black whitespace-nowrap">Soru Sor</button>
         </form>
       @else
@@ -355,16 +355,16 @@
           <input type="hidden" name="facility_id" value="{{ $facility->id }}">
           <select name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
             <option value="">Kimin için? (opsiyonel)</option>
-            <option value="kendisi">Kendim için</option>
-            <option value="anne-baba">Anne/Babam için</option>
-            <option value="cocuk">Çocuğum için</option>
-            <option value="yakin">Yakınım için</option>
+            <option value="kendisi" @selected(old('care_for')=='kendisi')>Kendim için</option>
+            <option value="anne-baba" @selected(old('care_for')=='anne-baba')>Anne/Babam için</option>
+            <option value="cocuk" @selected(old('care_for')=='cocuk')>Çocuğum için</option>
+            <option value="yakin" @selected(old('care_for')=='yakin')>Yakınım için</option>
           </select>
-          <input type="text" name="patient_name" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
-          <input type="text" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
-          <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
-          <input type="email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
-          <textarea name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea>
+          <input type="text" name="patient_name" value="{{ old('patient_name') }}" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+          <input type="text" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+          <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+          <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
+          <textarea name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
           <button class="btn-primary w-full py-2 rounded-lg font-black">Ücret Bilgisi İste</button>
           <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
         </form>
@@ -375,14 +375,14 @@
           <h3 class="font-black mb-3 text-gray-950">Ziyaret / randevu talebi</h3>
           <form method="POST" action="{{ brand_route('visit-requests.store', ['slug' => $facility->slug]) }}" class="space-y-3">
             @csrf
-            <input type="text" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
-            <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
-            <input type="email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
+            <input type="text" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+            <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+            <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
             <div class="grid grid-cols-2 gap-2">
-              <select name="preferred_day" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Gün</option><option>Hafta içi</option><option>Hafta sonu</option><option>Fark etmez</option></select>
-              <select name="preferred_time" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Saat</option><option>Sabah</option><option>Öğlen</option><option>Akşamüstü</option></select>
+              <select name="preferred_day" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Gün</option><option @selected(old('preferred_day')=='Hafta içi')>Hafta içi</option><option @selected(old('preferred_day')=='Hafta sonu')>Hafta sonu</option><option @selected(old('preferred_day')=='Fark etmez')>Fark etmez</option></select>
+              <select name="preferred_time" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Saat</option><option @selected(old('preferred_time')=='Sabah')>Sabah</option><option @selected(old('preferred_time')=='Öğlen')>Öğlen</option><option @selected(old('preferred_time')=='Akşamüstü')>Akşamüstü</option></select>
             </div>
-            <textarea name="message" placeholder="Ziyaret notu" rows="2" class="border rounded-lg px-3 py-2 w-full"></textarea>
+            <textarea name="message" placeholder="Ziyaret notu" rows="2" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
             <button class="w-full rounded-lg border border-primary text-primary font-black py-2">Ziyaret Talebi Gönder</button>
           </form>
         </div>
@@ -392,8 +392,8 @@
           <p class="text-xs text-gray-500 mb-3">Tek tıkla "Boş yer var mı?" sorusu kuruma iletilir.</p>
           <form method="POST" action="{{ brand_route('visit-requests.availability', ['slug' => $facility->slug]) }}" class="flex gap-2">
             @csrf
-            <input type="text" name="full_name" placeholder="Adınız" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
-            <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
+            <input type="text" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
+            <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
             <button class="whitespace-nowrap rounded-lg bg-gray-900 text-white font-black px-3 text-sm">Sor</button>
           </form>
         </div>

@@ -3114,4 +3114,32 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertSame($district->id, $this->rehabFacility->fresh()->district_id);
     }
+
+    // 14 Agustos 2026: kullanicinin talebi - "boyle hatalar affedilemez"
+    // uyarisi uzerine yapilan genis site denetiminde bulunan gercek/yaygin
+    // sorun: kurum detay sayfasindaki 4 form (yorum/soru/teklif talebi/
+    // ziyaret talebi) dogrulama hatasi olunca kullanicinin yazdigi HER SEYI
+    // siliyordu (old() hic kullanilmiyordu). Bu test, soru VE teklif
+    // formlarinin artik girilen degerleri koruduğunu dogrular.
+    public function test_facility_show_page_forms_preserve_input_on_validation_error(): void
+    {
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/soru-sor', [
+            'asker_name' => 'Ayşe Test',
+            'question' => '',
+        ])->assertSessionHasErrors('question');
+
+        $questionPage = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug);
+        $questionPage->assertSee('value="Ayşe Test"', false);
+
+        $this->post('/site/bakimevleri/teklif-talebi', [
+            'facility_id' => $this->rehabFacilityClaimed->id,
+            'full_name' => '',
+            'phone' => '05551234567',
+            'message' => 'Ihtiyac detayi test mesaji',
+        ])->assertSessionHasErrors('full_name');
+
+        $offerPage = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug);
+        $offerPage->assertSee('value="05551234567"', false);
+        $offerPage->assertSee('Ihtiyac detayi test mesaji');
+    }
 }

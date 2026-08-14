@@ -17,10 +17,12 @@
           @if($package->bonus_quote_credits > 0)<li>+{{ $package->bonus_quote_credits }} ücretsiz teklif hakkı</li>@endif
           @if($package->duration_days)<li>{{ $package->duration_days }} gün geçerli</li>@endif
         </ul>
-        <form method="POST" action="{{ brand_route('facility.packages.store', $package) }}" enctype="multipart/form-data" class="mt-auto space-y-2">
+        {{-- 14 Agustos 2026: kullanicinin talebi - bkz. wallet.blade.php'deki
+             ayni tarihli yorum, ayni cift-gonderim korumasi. --}}
+        <form method="POST" action="{{ brand_route('facility.packages.store', $package) }}" enctype="multipart/form-data" class="mt-auto space-y-2" onsubmit="this.querySelector('button[type=submit]').disabled=true; this.querySelector('button[type=submit]').textContent='Gönderiliyor...';">
           @csrf
           <input type="file" name="receipt" accept="image/*" required class="border rounded-lg px-3 py-2 w-full text-sm">
-          <button class="btn-primary w-full py-2 rounded-lg font-semibold text-sm">Dekont Yükle, Talep Et</button>
+          <button type="submit" class="btn-primary w-full py-2 rounded-lg font-semibold text-sm">Dekont Yükle, Talep Et</button>
         </form>
       </div>
     @empty
