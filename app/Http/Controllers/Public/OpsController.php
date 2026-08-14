@@ -1202,30 +1202,19 @@ class OpsController extends Controller
     // uygulayip DB'deki mevcut phone_type ile karsilastirir.
     private function phoneTypeAudit(Request $request): string
     {
-        $citySlug = (string) $request->query('city_slug', '');
+        $citySlug = (string) $request->query('city_slug', '') ?: null;
+        $result = app(\App\Services\DataQualityService::class)->phoneTypeAudit($citySlug);
 
-        $rows = DB::table('facilities as f')
-            ->join('cities as c', 'c.id', '=', 'f.city_id')
-            ->whereIn('f.ownership_type', ['ozel', 'vakif'])
-            ->whereNull('f.deleted_at')
-            ->when($citySlug, fn ($q) => $q->where('c.slug', $citySlug))
-            ->select('f.id', 'f.name', 'f.phone', 'f.phone_type', 'f.invitation_status')
-            ->get();
+        $lines = array_map(
+            fn ($m) => "#{$m['facility']->id} {$m['facility']->name} | tel={$m['facility']->phone} | kayitli={$m['stored']} -> olmasi_gereken={$m['computed']} | davet_durumu={$m['facility']->invitation_status}",
+            $result['mismatches']
+        );
 
-        $mismatches = [];
-        foreach ($rows as $r) {
-            $computed = classify_phone_type($r->phone);
-            $stored = $r->phone_type ?: 'none';
-            if ($computed !== $stored) {
-                $mismatches[] = "#{$r->id} {$r->name} | tel={$r->phone} | kayitli={$stored} -> olmasi_gereken={$computed} | davet_durumu={$r->invitation_status}";
-            }
-        }
-
-        $out = "Kontrol edilen kurum: {$rows->count()}\n";
-        $out .= "Uyumsuz (yanlis siniflandirilmis) kurum: " . count($mismatches) . "\n\n";
-        $out .= implode("\n", array_slice($mismatches, 0, 50));
-        if (count($mismatches) > 50) {
-            $out .= "\n... ve " . (count($mismatches) - 50) . " tane daha";
+        $out = "Kontrol edilen kurum: {$result['checked']}\n";
+        $out .= "Uyumsuz (yanlis siniflandirilmis) kurum: " . count($lines) . "\n\n";
+        $out .= implode("\n", array_slice($lines, 0, 50));
+        if (count($lines) > 50) {
+            $out .= "\n... ve " . (count($lines) - 50) . " tane daha";
         }
 
         return $out;
@@ -1239,44 +1228,10 @@ class OpsController extends Controller
     // dokunmaz, o gecmisi kaybetmez.
     private function phoneTypeFix(Request $request): string
     {
-        $citySlug = (string) $request->query('city_slug', '');
-        $autoStatuses = ['not_started', 'landline_only', 'contact_missing'];
+        $citySlug = (string) $request->query('city_slug', '') ?: null;
+        $result = app(\App\Services\DataQualityService::class)->phoneTypeFix($citySlug);
 
-        $rows = DB::table('facilities as f')
-            ->join('cities as c', 'c.id', '=', 'f.city_id')
-            ->whereIn('f.ownership_type', ['ozel', 'vakif'])
-            ->whereNull('f.deleted_at')
-            ->when($citySlug, fn ($q) => $q->where('c.slug', $citySlug))
-            ->select('f.id', 'f.phone', 'f.phone_type', 'f.invitation_status')
-            ->get();
-
-        $fixedPhoneType = 0;
-        $fixedStatus = 0;
-
-        foreach ($rows as $r) {
-            $computed = classify_phone_type($r->phone);
-            $stored = $r->phone_type ?: 'none';
-            if ($computed === $stored) {
-                continue;
-            }
-
-            $update = ['phone_type' => $computed, 'updated_at' => now()];
-
-            if (in_array($r->invitation_status, $autoStatuses, true)) {
-                $update['invitation_status'] = match ($computed) {
-                    'mobile' => 'not_started',
-                    'landline' => 'landline_only',
-                    default => 'contact_missing',
-                };
-                $update['invitation_status_at'] = now();
-                $fixedStatus++;
-            }
-
-            DB::table('facilities')->where('id', $r->id)->update($update);
-            $fixedPhoneType++;
-        }
-
-        return "Duzeltilen phone_type: {$fixedPhoneType}\nBirlikte duzeltilen davet_durumu: {$fixedStatus} (kalanlarda davet sureci zaten ilerlemisti, dokunulmadi)";
+        return "Duzeltilen phone_type: {$result['fixedPhoneType']}\nBirlikte duzeltilen davet_durumu: {$result['fixedStatus']} (kalanlarda davet sureci zaten ilerlemisti, dokunulmadi)";
     }
 
     // 28 Temmuz 2026: "BURSA SEFKAT HUZUREVI..." aslinda ozel isletme ama
@@ -1290,16 +1245,9 @@ class OpsController extends Controller
     // OTOMATIK duzeltme yapmaz, sadece insan gozden gecirsin diye listeler.
     private function ownershipAudit(): string
     {
-        $rows = DB::table('facilities as f')
-            ->join('cities as c', 'c.id', '=', 'f.city_id')
-            ->where('f.ownership_type', 'kamu')
-            ->whereNull('f.deleted_at')
-            ->whereRaw('LOWER(f.name) LIKE ?', ['%özel%'])
-            ->select('f.id', 'f.name', 'c.name as sehir')
-            ->orderBy('c.name')
-            ->get();
+        $rows = app(\App\Services\DataQualityService::class)->ownershipAudit();
 
-        $out = "'kamu' isaretli ama isminde 'ozel' gecen kurumlar (insan gozuyle kontrol edilmeli): {$rows->count()}\n\n";
+        $out = "'kamu' isaretli ama isminde 'ozel' gecen kurumlar (insan gozuyle kontrol edilmeli): " . count($rows) . "\n\n";
         foreach ($rows as $r) {
             $out .= "#{$r->id} {$r->name} ({$r->sehir})\n";
         }
@@ -1316,33 +1264,9 @@ class OpsController extends Controller
         $id = (int) $request->query('id', 0);
         $type = (string) $request->query('type', '');
 
-        if (! in_array($type, ['ozel', 'kamu', 'belediye', 'vakif'], true)) {
-            return "HATA: gecersiz type '{$type}' (ozel/kamu/belediye/vakif olmali)";
-        }
+        $result = app(\App\Services\DataQualityService::class)->ownershipFix($id, $type);
 
-        $facility = DB::table('facilities')->where('id', $id)->first();
-        if (! $facility) {
-            return "HATA: #{$id} bulunamadi";
-        }
-
-        $update = ['ownership_type' => $type, 'updated_at' => now()];
-
-        // ozel/vakif'a geciyorsa ve daha once kamu oldugu icin davetten haric
-        // tutulmustu (excluded) ise, artik davet edilebilir hale getirmek
-        // icin durumu telefon tipine gore yeniden hesapla.
-        if (in_array($type, ['ozel', 'vakif'], true) && $facility->invitation_status === 'excluded') {
-            $phoneType = classify_phone_type($facility->phone);
-            $update['invitation_status'] = match ($phoneType) {
-                'mobile' => 'not_started',
-                'landline' => 'landline_only',
-                default => 'contact_missing',
-            };
-            $update['invitation_status_at'] = now();
-        }
-
-        DB::table('facilities')->where('id', $id)->update($update);
-
-        return "OK: #{$id} {$facility->name} -> ownership_type={$type}" . (isset($update['invitation_status']) ? ", davet_durumu={$update['invitation_status']}" : '');
+        return ($result['ok'] ? 'OK: ' : 'HATA: ') . $result['message'];
     }
 
     // 28 Temmuz 2026: kullanicinin ekran goruntusunde gosterdigi gibi -
@@ -1355,96 +1279,21 @@ class OpsController extends Controller
     // "ozel guvenlik egitimi", "psikolog", "saglik kabini" gibi hicbir
     // bakim kategorisine net oturmayanlari OTOMATIK TASIMAZ, sadece
     // "gozden gecir/muhtemelen bakim kurumu degil" diye isaretler.
-    private const MISCATEGORY_RULES = [
-        // [hedef_slug, [anahtar kelimeler]] - sirali kontrol edilir, ilk eslesen kazanir
-        ['kres-ve-anaokulu', ['kreş', 'anaokulu', 'ana okulu']],
-        ['cocuk-bakim-merkezi', ['çocuk bakım', 'çocuk gelişim', 'oyun evi', 'çocuk etkinlik', 'gündüz bakım evi', 'çocuk kulübü', 'çocuk evleri', 'çocuk yuvası', 'çocukevi', 'çocuk evi']],
-        ['ozel-egitim-ve-gelisim-merkezi', ['özel eğitim', 'otizm', 'down sendrom', 'özel gereksinim', 'gelişim merkezi', 'ozel egitim uygulama okulu']],
-        ['norolojik-rehabilitasyon-merkezi', ['nörolojik rehabilitasyon', 'inme sonrası', 'felç sonrası']],
-        ['fizik-tedavi-ve-rehabilitasyon', ['fizik tedavi', 'fizyoterap', 'rehabilitasyon merkezi', 'rehabilitasyon ve']],
-    ];
-
-    // Bakim kategorisine ait olmadigi neredeyse kesin olan (ör. sadece
-    // danismanlik/klinik/egitim kurumu, yasli/cocuk bakimiyla ilgisi yok)
-    // isimler - bunlar OTOMATIK TASINMAZ, sadece rapor edilir.
-    private const NOT_A_CARE_FACILITY_KEYWORDS = [
-        'psikolojik danışman', 'psikolog', 'psikiyatri', 'danışmanlık merkezi',
-        'sağlık kabini', 'özel güvenlik eğitim', 'akademi', 'kurs merkezi', 'dershane',
-    ];
-
-    // Isminde acikca "huzurevi" veya "yasli bakim" gecen bir kurum, ayni
-    // zamanda "...ve rehabilitasyon merkezi" gibi bir ek de tasisa bile
-    // GERCEKTEN yasli bakim kurumudur (rehabilitasyon hizmeti de sunan bir
-    // huzurevi) - bu yuzden reassignment kurallarindan MUAF tutulur, aksi
-    // halde dogru kategorideki yuzlerce huzurevi yanlislikla tasinirdi.
-    private const CARE_SELF_LABEL_KEYWORDS = ['huzurevi', 'yaşlı bakım', 'yasli bakim'];
-
-    private function guessRealCategory(string $name): ?string
-    {
-        $n = \Illuminate\Support\Str::of($name)->lower()->ascii()->toString();
-
-        foreach (self::CARE_SELF_LABEL_KEYWORDS as $kw) {
-            if (str_contains($n, \Illuminate\Support\Str::of($kw)->lower()->ascii()->toString())) {
-                return null;
-            }
-        }
-
-        foreach (self::MISCATEGORY_RULES as [$slug, $keywords]) {
-            foreach ($keywords as $kw) {
-                $kwAscii = \Illuminate\Support\Str::of($kw)->lower()->ascii()->toString();
-                if (str_contains($n, $kwAscii)) {
-                    return $slug;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private function looksLikeNonCareFacility(string $name): bool
-    {
-        $n = \Illuminate\Support\Str::of($name)->lower()->ascii()->toString();
-        foreach (self::NOT_A_CARE_FACILITY_KEYWORDS as $kw) {
-            if (str_contains($n, \Illuminate\Support\Str::of($kw)->lower()->ascii()->toString())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
+    // 14 Agustos 2026: bu uctaki kategori-tahmin/isim-temizleme mantigi
+    // App\Services\DataQualityService::class icine tasindi - admin
+    // panelindeki "Veri Denetimi" ekrani da AYNI servisi kullanir, iki
+    // yerde ayri ayri (ve zamanla birbirinden sapabilecek) kopya durmaz.
     private function miscategoryScan(Request $request): string
     {
-        $sourceSlugs = ['yasli-bakim-evi', 'huzurevi'];
+        $result = app(\App\Services\DataQualityService::class)->miscategoryScan();
 
-        $rows = DB::table('facilities as f')
-            ->join('facility_categories as fc', 'fc.id', '=', 'f.facility_category_id')
-            ->join('cities as c', 'c.id', '=', 'f.city_id')
-            ->whereIn('fc.slug', $sourceSlugs)
-            ->whereNull('f.deleted_at')
-            ->select('f.id', 'f.name', 'c.name as sehir', 'fc.slug as mevcut_kategori')
-            ->get();
-
-        $toReassign = [];
-        $nonCare = [];
-        foreach ($rows as $r) {
-            $guess = $this->guessRealCategory($r->name);
-            if ($guess) {
-                $toReassign[] = [$r, $guess];
-                continue;
-            }
-            if ($this->looksLikeNonCareFacility($r->name)) {
-                $nonCare[] = $r;
-            }
-        }
-
-        $out = "Taranan (Huzurevi/Yasli Bakim Evi kategorisindeki) kurum: {$rows->count()}\n";
-        $out .= "Gercek kategorisi baska oldugu net olan (otomatik tasinabilir): " . count($toReassign) . "\n";
-        $out .= "Bakim kurumu olmadigi neredeyse kesin (elle karar verilmeli): " . count($nonCare) . "\n\n";
+        $out = "Taranan (Huzurevi/Yasli Bakim Evi kategorisindeki) kurum: {$result['scanned']}\n";
+        $out .= "Gercek kategorisi baska oldugu net olan (otomatik tasinabilir): " . count($result['reassignable']) . "\n";
+        $out .= "Bakim kurumu olmadigi neredeyse kesin (elle karar verilmeli): " . count($result['nonCare']) . "\n\n";
 
         $byTarget = [];
-        foreach ($toReassign as [$r, $guess]) {
-            $byTarget[$guess][] = "#{$r->id} {$r->name} ({$r->sehir})";
+        foreach ($result['reassignable'] as $row) {
+            $byTarget[$row['target']][] = "#{$row['facility']->id} {$row['facility']->name} ({$row['facility']->sehir})";
         }
         foreach ($byTarget as $target => $items) {
             $out .= "--- -> {$target} (" . count($items) . " kurum) ---\n";
@@ -1456,13 +1305,13 @@ class OpsController extends Controller
             }
         }
 
-        if ($nonCare) {
+        if ($result['nonCare']) {
             $out .= "\n--- Muhtemelen bakim kurumu DEGIL (elle incelenmeli) ---\n";
-            foreach (array_slice($nonCare, 0, 20) as $r) {
+            foreach (array_slice($result['nonCare'], 0, 20) as $r) {
                 $out .= "  #{$r->id} {$r->name} ({$r->sehir})\n";
             }
-            if (count($nonCare) > 20) {
-                $out .= '  ... ve ' . (count($nonCare) - 20) . " tane daha\n";
+            if (count($result['nonCare']) > 20) {
+                $out .= '  ... ve ' . (count($result['nonCare']) - 20) . " tane daha\n";
             }
         }
 
@@ -1475,32 +1324,10 @@ class OpsController extends Controller
     // panelinden elle karar verilip silinmeli/duzenlenmeli).
     private function miscategoryFix(Request $request): string
     {
-        $sourceSlugs = ['yasli-bakim-evi', 'huzurevi'];
-        $categoryIds = DB::table('facility_categories')->pluck('id', 'slug');
+        $result = app(\App\Services\DataQualityService::class)->miscategoryFix();
 
-        $rows = DB::table('facilities as f')
-            ->join('facility_categories as fc', 'fc.id', '=', 'f.facility_category_id')
-            ->whereIn('fc.slug', $sourceSlugs)
-            ->whereNull('f.deleted_at')
-            ->select('f.id', 'f.name')
-            ->get();
-
-        $counts = [];
-        foreach ($rows as $r) {
-            $guess = $this->guessRealCategory($r->name);
-            if (! $guess || ! isset($categoryIds[$guess])) {
-                continue;
-            }
-
-            DB::table('facilities')->where('id', $r->id)->update([
-                'facility_category_id' => $categoryIds[$guess],
-                'updated_at' => now(),
-            ]);
-            $counts[$guess] = ($counts[$guess] ?? 0) + 1;
-        }
-
-        $out = "Kategorisi duzeltilen toplam kurum: " . array_sum($counts) . "\n";
-        foreach ($counts as $slug => $n) {
+        $out = "Kategorisi duzeltilen toplam kurum: {$result['fixed']}\n";
+        foreach ($result['byTarget'] as $slug => $n) {
             $out .= "  -> {$slug}: {$n}\n";
         }
 
@@ -1553,51 +1380,26 @@ class OpsController extends Controller
     // ne kadar tutarsiz oldugunu olcer.
     private function districtAudit(Request $request): string
     {
-        $citySlug = (string) $request->query('city_slug', '');
+        $citySlug = (string) $request->query('city_slug', '') ?: null;
+        $result = app(\App\Services\DataQualityService::class)->districtAudit($citySlug);
 
-        $rows = DB::table('facilities as f')
-            ->join('cities as c', 'c.id', '=', 'f.city_id')
-            ->leftJoin('districts as d', 'd.id', '=', 'f.district_id')
-            ->whereNull('f.deleted_at')
-            ->when($citySlug, fn ($q) => $q->where('c.slug', $citySlug))
-            ->select('f.id', 'f.name', 'f.district as district_text', 'd.name as district_fk', 'c.name as sehir')
-            ->get();
+        $examples = array_map(function ($row) {
+            $f = $row['facility'];
+            $text = trim((string) $f->district_text);
+            $fk = trim((string) $f->district_fk);
+            $desc = match ($row['reason']) {
+                'sadece_fk' => "ilce sadece FK'de: '{$fk}', metin kolonu bos",
+                default => "metin='{$text}' FK='{$fk}' UYUSMUYOR",
+            };
 
-        $bothEmpty = 0;
-        $onlyFkFilled = 0;
-        $mismatch = 0;
-        $consistent = 0;
-        $examples = [];
+            return "#{$f->id} {$f->name} ({$f->sehir}) -> {$desc}";
+        }, $result['examples']);
 
-        foreach ($rows as $r) {
-            $text = trim((string) $r->district_text);
-            $fk = trim((string) $r->district_fk);
-
-            if ($text === '' && $fk === '') {
-                $bothEmpty++;
-                if (count($examples) < 15) {
-                    $examples[] = "#{$r->id} {$r->name} ({$r->sehir}) -> ilce hic girilmemis (metin de FK de bos)";
-                }
-            } elseif ($text === '' && $fk !== '') {
-                $onlyFkFilled++;
-                if (count($examples) < 15) {
-                    $examples[] = "#{$r->id} {$r->name} ({$r->sehir}) -> ilce sadece FK'de: '{$fk}', metin kolonu bos";
-                }
-            } elseif ($text !== '' && $fk !== '' && mb_strtolower($text) !== mb_strtolower($fk)) {
-                $mismatch++;
-                if (count($examples) < 15) {
-                    $examples[] = "#{$r->id} {$r->name} ({$r->sehir}) -> metin='{$text}' FK='{$fk}' UYUSMUYOR";
-                }
-            } else {
-                $consistent++;
-            }
-        }
-
-        $out = "Kontrol edilen kurum: {$rows->count()}\n";
-        $out .= "Tutarli (ikisi de ayni veya ikisi de bos, sorun yok): {$consistent}\n";
-        $out .= "Ikisi de bos (ilce hic girilmemis): {$bothEmpty}\n";
-        $out .= "SADECE FK'de ilce var, metin kolonu bos -> filtre bu kurumlari KACIRIR: {$onlyFkFilled}\n";
-        $out .= "Metin ve FK BIRBIRINDEN FARKLI -> filtre yanlis/eksik sonuc verir: {$mismatch}\n\n";
+        $out = "Kontrol edilen kurum: {$result['checked']}\n";
+        $out .= "Tutarli (ikisi de ayni veya ikisi de bos, sorun yok): {$result['consistent']}\n";
+        $out .= "Ikisi de bos (ilce hic girilmemis): {$result['bothEmpty']}\n";
+        $out .= "SADECE FK'de ilce var, metin kolonu bos -> filtre bu kurumlari KACIRIR: {$result['onlyFkFilled']}\n";
+        $out .= "Metin ve FK BIRBIRINDEN FARKLI -> filtre yanlis/eksik sonuc verir: {$result['mismatch']}\n\n";
         $out .= implode("\n", $examples);
 
         return $out;
@@ -1609,29 +1411,9 @@ class OpsController extends Controller
     // yanlislikla dogru bir veriyi degistirme riski yok.
     private function districtFix(Request $request): string
     {
-        $rows = DB::table('facilities as f')
-            ->leftJoin('districts as d', 'd.id', '=', 'f.district_id')
-            ->whereNull('f.deleted_at')
-            ->whereNotNull('f.district_id')
-            ->where(function ($q) {
-                $q->whereNull('f.district')->orWhere('f.district', '');
-            })
-            ->select('f.id', 'd.name as district_fk')
-            ->get();
+        $result = app(\App\Services\DataQualityService::class)->districtFix();
 
-        $fixed = 0;
-        foreach ($rows as $r) {
-            if (! $r->district_fk) {
-                continue;
-            }
-            DB::table('facilities')->where('id', $r->id)->update([
-                'district' => $r->district_fk,
-                'updated_at' => now(),
-            ]);
-            $fixed++;
-        }
-
-        return "Ilce metin kolonu FK'den dolduruldu: {$fixed}";
+        return "Ilce metin kolonu FK'den dolduruldu: {$result['fixed']}";
     }
 
     // 12 Agustos 2026: platform denetiminde kurum isminin sonunda/basinda
@@ -1640,46 +1422,22 @@ class OpsController extends Controller
     // Sadece BICIMSEL temizlik yapar - ismin gercek metnini degistirmez.
     private function nameCleanupAudit(): string
     {
-        $rows = DB::table('facilities')->whereNull('deleted_at')->select('id', 'name')->get();
+        $result = app(\App\Services\DataQualityService::class)->nameCleanupAudit();
 
-        $examples = [];
-        foreach ($rows as $r) {
-            $clean = $this->cleanFacilityName($r->name);
-            if ($clean !== $r->name) {
-                $examples[] = "#{$r->id} '{$r->name}' -> '{$clean}'";
-            }
-        }
-
-        if (! $examples) {
+        if (! $result['count']) {
             return 'Temizlik gerektiren kurum ismi bulunamadi.';
         }
 
-        return 'Duzeltilecek kurum sayisi: '.count($examples)."\n\n".implode("\n", $examples);
+        $examples = array_map(fn ($e) => "#{$e['id']} '{$e['old']}' -> '{$e['new']}'", $result['examples']);
+
+        return 'Duzeltilecek kurum sayisi: '.$result['count']."\n\n".implode("\n", $examples);
     }
 
     private function nameCleanupFix(): string
     {
-        $rows = DB::table('facilities')->whereNull('deleted_at')->select('id', 'name')->get();
+        $result = app(\App\Services\DataQualityService::class)->nameCleanupFix();
 
-        $fixed = 0;
-        foreach ($rows as $r) {
-            $clean = $this->cleanFacilityName($r->name);
-            if ($clean !== $r->name) {
-                DB::table('facilities')->where('id', $r->id)->update(['name' => $clean, 'updated_at' => now()]);
-                $fixed++;
-            }
-        }
-
-        return "Kurum ismi temizlendi: {$fixed}";
-    }
-
-    private function cleanFacilityName(string $name): string
-    {
-        $clean = trim($name);
-        $clean = preg_replace('/\s+/u', ' ', $clean);
-        $clean = rtrim($clean, ", \t\n\r");
-
-        return $clean;
+        return "Kurum ismi temizlendi: {$result['fixed']}";
     }
 
     // 28 Temmuz 2026: kamu/belediye kurumlarini TOPLU silmeden once

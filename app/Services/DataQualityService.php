@@ -15,7 +15,11 @@ class DataQualityService
 {
     // [hedef_slug, [anahtar kelimeler]] - sirali kontrol edilir, ilk eslesen kazanir
     private const MISCATEGORY_RULES = [
-        ['kres-ve-anaokulu', ['kreş', 'anaokulu', 'ana okulu']],
+        // 14 Agustos 2026: canli sitede "ALTI YAS ALTI OKUL ONCESI EGITIM
+        // MERKEZI" adinda bir kres, "okul oncesi" kelimesi listede olmadigi
+        // icin Yasli Bakim Evi kategorisinde kalmis, ailelerin karsisina
+        // yanlislikla huzurevi aramasinda cikmisti - anahtar kelime eklendi.
+        ['kres-ve-anaokulu', ['kreş', 'anaokulu', 'ana okulu', 'okul öncesi']],
         ['cocuk-bakim-merkezi', ['çocuk bakım', 'çocuk gelişim', 'oyun evi', 'çocuk etkinlik', 'gündüz bakım evi', 'çocuk kulübü', 'çocuk evleri', 'çocuk yuvası', 'çocukevi', 'çocuk evi']],
         ['ozel-egitim-ve-gelisim-merkezi', ['özel eğitim', 'otizm', 'down sendrom', 'özel gereksinim', 'gelişim merkezi', 'ozel egitim uygulama okulu']],
         ['norolojik-rehabilitasyon-merkezi', ['nörolojik rehabilitasyon', 'inme sonrası', 'felç sonrası']],
