@@ -3201,4 +3201,27 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertDatabaseCount('wallet_topups', 0);
     }
+
+    // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis site
+    // denetiminde bulunan N+1 - bkz. Public\PriceGuideController::render()
+    // ayni tarihli yorum. facility_category_id secilmedigi icin priceTier()
+    // erisimi HER kurum icin ayri bir sorgu tetikliyordu VE bu FK eksik
+    // oldugundan kategoriye ozel esikler yerine hep jenerik varsayilanlara
+    // duşuyordu (sessiz bir dogruluk hatasi). Bu test sorgu sayisinin
+    // fiyatli kurum adediyle BIRLIKTE artmadigini kalici olarak korur.
+    public function test_price_guide_page_does_not_n_plus_one_query_on_tier_counts(): void
+    {
+        for ($i = 0; $i < 9; $i++) {
+            $this->facility("Fiyat Test Kurum {$i}", $this->elderlyCategory, true)->update(['price_min' => 10000 + $i * 1000]);
+        }
+
+        $queryCount = 0;
+        \Illuminate\Support\Facades\DB::listen(function () use (&$queryCount) {
+            $queryCount++;
+        });
+
+        $this->get('/site/bakimevleri/fiyat-rehberi/yasli-bakim/'.$this->city->slug)->assertOk();
+
+        $this->assertLessThan(30, $queryCount, "Beklenenden fazla sorgu ({$queryCount}) - Fiyat Rehberi'nde N+1 geri gelmis olabilir.");
+    }
 }

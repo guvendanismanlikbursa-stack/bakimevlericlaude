@@ -100,7 +100,15 @@ class PriceGuideController extends Controller
 
         $tierCounts = [];
         if ($stats['priced_count'] > 0) {
-            foreach ((clone $priced)->get(['price_min']) as $facility) {
+            // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis
+            // denetimde bulunan N+1 - 'facility_category_id' secilmedigi
+            // icin priceTier()'in $this->category erisimi HER kurum icin
+            // ayri bir sorgu tetikliyordu (VE facility_category_id secilmedigi
+            // icin bu iliski hep null donup segment hesabi kategoriye ozel
+            // esikler yerine hep JENERIK varsayilanlara duşuyordu - sessiz
+            // bir dogruluk hatasi da vardi). ->with('category') + FK'nin de
+            // secilmesiyle ikisi birden duzeldi.
+            foreach ((clone $priced)->with('category')->get(['id', 'price_min', 'facility_category_id']) as $facility) {
                 $tier = $facility->priceTier();
                 if ($tier) {
                     $tierCounts[$tier['key']] = ($tierCounts[$tier['key']] ?? 0) + 1;
