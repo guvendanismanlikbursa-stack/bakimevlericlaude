@@ -293,7 +293,19 @@ class OpsController extends Controller
     {
         $output = '';
 
-        foreach (['route:clear', 'route:cache', 'config:clear', 'config:cache', 'view:clear', 'view:cache', 'cache:clear'] as $command) {
+        // 14 Agustos 2026: kullanicinin "hata var uyarisi geldi" bildirimi
+        // uzerine yapilan incelemede bulundu - route:clear route:cache'den
+        // ONCE calisip bootstrap/cache/routes-v7.php dosyasini kisa bir sure
+        // (iki Artisan::call arasindaki an) tamamen SILIYORDU. Bu pencerede
+        // ayni sunucuda calisan BASKA bir surec (bu durumda sitenin kendi
+        // /_internal/cron-runner'i, schedule:run icin ayri bir 'php artisan'
+        // alt sureci baslatiyor) o dosyayi require etmeye calisirsa "No such
+        // file or directory" ile coker - tam olarak canli logda yakalanan
+        // olay buydu (claims:expire-undocumented o dakika calismadi, bir
+        // sonraki calismada sorunsuz tamamlanir, veri kaybi yok). route:cache/
+        // config:cache zaten dosyayi YERINDE ustune yazar - once clear etmek
+        // gereksizdi ve tam da bu bosluga yol aciyordu, kaldirildi.
+        foreach (['route:cache', 'config:cache', 'view:clear', 'view:cache', 'cache:clear'] as $command) {
             Artisan::call($command);
             $output .= Artisan::output();
         }
