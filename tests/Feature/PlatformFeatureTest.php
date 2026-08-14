@@ -3045,4 +3045,73 @@ class PlatformFeatureTest extends TestCase
             ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['return_to' => 'https://evil.example.com/phish']))
             ->assertRedirect(route('admin.facilities.edit', $this->rehabFacility));
     }
+
+    // 14 Agustos 2026: kullanicinin talebi uzerine yapilan denetimde bulunan
+    // ayni sinif hatalar - dropdown filtrelerde de HEM onchange="this.form.
+    // submit()" HEM AJAX instant-filter ayni anda bagliydi.
+    public function test_admin_filter_dropdowns_do_not_double_submit(): void
+    {
+        $pages = [
+            '/admin/kurumlar',
+            '/admin/kullanicilar/aileler',
+            '/admin/kullanicilar/kurum-yetkilileri',
+        ];
+
+        foreach ($pages as $page) {
+            $response = $this->withSession(['admin_id' => $this->admin->id])->get($page);
+            $response->assertOk();
+            $this->assertStringNotContainsString('onchange="this.form.submit()"', $response->getContent(), "{$page} hala dropdown secilince sayfayi yeniliyor.");
+        }
+    }
+
+    // 14 Agustos 2026: kullanicinin talebi - ayni denetimde bulunan bir
+    // baska ayni-sinif sorun: ContentPageController::update() sabit bir
+    // route'a redirect edip, admin brand/type filtreliyken kaydedince
+    // filtreyi kaybediyordu (bkz. Admin\ContentPageController::update()).
+    public function test_admin_content_page_update_preserves_filter(): void
+    {
+        $page = \App\Models\ContentPage::create([
+            'brand' => 'bakimevleri', 'type' => 'guide', 'title' => 'Test Rehberi',
+            'summary' => 'Ozet', 'slug' => 'test-rehberi', 'body' => 'Icerik',
+        ]);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])
+            ->from('/admin/sayfalar?brand=bakimevleri&type=guide')
+            ->put('/admin/sayfalar/'.$page->id, [
+                'brand' => 'bakimevleri', 'type' => 'guide', 'title' => 'Guncellenmis Rehber',
+                'summary' => 'Ozet', 'body' => 'Yeni icerik',
+            ]);
+
+        $response->assertRedirect('/admin/sayfalar?brand=bakimevleri&type=guide');
+    }
+
+    // 14 Agustos 2026: kullanicinin talebi - phone_type'a benzer sekilde,
+    // kurum duzenlenirken serbest metin "district" alani, districts
+    // tablosundaki district_id FK ile otomatik senkronize edilsin (bkz.
+    // Admin\FacilityController::resolveDistrictId(), DataQualityService::
+    // districtAudit()).
+    public function test_admin_saving_facility_syncs_district_id_from_text(): void
+    {
+        $district = \App\Models\District::create(['city_id' => $this->city->id, 'name' => 'Nilüfer', 'slug' => 'nilufer']);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['district' => 'Nilüfer']))
+            ->assertRedirect();
+
+        $this->assertSame($district->id, $this->rehabFacility->fresh()->district_id);
+    }
+
+    public function test_admin_saving_facility_with_unmatched_district_text_does_not_clear_existing_district_id(): void
+    {
+        $district = \App\Models\District::create(['city_id' => $this->city->id, 'name' => 'Nilüfer', 'slug' => 'nilufer']);
+        $this->rehabFacility->update(['district_id' => $district->id, 'district' => 'Nilüfer']);
+
+        // Eslesmeyen/serbest bir metinle kaydedilirse mevcut district_id
+        // KORUNMALI - sessizce null'lanmamali.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['district' => 'Bilinmeyen Bolge Xyz']))
+            ->assertRedirect();
+
+        $this->assertSame($district->id, $this->rehabFacility->fresh()->district_id);
+    }
 }

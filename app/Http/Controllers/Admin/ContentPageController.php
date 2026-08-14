@@ -55,7 +55,12 @@ class ContentPageController extends Controller
 
         $contentPage->update($data);
 
-        return redirect()->route('admin.content-pages.index')->with('success', 'Sayfa güncellendi.');
+        // 14 Agustos 2026: kullanicinin bildirdigi hata sinifiyla ayni -
+        // sabit route()'a redirect, admin brand/type filtreli bir
+        // gorunumdeyken kaydedince filtreyi kaybediyordu. store()/destroy()
+        // zaten back() kullaniyordu, tutarlilik icin update() de ayni
+        // deseni kullanir - filtre (ve gerekirse ?edit= durumu) korunur.
+        return back()->with('success', 'Sayfa güncellendi.');
     }
 
     public function destroy(ContentPage $contentPage)

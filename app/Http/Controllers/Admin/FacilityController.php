@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\City;
+use App\Models\District;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
 use App\Models\FacilityImage;
@@ -136,6 +137,7 @@ class FacilityController extends Controller
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_claimed'] = false;
+        $data['district_id'] = $this->resolveDistrictId($data['district'] ?? null, $data['city_id']);
 
         $facility = Facility::create($data);
 
@@ -166,6 +168,14 @@ class FacilityController extends Controller
         $data['services'] = $this->parseServices($request->input('services_raw'), $request->input('services', []));
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
+        // 14 Agustos 2026: kullanicinin talebi - "ilce senkronizasyonu"
+        // (bkz. DataQualityService::districtAudit() - metin/FK uyumsuzlugu
+        // sorunu). Eslesme bulunamazsa MEVCUT district_id'ye DOKUNULMAZ -
+        // yanlislikla daha once dogru kurulmus bir baglantiyi kirmamak icin.
+        $resolvedDistrictId = $this->resolveDistrictId($data['district'] ?? null, $data['city_id']);
+        if ($resolvedDistrictId !== null) {
+            $data['district_id'] = $resolvedDistrictId;
+        }
         // 14 Agustos 2026: kullanicinin talebi - admin telefon numarasi
         // ekleyip/degistirip kaydettiginde, kurum otomatik olarak dogru
         // gruba (cep/sabit hat) siniflandirilsin - bu alan WhatsApp davet
@@ -186,6 +196,25 @@ class FacilityController extends Controller
 
         return redirect($returnTo ?: route('admin.facilities.edit', $facility))
             ->with('success', 'Kurum güncellendi.');
+    }
+
+    /**
+     * 14 Agustos 2026: kullanicinin talebi - kurumun serbest metin "district"
+     * alaniyla "districts" tablosundaki district_id FK'i senkron tutar (bkz.
+     * DataQualityService::districtAudit() - "metin dolu, FK bos/uyumsuz"
+     * sorunu). Kucuk/buyuk harf farkini yoksayar; eslesme yoksa null doner
+     * (cagiran taraf bu durumda mevcut degere DOKUNMAZ).
+     */
+    private function resolveDistrictId(?string $districtText, int $cityId): ?int
+    {
+        $districtText = trim((string) $districtText);
+        if ($districtText === '') {
+            return null;
+        }
+
+        return District::where('city_id', $cityId)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($districtText)])
+            ->value('id');
     }
 
     /**

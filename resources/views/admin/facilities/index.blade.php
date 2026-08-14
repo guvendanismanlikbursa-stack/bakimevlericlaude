@@ -40,19 +40,19 @@
        burada da JS'siz reload gerekmiyor (Enter/"Ara" butonu hala calisir). --}}
   <input type="search" name="q" value="{{ request('q') }}" autofocus placeholder="Kurum adında ara..." class="border rounded-lg px-3 py-2 text-sm w-56">
   <button type="submit" class="border rounded-lg px-3 py-2 text-sm font-semibold bg-white">Ara</button>
-  <select name="brand" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
+  <select name="brand" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm Markalar</option>
     @foreach($brands as $slug => $b)
       <option value="{{ $slug }}" @selected(request('brand') === $slug)>{{ $b['name'] }}</option>
     @endforeach
   </select>
-  <select name="city" onchange="this.form.submit()" class="js-city border rounded-lg px-3 py-2 text-sm">
+  <select name="city" class="js-city border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm İller</option>
     @foreach($cities as $city)
       <option value="{{ $city->slug }}" @selected(request('city') === $city->slug)>{{ $city->name }}</option>
     @endforeach
   </select>
-  <select name="district" onchange="this.form.submit()" data-selected="{{ request('district') }}" class="js-district border rounded-lg px-3 py-2 text-sm" @if(! request('city')) disabled @endif>
+  <select name="district" data-selected="{{ request('district') }}" class="js-district border rounded-lg px-3 py-2 text-sm" @if(! request('city')) disabled @endif>
     <option value="">{{ request('city') ? 'Tüm İlçeler' : 'Önce il seçin' }}</option>
     @if(request('city'))
       @foreach(districts_for_city(optional($cities->firstWhere('slug', request('city')))->name ?? '') as $districtName)
@@ -60,19 +60,19 @@
       @endforeach
     @endif
   </select>
-  <select name="category" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
+  <select name="category" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm Kategoriler</option>
     @foreach($categories as $category)
       <option value="{{ $category->slug }}" @selected(request('category') === $category->slug)>{{ $category->name }}</option>
     @endforeach
   </select>
-  <select name="ownership_type" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
+  <select name="ownership_type" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm Kuruluş Türleri</option>
     @foreach($ownershipTypes as $value => $label)
       <option value="{{ $value }}" @selected(request('ownership_type') === $value)>{{ $label }}</option>
     @endforeach
   </select>
-  <select name="claim_status" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
+  <select name="claim_status" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Sahiplenme: Tümü</option>
     <option value="claimed" @selected(request('claim_status')==='claimed')>Onaylı Kurumlar</option>
     <option value="unclaimed" @selected(request('claim_status')==='unclaimed')>Ön Kayıtlı Kurumlar</option>
