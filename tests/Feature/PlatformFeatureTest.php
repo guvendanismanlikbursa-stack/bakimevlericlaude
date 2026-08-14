@@ -2936,4 +2936,29 @@ class PlatformFeatureTest extends TestCase
         $this->assertStringContainsString('Sistemde teknik bir hata oluştu', view('errors.500')->render());
         $this->assertStringContainsString('Bu sayfaya erişim yetkiniz yok', view('errors.403')->render());
     }
+
+    // 14 Agustos 2026: kullanicinin talebi - admin "isletme sagligi ozeti"
+    // (site ziyareti/yeni basvuru/yeni talep/yeni hata trendi tek ekranda,
+    // bkz. Admin\DashboardController::healthSummary()).
+    public function test_admin_dashboard_shows_business_health_summary(): void
+    {
+        \App\Models\SiteVisit::create(['brand' => 'bakimevleri', 'visit_date' => now()->toDateString(), 'count' => 5]);
+        \App\Models\PlatformError::create([
+            'source' => 'exception', 'title' => 'Test hatasi', 'message' => 'Test',
+        ]);
+        \App\Models\FacilityRegistration::create([
+            'brand' => 'bakimevleri', 'name' => 'Bekleyen Kayit Kurumu',
+            'facility_category_id' => $this->rehabCategory->id, 'city_id' => $this->city->id,
+            'district' => 'Merkez', 'address' => 'Adres', 'applicant_name' => 'Test Basvuran',
+            'applicant_email' => 'basvuru@test.local', 'applicant_phone' => '05550000001',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin');
+
+        $response->assertOk()
+            ->assertSee('İşletme Sağlığı')
+            ->assertSee('çözülmemiş hata')
+            ->assertSee('yeni kurum kaydı onay bekliyor');
+    }
 }
