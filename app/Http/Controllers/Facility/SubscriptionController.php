@@ -32,14 +32,33 @@ class SubscriptionController extends Controller
         return view('themes._shared.facility.packages', compact('user', 'packages', 'myTopups'));
     }
 
-    public function store(Request $request, SubscriptionPackage $package)
+    public function store(Request $request)
     {
+        // 14 Agustos 2026: bu route grubu (bkz. routes/web.php $siteRoutes)
+        // hem duz hem marka-onekli halde iki kez kaydediliyor - otomatik
+        // route-model binding bu kurulumda test ortaminda guvenilir
+        // calismiyor (ayni nedenle Family\DashboardController::
+        // quoteFromRoute() ve Family\SavedSearchController da elle
+        // cozumluyor) - bilerek elle findOrFail kullanildi.
+        $packageId = $request->route('package');
+        $package = $packageId instanceof SubscriptionPackage ? $packageId : SubscriptionPackage::findOrFail($packageId);
+
         abort_unless($package->is_active, 404);
 
         $user = FacilityUser::findOrFail(session('facility_user_id'));
 
+        // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis
+        // denetimde bulunan guvenlik acigi - 'image' kurali tek basina
+        // SVG'yi de kabul eder (Laravel'in varsayilan davranisi). Bu dekont
+        // Admin\DocumentController::show ile dosyanin KENDI Content-Type'iyla
+        // (ör. image/svg+xml) admin'in tarayicisinda aciliyor - icine
+        // <script> gomulu kotu amacli bir SVG "dekont" diye yuklenip admin
+        // panelinde acildiginda admin oturumunda calisabilirdi (stored XSS).
+        // Diger 3 kardes yukleme ucu (WalletController, FacilityClaimController,
+        // ProfileController) zaten mimes: beyaz listesiyle SVG'yi disliyordu -
+        // bu ucta unutulmustu, ayni deseni burada da uyguluyoruz.
         $data = $request->validate([
-            'receipt' => 'required|image|max:4096',
+            'receipt' => 'required|mimes:jpg,jpeg,png,webp|max:4096',
         ]);
 
         // 21 Temmuz 2026: dekont finansal bilgi iceriyor - 'public' yerine

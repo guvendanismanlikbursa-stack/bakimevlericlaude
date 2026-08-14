@@ -21,7 +21,7 @@
              ayni tarihli yorum, ayni cift-gonderim korumasi. --}}
         <form method="POST" action="{{ brand_route('facility.packages.store', $package) }}" enctype="multipart/form-data" class="mt-auto space-y-2" onsubmit="this.querySelector('button[type=submit]').disabled=true; this.querySelector('button[type=submit]').textContent='Gönderiliyor...';">
           @csrf
-          <input type="file" name="receipt" accept="image/*" required class="border rounded-lg px-3 py-2 w-full text-sm">
+          <input type="file" name="receipt" accept=".jpg,.jpeg,.png,.webp" required class="border rounded-lg px-3 py-2 w-full text-sm">
           <button type="submit" class="btn-primary w-full py-2 rounded-lg font-semibold text-sm">Dekont Yükle, Talep Et</button>
         </form>
       </div>

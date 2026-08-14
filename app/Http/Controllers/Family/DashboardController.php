@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Family;
 
 use App\Http\Controllers\Controller;
 use App\Models\FamilyUser;
+use App\Models\OfferRequest;
 use App\Models\Quote;
 use App\Services\OfferRequestNotificationService;
 use Illuminate\Http\Request;
@@ -64,18 +65,33 @@ class DashboardController extends Controller
                 ->with('info', 'Teklifi kabul edebilmek için önce e-posta adresinizi doğrulamanız gerekiyor.');
         }
 
-        if ($offerRequest->accepted_quote_id && $offerRequest->accepted_quote_id !== $quote->id) {
-            return back()->withErrors(['quote' => 'Bu talep için daha önce başka bir teklif kabul edilmiş.']);
+        // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis
+        // denetimde bulunan yaris durumu - eskiden "zaten kabul edilmis mi"
+        // kontrolu transaction/kilit DISINDA yapiliyordu (klasik
+        // check-then-act). Aile iki sekmede/cift tiklamayla iki farkli
+        // teklifi AYNI ANDA kabul etmeye calisirsa, ikisi de bu kontrolu
+        // gecip ikisi de "kabul edildi" bildirimi/e-postasi alan kurumlara
+        // yol acabiliyordu - kardes metot Facility\QuoteController::store()
+        // zaten dogru desenle (lockForUpdate + kilit icinde tekrar kontrol)
+        // yaziliydi, bu metot o duzeltmeyi hic almamisti.
+        try {
+            $declinedQuotes = DB::transaction(function () use ($offerRequest, $quote) {
+                $lockedOfferRequest = OfferRequest::where('id', $offerRequest->id)->lockForUpdate()->firstOrFail();
+
+                if ($lockedOfferRequest->accepted_quote_id && $lockedOfferRequest->accepted_quote_id !== $quote->id) {
+                    throw new \InvalidArgumentException('Bu talep için daha önce başka bir teklif kabul edilmiş.');
+                }
+
+                $lockedOfferRequest->update(['accepted_quote_id' => $quote->id, 'status' => 'contacted']);
+                $quote->update(['status' => 'accepted']);
+                $declined = $lockedOfferRequest->quotes()->where('id', '!=', $quote->id)->get();
+                $lockedOfferRequest->quotes()->where('id', '!=', $quote->id)->update(['status' => 'declined']);
+
+                return $declined;
+            });
+        } catch (\InvalidArgumentException $exception) {
+            return back()->withErrors(['quote' => $exception->getMessage()]);
         }
-
-        $declinedQuotes = DB::transaction(function () use ($offerRequest, $quote) {
-            $offerRequest->update(['accepted_quote_id' => $quote->id, 'status' => 'contacted']);
-            $quote->update(['status' => 'accepted']);
-            $declined = $offerRequest->quotes()->where('id', '!=', $quote->id)->get();
-            $offerRequest->quotes()->where('id', '!=', $quote->id)->update(['status' => 'declined']);
-
-            return $declined;
-        });
 
         $notifier = app(OfferRequestNotificationService::class);
         $notifier->notifyQuoteAccepted($quote);

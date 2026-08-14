@@ -3142,4 +3142,63 @@ class PlatformFeatureTest extends TestCase
         $offerPage->assertSee('value="05551234567"', false);
         $offerPage->assertSee('Ihtiyac detayi test mesaji');
     }
+
+    // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis site
+    // denetiminde bulunan yaris durumu - bkz. Family\DashboardController::
+    // acceptQuote() ayni tarihli yorum. Bu test gercek eszamanliligi
+    // simule edemez (SQLite testlerde gercek satir kilidi yok) ama YENI
+    // eklenen "kilit icinde tekrar kontrol" mantiginin dogru calistigini
+    // (zaten kabul edilmis bir talebe ikinci bir teklifin kabul
+    // edilemedigini, ilk kabulun BOZULMADIGINI) dogrular.
+    public function test_accepting_quote_fails_if_another_quote_already_accepted_for_same_request(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Cift Kabul Testi'));
+
+        $quoteA = Quote::create([
+            'offer_request_id' => $request->id, 'facility_id' => $this->childFacility->id,
+            'facility_user_id' => $this->facilityUser->id, 'price' => 10000, 'price_period' => 'monthly', 'status' => 'pending',
+        ]);
+        $quoteB = Quote::create([
+            'offer_request_id' => $request->id, 'facility_id' => $this->elderlyFacility->id,
+            'facility_user_id' => $this->facilityUser->id, 'price' => 12000, 'price_period' => 'monthly', 'status' => 'pending',
+        ]);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimeviara/aile/teklif/'.$quoteA->id.'/kabul-et')
+            ->assertRedirect();
+
+        $this->assertSame($quoteA->id, $request->fresh()->accepted_quote_id);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimeviara/aile/teklif/'.$quoteB->id.'/kabul-et')
+            ->assertSessionHasErrors('quote');
+
+        $this->assertSame($quoteA->id, $request->fresh()->accepted_quote_id);
+        // quoteB, quoteA kabul edilirken zaten 'declined' yapilmisti (kardes
+        // teklifler otomatik reddedilir) - ikinci kabul denemesi bunu tekrar
+        // 'accepted'a CEVIRMEMELI, 'declined' olarak kalmali.
+        $this->assertSame('declined', $quoteB->fresh()->status);
+    }
+
+    // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis site
+    // denetiminde bulunan guvenlik acigi - bkz. Facility\SubscriptionController
+    // ayni tarihli yorum. 'image' validation kurali SVG'yi de kabul
+    // ediyordu (icine <script> gomulup admin panelinde acildiginda
+    // calisabilirdi). Bu test mimes: kuralinin SVG'yi reddettigini dogrular.
+    public function test_subscription_package_purchase_rejects_svg_receipt(): void
+    {
+        Storage::fake('local');
+
+        $package = \App\Models\SubscriptionPackage::create([
+            'name' => 'Test Paket', 'price' => 500, 'bonus_quote_credits' => 5, 'is_active' => true,
+        ]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/paketler/'.$package->id, [
+                'receipt' => $this->fakeMaliciousSvgUpload(),
+            ])
+            ->assertSessionHasErrors('receipt');
+
+        $this->assertDatabaseCount('wallet_topups', 0);
+    }
 }

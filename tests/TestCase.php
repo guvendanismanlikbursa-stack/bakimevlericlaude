@@ -59,4 +59,24 @@ abstract class TestCase extends BaseTestCase
 
         return new UploadedFile($path, $name, 'image/png', null, true);
     }
+
+    // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis denetimde
+    // bulunan guvenlik acigi testi icin - Facility\SubscriptionController::
+    // store() eskiden 'image' validation kuralini kullaniyordu, bu SVG'yi
+    // de kabul ediyordu (script gomulebilen bir format). Bu helper GERCEK
+    // bir SVG dosyasi (icinde <script> ile) uretir, mimes: kuralinin bunu
+    // reddettigini test edebilmek icin.
+    protected function fakeMaliciousSvgUpload(string $name = 'evil.svg'): UploadedFile
+    {
+        $dir = storage_path('framework/testing/files');
+
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $path = $dir.'/'.uniqid('upload_', true).'.svg';
+        file_put_contents($path, '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.cookie)</script></svg>');
+
+        return new UploadedFile($path, $name, 'image/svg+xml', null, true);
+    }
 }
