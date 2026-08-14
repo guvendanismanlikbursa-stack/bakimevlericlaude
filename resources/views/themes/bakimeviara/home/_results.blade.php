@@ -76,7 +76,8 @@
   </div>
   <div class="grid md:grid-cols-3 gap-6">
     @forelse($featured as $facility)
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition">
+      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="group bg-white rounded-2xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
+        <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
         @php $cardImage = facility_card_image($facility, $section); @endphp
         <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
         <div class="p-5"><div class="text-xs font-bold mb-2" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div><h3 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-4">{{ $facility->city->name }}</p><div class="flex items-center justify-between text-sm"><span class="text-amber-500 font-black">★ {{ number_format($facility->rating, 1) }}</span><span class="font-black text-gray-800">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Teklif al' }}</span></div></div>

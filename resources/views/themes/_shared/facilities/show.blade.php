@@ -55,6 +55,9 @@
       @else
         <span class="bg-white/10 border border-white/15 text-white/80 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
       @endif
+      @if($facility->is_featured)
+        <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
+      @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full bg-white text-gray-950">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
       @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-1 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
@@ -73,6 +76,9 @@
         <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Onaylı / sahiplenilmiş kurum</span>
       @else
         <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
+      @endif
+      @if($facility->is_featured)
+        <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
