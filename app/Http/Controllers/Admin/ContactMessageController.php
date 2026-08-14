@@ -42,6 +42,7 @@ class ContactMessageController extends Controller
                 \Illuminate\Support\Facades\Mail::to($contactMessage->email)->sendNow(new \App\Mail\ContactMessageClosedMail($contactMessage));
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Iletisim mesaji kapatma maili gonderilemedi: ' . $e->getMessage(), ['contact_message_id' => $contactMessage->id]);
+                notify_admin_of_exception($e);
             }
         }
 
@@ -73,6 +74,7 @@ class ContactMessageController extends Controller
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Iletisim mesaji cevabi gonderilemedi: ' . $e->getMessage(), ['contact_message_id' => $contactMessage->id]);
+            notify_admin_of_exception($e);
 
             return back()->with('error', 'Cevap kaydedildi ama e-posta gönderiminde bir sorun oluştu.');
         }

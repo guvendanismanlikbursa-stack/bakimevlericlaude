@@ -146,6 +146,7 @@ class GoogleAuthController extends AuthController
             \Illuminate\Support\Facades\Mail::to($family->email)->sendNow(new \App\Mail\FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Aile hos geldin maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
+            notify_admin_of_exception($e);
         }
 
         return $this->afterLogin($brand);

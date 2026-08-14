@@ -21,7 +21,8 @@ class ContactMessageReplyMail extends Mailable implements ShouldQueue
 
     public function build()
     {
-        return $this->subject('Mesajınıza Yanıt — '.$this->brandName)
+        return $this->from(config('mail.from.address'), $this->brandName)
+            ->subject('Mesajınıza Yanıt — '.$this->brandName)
             ->view('emails.contact-message-reply');
     }
 }

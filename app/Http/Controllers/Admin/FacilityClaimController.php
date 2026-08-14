@@ -180,6 +180,7 @@ class FacilityClaimController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('Sahiplenme onay maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+            notify_admin_of_exception($e);
         }
 
         try {
@@ -188,6 +189,7 @@ class FacilityClaimController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('Kurum hos geldin maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+            notify_admin_of_exception($e);
         }
 
         \App\Http\Controllers\Facility\EmailVerificationController::send(
@@ -284,6 +286,7 @@ class FacilityClaimController extends Controller
             Mail::to($claim->applicant_email)->sendNow(new \App\Mail\FacilityClaimRejectedMail($claim));
         } catch (\Throwable $e) {
             Log::warning('Sahiplenme red maili gonderilemedi: ' . $e->getMessage(), ['claim_id' => $claim->id]);
+            notify_admin_of_exception($e);
         }
 
         return back()->with('success', 'Basvuru reddedildi.');

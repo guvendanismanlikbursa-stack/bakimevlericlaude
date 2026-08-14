@@ -20,7 +20,8 @@ class FamilyWelcomeMail extends Mailable implements ShouldQueue
 
     public function build()
     {
-        return $this->subject($this->brandName.'ye Hoş Geldiniz')
+        return $this->from(config('mail.from.address'), $this->brandName)
+            ->subject($this->brandName.'ye Hoş Geldiniz')
             ->view('emails.family-welcome');
     }
 }

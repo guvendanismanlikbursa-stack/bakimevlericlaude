@@ -134,6 +134,7 @@ class FacilityRegistrationController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('Kurum kaydi onay maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+            notify_admin_of_exception($e);
         }
 
         try {
@@ -142,6 +143,7 @@ class FacilityRegistrationController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('Kurum hos geldin maili gonderilemedi: ' . $e->getMessage(), ['facility_id' => $mailPayload['facility']->id]);
+            notify_admin_of_exception($e);
         }
 
         $facilityUser = FacilityUser::where('email', $mailPayload['email'])->firstOrFail();
@@ -186,6 +188,7 @@ class FacilityRegistrationController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('Kurum kaydi duzeltme talebi maili gonderilemedi: ' . $e->getMessage(), ['registration_id' => $payload->id]);
+            notify_admin_of_exception($e);
         }
 
         log_admin_event('facility_registration_revision_requested', $payload, ['admin_note' => $data['admin_note']]);
@@ -221,6 +224,7 @@ class FacilityRegistrationController extends Controller
             Mail::to($registration->applicant_email)->sendNow(new \App\Mail\FacilityRegistrationRejectedMail($registration));
         } catch (\Throwable $e) {
             Log::warning('Kurum kaydi red maili gonderilemedi: ' . $e->getMessage(), ['registration_id' => $registration->id]);
+            notify_admin_of_exception($e);
         }
 
         return back()->with('success', 'Basvuru reddedildi, basvuru sahibine e-posta gonderildi.');

@@ -339,6 +339,7 @@ if (! function_exists('notify_user')) {
                     'notifiable_id' => $notifiable->getKey(),
                     'type' => $type,
                 ]);
+                notify_admin_of_exception($e);
             }
         }
 

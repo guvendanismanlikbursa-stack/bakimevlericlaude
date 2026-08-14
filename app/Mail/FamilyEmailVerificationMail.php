@@ -20,7 +20,8 @@ class FamilyEmailVerificationMail extends Mailable implements ShouldQueue
 
     public function build()
     {
-        return $this->subject('E-posta Adresinizi Doğrulayın - '.$this->brandName)
+        return $this->from(config('mail.from.address'), $this->brandName)
+            ->subject('E-posta Adresinizi Doğrulayın - '.$this->brandName)
             ->view('emails.family-email-verification');
     }
 }

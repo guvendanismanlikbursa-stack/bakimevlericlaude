@@ -56,6 +56,7 @@ class OfferRequestController extends Controller
                     \Illuminate\Support\Facades\Mail::to($email)->sendNow(new \App\Mail\OfferRequestClosedMail($offerRequest));
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Teklif talebi kapatma maili gonderilemedi: ' . $e->getMessage(), ['offer_request_id' => $offerRequest->id]);
+                    notify_admin_of_exception($e);
                 }
             }
         }

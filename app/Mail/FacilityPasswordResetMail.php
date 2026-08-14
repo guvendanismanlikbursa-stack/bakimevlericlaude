@@ -20,7 +20,8 @@ class FacilityPasswordResetMail extends Mailable implements ShouldQueue
 
     public function build()
     {
-        return $this->subject('Şifre Sıfırlama - '.$this->brandName)
+        return $this->from(config('mail.from.address'), $this->brandName)
+            ->subject('Şifre Sıfırlama - '.$this->brandName)
             ->view('emails.facility-password-reset');
     }
 }

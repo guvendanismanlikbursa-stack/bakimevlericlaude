@@ -141,6 +141,7 @@ class UserController extends Controller
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Kurum sifre sifirlama (admin) maili gonderilemedi: ' . $e->getMessage(), ['facility_user_id' => $facilityUser->id]);
+            notify_admin_of_exception($e);
         }
 
         return back()->with('success', "Yeni geçici şifre oluşturuldu ve e-postayla gönderildi. E-posta ulaşmazsa şu bilgileri kullanıcıya siz iletebilirsiniz — E-posta: {$facilityUser->email} / Geçici şifre: {$temporaryPassword}");

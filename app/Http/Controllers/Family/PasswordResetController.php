@@ -73,6 +73,7 @@ class PasswordResetController extends Controller
             Mail::to($family->email)->sendNow(new FamilyPasswordResetMail($family, $resetUrl, $brand['name']));
         } catch (\Throwable $e) {
             Log::warning('Aile sifre sifirlama maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
+            notify_admin_of_exception($e);
         }
     }
 

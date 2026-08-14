@@ -46,6 +46,7 @@ class VisitRequestController extends Controller
                 Mail::to($visitRequest->email)->sendNow(new \App\Mail\VisitRequestCancelledMail($visitRequest));
             } catch (\Throwable $e) {
                 Log::warning('Ziyaret talebi iptal maili gonderilemedi: ' . $e->getMessage(), ['visit_request_id' => $visitRequest->id]);
+                notify_admin_of_exception($e);
             }
         }
 

@@ -86,6 +86,7 @@ class EmailVerificationController extends Controller
             Mail::to($family->email)->sendNow(new FamilyEmailVerificationMail($family, $verificationUrl, $brand['name']));
         } catch (\Throwable $e) {
             Log::warning('Aile e-posta dogrulama maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
+            notify_admin_of_exception($e);
         }
     }
 }

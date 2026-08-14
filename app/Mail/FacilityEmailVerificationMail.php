@@ -20,7 +20,8 @@ class FacilityEmailVerificationMail extends Mailable implements ShouldQueue
 
     public function build()
     {
-        return $this->subject('E-posta Doğrulaması - '.$this->brandName)
+        return $this->from(config('mail.from.address'), $this->brandName)
+            ->subject('E-posta Doğrulaması - '.$this->brandName)
             ->view('emails.facility-email-verification');
     }
 }

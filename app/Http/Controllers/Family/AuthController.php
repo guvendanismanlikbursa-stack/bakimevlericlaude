@@ -76,6 +76,7 @@ class AuthController extends Controller
             Mail::to($family->email)->sendNow(new FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));
         } catch (\Throwable $e) {
             Log::warning('Aile hos geldin maili gonderilemedi: ' . $e->getMessage(), ['family_id' => $family->id]);
+            notify_admin_of_exception($e);
         }
 
         return $this->afterLogin($brand);

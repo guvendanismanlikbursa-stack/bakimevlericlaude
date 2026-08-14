@@ -107,6 +107,7 @@ class EmailVerificationController extends Controller
             Mail::to($user->email)->sendNow(new FacilityEmailVerificationMail($user, $verificationUrl, $brandName));
         } catch (\Throwable $e) {
             Log::warning('Kurum e-posta dogrulama maili gonderilemedi: ' . $e->getMessage(), ['facility_user_id' => $user->id]);
+            notify_admin_of_exception($e);
         }
     }
 }

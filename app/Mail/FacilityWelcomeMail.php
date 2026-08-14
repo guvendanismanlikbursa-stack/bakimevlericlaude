@@ -30,7 +30,8 @@ class FacilityWelcomeMail extends Mailable implements ShouldQueue
             ? service_section_for_scope($this->facility->category->brand_scope)
             : null;
 
-        return $this->subject('Sistemi En İyi Şekilde Kullanmak İçin Rehber - '.$this->brandName)
+        return $this->from(config('mail.from.address'), $this->brandName)
+            ->subject('Sistemi En İyi Şekilde Kullanmak İçin Rehber - '.$this->brandName)
             ->view('emails.facility-welcome', ['section' => $section]);
     }
 }
