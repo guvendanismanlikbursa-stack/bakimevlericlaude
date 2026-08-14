@@ -33,7 +33,7 @@
   @else
     <div class="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center shadow-sm">
       <div class="text-lg font-black text-gray-950">Bu bölüm için henüz onaylı ön kayıt yok.</div>
-      <p class="text-sm text-gray-500 mt-2">Veri çekici ekranında kurumlar çekilip admin tarafından onaylandığında kartlar burada otomatik görünür.</p>
+      <p class="text-sm text-gray-500 mt-2">Bu bölgedeki kurumlar tespit edilip ekibimiz tarafından onaylandığında kartlar burada otomatik görünür.</p>
       <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug'], 'pre_registered' => 1]) }}" class="mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-black text-white" style="background: {{ $colors['primary'] }};">Ön kayıt listesini aç</a>
     </div>
   @endif

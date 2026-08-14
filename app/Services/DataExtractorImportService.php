@@ -309,7 +309,7 @@ class DataExtractorImportService
     private function description(array $item, FacilityCategory $category): string
     {
         $parts = [
-            $category->name.' icin Google Maps veri cekici ile on kayit olarak eklenmistir.',
+            $category->name.' alanında hizmet verdiği Google Maps verilerinden tespit edilmiştir.',
         ];
         if (filled($item['email'])) {
             $parts[] = 'E-posta: '.$item['email'];

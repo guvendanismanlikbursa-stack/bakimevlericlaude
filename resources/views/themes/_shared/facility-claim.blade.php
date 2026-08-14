@@ -131,7 +131,10 @@
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:sticky lg:top-24">
       <h2 class="font-black text-gray-950 text-lg mb-1">Başvuru Formu</h2>
       <p class="text-gray-500 text-sm mb-1">Ad, e-posta ve telefon bilgilerinizi girip başvurun — evrak olmadan da başlatabilirsiniz.</p>
-      <p class="text-xs font-semibold mb-5" style="color: {{ $colors['primary'] }};">⏱️ Genellikle 24 saat içinde incelenir.</p>
+      {{-- 14 Agustos 2026: kullanicinin talebi - "uzun surer" tereddudunu
+           kirmak icin somut bir zaman tahmini; onay suresi zaten vardi,
+           formu DOLDURMA suresi eksikti. --}}
+      <p class="text-xs font-semibold mb-1" style="color: {{ $colors['primary'] }};">⏱️ Formu doldurmak yaklaşık 3 dakika sürer, onay genellikle 24 saat içinde tamamlanır.</p>
 
       <form method="POST" action="{{ brand_route('facility-claim.store', ['slug' => $facility->slug]) }}" enctype="multipart/form-data" class="space-y-4">
         @csrf
@@ -150,6 +153,11 @@
         </div>
         <textarea name="note" placeholder="Eklemek istediğiniz not (opsiyonel)" rows="3" class="border rounded-lg px-3 py-2.5 w-full">{{ old('note') }}</textarea>
         <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $colors['primary'] }};">Başvuruyu Gönder</button>
+        {{-- 14 Agustos 2026: kullanicinin talebi - "hicbir taahhut yok" zaten
+             fayda listesinde vardi ama diger 6 maddenin arasinda kayboluyordu;
+             asil tereddut anı (gonder butonuna basmadan hemen once) tam
+             burada - somut ve gorunur bir guvence tam bu noktada olmali. --}}
+        <p class="text-xs text-center font-semibold" style="color: {{ $colors['primary'] }};">🔓 Sözleşme veya ücret zorunluluğu yok — istediğiniz an destek hattından profilin kaldırılmasını talep edebilirsiniz.</p>
         <p class="text-xs text-gray-400">Tarayıcınız konum izni isteyebilir; bu, başvurunuzun kurum adresine yakınlığını admin incelemesinde göstermek içindir. İzin vermezseniz başvurunuz yine de gönderilir.</p>
         {{-- 13 Agustos 2026: kullanicinin talebi - genel bir KVKK/veri
              guvenligi guvencesi hic yoktu (belgeye ozel guvence disinda). --}}

@@ -84,7 +84,7 @@
         <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
         @php $cardImage = facility_card_image($facility, $section); @endphp
         <div class="h-40 flex items-center justify-center overflow-hidden" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
-        <div class="p-4"><h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p><div class="flex justify-between text-sm"><span class="text-amber-500 font-bold">★ {{ number_format($facility->rating, 1) }}</span><span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div></div>
+        <div class="p-4"><h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p><div class="flex justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-500 font-bold">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div></div>
       </a>
     @empty
       <div class="md:col-span-3 border border-dashed rounded-lg p-8 text-center text-gray-500 bg-white">Bu bölüm için öne çıkan kurum eklenmedi.</div>
