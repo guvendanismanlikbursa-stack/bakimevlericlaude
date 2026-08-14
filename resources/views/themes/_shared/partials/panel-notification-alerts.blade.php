@@ -39,7 +39,7 @@
 
   function pollUnread() {
     fetch(countUrl, { headers: { 'Accept': 'application/json' } })
-      .then(function (r) { return r.json(); })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (data) {
         if (lastCount !== null && data.count > lastCount) playPing();
         lastCount = data.count;
@@ -48,7 +48,18 @@
   }
 
   pollUnread();
-  setInterval(pollUnread, 20000);
+  // 14 Agustos 2026: sekme arka plandayken gereksiz sunucu yuku/pil tuketimini
+  // onlemek icin polling'i durdurup, sekme tekrar gorunur oldugunda devam ettiriyoruz.
+  var pollTimer = setInterval(pollUnread, 20000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      pollUnread();
+      if (!pollTimer) pollTimer = setInterval(pollUnread, 20000);
+    } else if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  });
 
   // --- "Bildirimlerinizi acin" hatirlatici: bu oturumda (sekme acikken)
   // ilk panel girisinde 3-5 saniye sonra kendiliginden kaybolan bir not -

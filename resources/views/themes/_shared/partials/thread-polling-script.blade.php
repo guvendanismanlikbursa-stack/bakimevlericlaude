@@ -16,6 +16,7 @@
   var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
   function renderMessage(m) {
+    if (!m || typeof m.id !== 'number') return;
     if (m.id <= lastId) return;
     lastId = Math.max(lastId, m.id);
     messagesEl.dataset.lastId = lastId;
@@ -39,14 +40,22 @@
 
   function poll() {
     fetch(pollUrl + '?after_id=' + lastId, { headers: { 'Accept': 'application/json' } })
-      .then(function (r) { return r.json(); })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (data) { (data.messages || []).forEach(renderMessage); })
       .catch(function () {});
   }
 
-  setInterval(poll, 3500);
+  // 14 Agustos 2026: sekme arka plandayken gereksiz sunucu yuku/pil tuketimini
+  // onlemek icin polling'i durdurup, sekme tekrar gorunur oldugunda devam ettiriyoruz.
+  var pollTimer = setInterval(poll, 3500);
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') poll();
+    if (document.visibilityState === 'visible') {
+      poll();
+      if (!pollTimer) pollTimer = setInterval(poll, 3500);
+    } else if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
   });
 
   form.addEventListener('submit', function (event) {
@@ -62,12 +71,18 @@
       headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({ body: body }),
     })
-      .then(function (r) { return r.json(); })
+      // 14 Agustos 2026: fetch() sadece gercek ag hatasinda reddediyor, HTTP
+      // 419 (oturum/CSRF suresi dolmus) gibi hata kodlarinda "basarili" gibi
+      // devam ediyordu - data.message bir hata string'i oluyor, renderMessage
+      // bunu bozuk bir mesaj sanip goruyor VE lastId'yi NaN'a bulastirip
+      // sonraki tum yoklamalari mukerrer mesaj gostermeye basliyordu. Artik
+      // basarisiz HTTP durumunda catch bloguna dusup yazilan metni geri koyuyor.
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (data) {
         if (data.message) renderMessage(data.message);
       })
       .catch(function () {
-        alert('Mesaj gönderilemedi, lütfen tekrar deneyin.');
+        alert('Mesaj gönderilemedi. Oturumunuz zaman aşımına uğramış olabilir, sayfayı yenileyip tekrar deneyin.');
         input.value = body;
       })
       .finally(function () {

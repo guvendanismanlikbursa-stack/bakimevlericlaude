@@ -300,7 +300,7 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
       body: JSON.stringify(body),
-    }).then(function (r) { return r.json(); }).then(function (data) {
+    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
       localStorage.setItem(storageKey, data.guest_token);
       localStorage.setItem(intentStorageKey, data.intent);
       if (gender) localStorage.setItem(genderStorageKey, gender);
@@ -337,6 +337,7 @@
   function renderMessages(list, replace) {
     if (replace) { messagesEl.innerHTML = ''; state.lastMessageId = 0; }
     (list || []).forEach(function (m) {
+      if (!m || typeof m.id !== 'number') return;
       if (m.id <= state.lastMessageId) return;
       state.lastMessageId = Math.max(state.lastMessageId, m.id);
       var bubble = document.createElement('div');
@@ -352,17 +353,32 @@
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  function pollOnce() {
+    if (!state.threadId) return;
+    var url = pollUrlTemplate.replace('THREAD_ID', state.threadId) + '?after_id=' + state.lastMessageId + '&guest_token=' + encodeURIComponent(state.guestToken);
+    fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
+      renderMessages(data.messages, false);
+      applyOnlineStatus(data.is_online, offlineBanner.textContent);
+    }).catch(function () {});
+  }
+
   function startPolling() {
     if (state.pollTimer) clearInterval(state.pollTimer);
-    state.pollTimer = setInterval(function () {
-      if (!state.threadId) return;
-      var url = pollUrlTemplate.replace('THREAD_ID', state.threadId) + '?after_id=' + state.lastMessageId + '&guest_token=' + encodeURIComponent(state.guestToken);
-      fetch(url).then(function (r) { return r.json(); }).then(function (data) {
-        renderMessages(data.messages, false);
-        applyOnlineStatus(data.is_online, offlineBanner.textContent);
-      }).catch(function () {});
-    }, 4500);
+    state.pollTimer = setInterval(pollOnce, 4500);
   }
+
+  // 14 Agustos 2026: sekme arka plandayken gereksiz sunucu yuku/pil tuketimini
+  // onlemek icin polling'i durdurup, sekme tekrar gorunur oldugunda devam ettiriyoruz.
+  document.addEventListener('visibilitychange', function () {
+    if (!state.threadId) return;
+    if (document.visibilityState === 'visible') {
+      pollOnce();
+      if (!state.pollTimer) startPolling();
+    } else if (state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
+  });
 
   function sendMessage() {
     var text = inputEl.value.trim();
@@ -380,15 +396,22 @@
     attachPreview.classList.add('hidden');
     fileInput.value = '';
 
+    // 14 Agustos 2026: fetch() HTTP 419 (oturum/CSRF suresi dolmus) gibi
+    // hata kodlarinda reddetmiyor - data.message bir hata metni olup
+    // renderMessages'a "(bos mesaj)" balonu olarak duserdi, kullanicinin
+    // yazdigi metin de geri getirilmeden kaybolurdu. Artik r.ok kontrolu
+    // basarisiz istekleri catch blogune dusurup metni (ve varsa dosyayi) geri koyuyor.
     fetch(sendUrlTemplate.replace('THREAD_ID', state.threadId), {
       method: 'POST',
       headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
       body: formData,
-    }).then(function (r) { return r.json(); }).then(function (data) {
+    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
       renderMessages([data.message], false);
       if (data.suggested_section) renderSuggestionCard(data.suggested_section);
     }).catch(function () {
-      alert('Mesaj gönderilemedi, lütfen tekrar deneyin.');
+      alert('Mesaj gönderilemedi. Oturumunuz zaman aşımına uğramış olabilir, sayfayı yenileyip tekrar deneyin.');
+      inputEl.value = text;
+      if (fileToSend) pendingFile = fileToSend;
     });
   }
 

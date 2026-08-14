@@ -89,6 +89,7 @@
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
   function appendMessage(m) {
+    if (!m || typeof m.id !== 'number') return;
     if (m.id <= lastId) return;
     lastId = Math.max(lastId, m.id);
     var div = document.createElement('div');
@@ -102,11 +103,24 @@
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
-  setInterval(function () {
-    fetch(pollUrl + '?after_id=' + lastId).then(function (r) { return r.json(); }).then(function (data) {
+  function pollAdmin() {
+    fetch(pollUrl + '?after_id=' + lastId).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
       (data.messages || []).forEach(appendMessage);
     }).catch(function () {});
-  }, 4000);
+  }
+
+  // 14 Agustos 2026: sekme arka plandayken gereksiz sunucu yuku onlemek icin
+  // polling'i durdurup, sekme tekrar gorunur oldugunda devam ettiriyoruz.
+  var pollTimer = setInterval(pollAdmin, 4000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      pollAdmin();
+      if (!pollTimer) pollTimer = setInterval(pollAdmin, 4000);
+    } else if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  });
 
   var attachBtn = document.getElementById('js-admin-attach-btn');
   var fileInput = document.getElementById('js-admin-file');
