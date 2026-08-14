@@ -2677,19 +2677,37 @@ class PlatformFeatureTest extends TestCase
 
     public function test_featured_facility_card_shows_premium_ribbon(): void
     {
-        // facility-card.blade.php SADECE "Benzer Kurumlar" (ayni kategori)
-        // bolumunde kullanilir - rehabFacilityClaimed'i one cikan yapip
-        // AYNI kategorideki rehabFacility'nin sayfasinda kart olarak
-        // gorunmesini test ediyoruz.
+        // 14 Agustos 2026: kullanicinin talebi - "Benzer Kurumlar" artik
+        // buyuk facility-card.blade.php degil, kucuk yatay mini-kart
+        // kullaniyor (bkz. facilities/show.blade.php) - kurdele yerine
+        // kucuk "Öne Çıkan" etiketi gosteriyor. rehabFacilityClaimed'i
+        // one cikan yapip AYNI kategorideki rehabFacility'nin sayfasinda
+        // "Benzer Kurumlar" icinde gorunmesini test ediyoruz.
         $this->rehabFacilityClaimed->update(['is_featured' => true]);
 
         $response = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug);
-        $response->assertOk()->assertSee('ÖNE ÇIKAN');
+        $response->assertOk()->assertSee('Öne Çıkan');
 
         // childFacility'nin "Benzer Kurumlar" bolumunde one cikan hicbir
-        // kurum yok (farkli kategori) - ribbon hic gorunmemeli.
+        // kurum yok (farkli kategori) - etiket hic gorunmemeli.
         $response2 = $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug);
-        $response2->assertOk()->assertDontSee('ÖNE ÇIKAN');
+        $response2->assertOk()->assertDontSee('Öne Çıkan');
+    }
+
+    public function test_featured_facility_own_detail_page_shows_badge(): void
+    {
+        // 14 Agustos 2026: kullanicinin talebi - "kurum inceleme alaninda
+        // bir fark olmadi" sikayeti uzerine, kurumun KENDI detay
+        // sayfasinin ust basligina da (facilities/show.blade.php) bir
+        // "Öne Çıkan Kurum" rozeti eklendi - onceden bu sayfada is_featured
+        // icin hicbir gorsel isaret yoktu.
+        $this->rehabFacilityClaimed->update(['is_featured' => true]);
+
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
+            ->assertOk()->assertSee('Öne Çıkan Kurum');
+
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
+            ->assertOk()->assertDontSee('Öne Çıkan Kurum');
     }
 
     // 14 Agustos 2026: kullanicinin bildirdigi canli hata - 3 marka ayni
