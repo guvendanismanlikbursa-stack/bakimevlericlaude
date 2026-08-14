@@ -19,11 +19,13 @@
 
 <div class="space-y-3">
   @forelse($platformErrors as $error)
+    @php($explanation = $error->plainExplanation())
     <div class="bg-white rounded-xl shadow-sm p-5 {{ $error->resolved_at ? 'opacity-60' : '' }}">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ $error->source }} · {{ $error->created_at->format('d.m.Y H:i') }}</div>
-          <div class="font-bold text-gray-900">{{ $error->title }}</div>
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ $error->created_at->format('d.m.Y H:i') }}{{ $error->title && str_contains($error->title, '—') ? ' · '.trim(explode('—', $error->title)[1]) : '' }}</div>
+          <div class="font-bold text-gray-900">{{ $explanation['summary'] }}</div>
+          <p class="text-sm text-gray-600 mt-1">{{ $explanation['detail'] }}</p>
         </div>
         <div class="flex gap-2 shrink-0">
           @unless($error->resolved_at)
@@ -38,7 +40,14 @@
           </form>
         </div>
       </div>
-      <pre class="mt-3 bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs text-gray-600 whitespace-pre-wrap font-mono">{{ $error->message }}</pre>
+      {{-- 14 Agustos 2026: kullanicinin talebi - ham teknik yigin izi
+           (stack trace) artik varsayilan gizli, sadece "Teknik detay"
+           acilinca gorunuyor - kod bilmeyen kullaniciyi bogmuyor ama
+           gerektiginde (ör. bana gostermek icin) hala erisilebilir. --}}
+      <details class="mt-3">
+        <summary class="text-xs font-semibold text-gray-400 cursor-pointer select-none">Teknik detay (isterseniz buraya tıklayıp bana gösterebilirsiniz)</summary>
+        <pre class="mt-2 bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs text-gray-600 whitespace-pre-wrap font-mono">{{ $error->message }}</pre>
+      </details>
     </div>
   @empty
     <div class="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">Kayıt yok.</div>

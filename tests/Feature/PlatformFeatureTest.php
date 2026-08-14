@@ -2643,4 +2643,62 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertTrue($this->rehabFacility->fresh()->is_featured);
     }
+
+    // 14 Agustos 2026: kullanicinin bildirdigi canli hata - 3 marka ayni
+    // veritabanini paylastigi ve gunluk kontrolu ayni saatte tetikledigi
+    // icin baska bir surec ayni "qatest-daily-*" kaydini az once
+    // olusturmus olabilir. Bu test, ensureClaimedFacility() bu kaydi
+    // ILK kez cagrildiginda (kendi "var mi" kontrolunden ONCE, baska
+    // bir domainin surecince olusturulmus gibi) DB'de zaten bulup hata
+    // firlatmadan guncelledigini dogrular.
+    public function test_check_user_flows_ensure_claimed_facility_handles_row_created_by_another_process(): void
+    {
+        DB::table('facilities')->insert([
+            'name' => 'QATEST Daily Racetest Claimed', 'slug' => 'qatest-daily-racetest-claimed',
+            'city_id' => $this->city->id, 'facility_category_id' => $this->elderlyCategory->id,
+            'ownership_type' => 'ozel', 'address' => 'Test', 'phone' => '05320000001', 'phone_type' => 'mobile',
+            'is_published' => true, 'is_claimed' => false, 'invitation_status' => 'pending',
+            'free_quote_credits' => 0, 'balance' => 0, 'source' => 'qa_test',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $command = new \App\Console\Commands\CheckUserFlows();
+        $reflection = new \ReflectionClass($command);
+        $reflection->getProperty('qaCityId')->setAccessible(true);
+        $reflection->getProperty('qaCityId')->setValue($command, $this->city->id);
+        $reflection->getProperty('qaCategoryId')->setAccessible(true);
+        $reflection->getProperty('qaCategoryId')->setValue($command, $this->elderlyCategory->id);
+
+        $method = $reflection->getMethod('ensureClaimedFacility');
+        $method->setAccessible(true);
+        $slug = $method->invoke($command, 'racetest');
+
+        $this->assertSame('qatest-daily-racetest-claimed', $slug);
+        $this->assertSame(1, DB::table('facilities')->where('slug', $slug)->count());
+        $this->assertTrue((bool) DB::table('facilities')->where('slug', $slug)->value('is_claimed'));
+    }
+
+    public function test_platform_error_plain_explanation_translates_known_patterns(): void
+    {
+        $raceError = \App\Models\PlatformError::create([
+            'source' => 'exception', 'title' => 'Illuminate\\Database\\UniqueConstraintViolationException — bakimeviara.com',
+            'message' => "Hata: Illuminate\\Database\\UniqueConstraintViolationException\nCheckUserFlows.php satirinda olustu",
+            'context' => ['exception_class' => 'Illuminate\\Database\\UniqueConstraintViolationException'],
+        ]);
+        $explanation = $raceError->plainExplanation();
+        $this->assertStringContainsString('otomatik test kontrolü', $explanation['summary']);
+
+        $unknownError = \App\Models\PlatformError::create([
+            'source' => 'exception', 'title' => 'TumuyleBilinmeyenBirHata — bakimevleri.com',
+            'message' => 'Hata: TumuyleBilinmeyenBirHata', 'context' => ['exception_class' => 'TumuyleBilinmeyenBirHata'],
+        ]);
+        $unknownExplanation = $unknownError->plainExplanation();
+        $this->assertStringContainsString('çözemedim', $unknownExplanation['detail']);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/hatalar');
+        $response->assertOk()
+            ->assertSee('otomatik test kontrolü')
+            ->assertSee('Sistemde teknik bir hata oluştu')
+            ->assertSee('Teknik detay');
+    }
 }

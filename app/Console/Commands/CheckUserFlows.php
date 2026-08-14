@@ -179,6 +179,16 @@ class CheckUserFlows extends Command
     // Fixture (test verisi) hazirlama - OpsController::qaSetup ile ayni desen
     // ------------------------------------------------------------------
 
+    // 14 Agustos 2026: kullanicinin bildirdigi canli hata - 3 marka AYNI
+    // veritabanini paylastigi icin ve her marka kendi sunucusunda ayni
+    // saatte (08:45) bu komutu tetikledigi icin, "var mi diye bak, yoksa
+    // ekle" adimlari arasinda BASKA bir markanin sureci ayni ekleme
+    // islemini ayni anda yapabiliyor - saniyeler icinde iki surec de
+    // "yok" gorup ikisi de INSERT denedi, ikincisi benzersizlik hatasi
+    // (UniqueConstraintViolationException) aldi. try/catch ile bu yarisi
+    // GUVENLI sekilde cozuyoruz: INSERT basarisiz olursa (kayit aslinda
+    // baska bir surec tarafindan az once olusturulmus demektir) sessizce
+    // guncellemeye geciyoruz.
     private function ensureClaimedFacility(string $brandSlug): string
     {
         $slug = "qatest-daily-{$brandSlug}-claimed";
@@ -191,25 +201,31 @@ class CheckUserFlows extends Command
             return $slug;
         }
 
-        DB::table('facilities')->insert([
-            'name' => 'QATEST Daily '.ucfirst($brandSlug).' Claimed',
-            'slug' => $slug,
-            'city_id' => $this->qaCityId,
-            'facility_category_id' => $this->qaCategoryId,
-            'ownership_type' => 'ozel',
-            'address' => 'Test adresi',
-            'phone' => '05320000001',
-            'phone_type' => 'mobile',
-            'is_published' => true,
-            'is_claimed' => true,
-            'claimed_at' => now(),
-            'invitation_status' => 'approved',
-            'free_quote_credits' => 100,
-            'balance' => 0,
-            'source' => 'qa_test',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        try {
+            DB::table('facilities')->insert([
+                'name' => 'QATEST Daily '.ucfirst($brandSlug).' Claimed',
+                'slug' => $slug,
+                'city_id' => $this->qaCityId,
+                'facility_category_id' => $this->qaCategoryId,
+                'ownership_type' => 'ozel',
+                'address' => 'Test adresi',
+                'phone' => '05320000001',
+                'phone_type' => 'mobile',
+                'is_published' => true,
+                'is_claimed' => true,
+                'claimed_at' => now(),
+                'invitation_status' => 'approved',
+                'free_quote_credits' => 100,
+                'balance' => 0,
+                'source' => 'qa_test',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            DB::table('facilities')->where('slug', $slug)->update([
+                'is_claimed' => true, 'is_published' => true, 'free_quote_credits' => 100, 'updated_at' => now(),
+            ]);
+        }
 
         return $slug;
     }
@@ -227,24 +243,30 @@ class CheckUserFlows extends Command
             return $slug;
         }
 
-        DB::table('facilities')->insert([
-            'name' => 'QATEST Daily '.ucfirst($brandSlug).' Unclaimed',
-            'slug' => $slug,
-            'city_id' => $this->qaCityId,
-            'facility_category_id' => $this->qaCategoryId,
-            'ownership_type' => 'ozel',
-            'address' => 'Test adresi',
-            'phone' => '05320000002',
-            'phone_type' => 'mobile',
-            'is_published' => true,
-            'is_claimed' => false,
-            'invitation_status' => 'pending',
-            'free_quote_credits' => 5,
-            'balance' => 0,
-            'source' => 'qa_test',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        try {
+            DB::table('facilities')->insert([
+                'name' => 'QATEST Daily '.ucfirst($brandSlug).' Unclaimed',
+                'slug' => $slug,
+                'city_id' => $this->qaCityId,
+                'facility_category_id' => $this->qaCategoryId,
+                'ownership_type' => 'ozel',
+                'address' => 'Test adresi',
+                'phone' => '05320000002',
+                'phone_type' => 'mobile',
+                'is_published' => true,
+                'is_claimed' => false,
+                'invitation_status' => 'pending',
+                'free_quote_credits' => 5,
+                'balance' => 0,
+                'source' => 'qa_test',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            DB::table('facilities')->where('slug', $slug)->update([
+                'is_claimed' => false, 'claimed_at' => null, 'invitation_status' => 'pending', 'updated_at' => now(),
+            ]);
+        }
 
         return $slug;
     }
@@ -267,17 +289,27 @@ class CheckUserFlows extends Command
             return $email;
         }
 
-        DB::table('facility_users')->insert([
-            'facility_id' => $facilityId,
-            'name' => 'QATEST Daily Yetkili',
-            'email' => $email,
-            'password' => Hash::make('QaTest12345!'),
-            'status' => 'active',
-            'email_verified_at' => now(),
-            'must_change_password' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        try {
+            DB::table('facility_users')->insert([
+                'facility_id' => $facilityId,
+                'name' => 'QATEST Daily Yetkili',
+                'email' => $email,
+                'password' => Hash::make('QaTest12345!'),
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'must_change_password' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            DB::table('facility_users')->where('email', $email)->update([
+                'password' => Hash::make('QaTest12345!'),
+                'status' => 'active',
+                'must_change_password' => false,
+                'facility_id' => $facilityId,
+                'updated_at' => now(),
+            ]);
+        }
 
         return $email;
     }
