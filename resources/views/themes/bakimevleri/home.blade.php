@@ -8,9 +8,16 @@
   $guideSlug = $section['slug'] . '-rehberi';
   $faqSlug = $section['slug'] . '-soru-cevap';
 @endphp
-@section('title', $section['hero_title'].' | '.$brand['name'])
+@section('title', $section['hero_title'])
 @section('meta_description', $section['hero_subtitle'].' | '.$brand['name'])
-@if($section['slug'] !== ($brand['default_section'] ?? null))
+@if($section['slug'] !== ($brand['default_section'] ?? null) || ($isFiltering ?? false))
+  {{-- 14 Agustos 2026: kullanicinin talebi uzerine yapilan SEO denetiminde
+       bulundu - anasayfadaki filtre sonuclari (il/kategori secilince ayni
+       sayfada gorunen sonuclar) indexleniyordu ama basligi/aciklamasi
+       filtreyi hic yansitmiyordu (hep ayni jenerik anasayfa metni) - bu da
+       il x kategori kombinasyonu kadar cogalabilen "duplicate title" riski
+       yaratiyordu. Aynı filtreli sonuc zaten /kurumlar sayfasinda dogru
+       basiliga sahip olarak indexleniyor, burada noindex yeterli. --}}
   @section('robots_meta', 'noindex,follow')
 @endif
 

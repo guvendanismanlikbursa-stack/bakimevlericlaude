@@ -4,7 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', $brand['tagline']) · {{ $brand['name'] }}</title>
+@php
+  // 14 Agustos 2026: kullanicinin talebi uzerine yapilan SEO denetiminde
+  // bulundu - bazi sayfalar (anasayfa, Hakkimizda, En Cok Aranan Bolgeler
+  // vb.) kendi 'title' section'ina ZATEN marka adini ekliyordu, burasi da
+  // KOSULSUZ tekrar ekleyince canlida "... | bakimevleri.com · bakimevleri.com"
+  // gibi tekrarli baslikllar cikiyordu. O sayfalardaki fazladan ekleme
+  // kaldirildi, tek kaynak burasi oldu. Ayni degeri og:title/twitter:title
+  // varsayilani icin de kullanip (once hep sabit $brand['tagline']'a
+  // dusuyordu, paylasilan sayfanin gercek basligiyla alakasiz goruniyordu).
+  $__pageTitle = trim($__env->yieldContent('title', $brand['tagline']));
+@endphp
+<title>{{ $__pageTitle }} · {{ $brand['name'] }}</title>
 <meta name="description" content="@yield('meta_description', $brand['tagline'])">
 <link rel="canonical" href="@yield('canonical', canonical_url())">
 {{--
@@ -28,12 +39,12 @@
 <meta name="theme-color" content="{{ $brand['primary_color'] }}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ $brand['name'] }}">
-<meta property="og:title" content="@yield('og_title', $brand['tagline'])">
+<meta property="og:title" content="@yield('og_title', $__pageTitle)">
 <meta property="og:description" content="@yield('meta_description', $brand['tagline'])">
 <meta property="og:url" content="@yield('canonical', canonical_url())">
 <meta property="og:image" content="@yield('og_image', seo_og_image())">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="@yield('og_title', $brand['tagline'])">
+<meta name="twitter:title" content="@yield('og_title', $__pageTitle)">
 <meta name="twitter:description" content="@yield('meta_description', $brand['tagline'])">
 <meta name="twitter:image" content="@yield('og_image', seo_og_image())">
 @php

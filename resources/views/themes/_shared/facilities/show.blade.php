@@ -459,26 +459,40 @@
   <style>@media (max-width: 1023px) { :root { --chat-toggle-bottom: 5.75rem; } }</style>
 @endif
 
+@php
+  // 14 Agustos 2026: kullanicinin talebi uzerine yapilan SEO denetiminde
+  // bulundu - aggregateRating HER kurumda kosulsuz yayinlaniyordu,
+  // reviewCount site-ici gercek yorum sayisi 0 olsa bile max(1, 0) ile
+  // hep en az 1 gosteriliyordu (Google Maps'ten aktarilan rating - onlarca/
+  // yuzlerce GERCEK Google yorumunun ortalamasi - sanki sitede 1 yorumla
+  // olusmus gibi sunuluyordu, bu Google'in yapilandirilmis veri kurallarina
+  // aykiri). Artik SADECE sitede gercekten onayli yorum varsa yayinlaniyor,
+  // reviewCount de gercek sayiyi yansitiyor.
+  $reviewCount = $facility->approvedReviews->count();
+  $facilitySchema = [
+    '@@context' => 'https://schema.org',
+    '@type' => 'LocalBusiness',
+    'name' => $facility->name,
+    'description' => $facility->description,
+    'telephone' => $facility->phone,
+    'address' => [
+      '@type' => 'PostalAddress',
+      'streetAddress' => $facility->address,
+      'addressLocality' => trim(($facility->district ? $facility->district.', ' : '').($facility->city->name ?? '')),
+      'addressCountry' => 'TR',
+    ],
+    'url' => brand_route('facilities.show', ['slug' => $facility->slug]),
+  ];
+  if ($reviewCount > 0) {
+    $facilitySchema['aggregateRating'] = [
+      '@type' => 'AggregateRating',
+      'ratingValue' => (float) $facility->approved_reviews_avg_rating,
+      'reviewCount' => $reviewCount,
+    ];
+  }
+@endphp
 <script type="application/ld+json">
-{!! json_encode([
-  '@@context' => 'https://schema.org',
-  '@type' => 'LocalBusiness',
-  'name' => $facility->name,
-  'description' => $facility->description,
-  'telephone' => $facility->phone,
-  'address' => [
-    '@type' => 'PostalAddress',
-    'streetAddress' => $facility->address,
-    'addressLocality' => trim(($facility->district ? $facility->district.', ' : '').($facility->city->name ?? '')),
-    'addressCountry' => 'TR',
-  ],
-  'aggregateRating' => [
-    '@type' => 'AggregateRating',
-    'ratingValue' => (float) ($facility->approved_reviews_avg_rating ?: $facility->rating ?: 0),
-    'reviewCount' => max(1, ($facility->approvedReviews ?? collect())->count()),
-  ],
-  'url' => brand_route('facilities.show', ['slug' => $facility->slug]),
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
+{!! json_encode($facilitySchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
 </script>
 
 @include('themes._shared.partials.engagement-script')

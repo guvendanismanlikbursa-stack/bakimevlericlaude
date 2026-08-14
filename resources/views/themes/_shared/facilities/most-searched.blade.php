@@ -1,5 +1,5 @@
 @extends('layouts.brand')
-@section('title', 'En Çok Aranan Bölgeler | '.$brand['name'])
+@section('title', 'En Çok Aranan Bölgeler')
 @section('meta_description', 'Son 30 günde ziyaretçilerin en çok filtrelediği il ve kurum türü kombinasyonları.')
 @section('content')
 @php

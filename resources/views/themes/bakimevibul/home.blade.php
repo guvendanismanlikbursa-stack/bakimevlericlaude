@@ -8,9 +8,9 @@
   $guideSlug = $section['slug'] . '-rehberi';
   $faqSlug = $section['slug'] . '-soru-cevap';
 @endphp
-@section('title', $section['hero_title'].' | '.$brand['name'])
+@section('title', $section['hero_title'])
 @section('meta_description', $section['hero_subtitle'].' | '.$brand['name'])
-@if($section['slug'] !== ($brand['default_section'] ?? null))
+@if($section['slug'] !== ($brand['default_section'] ?? null) || ($isFiltering ?? false))
   @section('robots_meta', 'noindex,follow')
 @endif
 

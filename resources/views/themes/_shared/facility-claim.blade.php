@@ -1,5 +1,5 @@
 @extends('layouts.brand')
-@section('title', '"'.$facility->name.'" Kurumunu Sahiplen | '.current_brand()['name'])
+@section('title', '"'.$facility->name.'" Kurumunu Sahiplen')
 
 @section('content')
 @php

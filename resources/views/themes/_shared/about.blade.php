@@ -1,5 +1,5 @@
 @extends('layouts.brand')
-@section('title', 'Hakkımızda | '.$brand['name'])
+@section('title', 'Hakkımızda')
 @section('meta_description', $brand['name'].' — yaşlı bakım, çocuk bakım ve rehabilitasyon kurumlarını tek platformda bir araya getiren güvenilir karşılaştırma ve başvuru platformu.')
 @section('content')
 @php

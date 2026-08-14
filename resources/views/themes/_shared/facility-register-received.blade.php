@@ -1,5 +1,5 @@
 @extends('layouts.brand')
-@section('title', 'Başvurunuz Alındı | '.current_brand()['name'])
+@section('title', 'Başvurunuz Alındı')
 
 @section('content')
 @php $primary = current_brand()['primary_color']; @endphp
