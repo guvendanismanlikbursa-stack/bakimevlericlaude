@@ -9,7 +9,11 @@
 </div>
 
 <form method="GET" data-instant-filter="1" data-results-target="js-facility-users-results" class="js-instant-filter bg-white rounded-xl shadow-sm border border-gray-100 p-4 grid md:grid-cols-4 gap-3 mb-6">
-  <input type="text" name="q" value="{{ request('q') }}" oninput="this.form.submit()" onfocus="this.value = this.value;" autofocus placeholder="İsim, e-posta, telefon veya kurum ara" class="border rounded-lg px-3 py-2 text-sm md:col-span-2">
+  {{-- 14 Agustos 2026: kullanicinin bildirdigi hata - bkz. admin/facilities/
+       index.blade.php'deki ayni tarihli yorum: inline oninput reload,
+       ayni forma bagli AJAX instant-filter ile cakisip HER TUS VURUSUNDA
+       tam sayfa yenilemesine (ve imlecin basa donmesine) sebep oluyordu. --}}
+  <input type="text" name="q" value="{{ request('q') }}" autofocus placeholder="İsim, e-posta, telefon veya kurum ara" class="border rounded-lg px-3 py-2 text-sm md:col-span-2">
   <select name="status" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm"><option value="">Tüm hesap durumları</option><option value="active" @selected(request('status')==='active')>Aktif</option><option value="suspended" @selected(request('status')==='suspended')>Askıya Alınmış</option></select>
   <select name="email_status" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm"><option value="">Tüm e-posta durumları</option><option value="verified" @selected(request('email_status')==='verified')>Doğrulandı</option><option value="pending" @selected(request('email_status')==='pending')>Bekliyor</option></select>
   <select name="city" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm"><option value="">Tüm şehirler</option>@foreach($cities as $city)<option value="{{ $city->id }}" @selected((string) request('city')===(string) $city->id)>{{ $city->name }}</option>@endforeach</select>

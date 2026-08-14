@@ -12,6 +12,10 @@
 <form method="POST" action="{{ $facility->exists ? route('admin.facilities.update', $facility) : route('admin.facilities.store') }}" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm p-6 grid md:grid-cols-2 gap-4 max-w-4xl">
   @csrf
   @if($facility->exists) @method('PUT') @endif
+  {{-- 14 Agustos 2026: kullanicinin talebi - kaydedince filtrelenmis
+       listeye (nereden geldiyse) geri donsun, bkz. Admin\FacilityController
+       edit()/update()/safeReturnTo(). --}}
+  @isset($returnTo)<input type="hidden" name="return_to" value="{{ $returnTo }}">@endisset
 
   <div class="md:col-span-2">
     <label class="text-sm font-medium">Kurum Adı</label>

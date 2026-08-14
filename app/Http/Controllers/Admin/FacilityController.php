@@ -150,8 +150,9 @@ class FacilityController extends Controller
         $categories = FacilityCategory::orderBy('name')->get();
         $serviceSections = service_sections();
         $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category']);
+        $returnTo = $this->safeReturnTo(url()->previous());
 
-        return view('admin.facilities.form', compact('facility', 'cities', 'categories', 'serviceSections'));
+        return view('admin.facilities.form', compact('facility', 'cities', 'categories', 'serviceSections', 'returnTo'));
     }
 
     public function update(Request $request, Facility $facility)
@@ -165,12 +166,43 @@ class FacilityController extends Controller
         $data['services'] = $this->parseServices($request->input('services_raw'), $request->input('services', []));
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
+        // 14 Agustos 2026: kullanicinin talebi - admin telefon numarasi
+        // ekleyip/degistirip kaydettiginde, kurum otomatik olarak dogru
+        // gruba (cep/sabit hat) siniflandirilsin - bu alan WhatsApp davet
+        // kuyrugunu belirliyor (bkz. helpers.php classify_phone_type()),
+        // once sadece toplu "Veri Denetimi" taramasiyla duzeltiliyordu.
+        $data['phone_type'] = classify_phone_type($data['phone'] ?? null);
 
         $facility->update($data);
 
         $this->storeUploadedImages($request, $facility);
 
-        return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum güncellendi.');
+        // 14 Agustos 2026: kullanicinin talebi - "kaydet'e basinca 2 defa
+        // geri tusuna basmam gerekiyor". Onceden her zaman ayni duzenleme
+        // sayfasina redirect ediyordu; admin filtrelenmis listeden gelmisse
+        // (bkz. edit() - $returnTo, gizli form alaniyla buraya tasiniyor)
+        // artik dogrudan O filtrelenmis listeye donuyor.
+        $returnTo = $this->safeReturnTo($request->input('return_to'));
+
+        return redirect($returnTo ?: route('admin.facilities.edit', $facility))
+            ->with('success', 'Kurum güncellendi.');
+    }
+
+    /**
+     * Sadece /admin/kurumlar (filtreli liste) ile baslayan, ayni siteye ait
+     * URL'leri gecerli sayar - acik yonlendirme (open redirect) riskini
+     * onlemek icin disaridan gelen return_to degeri asla dogrudan
+     * guvenilmez.
+     */
+    private function safeReturnTo(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $allowed = route('admin.facilities.index');
+
+        return str_starts_with($url, $allowed) ? $url : null;
     }
 
     public function destroy(Facility $facility, FacilityArchiveService $archiveService)

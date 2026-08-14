@@ -28,7 +28,17 @@
      olmasi FormData/URL siralamasini belirsizlestiriyordu, kaldirildi;
      secili deger zaten asagidaki select uzerinde tutuluyor. -->
 <form method="GET" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-admin-facility-results" data-count-target="js-result-count" class="js-location-filter mb-4 flex gap-2 flex-wrap">
-  <input type="search" name="q" value="{{ request('q') }}" oninput="this.form.submit()" onfocus="this.value = this.value;" autofocus placeholder="Kurum adında ara..." class="border rounded-lg px-3 py-2 text-sm w-56">
+  {{-- 14 Agustos 2026: kullanicinin bildirdigi hata - bu input'ta HEM
+       oninput="this.form.submit()" (senkron, anlik tam sayfa yenileme) HEM
+       de asagida include edilen location-filter-script.blade.php'nin AYNI
+       input'a baglanan AJAX "instant filter" dinleyicisi AYNI ANDA
+       calisiyordu. Inline reload her zaman once tetiklenip AJAX'i
+       bastiriyordu - HER TUS VURUSUNDA sayfa yeniden yukleniyor, autofocus
+       imleci basa donduruyordu ("yazilan kelimeler tersten yaziliyormus
+       gibi" hissi tam olarak buradan geliyordu). Cozum: inline reload'i
+       kaldirmak - AJAX mekanizmasi zaten public sitede sorunsuz calisiyor,
+       burada da JS'siz reload gerekmiyor (Enter/"Ara" butonu hala calisir). --}}
+  <input type="search" name="q" value="{{ request('q') }}" autofocus placeholder="Kurum adında ara..." class="border rounded-lg px-3 py-2 text-sm w-56">
   <button type="submit" class="border rounded-lg px-3 py-2 text-sm font-semibold bg-white">Ara</button>
   <select name="brand" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm Markalar</option>

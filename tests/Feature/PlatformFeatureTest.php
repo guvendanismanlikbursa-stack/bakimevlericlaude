@@ -2961,4 +2961,88 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('çözülmemiş hata')
             ->assertSee('yeni kurum kaydı onay bekliyor');
     }
+
+    // 14 Agustos 2026: kullanicinin bildirdigi hata - "kurum ismi yaparak
+    // yapilan filtrelemelerde yazilan kelimeler ters yaziliyor, bosluk
+    // vermek isteyince satirin basina gidiyor". Kok neden: bu 3 admin
+    // arama kutusunda HEM oninput="this.form.submit()" (senkron tam sayfa
+    // yenileme) HEM de ayni forma bagli AJAX instant-filter (bkz.
+    // location-filter-script.blade.php) AYNI ANDA calisiyordu - inline
+    // reload her zaman once tetiklenip her tus vurusunda sayfayi
+    // yeniliyor, autofocus imleci basa donduruyordu. Bu test, o kirik
+    // oninput ozniteliginin bir daha geri gelmedigini dogrular.
+    public function test_admin_search_inputs_do_not_reload_page_on_every_keystroke(): void
+    {
+        $pages = [
+            '/admin/kurumlar',
+            '/admin/kullanicilar/aileler',
+            '/admin/kullanicilar/kurum-yetkilileri',
+        ];
+
+        foreach ($pages as $page) {
+            $response = $this->withSession(['admin_id' => $this->admin->id])->get($page);
+            $response->assertOk();
+            $this->assertStringNotContainsString('oninput="this.form.submit()"', $response->getContent(), "{$page} hala her tus vurusunda sayfayi yeniliyor.");
+        }
+    }
+
+    private function adminFacilityUpdatePayload(Facility $facility, array $overrides = []): array
+    {
+        return array_merge([
+            'name' => $facility->name,
+            'city_id' => $facility->city_id,
+            'facility_category_id' => $facility->facility_category_id,
+        ], $overrides);
+    }
+
+    // 14 Agustos 2026: kullanicinin talebi - admin bir kuruma telefon
+    // numarasi ekleyip kaydettiginde, kurum otomatik olarak dogru gruba
+    // (cep/sabit hat) siniflandirilsin - bu alan (phone_type) WhatsApp
+    // davet kuyrugunu belirliyor (bkz. helpers.php classify_phone_type(),
+    // Admin\FacilityController::update()).
+    public function test_admin_saving_facility_phone_auto_classifies_phone_type(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['phone' => '0532 111 22 33']))
+            ->assertRedirect();
+        $this->assertSame('mobile', $this->rehabFacility->fresh()->phone_type);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['phone' => '0224 111 22 33']))
+            ->assertRedirect();
+        $this->assertSame('landline', $this->rehabFacility->fresh()->phone_type);
+    }
+
+    // 14 Agustos 2026: kullanicinin talebi - "kaydet'e basinca 2 defa geri
+    // tusuna basmam gerekiyor". Admin filtrelenmis listeden bir kurumu
+    // duzenlemeye girip kaydedince, artik dogrudan O filtrelenmis listeye
+    // donmeli (bkz. Admin\FacilityController edit()/update()/safeReturnTo()).
+    public function test_admin_saving_facility_from_filtered_list_returns_to_that_list(): void
+    {
+        // 14 Agustos 2026: gercek tarayicida bu deger Laravel'in kendi
+        // url()->previous() mekanizmasiyla (StartSession'in her GET
+        // isteginde session'a yazdigi '_previous.url') otomatik doluyor -
+        // burada ayni session anahtarini dogrudan set ederek, iki ayri
+        // test HTTP cagrisi arasinda 'array' session sürücüsünün durumu
+        // gercekten koruyup korumadigina bagli olmadan senaryoyu dogruluyoruz.
+        $listUrl = url('/admin/kurumlar?q='.urlencode($this->rehabFacility->name));
+
+        $editResponse = $this->withSession(['admin_id' => $this->admin->id, '_previous.url' => $listUrl])
+            ->get('/admin/kurumlar/'.$this->rehabFacility->id.'/edit');
+        $editResponse->assertOk();
+        $editResponse->assertSee('name="return_to" value="'.$listUrl, false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['return_to' => $listUrl]))
+            ->assertRedirect($listUrl);
+    }
+
+    public function test_admin_facility_update_ignores_foreign_return_to_url(): void
+    {
+        // 14 Agustos 2026: acik yonlendirme (open redirect) korumasi -
+        // return_to sadece /admin/kurumlar ile baslamiyorsa yoksayilmali.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['return_to' => 'https://evil.example.com/phish']))
+            ->assertRedirect(route('admin.facilities.edit', $this->rehabFacility));
+    }
 }
