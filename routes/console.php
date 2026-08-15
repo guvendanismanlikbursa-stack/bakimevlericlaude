@@ -75,6 +75,19 @@ Schedule::command('claims:expire-undocumented')->hourly();
 // cron'una binerek her dakika en fazla ~50 saniye boyunca tuketilir. Kuyruk
 // bosaldiginda hemen cikar (--stop-when-empty), bu yuzden pratikte gecikme
 // saniyeler mertebesinde kalir.
+//
+// 15 Agustos 2026: kullanicinin bildirdigi gercek olay - 13.08'de uygulama
+// icinden gonderilen bir mesajin bildirim maili 2 gun boyunca gitmedi,
+// ancak baska bir islem cache:clear cagirinca (bkz. OpsController::
+// cacheRefresh) aninda gitti. Kok neden: withoutOverlapping() parametresiz
+// cagrilinca varsayilan kilit suresi 1440 DAKIKA (24 saat) - eger bir
+// queue:work calismasi host tarafindan yarida kesilirse (bellek/sure
+// limiti, ani surec sonlandirma) kilit dosyasini TEMIZ birakamiyor ve
+// sonraki TUM calismalar sessizce atlaniyor, ta ki 24 saat dolana veya
+// (bu olayda oldugu gibi) cache tesadufen baska bir sebeple temizlenene
+// kadar. Gercek is suresi max-time=50 saniye oldugu icin 5 dakikadan eski
+// bir kilit kesinlikle olu demektir - kendi kendini cok daha hizli
+// iyilestirsin diye kilit suresi 5 dakikaya dusuruldu.
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
     ->everyMinute()
-    ->withoutOverlapping();
+    ->withoutOverlapping(5);
