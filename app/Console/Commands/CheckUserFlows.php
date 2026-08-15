@@ -56,6 +56,39 @@ class CheckUserFlows extends Command
 
     public function handle(): int
     {
+        // 15 Agustos 2026: kullanicinin "hata mesajini incele" talebi uzerine
+        // bulundu - bu komut 3 marka icin AYNI kodu paylasan 3 AYRI doc root'a
+        // deploy edilmis, her biri kendi cron'unda schedule:run'i tetikliyor.
+        // Saat 08:45'te UCU DE ayni anda bu komutu calistirdi (platform_errors
+        // #29/#30/#31, birbirine cok yakin zaman damgalariyla dogrulandi) -
+        // her biri TUM 3 markayi HTTP ile deniyor, bu yuzden gune-ozel test
+        // e-postalari uzerinde yaris durumu (Duplicate entry) olustu. Cache
+        // tabanli withoutOverlapping() 3 ayri doc root'un AYRI dosya cache'i
+        // oldugu icin (CACHE_STORE=file) bu yarisi engelleyemez - ucu de ayni
+        // paylasimli MySQL'e bagli oldugu icin MySQL'in kendi named lock'u
+        // (GET_LOCK) kullanildi, gercekten paylasimli tek kilit.
+        // GET_LOCK() sadece MySQL'de var - yerel gelistirme/test ortami (sqlite)
+        // bu korumaya ihtiyac duymaz (tek surec, paylasimli DB yok).
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return $this->runChecks();
+        }
+
+        $lockAcquired = (bool) (DB::selectOne("SELECT GET_LOCK('platform_check_user_flows', 0) AS locked")?->locked ?? false);
+        if (! $lockAcquired) {
+            $this->info('Baska bir surec (baska bir marka doc root\'u) zaten calistiriyor, bu calisma atlaniyor.');
+
+            return self::SUCCESS;
+        }
+
+        try {
+            return $this->runChecks();
+        } finally {
+            DB::selectOne("SELECT RELEASE_LOCK('platform_check_user_flows')");
+        }
+    }
+
+    private function runChecks(): int
+    {
         $this->qaCityId = DB::table('cities')->where('slug', 'bursa')->value('id');
         $this->qaCategoryId = DB::table('facility_categories')->where('slug', 'huzurevi')->value('id');
 
@@ -192,10 +225,20 @@ class CheckUserFlows extends Command
     private function ensureClaimedFacility(string $brandSlug): string
     {
         $slug = "qatest-daily-{$brandSlug}-claimed";
+        // 15 Agustos 2026: kullanicinin "hata mesajini incele" talebi uzerine
+        // bulundu - Facility::class SoftDeletes kullanir ama burasi ham
+        // DB::table() sorgusu oldugu icin deleted_at dolu (soft-silinmis) bir
+        // kaydi da GORUYOR ve "var" saniyordu, ama deleted_at'i hic temizlemiyordu.
+        // Sonuc: kurum is_published/is_claimed alanlari dogru olsa bile
+        // Eloquent'in Facility::published() sorgusu (gercek /kurumlar/{slug}
+        // sayfasinin kullandigi) soft-silinmis kaydi HICBIR ZAMAN gostermiyordu -
+        // test sayfasi kalici olarak 404 veriyordu, bu da zincirleme olarak
+        // teklif/ziyaret/soru testlerinin "guvenlik anahtari bulunamadi"
+        // hatasi vermesine yol aciyordu (aslinda 404 sayfasinda token yoktu).
         $existing = DB::table('facilities')->where('slug', $slug)->first();
         if ($existing) {
             DB::table('facilities')->where('id', $existing->id)->update([
-                'is_claimed' => true, 'is_published' => true, 'free_quote_credits' => 100, 'updated_at' => now(),
+                'is_claimed' => true, 'is_published' => true, 'free_quote_credits' => 100, 'deleted_at' => null, 'updated_at' => now(),
             ]);
 
             return $slug;
@@ -223,7 +266,7 @@ class CheckUserFlows extends Command
             ]);
         } catch (\Illuminate\Database\UniqueConstraintViolationException) {
             DB::table('facilities')->where('slug', $slug)->update([
-                'is_claimed' => true, 'is_published' => true, 'free_quote_credits' => 100, 'updated_at' => now(),
+                'is_claimed' => true, 'is_published' => true, 'free_quote_credits' => 100, 'deleted_at' => null, 'updated_at' => now(),
             ]);
         }
 
@@ -236,7 +279,7 @@ class CheckUserFlows extends Command
         $existing = DB::table('facilities')->where('slug', $slug)->first();
         if ($existing) {
             DB::table('facilities')->where('id', $existing->id)->update([
-                'is_claimed' => false, 'claimed_at' => null, 'invitation_status' => 'pending', 'updated_at' => now(),
+                'is_claimed' => false, 'claimed_at' => null, 'invitation_status' => 'pending', 'deleted_at' => null, 'updated_at' => now(),
             ]);
             DB::table('facility_users')->where('facility_id', $existing->id)->delete();
 
@@ -264,7 +307,7 @@ class CheckUserFlows extends Command
             ]);
         } catch (\Illuminate\Database\UniqueConstraintViolationException) {
             DB::table('facilities')->where('slug', $slug)->update([
-                'is_claimed' => false, 'claimed_at' => null, 'invitation_status' => 'pending', 'updated_at' => now(),
+                'is_claimed' => false, 'claimed_at' => null, 'invitation_status' => 'pending', 'deleted_at' => null, 'updated_at' => now(),
             ]);
         }
 

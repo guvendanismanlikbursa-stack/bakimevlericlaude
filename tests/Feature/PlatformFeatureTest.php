@@ -2765,6 +2765,39 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue((bool) DB::table('facilities')->where('slug', $slug)->value('is_claimed'));
     }
 
+    // 15 Agustos 2026: kullanicinin "hata mesajini incele" talebi uzerine
+    // bulundu - test kurumlari SoftDeletes kullanir ama ensureClaimedFacility/
+    // ensureUnclaimedFacility ham DB::table() sorgusuyla soft-silinmis bir
+    // kaydi da "var" sayip deleted_at'i hic temizlemiyordu. Sonuc: kurum
+    // /kurumlar/{slug} sayfasi (Facility::published(), Eloquent SoftDeletes'e
+    // saygi gosterir) kalici olarak 404 veriyordu - gunluk kontrol boylece
+    // kendi kendini kaliciligi bozuk hale getiriyordu.
+    public function test_check_user_flows_ensure_claimed_facility_revives_soft_deleted_row(): void
+    {
+        DB::table('facilities')->insert([
+            'name' => 'QATEST Daily Softdel Claimed', 'slug' => 'qatest-daily-softdel-claimed',
+            'city_id' => $this->city->id, 'facility_category_id' => $this->elderlyCategory->id,
+            'ownership_type' => 'ozel', 'address' => 'Test', 'phone' => '05320000001', 'phone_type' => 'mobile',
+            'is_published' => true, 'is_claimed' => true, 'invitation_status' => 'approved',
+            'free_quote_credits' => 100, 'balance' => 0, 'source' => 'qa_test',
+            'created_at' => now(), 'updated_at' => now(), 'deleted_at' => now(),
+        ]);
+
+        $command = new \App\Console\Commands\CheckUserFlows();
+        $reflection = new \ReflectionClass($command);
+        $reflection->getProperty('qaCityId')->setAccessible(true);
+        $reflection->getProperty('qaCityId')->setValue($command, $this->city->id);
+        $reflection->getProperty('qaCategoryId')->setAccessible(true);
+        $reflection->getProperty('qaCategoryId')->setValue($command, $this->elderlyCategory->id);
+
+        $method = $reflection->getMethod('ensureClaimedFacility');
+        $method->setAccessible(true);
+        $slug = $method->invoke($command, 'softdel');
+
+        $this->assertNull(DB::table('facilities')->where('slug', $slug)->value('deleted_at'));
+        $this->assertNotNull(\App\Models\Facility::where('slug', $slug)->first(), 'Eloquent (soft-delete farkinda) sorgusu artik kaydi gormeli.');
+    }
+
     public function test_platform_error_plain_explanation_translates_known_patterns(): void
     {
         $raceError = \App\Models\PlatformError::create([
