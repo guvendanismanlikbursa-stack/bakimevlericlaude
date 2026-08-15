@@ -76,11 +76,34 @@
       // cagrilari icin "ready" (activated) durumunu beklemek gerekiyor.
       return navigator.serviceWorker.ready;
     }).then(function (registration) {
+      var currentKey = urlBase64ToUint8Array(vapidKey);
       return registration.pushManager.getSubscription().then(function (existing) {
-        if (existing) return existing;
+        // 15 Agustos 2026: kullanicinin bildirdigi "APK hic bildirim
+        // vermiyor" sikayetinin kok nedeni - sunucudaki VAPID anahtari bir
+        // noktada degismis, ama tarayicida ESKI anahtarla olusturulmus bir
+        // abonelik hala mevcut oldugu icin getSubscription() onu donuyor ve
+        // TEKRAR TEKRAR sunucuya (artik gecersiz olan) o eski anahtarla
+        // gonderiliyordu - sonsuza kadar sessizce basarisiz oluyordu (FCM
+        // "VAPID credentials do not correspond" ile reddediyordu, bkz.
+        // WebPushService). Var olan aboneligin GERCEKTEN su anki anahtarla
+        // eslesip eslesmedigi kontrol edilir; eslesmiyorsa once eskisinden
+        // abonelik iptal edilip GUNCEL anahtarla yeniden abone olunur.
+        if (existing) {
+          var existingKey = new Uint8Array(existing.options.applicationServerKey);
+          var matches = existingKey.length === currentKey.length && existingKey.every(function (b, i) { return b === currentKey[i]; });
+          if (matches) return existing;
+          return existing.unsubscribe().then(function () {
+            return registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: currentKey,
+            });
+          }).catch(function (e) {
+            throw new Error('Eski abonelik iptal edilip yenilenemedi: ' + e.message);
+          });
+        }
         return registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          applicationServerKey: currentKey,
         }).catch(function (e) {
           throw new Error('Cihaz/tarayıcı push aboneliği oluşturamadı: ' + e.message);
         });

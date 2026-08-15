@@ -77,7 +77,20 @@ class WebPushService
             }
 
             $statusCode = $report->getResponse()?->getStatusCode();
-            if (in_array($statusCode, [404, 410], true)) {
+            // 15 Agustos 2026: kullanicinin bildirdigi "APK bildirim vermiyor"
+            // sikayetinin kok nedeni bulundu - VAPID_PUBLIC_KEY/PRIVATE_KEY bir
+            // noktada degismis, eski aboneliklerin tarayicida kayitli oldugu
+            // eski anahtarla artik eslesmiyor. FCM bu durumda 404/410 degil,
+            // 403 ("the VAPID credentials ... do not correspond to the
+            // credentials used to create the subscriptions") donuyor - bu
+            // kayit KALICI OLARAK gecersiz (yeniden denemekle duzelmez),
+            // 404/410 ile ayni sekilde temizlenmesi gerekiyor. Aksi halde
+            // her bildirimde sessizce basarisiz olmaya sonsuza kadar devam
+            // eder ve admin hicbir zaman push almaz.
+            $isPermanentlyInvalid = in_array($statusCode, [404, 410], true)
+                || ($statusCode === 403 && str_contains($report->getReason(), 'VAPID credentials'));
+
+            if ($isPermanentlyInvalid) {
                 PushSubscription::where('endpoint_hash', hash('sha256', $report->getEndpoint()))->delete();
             } else {
                 Log::warning('Web push gonderilemedi: ' . $report->getReason(), ['endpoint' => $report->getEndpoint()]);
