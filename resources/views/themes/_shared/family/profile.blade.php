@@ -10,30 +10,30 @@
     @method('PUT')
 
     <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">Ad Soyad</label>
-      <input type="text" name="name" value="{{ old('name', $family->name) }}" required class="border rounded-lg px-3 py-2 w-full">
+      <label for="family-profile-name" class="block text-sm font-semibold text-gray-700 mb-1">Ad Soyad</label>
+      <input type="text" id="family-profile-name" name="name" value="{{ old('name', $family->name) }}" required class="border rounded-lg px-3 py-2 w-full">
     </div>
 
     <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">E-posta</label>
-      <input type="email" value="{{ $family->email }}" disabled class="border rounded-lg px-3 py-2 w-full bg-gray-50 text-gray-500">
+      <label for="family-profile-email" class="block text-sm font-semibold text-gray-700 mb-1">E-posta</label>
+      <input type="email" id="family-profile-email" value="{{ $family->email }}" disabled class="border rounded-lg px-3 py-2 w-full bg-gray-50 text-gray-500">
       <p class="text-xs text-gray-400 mt-1">E-posta adresinizi değiştirmek için destek hattımızla iletişime geçin.</p>
     </div>
 
     <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">Telefon</label>
-      <input type="text" name="phone" value="{{ old('phone', $family->phone) }}" class="border rounded-lg px-3 py-2 w-full">
+      <label for="family-profile-phone" class="block text-sm font-semibold text-gray-700 mb-1">Telefon</label>
+      <input type="text" id="family-profile-phone" name="phone" value="{{ old('phone', $family->phone) }}" class="border rounded-lg px-3 py-2 w-full">
     </div>
 
     <hr class="my-2">
     <p class="text-sm font-semibold text-gray-700">Şifreyi değiştir (isteğe bağlı)</p>
     <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">Yeni şifre</label>
-      <input type="password" name="password" placeholder="Boş bırakırsanız şifreniz değişmez" class="border rounded-lg px-3 py-2 w-full">
+      <label for="family-profile-password" class="block text-sm font-semibold text-gray-700 mb-1">Yeni şifre</label>
+      <input type="password" id="family-profile-password" name="password" placeholder="Boş bırakırsanız şifreniz değişmez" class="border rounded-lg px-3 py-2 w-full">
     </div>
     <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">Yeni şifre (tekrar)</label>
-      <input type="password" name="password_confirmation" class="border rounded-lg px-3 py-2 w-full">
+      <label for="family-profile-password-confirmation" class="block text-sm font-semibold text-gray-700 mb-1">Yeni şifre (tekrar)</label>
+      <input type="password" id="family-profile-password-confirmation" name="password_confirmation" class="border rounded-lg px-3 py-2 w-full">
     </div>
 
     <button class="btn-primary w-full py-2.5 rounded-lg font-bold">Kaydet</button>

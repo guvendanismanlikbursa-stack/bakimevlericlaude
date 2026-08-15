@@ -129,7 +129,10 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->session()->forget(['family_user_id', 'family_user_name']);
+        // 15 Agustos 2026: bkz. Facility\AuthController::logout() ayni tarihli
+        // yorum - impersonation session anahtarlari temizlenmiyordu, "geri
+        // don" butonu sifresiz admin donusune izin vermeye devam ediyordu.
+        $request->session()->forget(['family_user_id', 'family_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         $request->session()->regenerate();
         $request->session()->regenerateToken();
 

@@ -28,8 +28,8 @@
           @endphp
           <tr class="border-b border-gray-50">
             <td class="py-3 font-semibold text-gray-800">{{ $meta['label'] }}</td>
-            <td class="py-3 text-center"><input type="checkbox" name="notifications[{{ $group }}][email]" value="1" @checked($emailOn) class="w-4 h-4 rounded border-gray-300"></td>
-            <td class="py-3 text-center"><input type="checkbox" name="notifications[{{ $group }}][push]" value="1" @checked($pushOn) class="w-4 h-4 rounded border-gray-300"></td>
+            <td class="py-3 text-center"><input type="checkbox" name="notifications[{{ $group }}][email]" value="1" @checked($emailOn) aria-label="{{ $meta['label'] }} - E-posta bildirimi" class="w-4 h-4 rounded border-gray-300"></td>
+            <td class="py-3 text-center"><input type="checkbox" name="notifications[{{ $group }}][push]" value="1" @checked($pushOn) aria-label="{{ $meta['label'] }} - Anlık bildirim" class="w-4 h-4 rounded border-gray-300"></td>
           </tr>
         @endforeach
       </tbody>

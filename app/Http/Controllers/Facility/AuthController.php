@@ -66,7 +66,16 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->session()->forget(['facility_user_id', 'facility_user_name']);
+        // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+        // yapilan denetimde bulundu - admin "Panelde Gor" ile bu paneli
+        // goruntulerken kullanici ust bardaki "Admin Paneline Don" yerine
+        // panelin KENDI normal cikis linkine tiklarsa, impersonator_admin_id/
+        // name session'da KALMAYA devam ediyordu. brand.blade.php'deki
+        // turuncu banner SADECE bu iki anahtara baktigi icin (facility_user_id'ye
+        // degil) banner ve "geri don" butonu gorunmeye devam ediyordu - o
+        // butona basan HERKES (ayni tarayiciyi/cihazi paylasan baska biri)
+        // sifresiz dogrudan admin oturumuna donebiliyordu.
+        $request->session()->forget(['facility_user_id', 'facility_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         $request->session()->regenerate();
         $request->session()->regenerateToken();
 
@@ -86,6 +95,16 @@ class AuthController extends Controller
 
         $user = FacilityUser::findOrFail(session('facility_user_id'));
         $user->update(['password' => Hash::make($data['password']), 'must_change_password' => false]);
+
+        // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+        // yapilan denetimde bulundu - sifre degisirken mevcut oturumun
+        // session ID'si hic yenilenmiyordu (session fixation riski). Diger
+        // cihazlardaki ESKI oturumlar zaten dogal sure sonuna kadar gecerli
+        // kalmaya devam eder (bu platform Laravel'in Auth:: facade'ini degil
+        // ham session anahtarlarini kullandigi icin "tum cihazlardan cikis"
+        // ozelligi mevcut degil - bu ayri, daha buyuk bir mimari karar).
+        $request->session()->regenerate();
+        $request->session()->regenerateToken();
 
         return redirect(brand_route('facility.dashboard'))->with('success', 'Şifreniz güncellendi.');
     }

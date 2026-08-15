@@ -54,6 +54,14 @@ class SettingController extends Controller
 
         $data = $request->validate($rules);
 
+        // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+        // yapilan denetimde bulundu - regex sadece "hepsi rakam mi" kontrolu
+        // yapiyordu, ulke kodu/basindaki sifir farkini normalize etmiyordu.
+        // Admin yerel formatta ("05321234567") girerse platform geneli
+        // WhatsApp butonu/canli sohbet widget'i sessizce calismaz hale
+        // geliyordu - artik kaydedilmeden once normalize ediliyor.
+        $data['whatsapp_number'] = normalize_whatsapp_number($data['whatsapp_number']);
+
         foreach ($data as $key => $value) {
             Setting::set($key, $value);
         }

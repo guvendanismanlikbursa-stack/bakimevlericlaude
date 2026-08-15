@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\FacilityUser;
 use App\Models\FamilyUser;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 // sayfasinda goruluyordu).
 class UserController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function families(Request $request)
     {
         $query = FamilyUser::query();
@@ -36,6 +39,11 @@ class UserController extends Controller
         }
 
         $families = $query->latest()->paginate(25)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $families)) {
+            return $redirect;
+        }
+
         $brands = config('brands.brands');
 
         if ($request->ajax()) {
@@ -91,6 +99,10 @@ class UserController extends Controller
         }
 
         $facilityUsers = $query->latest()->paginate(25)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $facilityUsers)) {
+            return $redirect;
+        }
 
         if ($request->ajax()) {
             return response()->json([

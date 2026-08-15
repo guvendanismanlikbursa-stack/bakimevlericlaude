@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\ChatMessage;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $status = $request->get('status', 'open');
@@ -29,6 +32,10 @@ class ChatController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $threads)) {
+            return $redirect;
+        }
 
         $cities = ChatThread::whereNotNull('city_name')->distinct()->orderBy('city_name')->pluck('city_name');
         $brands = ChatThread::distinct()->orderBy('brand')->pluck('brand');

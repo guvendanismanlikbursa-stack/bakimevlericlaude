@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\FacilityReview;
 use Illuminate\Http\Request;
 
 class FacilityReviewController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = FacilityReview::with('facility.city', 'facility.category')->latest();
@@ -20,6 +23,11 @@ class FacilityReviewController extends Controller
         }
 
         $reviews = $query->paginate(20)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $reviews)) {
+            return $redirect;
+        }
+
         $brands = config('brands.brands');
 
         return view('admin.reviews.index', compact('reviews', 'brands'));

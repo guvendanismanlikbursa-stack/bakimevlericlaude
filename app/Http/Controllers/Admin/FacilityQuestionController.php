@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\FacilityQuestion;
 use Illuminate\Http\Request;
@@ -9,6 +10,8 @@ use Illuminate\Http\Request;
 // Moderasyon: aile sorulari/kurum cevaplari uygunsuzsa admin silebilir.
 class FacilityQuestionController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = FacilityQuestion::with('facility')->latest();
@@ -21,6 +24,11 @@ class FacilityQuestionController extends Controller
         }
 
         $questions = $query->paginate(20)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $questions)) {
+            return $redirect;
+        }
+
         $brands = config('brands.brands');
 
         return view('admin.questions.index', compact('questions', 'brands'));

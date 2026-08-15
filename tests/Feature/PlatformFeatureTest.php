@@ -3391,4 +3391,99 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('Fiyat Sayfalama Kurum', false);
     }
+
+    // 15 Agustos 2026: kullanicinin "tek seferde bulunan her seyi duzelt"
+    // talebi uzerine yapilan son genis denetimde bulundu - admin "Panelde
+    // Gor" ile bir kurum/aile hesabini goruntulerken, o panelin KENDI normal
+    // cikis linkine tiklarsa (ust bardaki "Admin Paneline Don" yerine)
+    // impersonator_admin_id/name session'da kalmaya devam ediyordu -
+    // turuncu banner ve "geri don" butonu gorunmeye devam edip, o butona
+    // basan HERKESIN sifresiz admin oturumuna donmesine izin veriyordu.
+    public function test_facility_logout_during_impersonation_clears_admin_return_access(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.users.facility-users.impersonate', $this->facilityUser))
+            ->assertRedirect();
+
+        $this->assertNotNull(session('impersonator_admin_id'), 'Impersonation basladiginda session anahtari set edilmeli.');
+
+        $this->post('/site/bakimeviara/kurum-panel/cikis')->assertRedirect();
+
+        $this->assertNull(session('impersonator_admin_id'));
+        $this->assertNull(session('impersonator_admin_name'));
+        $this->assertNull(session('facility_user_id'));
+    }
+
+    public function test_family_logout_during_impersonation_clears_admin_return_access(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.users.families.impersonate', $this->family))
+            ->assertRedirect();
+
+        $this->assertNotNull(session('impersonator_admin_id'));
+
+        $this->post('/site/bakimeviara/aile/cikis')->assertRedirect();
+
+        $this->assertNull(session('impersonator_admin_id'));
+        $this->assertNull(session('impersonator_admin_name'));
+        $this->assertNull(session('family_user_id'));
+    }
+
+    // 15 Agustos 2026: kullanicinin ayni turdeki talebi uzerine bulundu -
+    // cop kutusundan bir kurum geri yuklenince, o kuruma bagli TUM
+    // FacilityUser kayitlari kosulsuz 'active' yapiliyordu. Admin'in
+    // kotuye kullanim nedeniyle KASITLI banladigi bir hesap, kurum silinip
+    // (askiya alinip) sonra geri yuklenince sessizce tekrar aktif oluyordu.
+    public function test_trash_restore_does_not_reactivate_manually_suspended_facility_user(): void
+    {
+        $facility = $this->facility('Cop Kutusu Test Kurum', $this->childCategory, true);
+        $bannedUser = FacilityUser::create([
+            'facility_id' => $facility->id,
+            'name' => 'Kotuye Kullanici',
+            'email' => 'banli@test.local',
+            'phone' => '05559998877',
+            'password' => Hash::make('Kurum12345!'),
+            'status' => 'suspended',
+            'email_verified_at' => now(),
+        ]);
+
+        $facility->delete();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/cop-kutusu/facility/'.$facility->id.'/geri-yukle')
+            ->assertRedirect();
+
+        $this->assertSame('suspended', $bannedUser->fresh()->status, 'Kasitli banli hesap otomatik aktive edilmemeli.');
+    }
+
+    // 15 Agustos 2026: ayni denetim turunde bulundu - Cop Kutusu son
+    // sayfadaki tek kaydi geri yukleyip/silince back() ile ayni (artik bos)
+    // sayfaya donuyordu, admin "kayit yok" saniyordu.
+    public function test_trash_index_redirects_out_of_range_page_to_last_valid_page(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->facility('Cop Sayfalama Kurum '.$i, $this->childCategory, true)->delete();
+        }
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/cop-kutusu?type=facility&page=99');
+
+        $response->assertRedirect();
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get($response->headers->get('Location'))
+            ->assertOk();
+    }
+
+    // 15 Agustos 2026: ayni denetim turunde bulundu - WhatsApp numarasi
+    // sadece "hepsi rakam mi" diye kontrol ediliyordu, yerel format
+    // ("05321234567") kaydedilince platform geneli WhatsApp butonu/canli
+    // sohbet widget'i sessizce calismaz hale geliyordu (wa.me/ gecersiz
+    // numara formati). Artik kaydedilmeden once normalize ediliyor.
+    public function test_whatsapp_number_is_normalized_to_international_format_on_save(): void
+    {
+        $this->assertSame('905321234567', normalize_whatsapp_number('05321234567'));
+        $this->assertSame('905321234567', normalize_whatsapp_number('+90 532 123 45 67'));
+        $this->assertSame('905321234567', normalize_whatsapp_number('905321234567'));
+        $this->assertSame('905321234567', normalize_whatsapp_number('5321234567'));
+    }
 }

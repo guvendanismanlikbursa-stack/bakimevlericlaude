@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\District;
@@ -18,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class FacilityController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     private const MAX_GALLERY_IMAGES = 10;
     public function index(Request $request)
     {
@@ -25,6 +28,10 @@ class FacilityController extends Controller
 
         $facilities = $query->latest()->paginate(15)->withQueryString();
         $ownershipTypes = ['ozel' => 'Özel', 'kamu' => 'Kamu', 'belediye' => 'Belediye', 'vakif' => 'Vakıf'];
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $facilities)) {
+            return $redirect;
+        }
 
         // 12 Agustos 2026: admin panelindeki arama/filtre kutulari da (aynen
         // site tarafi gibi) sayfa yenilenmeden aninda sonuc guncelliyor -

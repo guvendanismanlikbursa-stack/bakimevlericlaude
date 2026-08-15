@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\BalanceLog;
 use App\Models\WalletTopup;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class WalletTopupController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = WalletTopup::with('facility');
@@ -21,6 +24,10 @@ class WalletTopupController extends Controller
         }
 
         $topups = $query->latest()->paginate(15)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $topups)) {
+            return $redirect;
+        }
 
         return view('admin.topups.index', compact('topups'));
     }

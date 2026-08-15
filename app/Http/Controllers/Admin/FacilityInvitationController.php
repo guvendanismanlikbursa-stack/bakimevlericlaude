@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Facility;
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
  */
 class FacilityInvitationController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     private const GROUPS = [
         // 28 Temmuz 2026: kullanici bir il+kategori sectiginde "bu ildeki
         // TUM kurumlari gormek" bekliyordu ('Kurumlar' sayfasindaki gibi),
@@ -86,6 +89,10 @@ class FacilityInvitationController extends Controller
         }
 
         $facilities = $query->latest()->paginate(20)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $facilities)) {
+            return $redirect;
+        }
 
         $counts = $baseQuery()
             ->selectRaw('invitation_status, count(*) as total')

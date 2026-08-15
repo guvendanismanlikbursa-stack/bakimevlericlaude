@@ -34,8 +34,10 @@
     <div class="font-black text-gray-950 mb-3">Yeni ekip üyesi ekle</div>
     <form method="POST" action="{{ brand_route('facility.team.store') }}" class="space-y-3">
       @csrf
-      <input type="text" name="name" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2 w-full">
-      <input type="email" name="email" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
+      <label for="team-name" class="sr-only">Ad Soyad</label>
+      <input type="text" id="team-name" name="name" value="{{ old('name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2 w-full">
+      <label for="team-email" class="sr-only">E-posta</label>
+      <input type="email" id="team-email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
       <button class="btn-primary rounded-lg px-4 py-2 font-black">Ekip Üyesi Ekle</button>
       <p class="text-xs text-gray-400">Giriş bilgileri otomatik olarak e-posta ile gönderilir.</p>
     </form>

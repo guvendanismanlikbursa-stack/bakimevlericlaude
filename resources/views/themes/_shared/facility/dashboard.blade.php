@@ -142,7 +142,7 @@
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Ücretsiz Hak</div>
-      <div class="text-2xl font-bold mt-1">{{ $facility->free_quote_credits }}</div>
+      <div class="text-2xl font-bold mt-1">{{ number_format($facility->free_quote_credits, 0, ',', '.') }}</div>
     </div>
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Bakiye</div>
@@ -150,15 +150,15 @@
     </div>
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Doğrudan Talep</div>
-      <div class="text-2xl font-bold mt-1">{{ $stats['direct_requests'] }}</div>
+      <div class="text-2xl font-bold mt-1">{{ number_format($stats['direct_requests'], 0, ',', '.') }}</div>
     </div>
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Uygun Talep</div>
-      <div class="text-2xl font-bold mt-1">{{ $stats['broadcast_leads'] }}</div>
+      <div class="text-2xl font-bold mt-1">{{ number_format($stats['broadcast_leads'], 0, ',', '.') }}</div>
     </div>
     <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
       <div class="text-xs text-gray-500">Tekliflerim</div>
-      <div class="text-2xl font-bold mt-1">{{ $stats['sent_quotes'] }}</div>
+      <div class="text-2xl font-bold mt-1">{{ number_format($stats['sent_quotes'], 0, ',', '.') }}</div>
     </div>
     <a href="{{ brand_route('facility.wallet.index') }}" class="bg-primary text-white rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Bakiye Yükle →</a>
     <a href="{{ brand_route('facility.packages.index') }}" class="border border-primary text-primary rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Paketler →</a>
@@ -209,15 +209,15 @@
           <div class="flex justify-between gap-4"><span class="text-gray-500">Yayın</span><span class="font-semibold">{{ $facility->is_published ? 'Yayında' : 'Pasif' }}</span></div>
           <div class="flex justify-between gap-4"><span class="text-gray-500">Sahiplenme</span><span class="font-semibold">{{ $facility->is_claimed ? 'Onaylı' : 'Onaysız' }}</span></div>
           <div class="flex justify-between gap-4"><span class="text-gray-500">Kapasite</span><span class="font-semibold">{{ $facility->capacity ?: '-' }}</span></div>
-          <div class="flex justify-between gap-4"><span class="text-gray-500">Fiyat Aralığı</span><span class="font-semibold text-right">@if($facility->price_min || $facility->price_max) {{ number_format($facility->price_min,0,',','.') }}₺ - {{ number_format($facility->price_max,0,',','.') }}₺ @else - @endif</span></div>
+          <div class="flex justify-between gap-4"><span class="text-gray-500">Fiyat Aralığı</span><span class="font-semibold text-right">@if($facility->price_min && $facility->price_max) {{ number_format($facility->price_min,0,',','.') }}₺ - {{ number_format($facility->price_max,0,',','.') }}₺ @elseif($facility->price_min) {{ number_format($facility->price_min,0,',','.') }}₺'den başlıyor @else - @endif</span></div>
         </div>
       </div>
 
       <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
         <h2 class="font-bold mb-3">Teklif Özeti</h2>
         <div class="grid grid-cols-2 gap-3 text-sm">
-          <div class="rounded-lg bg-gray-50 p-3"><div class="text-gray-500 text-xs">Bekleyen</div><div class="font-bold text-lg">{{ $stats['pending_quotes'] }}</div></div>
-          <div class="rounded-lg bg-green-50 p-3"><div class="text-gray-500 text-xs">Kabul</div><div class="font-bold text-lg">{{ $stats['accepted_quotes'] }}</div></div>
+          <div class="rounded-lg bg-gray-50 p-3"><div class="text-gray-500 text-xs">Bekleyen</div><div class="font-bold text-lg">{{ number_format($stats['pending_quotes'], 0, ',', '.') }}</div></div>
+          <div class="rounded-lg bg-green-50 p-3"><div class="text-gray-500 text-xs">Kabul</div><div class="font-bold text-lg">{{ number_format($stats['accepted_quotes'], 0, ',', '.') }}</div></div>
         </div>
       </div>
     </aside>

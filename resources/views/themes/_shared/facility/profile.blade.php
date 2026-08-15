@@ -42,43 +42,43 @@
   <form method="POST" action="{{ brand_route('facility.profile.update') }}" class="bg-white rounded-xl shadow-sm p-6 grid md:grid-cols-2 gap-4 mb-8">
     @csrf @method('PUT')
     <div class="md:col-span-2">
-      <label class="text-sm font-medium">Kurum Adı</label>
-      <input type="text" name="name" value="{{ old('name', $facility->name) }}" required class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-name" class="text-sm font-medium">Kurum Adı</label>
+      <input type="text" id="profile-name" name="name" value="{{ old('name', $facility->name) }}" required class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div>
-      <label class="text-sm font-medium">Şehir</label>
-      <select name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+      <label for="profile-city" class="text-sm font-medium">Şehir</label>
+      <select id="profile-city" name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
         @foreach($cities as $city)<option value="{{ $city->id }}" @selected(old('city_id', $facility->city_id) == $city->id)>{{ $city->name }}</option>@endforeach
       </select>
     </div>
     <div>
-      <label class="text-sm font-medium">İlçe</label>
-      <input type="text" name="district" value="{{ old('district', $facility->district) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-district" class="text-sm font-medium">İlçe</label>
+      <input type="text" id="profile-district" name="district" value="{{ old('district', $facility->district) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div>
-      <label class="text-sm font-medium">Telefon</label>
-      <input type="text" name="phone" value="{{ old('phone', $facility->phone) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-phone" class="text-sm font-medium">Telefon</label>
+      <input type="text" id="profile-phone" name="phone" value="{{ old('phone', $facility->phone) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div>
-      <label class="text-sm font-medium">Kapasite</label>
-      <input type="number" name="capacity" value="{{ old('capacity', $facility->capacity) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-capacity" class="text-sm font-medium">Kapasite</label>
+      <input type="number" id="profile-capacity" name="capacity" value="{{ old('capacity', $facility->capacity) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div class="md:col-span-2">
-      <label class="text-sm font-medium">Adres</label>
-      <input type="text" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-address" class="text-sm font-medium">Adres</label>
+      <input type="text" id="profile-address" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div class="md:col-span-2">
-      <label class="text-sm font-medium">Açıklama</label>
-      <textarea name="description" rows="4" class="border rounded-lg px-3 py-2 w-full mt-1">{{ old('description', $facility->description) }}</textarea>
+      <label for="profile-description" class="text-sm font-medium">Açıklama</label>
+      <textarea id="profile-description" name="description" rows="4" class="border rounded-lg px-3 py-2 w-full mt-1">{{ old('description', $facility->description) }}</textarea>
     </div>
     <div>
-      <label class="text-sm font-medium">Min Fiyat <span class="align-middle">@include('themes._shared.partials.segment-info-icon', ['categories' => [$facility->category], 'id' => 'segment-info-facility-profile'])</span></label>
-      <input type="number" step="0.01" name="price_min" value="{{ old('price_min', $facility->price_min) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-price-min" class="text-sm font-medium">Min Fiyat <span class="align-middle">@include('themes._shared.partials.segment-info-icon', ['categories' => [$facility->category], 'id' => 'segment-info-facility-profile'])</span></label>
+      <input type="number" step="0.01" id="profile-price-min" name="price_min" value="{{ old('price_min', $facility->price_min) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
       <p class="text-xs text-gray-400 mt-1">Fiyat aralığınız hangi segment(ler)e girdiğini görmek için yukarıdaki ? işaretine tıklayın.</p>
     </div>
     <div>
-      <label class="text-sm font-medium">Maks Fiyat</label>
-      <input type="number" step="0.01" name="price_max" value="{{ old('price_max', $facility->price_max) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-price-max" class="text-sm font-medium">Maks Fiyat</label>
+      <input type="number" step="0.01" id="profile-price-max" name="price_max" value="{{ old('price_max', $facility->price_max) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
 
     @if($serviceSection)
@@ -115,8 +115,8 @@
     @endif
 
     <div class="md:col-span-2">
-      <label class="text-sm font-medium">Ek hizmetler (virgülle ayırın)</label>
-      <input type="text" name="services_raw" value="{{ old('services_raw', $selectedServices->diff($serviceSection['features'] ?? [])->implode(', ')) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <label for="profile-services-raw" class="text-sm font-medium">Ek hizmetler (virgülle ayırın)</label>
+      <input type="text" id="profile-services-raw" name="services_raw" value="{{ old('services_raw', $selectedServices->diff($serviceSection['features'] ?? [])->implode(', ')) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
     <div class="md:col-span-2">
       <button class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold">Kaydet</button>

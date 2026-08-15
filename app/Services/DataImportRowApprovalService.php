@@ -232,9 +232,23 @@ class DataImportRowApprovalService
                 && $this->normalizeAddress($f->address) === $normalizedAddress);
     }
 
+    // 15 Agustos 2026: bkz. DataExtractorImportService::normalizePhone() ayni
+    // tarihli yorum - ulke kodu/basindaki sifir farki mukerrer kontrolunu
+    // atlatiyordu, classify_phone_type() ile ayni on-ek temizleme uygulandi.
     private function normalizePhone(?string $phone): string
     {
-        return preg_replace('/\D+/', '', (string) $phone) ?: '';
+        $digits = preg_replace('/\D+/', '', (string) $phone) ?: '';
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+            $digits = substr($digits, 2);
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        }
+
+        return $digits;
     }
 
     private function normalizeName(?string $name): string

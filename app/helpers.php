@@ -631,6 +631,35 @@ if (! function_exists('facility_invitation_message_default')) {
     }
 }
 
+if (! function_exists('normalize_whatsapp_number')) {
+    /**
+     * 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+     * yapilan denetimde bulundu - platform geneli WhatsApp butonu/canli
+     * sohbet widget'i numarayi HIC normalize etmeden dogrudan wa.me/ icine
+     * basiyordu. Admin ayarlardan yerel formatta ("05321234567") girerse
+     * wa.me linki WhatsApp'ta "gecersiz numara" verir, koseki WhatsApp
+     * butonu ve canli sohbet widget'i sessizce (hicbir hata/log uretmeden)
+     * tamamen calismaz hale gelir. facility_whatsapp_url()'deki AYNI
+     * on-ek temizleme mantigi burada genel bir helper'a cikarildi.
+     */
+    function normalize_whatsapp_number(?string $raw): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $raw) ?: '';
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+            return $digits;
+        }
+        if (str_starts_with($digits, '0')) {
+            return '90'.substr($digits, 1);
+        }
+
+        return '90'.$digits;
+    }
+}
+
 if (! function_exists('facility_whatsapp_url')) {
     function facility_whatsapp_url(\App\Models\Facility $facility): ?string
     {
@@ -638,14 +667,7 @@ if (! function_exists('facility_whatsapp_url')) {
             return null;
         }
 
-        $digits = preg_replace('/\D+/', '', (string) $facility->phone);
-        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
-            // zaten ulke koduyla birlikte
-        } elseif (str_starts_with($digits, '0')) {
-            $digits = '90'.substr($digits, 1);
-        } else {
-            $digits = '90'.$digits;
-        }
+        $digits = normalize_whatsapp_number($facility->phone);
 
         return 'https://wa.me/'.$digits.'?text='.rawurlencode(facility_invitation_message($facility));
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\NearbySearch;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 // listeler - admin talep yogunlugunun gercekte nerelerden geldigini gorebilsin.
 class NearbySearchController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $brands = config('brands.brands');
@@ -20,6 +23,10 @@ class NearbySearchController extends Controller
         }
 
         $searches = $query->paginate(30)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $searches)) {
+            return $redirect;
+        }
 
         $cityCounts = NearbySearch::query()
             ->when($request->filled('brand'), fn ($q) => $q->where('brand', $request->brand))

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Mail\FacilityRegistrationApprovedMail;
 use App\Mail\FacilityRegistrationRevisionRequestedMail;
@@ -19,6 +20,8 @@ use Illuminate\Support\Str;
 
 class FacilityRegistrationController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = FacilityRegistration::with(['category', 'city']);
@@ -30,6 +33,10 @@ class FacilityRegistrationController extends Controller
         }
 
         $registrations = $query->latest()->paginate(15)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $registrations)) {
+            return $redirect;
+        }
 
         return view('admin.registrations.index', compact('registrations'));
     }

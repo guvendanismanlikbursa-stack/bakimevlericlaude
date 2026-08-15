@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Mail\FacilityClaimApprovedMail;
 use App\Models\BalanceLog;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 
 class FacilityClaimController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = FacilityClaim::with('facility');
@@ -27,6 +30,10 @@ class FacilityClaimController extends Controller
         }
 
         $claims = $query->latest()->paginate(15)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $claims)) {
+            return $redirect;
+        }
 
         return view('admin.claims.index', compact('claims'));
     }

@@ -16,7 +16,8 @@
         @else
           <form method="POST" action="{{ brand_route('facility.questions.answer', $q) }}" class="flex gap-2">
             @csrf
-            <textarea name="answer" rows="2" required placeholder="Cevabınızı yazın..." class="border rounded-lg px-3 py-2 text-sm flex-1"></textarea>
+            <label for="answer-{{ $q->id }}" class="sr-only">Cevabınız</label>
+            <textarea id="answer-{{ $q->id }}" name="answer" rows="2" required placeholder="Cevabınızı yazın..." class="border rounded-lg px-3 py-2 text-sm flex-1"></textarea>
             <button class="btn-primary rounded-lg px-4 text-sm font-black">Yanıtla</button>
           </form>
         @endif

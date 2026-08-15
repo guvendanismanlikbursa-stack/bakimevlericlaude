@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\FamilyUser;
 use App\Models\SiteVisit;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 // "Sitelere giris sayilari" ve "kayit olan ailelerin konumlari" - tek ekran.
 class SiteStatsController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $brands = config('brands.brands');
@@ -44,6 +47,10 @@ class SiteStatsController extends Controller
         }
 
         $families = (clone $familiesQuery)->latest()->paginate(25)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $families)) {
+            return $redirect;
+        }
 
         $cityCounts = (clone $familiesQuery)
             ->whereNotNull('signup_city_name')

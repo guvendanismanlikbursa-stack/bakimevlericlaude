@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\AdminEvent;
 use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = AdminEvent::with('admin')->latest();
@@ -21,6 +24,11 @@ class AuditLogController extends Controller
         }
 
         $events = $query->paginate(30)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $events)) {
+            return $redirect;
+        }
+
         $eventTypes = AdminEvent::query()->distinct()->orderBy('event_type')->pluck('event_type');
 
         return view('admin.audit-log.index', compact('events', 'eventTypes'));

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\VisitRequest;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Mail;
 
 class VisitRequestController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = VisitRequest::with('facility.city', 'facility.category')->latest();
@@ -25,6 +28,11 @@ class VisitRequestController extends Controller
         }
 
         $visitRequests = $query->paginate(20)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $visitRequests)) {
+            return $redirect;
+        }
+
         $brands = config('brands.brands');
 
         return view('admin.visit-requests.index', compact('visitRequests', 'brands'));

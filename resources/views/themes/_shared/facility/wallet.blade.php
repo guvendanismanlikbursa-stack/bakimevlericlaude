@@ -41,10 +41,13 @@
        submit akisini bozmadan cift tiklamayi engeller. --}}
   <form method="POST" action="{{ brand_route('facility.wallet.store') }}" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm p-6 space-y-3 mb-8" onsubmit="this.querySelector('button[type=submit]').disabled=true; this.querySelector('button[type=submit]').textContent='Gönderiliyor...';">
     @csrf
-    <input type="number" step="0.01" name="amount" placeholder="Yatırdığınız Tutar (₺)" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="file" name="receipt" accept="image/*,.pdf" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="wallet-amount" class="sr-only">Yatırdığınız Tutar (₺)</label>
+    <input type="number" step="0.01" id="wallet-amount" name="amount" value="{{ old('amount') }}" placeholder="Yatırdığınız Tutar (₺)" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="wallet-receipt" class="sr-only">Dekont dosyası</label>
+    <input type="file" id="wallet-receipt" name="receipt" accept="image/*,.pdf" required class="border rounded-lg px-3 py-2 w-full">
     <p class="text-xs text-gray-400">Dekont görseli (jpg/png/webp) veya PDF olarak yüklenebilir.</p>
-    <input type="text" name="note" placeholder="Not (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+    <label for="wallet-note" class="sr-only">Not (opsiyonel)</label>
+    <input type="text" id="wallet-note" name="note" value="{{ old('note') }}" placeholder="Not (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
     <button type="submit" class="btn-primary px-6 py-2 rounded-lg font-semibold">Dekontu Gönder</button>
   </form>
 

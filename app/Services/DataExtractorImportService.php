@@ -212,9 +212,28 @@ class DataExtractorImportService
                 && $this->normalizeAddress($f->address) === $normalizedAddress);
     }
 
+    // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+    // yapilan denetimde bulundu - eskiden sadece rakam disini siliyordu,
+    // ulke kodu/basindaki sifir farkini hesaba katmiyordu. "0532 123 45 67"
+    // ile "+90 532 123 45 67" AYNI numara oldugu halde farkli normalize
+    // sonucu uretip mukerrer kontrolunu atlatiyordu - ayni kurum Google
+    // Maps'ten farkli aramalarda farkli telefon formatiyla cekilirse iki
+    // kez import edilebiliyordu. classify_phone_type() helper'indaki AYNI
+    // on-ek temizleme mantigi burada da uygulandi.
     private function normalizePhone(?string $phone): string
     {
-        return preg_replace('/\D+/', '', (string) $phone) ?: '';
+        $digits = preg_replace('/\D+/', '', (string) $phone) ?: '';
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+            $digits = substr($digits, 2);
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        }
+
+        return $digits;
     }
 
     /**

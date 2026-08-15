@@ -31,7 +31,13 @@ class DataQualityService
         'sağlık kabini', 'özel güvenlik eğitim', 'akademi', 'kurs merkezi', 'dershane',
     ];
 
-    private const CARE_SELF_LABEL_KEYWORDS = ['huzurevi', 'yaşlı bakım', 'yasli bakim'];
+    // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+    // yapilan denetimde bulundu - "huzurevi" bitisik yazimi araniyordu,
+    // Turkce'de cok yaygin olan "Huzur Evi" (araya boşluklu) yazim varyanti
+    // bu korumadan gecmiyordu - boyle isimlendirilmis gercek bir huzurevi,
+    // ismi tesadufen bir MISCATEGORY_RULES anahtar kelimesini de icerirse
+    // yanlis kategoriye onerilebiliyordu.
+    private const CARE_SELF_LABEL_KEYWORDS = ['huzurevi', 'huzur evi', 'yaşlı bakım', 'yasli bakim'];
 
     public function guessRealCategory(string $name): ?string
     {

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
 use Illuminate\Http\Request;
 
 class ContactMessageController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = ContactMessage::query();
@@ -17,6 +20,11 @@ class ContactMessageController extends Controller
         }
 
         $messages = $query->latest()->paginate(20)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $messages)) {
+            return $redirect;
+        }
+
         $brands = config('brands.brands');
 
         return view('admin.contact-messages.index', compact('messages', 'brands'));

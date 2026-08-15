@@ -40,6 +40,10 @@ class ProfileController extends Controller
 
         if (! empty($data['password'])) {
             $family->update(['password' => Hash::make($data['password'])]);
+            // 15 Agustos 2026: bkz. Facility\AuthController::changePassword()
+            // ayni tarihli yorum - sifre degisirken session ID yenilenmiyordu.
+            $request->session()->regenerate();
+            $request->session()->regenerateToken();
         }
 
         session(['family_user_name' => $family->name]);

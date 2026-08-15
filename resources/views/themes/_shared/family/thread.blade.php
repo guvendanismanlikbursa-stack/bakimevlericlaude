@@ -18,6 +18,7 @@
 
   <form id="js-thread-form" method="POST" action="{{ brand_route('family.thread.store', $offerRequest) }}" class="flex gap-2">
     @csrf
+    <label for="js-thread-input" class="sr-only">Mesajınız</label>
     <input id="js-thread-input" type="text" name="body" placeholder="Mesajınızı yazın..." required class="border rounded-lg px-3 py-2 flex-1">
     <button class="btn-primary px-5 py-2 rounded-lg font-semibold">Gönder</button>
   </form>

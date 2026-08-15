@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\FacilityUser;
 use App\Models\FamilyUser;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class OfferRequestController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         // Admin liste ekraninda sadece basvurunun kendisini (form) ve
@@ -32,6 +35,11 @@ class OfferRequestController extends Controller
         }
 
         $requests = $query->latest()->paginate(20)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $requests)) {
+            return $redirect;
+        }
+
         $brands = config('brands.brands');
 
         return view('admin.offer-requests.index', compact('requests', 'brands'));

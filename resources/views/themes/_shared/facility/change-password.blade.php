@@ -6,8 +6,10 @@
   <p class="text-gray-500 text-sm mb-6">Güvenlik için ilk girişte size e-posta ile gönderilen geçici şifreyi değiştirmeniz gerekiyor.</p>
   <form method="POST" action="{{ brand_route('facility.password.update') }}" class="bg-white p-6 rounded-xl shadow-sm space-y-4">
     @csrf
-    <input type="password" name="password" placeholder="Yeni Şifre" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="password" name="password_confirmation" placeholder="Yeni Şifre (tekrar)" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="new-password" class="sr-only">Yeni Şifre</label>
+    <input type="password" id="new-password" name="password" placeholder="Yeni Şifre" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="new-password-confirmation" class="sr-only">Yeni Şifre (tekrar)</label>
+    <input type="password" id="new-password-confirmation" name="password_confirmation" placeholder="Yeni Şifre (tekrar)" required class="border rounded-lg px-3 py-2 w-full">
     <button class="btn-primary w-full py-2 rounded-lg font-semibold">Şifreyi Kaydet</button>
   </form>
 </div>

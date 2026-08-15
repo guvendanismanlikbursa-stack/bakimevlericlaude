@@ -24,14 +24,16 @@
             @csrf
             <details>
               <summary class="text-xs font-black text-primary cursor-pointer">Yanıtı düzenle</summary>
-              <textarea name="facility_reply" rows="3" maxlength="1000" class="border rounded-lg px-3 py-2 w-full mt-2 text-sm">{{ $review->facility_reply }}</textarea>
+              <label for="reply-edit-{{ $review->id }}" class="sr-only">Yanıtınız</label>
+              <textarea id="reply-edit-{{ $review->id }}" name="facility_reply" rows="3" maxlength="1000" class="border rounded-lg px-3 py-2 w-full mt-2 text-sm">{{ $review->facility_reply }}</textarea>
               <button class="btn-primary rounded-lg px-4 py-2 text-sm font-black mt-2">Yanıtı Güncelle</button>
             </details>
           </form>
         @else
           <form method="POST" action="{{ brand_route('facility.reviews.reply', $review) }}" class="mt-4">
             @csrf
-            <textarea name="facility_reply" rows="3" maxlength="1000" placeholder="Bu yoruma kamuya açık bir yanıt yazın..." required class="border rounded-lg px-3 py-2 w-full text-sm"></textarea>
+            <label for="reply-new-{{ $review->id }}" class="sr-only">Yanıtınız</label>
+            <textarea id="reply-new-{{ $review->id }}" name="facility_reply" rows="3" maxlength="1000" placeholder="Bu yoruma kamuya açık bir yanıt yazın..." required class="border rounded-lg px-3 py-2 w-full text-sm"></textarea>
             <button class="btn-primary rounded-lg px-4 py-2 text-sm font-black mt-2">Yanıtla</button>
           </form>
         @endif

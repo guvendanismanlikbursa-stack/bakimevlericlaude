@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\WhatsappClick;
 use Illuminate\Http\Request;
 
 class WhatsappClickController extends Controller
 {
+    use RedirectsOutOfRangePagination;
+
     public function index(Request $request)
     {
         $query = WhatsappClick::query();
@@ -17,6 +20,11 @@ class WhatsappClickController extends Controller
         }
 
         $clicks = $query->latest()->paginate(30)->withQueryString();
+
+        if ($redirect = $this->redirectIfPageOutOfRange($request, $clicks)) {
+            return $redirect;
+        }
+
         $brands = config('brands.brands');
 
         return view('admin.whatsapp-clicks.index', compact('clicks', 'brands'));
