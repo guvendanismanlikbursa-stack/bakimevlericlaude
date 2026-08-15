@@ -82,10 +82,18 @@
   @endif
 </form>
 
-@include('themes._shared.partials.location-filter-script')
-
 <div id="js-admin-facility-results">
   @include('admin.facilities._results', ['facilities' => $facilities, 'ownershipTypes' => $ownershipTypes])
 </div>
+
+{{-- 15 Agustos 2026: kullanicinin bildirdigi hata - bu include daha once
+     js-admin-facility-results div'inden ONCE geliyordu. Script senkron
+     calistigi icin document.getElementById('js-admin-facility-results')
+     o an DOM'da HENUZ olusmamis oluyordu, resultsEl null donuyor, runFilter()
+     "if (!resultsEl) return" ile SESSIZCE hicbir sey yapmadan cikiyordu -
+     arama kutusu ve tum secim filtreleri tikliyor/yaziliyor ama hicbir
+     sonuc guncellenmiyordu (public sitedeki ayni partial dogru sirada,
+     bu yuzden orada sorun yoktu). Include artik sonuc div'inden SONRA. --}}
+@include('themes._shared.partials.location-filter-script')
 @endsection
 
