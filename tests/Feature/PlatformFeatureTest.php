@@ -2798,6 +2798,37 @@ class PlatformFeatureTest extends TestCase
         $this->assertNotNull(\App\Models\Facility::where('slug', $slug)->first(), 'Eloquent (soft-delete farkinda) sorgusu artik kaydi gormeli.');
     }
 
+    // 15 Agustos 2026: kullanicinin talebi - "testler hata bulunca otomatik
+    // duzeltebilecek script" icin CheckUserFlows'un basarisiz akislarda
+    // biraktigi eski test-veri kalintilarini (qatest.daily.*@example.com)
+    // temizleyen dar kapsamli komut (bkz. App\Console\Commands\
+    // CleanupStaleQaDebris). 2 gunden ESKI kalinti silinmeli, 2 GUNDEN
+    // YENI (henuz inceleme penceresinde olan) kalinti korunmali.
+    public function test_cleanup_stale_qa_debris_removes_only_old_leftovers(): void
+    {
+        DB::table('family_users')->insert([
+            'name' => 'Eski Kalinti', 'email' => 'qatest.daily.bakimevleri.20260101@example.com',
+            'phone' => '05320000000', 'password' => bcrypt('x'), 'status' => 'active',
+            'created_at' => now()->subDays(5), 'updated_at' => now()->subDays(5),
+        ]);
+        DB::table('family_users')->insert([
+            'name' => 'Taze Kalinti', 'email' => 'qatest.daily.bakimevleri.'.now()->format('Ymd').'@example.com',
+            'phone' => '05320000000', 'password' => bcrypt('x'), 'status' => 'active',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('family_users')->insert([
+            'name' => 'Gercek Aile', 'email' => 'gercek.aile@example.com',
+            'phone' => '05320000000', 'password' => bcrypt('x'), 'status' => 'active',
+            'created_at' => now()->subDays(5), 'updated_at' => now()->subDays(5),
+        ]);
+
+        $this->artisan('platform:cleanup-stale-qa-debris')->assertSuccessful();
+
+        $this->assertDatabaseMissing('family_users', ['email' => 'qatest.daily.bakimevleri.20260101@example.com']);
+        $this->assertDatabaseHas('family_users', ['email' => 'qatest.daily.bakimevleri.'.now()->format('Ymd').'@example.com']);
+        $this->assertDatabaseHas('family_users', ['email' => 'gercek.aile@example.com']);
+    }
+
     public function test_platform_error_plain_explanation_translates_known_patterns(): void
     {
         $raceError = \App\Models\PlatformError::create([

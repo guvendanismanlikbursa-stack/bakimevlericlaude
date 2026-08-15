@@ -34,6 +34,14 @@ Schedule::command('gallery:check-health')->dailyAt('09:00');
 // tamamlansin.
 Schedule::command('platform:check-user-flows')->dailyAt('08:45');
 
+// 15 Agustos 2026: kullanicinin talebi - "testler hata bulunca otomatik
+// duzeltebilecek script" icin bilerek DAR kapsamli bir cozum: sadece
+// CheckUserFlows'un basarisiz akislarda inceleme icin biraktigi eski
+// test-veri kalintilarini (qatest.daily.*@example.com, 2 gunden eski)
+// temizler - gercek kod hatalarina dokunmaz (bkz. App\Console\Commands\
+// CleanupStaleQaDebris). Gunluk kontrolden sonra, haftada bir yeterli.
+Schedule::command('platform:cleanup-stale-qa-debris')->weeklyOn(1, '08:00');
+
 // 12 Agustos 2026: kullanicinin talebi - kurum performans panelindeki
 // "gecen aya gore" trend gorunumu icin her gece kurumlarin o gunku
 // goruntulenme/favori/talep/teklif sayilarini kaydeder (bkz.
