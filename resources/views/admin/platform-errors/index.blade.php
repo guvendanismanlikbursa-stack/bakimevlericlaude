@@ -26,6 +26,9 @@
           <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ $error->created_at->format('d.m.Y H:i') }}{{ $error->title && str_contains($error->title, '—') ? ' · '.trim(explode('—', $error->title)[1]) : '' }}</div>
           <div class="font-bold text-gray-900">{{ $explanation['summary'] }}</div>
           <p class="text-sm text-gray-600 mt-1">{{ $explanation['detail'] }}</p>
+          @if($error->resolved_at)
+            <p class="text-xs text-green-700 font-semibold mt-1">✓ Çözüldü ({{ $error->resolved_at->format('d.m.Y H:i') }}) — isterseniz "Sil" ile listeden kaldırabilirsiniz.</p>
+          @endif
         </div>
         <div class="flex gap-2 shrink-0">
           @unless($error->resolved_at)
