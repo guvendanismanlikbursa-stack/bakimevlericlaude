@@ -49,8 +49,11 @@ class FacilityCategoryController extends Controller
 
     public function destroy(FacilityCategory $category)
     {
-        if ($category->facilities()->exists()) {
-            return back()->withErrors(['category' => 'Bu kategoriye bağlı kurumlar var.']);
+        // 15 Agustos 2026: bkz. Admin\CityController::destroy ayni tarihli
+        // yorum - ayni risk burada da vardi (facility_category_id FK'si de
+        // cascadeOnDelete), cop kutusundaki kurumlar gorulmuyordu.
+        if ($category->facilities()->withTrashed()->exists()) {
+            return back()->withErrors(['category' => 'Bu kategoriye bağlı kurumlar var (çöp kutusundakiler dahil).']);
         }
 
         $category->delete();

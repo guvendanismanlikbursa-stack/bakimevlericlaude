@@ -47,8 +47,18 @@ class CityController extends Controller
 
     public function destroy(City $city)
     {
-        if ($city->facilities()->exists()) {
-            return back()->withErrors(['city' => 'Bu şehre bağlı kurumlar var, önce onları taşıyın/silin.']);
+        // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+        // yapilan denetimde bulundu - facilities.city_id FK'si cascadeOnDelete
+        // (bkz. migration), yani bu sehir silinirse MySQL o sehirdeki TUM
+        // kurumlari (gorseller/yorumlar/kurum hesaplari dahil, zincirleme
+        // cascade ile) fiziksel olarak siler - Eloquent'i hic gormeden.
+        // exists() kontrolu Facility::SoftDeletes kullandigi icin COP
+        // KUTUSUNDAKI (soft-silinmis, hala geri yuklenebilir) kurumlari
+        // GORMUYORDU - bir sehirdeki tum kurumlar cop kutusundaysa "bagli
+        // kurum yok" denip sehir silinebiliyordu, bu da cop kutusundaki o
+        // kurumlarin GERI DONDURULEMEZ sekilde kaybolmasina yol aciyordu.
+        if ($city->facilities()->withTrashed()->exists()) {
+            return back()->withErrors(['city' => 'Bu şehre bağlı kurumlar var (çöp kutusundakiler dahil), önce onları taşıyın/kalıcı silin.']);
         }
 
         $city->delete();

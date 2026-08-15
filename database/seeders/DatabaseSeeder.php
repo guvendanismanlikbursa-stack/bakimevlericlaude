@@ -228,7 +228,7 @@ class DatabaseSeeder extends Seeder
     private function legalPages(string $domain): array
     {
         $kvkkBody = '<h2>1. Veri Sorumlusu</h2>'
-            .'<p>İşbu Aydınlatma Metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, '.$domain.' ("Platform") üzerinden topladığımız kişisel verileriniz hakkında sizi bilgilendirmek amacıyla, veri sorumlusu sıfatıyla Bakım Platformu A.Ş. tarafından hazırlanmıştır.</p>'
+            .'<p>İşbu Aydınlatma Metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, '.$domain.' ("Platform") üzerinden topladığımız kişisel verileriniz hakkında sizi bilgilendirmek amacıyla, veri sorumlusu sıfatıyla Güven Bakım Hizmetleri tarafından hazırlanmıştır.</p>'
             .'<h2>2. İşlenen Kişisel Veri Kategorileri</h2>'
             .'<ul>'
             .'<li><strong>Kimlik ve iletişim bilgileri:</strong> ad-soyad, e-posta adresi, telefon numarası.</li>'
@@ -238,6 +238,7 @@ class DatabaseSeeder extends Seeder
             .'<li><strong>Finansal veriler:</strong> kurum kullanıcıları için banka havale/EFT dekontu görseli, bakiye/kredi hareket geçmişi (kart bilgisi alınmaz, ödemeler doğrudan banka havalesi ile yapılır).</li>'
             .'<li><strong>Belge verileri:</strong> kurum sahiplenme başvurusunda yüklenen kimlik/yetki belgesi görselleri.</li>'
             .'<li><strong>Teknik veriler:</strong> IP adresi, tarayıcı bilgisi, ziyaret/log kayıtları.</li>'
+            .'<li><strong>Bildirim verileri:</strong> tarayıcınızdan izin vermeniz hâlinde, tarayıcı bildirimi (push notification) gönderebilmek için gereken abonelik bilgisi (uç nokta adresi ve şifreleme anahtarları).</li>'
             .'</ul>'
             .'<h2>3. Kişisel Verilerin İşlenme Amaçları</h2>'
             .'<ul>'
@@ -330,7 +331,7 @@ class DatabaseSeeder extends Seeder
             .'<h2>8. Değerlendirme (Yorum) Kuralları</h2>'
             .'<p>Kurum profillerine bırakılan değerlendirmelerin gerçek bir deneyime dayanması gerekir. Hakaret, iftira, gerçek dışı bilgi veya rakip kurumları kötülemek amacıyla yazılan yorumlar Platform tarafından kaldırılabilir; tekrar eden kötüye kullanımlarda hesap askıya alınabilir.</p>'
             .'<h2>9. Fikri Mülkiyet</h2>'
-            .'<p>Platform\'un tasarımı, yazılımı, logosu ve derlediği içerikler Bakım Platformu A.Ş.\'ye aittir. Kurum kullanıcıları tarafından yüklenen görseller/açıklamalar için, bu içerikleri Platform\'da yayınlama konusunda Platform\'a münhasır olmayan bir kullanım izni vermiş sayılırsınız.</p>'
+            .'<p>Platform\'un tasarımı, yazılımı, logosu ve derlediği içerikler Güven Bakım Hizmetleri\'ne aittir. Kurum kullanıcıları tarafından yüklenen görseller/açıklamalar için, bu içerikleri Platform\'da yayınlama konusunda Platform\'a münhasır olmayan bir kullanım izni vermiş sayılırsınız.</p>'
             .'<h2>10. Sorumluluğun Sınırlandırılması</h2>'
             .'<p>Platform, listelenen kurumların sunduğu bakım hizmetinin kalitesini garanti etmez; kurum seçimi ve hizmet ilişkisinden doğacak anlaşmazlıklarda taraf değildir. Platform, kesintisiz veya hatasız hizmet garantisi vermez; teknik arızalar nedeniyle oluşabilecek dolaylı zararlardan sorumlu tutulamaz. Aile kullanıcılarının bir kurumla ilişkiye geçmeden önce kurumu bizzat ziyaret etmesi, gerekli belgeleri (ruhsat vb.) kontrol etmesi önerilir.</p>'
             .'<h2>11. Hesabın Askıya Alınması/Feshi</h2>'
@@ -338,7 +339,7 @@ class DatabaseSeeder extends Seeder
             .'<h2>12. Şartlarda Değişiklik</h2>'
             .'<p>Platform, bu Kullanım Şartları\'nı zaman zaman güncelleyebilir. Güncel sürüm her zaman bu sayfada yayınlanır; önemli değişikliklerde kullanıcılar bilgilendirilmeye çalışılır.</p>'
             .'<h2>13. Uyuşmazlıkların Çözümü</h2>'
-            .'<p>Bu şartlardan doğan uyuşmazlıklarda Türkiye Cumhuriyeti kanunları uygulanır; İstanbul (Merkez) Mahkemeleri ve İcra Daireleri yetkilidir.</p>';
+            .'<p>Bu şartlardan doğan uyuşmazlıklarda Türkiye Cumhuriyeti kanunları uygulanır; Bursa Mahkemeleri ve İcra Daireleri yetkilidir.</p>';
 
         $cerezBody = '<h2>1. Çerez Nedir</h2>'
             .'<p>Çerezler, bir web sitesini ziyaret ettiğinizde tarayıcınıza kaydedilen küçük metin dosyalarıdır. '.$domain.' ("Platform"), aşağıda açıklanan sınırlı ve zorunlu amaçlar dışında çerez kullanmaz; reklam, pazarlama veya üçüncü taraf analitik/izleme çerezi kullanılmamaktadır.</p>'

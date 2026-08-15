@@ -3486,4 +3486,69 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('905321234567', normalize_whatsapp_number('905321234567'));
         $this->assertSame('905321234567', normalize_whatsapp_number('5321234567'));
     }
+
+    // 15 Agustos 2026: ayni denetim turunde bulundu - facilities.city_id FK'si
+    // cascadeOnDelete, ama silme kontrolu exists() Facility::SoftDeletes
+    // yuzunden cop kutusundaki kurumlari gormuyordu - bir sehirdeki tum
+    // kurumlar cop kutusundaysa sehir silinebiliyor, bu da MySQL'in o
+    // kurumlari GERI DONDURULEMEZ sekilde fiziksel silmesine yol aciyordu.
+    public function test_city_deletion_is_blocked_when_only_trashed_facilities_remain(): void
+    {
+        $city = City::create(['name' => 'Cop Kutusu Sehir Test', 'slug' => 'cop-kutusu-sehir-test']);
+        $facility = Facility::create([
+            'name' => 'Cop Kutusundaki Kurum',
+            'slug' => 'cop-kutusundaki-kurum',
+            'city_id' => $city->id,
+            'facility_category_id' => $this->childCategory->id,
+            'district' => 'Merkez',
+            'address' => 'Adres',
+            'phone' => '02120000000',
+            'description' => 'Aciklama',
+            'capacity' => 20,
+            'services' => ['bakim'],
+            'is_published' => true,
+            'is_featured' => false,
+            'is_claimed' => false,
+            'free_quote_credits' => 0,
+            'balance' => 0,
+        ]);
+        $facility->delete();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/sehirler/'.$city->id)
+            ->assertRedirect();
+
+        $this->assertNotNull(City::find($city->id), 'Cop kutusunda kurumu olan sehir silinmemeli.');
+        $this->assertSoftDeleted('facilities', ['id' => $facility->id]);
+    }
+
+    public function test_facility_category_deletion_is_blocked_when_only_trashed_facilities_remain(): void
+    {
+        $category = FacilityCategory::create(['name' => 'Cop Kutusu Kategori Test', 'slug' => 'cop-kutusu-kategori-test', 'brand_scope' => 'bakimevleri']);
+        $facility = Facility::create([
+            'name' => 'Cop Kutusundaki Kurum 2',
+            'slug' => 'cop-kutusundaki-kurum-2',
+            'city_id' => $this->city->id,
+            'facility_category_id' => $category->id,
+            'district' => 'Merkez',
+            'address' => 'Adres',
+            'phone' => '02120000000',
+            'description' => 'Aciklama',
+            'capacity' => 20,
+            'services' => ['bakim'],
+            'is_published' => true,
+            'is_featured' => false,
+            'is_claimed' => false,
+            'free_quote_credits' => 0,
+            'balance' => 0,
+        ]);
+        $facility->delete();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/kategoriler/'.$category->id)
+            ->assertRedirect();
+
+        $this->assertNotNull(FacilityCategory::find($category->id), 'Cop kutusunda kurumu olan kategori silinmemeli.');
+        $this->assertSoftDeleted('facilities', ['id' => $facility->id]);
+    }
 }
