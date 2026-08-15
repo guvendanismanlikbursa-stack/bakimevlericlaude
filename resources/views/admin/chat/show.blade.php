@@ -68,7 +68,7 @@
       <input type="file" name="attachment" id="js-admin-file" class="hidden" accept="image/jpeg,image/png,image/webp,video/mp4,.pdf,.doc,.docx">
       <button type="button" id="js-admin-attach-btn" class="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" title="Dosya ekle">📎</button>
       <button type="button" id="js-admin-mic-btn" class="hidden shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" title="Sesli yaz">🎤</button>
-      <textarea name="body" id="js-admin-input" rows="2" placeholder="Yanıtınızı yazın…" class="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"></textarea>
+      <textarea name="body" id="js-admin-input" rows="2" placeholder="Yanıtınızı yazın…" class="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"></textarea>
       <button type="submit" class="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700">Gönder</button>
     </div>
   </form>

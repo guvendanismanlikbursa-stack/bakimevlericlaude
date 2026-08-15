@@ -53,7 +53,7 @@
       @if($facility->views_count > 0)
         <p class="text-xs text-gray-400 mb-3 flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path d="M10 3.5c-4.5 0-7.5 3.5-8.5 6.5 1 3 4 6.5 8.5 6.5s7.5-3.5 8.5-6.5c-1-3-4-6.5-8.5-6.5Zm0 10.5a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/><circle cx="10" cy="10" r="2"/></svg>
-          {{ number_format($facility->views_count) }} kez görüntülendi
+          {{ number_format($facility->views_count, 0, ',', '.') }} kez görüntülendi
         </p>
       @else
         <div class="mb-3"></div>

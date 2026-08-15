@@ -6,7 +6,7 @@
   <h1 class="text-3xl font-black text-gray-950 mt-2 mb-2">Size uygun {{ $results->count() }} kurum bulundu</h1>
   <p class="text-sm text-gray-500 mb-8">
     {{ $city?->name ?? 'Tüm iller' }} · {{ $category?->name ?? $activeSection['title'] }}
-    @if($criteria['budget_max']) · {{ number_format($criteria['budget_max']) }} TL ve altı bütçe @endif
+    @if($criteria['budget_max']) · {{ number_format($criteria['budget_max'], 0, ',', '.') }} TL ve altı bütçe @endif
   </p>
 
   @if($results->isEmpty())

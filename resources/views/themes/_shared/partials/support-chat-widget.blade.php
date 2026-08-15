@@ -32,7 +32,7 @@
   </svg>
 </button>
 
-<div id="js-chat-menu" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+<div id="js-chat-menu" role="dialog" aria-modal="true" aria-label="Sohbet secenekleri" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
   <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Size nasıl yardımcı olabiliriz?</div>
   <div class="p-2">
     <button type="button" class="js-intent-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-800" data-intent="sohbet">💬 Sohbet etmek istiyorum</button>
@@ -46,7 +46,7 @@
   </a>
 </div>
 
-<div id="js-chat-gender" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+<div id="js-chat-gender" role="dialog" aria-modal="true" aria-label="Kiminle gorusmek istersiniz" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
   <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Kiminle görüşmek istersiniz?</div>
   <div class="p-3 grid grid-cols-2 gap-2">
     <button type="button" class="js-gender-btn rounded-xl border border-gray-200 py-4 text-sm font-bold text-gray-800 hover:border-gray-400" data-gender="erkek">👨 Bay</button>
@@ -55,7 +55,7 @@
   <button type="button" class="js-gender-btn w-full text-center px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50" data-gender="farketmez">Farketmez, önemli değil</button>
 </div>
 
-<div id="js-chat-identity" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+<div id="js-chat-identity" role="dialog" aria-modal="true" aria-label="Nasil hitap edelim" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
   <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Size nasıl hitap edelim?</div>
   <div class="p-3 space-y-2">
     <div id="js-chat-identity-google-note" class="hidden text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">✓ <span id="js-chat-identity-google-name-label"></span> olarak Google ile giriş yapıldı</div>
@@ -64,14 +64,14 @@
       Google ile devam et
     </button>
     <div id="js-chat-identity-divider" class="text-center text-[10px] text-gray-400 uppercase tracking-wider">veya</div>
-    <input type="text" id="js-chat-identity-name" placeholder="Adınız" maxlength="80" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400">
-    <input type="number" id="js-chat-identity-age" placeholder="Yaşınız" min="1" max="120" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400">
+    <input type="text" id="js-chat-identity-name" placeholder="Adınız" maxlength="80" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+    <input type="number" id="js-chat-identity-age" placeholder="Yaşınız" min="1" max="120" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
     <div id="js-chat-identity-error" class="hidden text-xs text-red-600"></div>
     <button type="button" id="js-chat-identity-continue" class="w-full rounded-lg py-2.5 text-sm font-bold text-white" style="background: {{ $brand['primary_color'] }};">Devam Et</button>
   </div>
 </div>
 
-<div id="js-chat-panel" class="fixed bottom-5 right-5 z-50 hidden w-[min(92vw,360px)] h-[min(78vh,560px)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
+<div id="js-chat-panel" role="dialog" aria-modal="true" aria-label="Canli destek sohbeti" class="fixed bottom-5 right-5 z-50 hidden w-[min(92vw,360px)] h-[min(78vh,560px)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
   <div class="flex items-center gap-3 px-4 py-3 text-white shrink-0" style="background: {{ $brand['primary_color'] }};">
     <div id="js-chat-eye" class="relative w-9 h-9 rounded-full bg-white shrink-0 overflow-hidden">
       <div id="js-chat-pupil" class="absolute w-3.5 h-3.5 rounded-full" style="top:50%;left:50%;margin:-7px 0 0 -7px;"></div>
@@ -98,7 +98,7 @@
       <button type="button" id="js-chat-mic-btn" aria-label="Sesli yaz" class="hidden shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
         <svg viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z"/></svg>
       </button>
-      <textarea id="js-chat-input" rows="1" placeholder="Mesajınızı yazın…" class="flex-1 resize-none max-h-24 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"></textarea>
+      <textarea id="js-chat-input" rows="1" placeholder="Mesajınızı yazın…" class="flex-1 resize-none max-h-24 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"></textarea>
       <button type="button" id="js-chat-send" aria-label="Gönder" class="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-white" style="background: {{ $brand['primary_color'] }};">
         <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M3 20l18-8L3 4v6l12 2-12 2v6Z"/></svg>
       </button>
@@ -169,6 +169,18 @@
     identityEl.classList.add('hidden');
     panelEl.classList.add('hidden');
   }
+
+  // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+  // yapilan erisilebilirlik denetiminde bulundu - bu widget'in tum
+  // panelleri sadece fareyle "x" tuslanarak kapatilabiliyordu, ESC ile
+  // kapatma yoktu. Klavye kullanicisi panel acikken sikismis hissediyordu.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (menuEl.classList.contains('hidden') && genderEl.classList.contains('hidden')
+      && identityEl.classList.contains('hidden') && panelEl.classList.contains('hidden')) return;
+    hideAllPanels();
+    toggleBtn.focus();
+  });
 
   toggleBtn.addEventListener('click', function () {
     if (!panelEl.classList.contains('hidden')) { hideAllPanels(); return; }

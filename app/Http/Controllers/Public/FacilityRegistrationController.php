@@ -24,6 +24,11 @@ class FacilityRegistrationController extends Controller
 
     public function store(Request $request, GeoLookupService $geo)
     {
+        // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php.
+        // Ayri validate() cagrisi bilerek - $data spread ile create()'e
+        // gectigi icin 'website' anahtarinin $data'ya karismasi istenmiyor.
+        $request->validate(['website' => 'max:0']);
+
         $brand = current_brand();
         $data = $this->validateData($request, $brand);
 

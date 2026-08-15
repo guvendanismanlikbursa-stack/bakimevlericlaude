@@ -160,10 +160,10 @@
       @php $galleryId = 'ps-gallery-'.$facility->id; @endphp
       @if($galleryImages->isNotEmpty())
         <div class="grid lg:grid-cols-[1.5fr_1fr] gap-3">
-          <img src="{{ asset('storage/'.$galleryImages->first()->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', 0)" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} ana görseli">
+          <img src="{{ asset('storage/'.$galleryImages->first()->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', 0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', 0);}" tabindex="0" role="button" aria-label="Galeriyi büyük görüntüle" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} ana görseli">
           <div class="grid grid-cols-2 gap-3">
             @foreach($galleryImages->skip(1)->take(4) as $img)
-              <img src="{{ asset('storage/'.$img->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }})" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} görseli">
+              <img src="{{ asset('storage/'.$img->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }});}" tabindex="0" role="button" aria-label="Galeri görseli {{ $loop->index + 2 }}, büyük görüntüle" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} görseli">
             @endforeach
             @for($i = max(1, $galleryCount); $i < 5; $i++)
               <div class="h-[132px] rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-xs text-gray-400 text-center px-3">Ek görsel alanı</div>
@@ -244,8 +244,10 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div class="text-gray-500">Fiyat Aralığı</div>
         <div class="font-black text-gray-950">
-          @if($facility->price_min)
+          @if($facility->price_min && $facility->price_max)
             {{ number_format($facility->price_min,0,',','.') }} TL - {{ number_format($facility->price_max,0,',','.') }} TL
+          @elseif($facility->price_min)
+            {{ number_format($facility->price_min,0,',','.') }} TL'den başlıyor
           @else
             Bilgi için iletişime geçin
           @endif
@@ -257,9 +259,9 @@
     <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
       <h3 class="font-black text-gray-950 mb-3">Kurum Performansı</h3>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-        <div><div class="text-gray-500 text-xs">İncelenme</div><div class="font-black">{{ number_format($perf['views_count']) }}</div></div>
-        <div><div class="text-gray-500 text-xs">Favoriye Eklenme</div><div class="font-black">{{ number_format($perf['favorites_count']) }}</div></div>
-        <div><div class="text-gray-500 text-xs">Alınan Teklif</div><div class="font-black">{{ number_format($perf['offers_count']) }}</div></div>
+        <div><div class="text-gray-500 text-xs">İncelenme</div><div class="font-black">{{ number_format($perf['views_count'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Favoriye Eklenme</div><div class="font-black">{{ number_format($perf['favorites_count'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Alınan Teklif</div><div class="font-black">{{ number_format($perf['offers_count'], 0, ',', '.') }}</div></div>
         <div><div class="text-gray-500 text-xs">Son Güncelleme</div><div class="font-black">{{ $perf['last_updated_at']->diffForHumans() }}</div></div>
       </div>
       <div class="mt-3 flex gap-2 flex-wrap">
@@ -335,8 +337,11 @@
       @if($facility->is_claimed)
         <form method="POST" action="{{ brand_route('questions.store', ['slug' => $facility->slug]) }}" class="flex flex-col sm:flex-row gap-2">
           @csrf
-          <input type="text" name="asker_name" value="{{ old('asker_name') }}" placeholder="Adınız (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm sm:w-48">
-          <input type="text" name="question" value="{{ old('question') }}" placeholder="Örn: Alzheimer hastası kabul ediyor musunuz?" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+          @include('themes._shared.partials.honeypot')
+          <label for="q-asker-name" class="sr-only">Adınız (opsiyonel)</label>
+          <input type="text" id="q-asker-name" name="asker_name" value="{{ old('asker_name') }}" placeholder="Adınız (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm sm:w-48">
+          <label for="q-question" class="sr-only">Sorunuz</label>
+          <input type="text" id="q-question" name="question" value="{{ old('question') }}" placeholder="Örn: Alzheimer hastası kabul ediyor musunuz?" required class="border rounded-lg px-3 py-2 text-sm flex-1">
           <button class="btn-primary rounded-lg px-5 py-2 text-sm font-black whitespace-nowrap">Soru Sor</button>
         </form>
       @else
@@ -352,19 +357,26 @@
         <h3 class="font-black mb-4 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
         <form method="POST" action="{{ brand_route('offer-requests.store') }}" class="space-y-3">
           @csrf
+          @include('themes._shared.partials.honeypot')
           <input type="hidden" name="facility_id" value="{{ $facility->id }}">
-          <select name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
+          <label for="offer-care-for" class="sr-only">Kimin için?</label>
+          <select id="offer-care-for" name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
             <option value="">Kimin için? (opsiyonel)</option>
             <option value="kendisi" @selected(old('care_for')=='kendisi')>Kendim için</option>
             <option value="anne-baba" @selected(old('care_for')=='anne-baba')>Anne/Babam için</option>
             <option value="cocuk" @selected(old('care_for')=='cocuk')>Çocuğum için</option>
             <option value="yakin" @selected(old('care_for')=='yakin')>Yakınım için</option>
           </select>
-          <input type="text" name="patient_name" value="{{ old('patient_name') }}" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
-          <input type="text" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
-          <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
-          <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
-          <textarea name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
+          <label for="offer-patient-name" class="sr-only">Hasta/çocuk adı (opsiyonel)</label>
+          <input type="text" id="offer-patient-name" name="patient_name" value="{{ old('patient_name') }}" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+          <label for="offer-full-name" class="sr-only">Adınız Soyadınız</label>
+          <input type="text" id="offer-full-name" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+          <label for="offer-phone" class="sr-only">Telefon</label>
+          <input type="text" id="offer-phone" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+          <label for="offer-email" class="sr-only">E-posta</label>
+          <input type="email" id="offer-email" name="email" value="{{ old('email') }}" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
+          <label for="offer-message" class="sr-only">Mesajınız / ihtiyaç detayı</label>
+          <textarea id="offer-message" name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
           <button class="btn-primary w-full py-2 rounded-lg font-black">Ücret Bilgisi İste</button>
           <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
         </form>
@@ -375,14 +387,25 @@
           <h3 class="font-black mb-3 text-gray-950">Ziyaret / randevu talebi</h3>
           <form method="POST" action="{{ brand_route('visit-requests.store', ['slug' => $facility->slug]) }}" class="space-y-3">
             @csrf
-            <input type="text" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
-            <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
-            <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
+            @include('themes._shared.partials.honeypot')
+            <label for="visit-full-name" class="sr-only">Adınız Soyadınız</label>
+            <input type="text" id="visit-full-name" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+            <label for="visit-phone" class="sr-only">Telefon</label>
+            <input type="text" id="visit-phone" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+            <label for="visit-email" class="sr-only">E-posta</label>
+            <input type="email" id="visit-email" name="email" value="{{ old('email') }}" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
             <div class="grid grid-cols-2 gap-2">
-              <select name="preferred_day" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Gün</option><option @selected(old('preferred_day')=='Hafta içi')>Hafta içi</option><option @selected(old('preferred_day')=='Hafta sonu')>Hafta sonu</option><option @selected(old('preferred_day')=='Fark etmez')>Fark etmez</option></select>
-              <select name="preferred_time" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Saat</option><option @selected(old('preferred_time')=='Sabah')>Sabah</option><option @selected(old('preferred_time')=='Öğlen')>Öğlen</option><option @selected(old('preferred_time')=='Akşamüstü')>Akşamüstü</option></select>
+              <div>
+                <label for="visit-preferred-day" class="sr-only">Tercih edilen gün</label>
+                <select id="visit-preferred-day" name="preferred_day" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Gün</option><option @selected(old('preferred_day')=='Hafta içi')>Hafta içi</option><option @selected(old('preferred_day')=='Hafta sonu')>Hafta sonu</option><option @selected(old('preferred_day')=='Fark etmez')>Fark etmez</option></select>
+              </div>
+              <div>
+                <label for="visit-preferred-time" class="sr-only">Tercih edilen saat</label>
+                <select id="visit-preferred-time" name="preferred_time" class="border rounded-lg px-3 py-2 w-full bg-white"><option value="">Saat</option><option @selected(old('preferred_time')=='Sabah')>Sabah</option><option @selected(old('preferred_time')=='Öğlen')>Öğlen</option><option @selected(old('preferred_time')=='Akşamüstü')>Akşamüstü</option></select>
+              </div>
             </div>
-            <textarea name="message" placeholder="Ziyaret notu" rows="2" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
+            <label for="visit-message" class="sr-only">Ziyaret notu</label>
+            <textarea id="visit-message" name="message" placeholder="Ziyaret notu" rows="2" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
             <button class="w-full rounded-lg border border-primary text-primary font-black py-2">Ziyaret Talebi Gönder</button>
           </form>
         </div>
@@ -392,8 +415,11 @@
           <p class="text-xs text-gray-500 mb-3">Tek tıkla "Boş yer var mı?" sorusu kuruma iletilir.</p>
           <form method="POST" action="{{ brand_route('visit-requests.availability', ['slug' => $facility->slug]) }}" class="flex gap-2">
             @csrf
-            <input type="text" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
-            <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
+            @include('themes._shared.partials.honeypot')
+            <label for="avail-full-name" class="sr-only">Adınız</label>
+            <input type="text" id="avail-full-name" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
+            <label for="avail-phone" class="sr-only">Telefon</label>
+            <input type="text" id="avail-phone" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-1/2 text-sm">
             <button class="whitespace-nowrap rounded-lg bg-gray-900 text-white font-black px-3 text-sm">Sor</button>
           </form>
         </div>

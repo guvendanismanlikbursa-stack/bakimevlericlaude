@@ -25,7 +25,7 @@
           <span class="block font-black text-gray-950 group-hover:text-primary truncate">{{ $row->city_name }}{{ $row->category_name ? ' — '.$row->category_name : '' }}</span>
           <span class="block h-1.5 rounded-full bg-gray-100 overflow-hidden mt-2"><span class="block h-full rounded-full" style="background: {{ $primary }}; width: {{ max(6, round($row->total / $maxTotal * 100)) }}%"></span></span>
         </span>
-        <span class="text-sm font-black text-gray-900 whitespace-nowrap">{{ number_format($row->total) }} arama</span>
+        <span class="text-sm font-black text-gray-900 whitespace-nowrap">{{ number_format($row->total, 0, ',', '.') }} arama</span>
       </a>
     @empty
       <div class="sm:col-span-2 rounded-xl border border-dashed border-gray-200 p-10 text-center text-gray-400 bg-white">Henüz yeterli arama verisi yok.</div>

@@ -16,7 +16,7 @@
   <div class="grid sm:grid-cols-3 gap-4 mb-8">
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <div class="text-xs text-gray-500">Toplam Kurum</div>
-      <div class="text-2xl font-black mt-1">{{ number_format($grandTotal) }}</div>
+      <div class="text-2xl font-black mt-1">{{ number_format($grandTotal, 0, ',', '.') }}</div>
     </div>
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <div class="text-xs text-gray-500">Kurumu Olan İl</div>

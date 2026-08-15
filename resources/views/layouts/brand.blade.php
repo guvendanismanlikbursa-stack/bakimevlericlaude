@@ -210,6 +210,13 @@
 @endphp
 <body class="{{ $bodyClass }}">
 
+{{-- 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+     yapilan erisilebilirlik denetiminde bulundu - klavye kullanicisi her
+     sayfada ana icerige ulasmadan once 6-10 navigasyon linkini Tab ile tek
+     tek geciyordu. Skip-link normalde gorunmez, sadece Tab ile odaklaninca
+     gorunur olur. --}}
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:text-gray-950 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:font-black">İçeriğe geç</a>
+
 @if(session('impersonator_admin_id'))
 <div class="bg-amber-500 text-amber-950 text-sm font-semibold px-4 py-2 flex items-center justify-between gap-3 flex-wrap sticky top-0 z-50">
   <span>⚠ Şu an <strong>{{ session('facility_user_name') ?? session('family_user_name') ?? 'bu kullanıcı' }}</strong> adına, admin olarak görüntülüyorsunuz.</span>
@@ -242,8 +249,15 @@
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold text-white/80 hover:text-white hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
         <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-semibold text-white/80 hover:text-white">Çıkış Yap</button></form>
       @endif
-      <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="text-sm px-4 py-2 rounded-md font-black" style="background: {{ $brand['secondary_color'] }}; color:#fff;">Başla</a>
-      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-white text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
+      {{-- 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+           yapilan erisilebilirlik denetiminde bulundu - bakimevleri marka
+           rengi ($brand['secondary_color'], #e63946) beyaz metinle 4.17:1
+           kontrast veriyordu, WCAG AA'nin normal metin icin gerektirdigi
+           4.5:1'in altinda kaliyordu. Sadece bu buton icin, ayni kirmizi
+           tonun biraz koyulastirilmis, AA'yi rahat gecen (5.1:1) hali
+           kullaniliyor - marka kimligini bozmadan okunabilirlik saglar. --}}
+      <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="text-sm px-4 py-2 rounded-md font-black" style="background: #cc3341; color:#fff;">Başla</a>
+      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-white text-2xl leading-none px-1" aria-label="Menüyü aç" aria-expanded="false" aria-controls="js-mobile-menu">&#9776;</button>
     </div>
   </div>
   <div id="js-mobile-menu" class="hidden lg:hidden bg-gray-950 border-t border-white/10">
@@ -287,7 +301,7 @@
         <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-bold hover:text-primary">Çıkış Yap</button></form>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="btn-primary text-sm px-4 py-2 rounded-full font-black">Başla</a>
-      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
+      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç" aria-expanded="false" aria-controls="js-mobile-menu">&#9776;</button>
     </div>
   </div>
   <div id="js-mobile-menu" class="hidden lg:hidden bg-white border-t border-gray-100">
@@ -331,7 +345,7 @@
         <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-semibold hover:text-primary">Çıkış Yap</button></form>
       @endif
       <a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="btn-primary text-sm px-4 py-2 rounded-lg font-bold">Başla</a>
-      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç">&#9776;</button>
+      <button type="button" id="js-mobile-menu-toggle" class="lg:hidden text-gray-700 text-2xl leading-none px-1" aria-label="Menüyü aç" aria-expanded="false" aria-controls="js-mobile-menu">&#9776;</button>
     </div>
   </div>
   <div id="js-mobile-menu" class="hidden lg:hidden bg-white border-t border-gray-100 shadow-sm">
@@ -390,10 +404,10 @@
   </script>
 @endif
 @if($errors->any())
-<div class="max-w-6xl mx-auto px-4 mt-4"><div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm"><ul class="list-disc list-inside">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div></div>
+<div class="max-w-6xl mx-auto px-4 mt-4"><div role="alert" class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm"><ul class="list-disc list-inside">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div></div>
 @endif
 
-<main>
+<main id="main-content">
   {{ $slot ?? '' }}
   @yield('content')
 </main>
@@ -470,10 +484,11 @@
   var menu = document.getElementById('js-mobile-menu');
   if (!toggle || !menu) return;
   toggle.addEventListener('click', function () {
-    menu.classList.toggle('hidden');
+    var nowHidden = menu.classList.toggle('hidden');
+    toggle.setAttribute('aria-expanded', nowHidden ? 'false' : 'true');
   });
   menu.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () { menu.classList.add('hidden'); });
+    a.addEventListener('click', function () { menu.classList.add('hidden'); toggle.setAttribute('aria-expanded', 'false'); });
   });
 })();
 </script>

@@ -78,6 +78,15 @@ return [
     'throttle' => [
         // Ucretsiz/hafif aksiyonlar: favori sayaci, yakinimdaki kurumlar
         'public-light' => (int) env('THROTTLE_PUBLIC_LIGHT', 60),
+        // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+        // yapilan denetimde bulundu - kurum listeleme/detay sayfalarinda HIC
+        // throttle yoktu, bir rakip tum kurum veritabanini (isim/telefon/
+        // adres) kolayca kazayabilirdi. Ama bu sayfa ayrica "her tus
+        // vurusunda anlik filtrele" AJAX'ini da tasidigi icin (bkz.
+        // location-filter-script.blade.php) public-form/public-light gibi
+        // dar bir limit hizli yazan gercek bir kullaniciyi da kilitleyebilirdi -
+        // bu yuzden ayrica daha genis bir tavan tanimlandi.
+        'public-browse' => (int) env('THROTTLE_PUBLIC_BROWSE', 120),
         // Orta hacimli formlar: teklif talebi, iletisim, yorum, ziyaret, kontenjan
         'public-form' => (int) env('THROTTLE_PUBLIC_FORM', 20),
         // Dusuk hacim beklenen, istismara daha hassas formlar: soru sor, sahiplenme basvurusu

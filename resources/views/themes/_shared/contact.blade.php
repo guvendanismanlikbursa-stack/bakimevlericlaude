@@ -60,10 +60,15 @@
     <p class="text-gray-500 text-sm mb-5">Formu doldurun, e-posta adresinize dönüş yapalım.</p>
     <form method="POST" action="{{ brand_route('contact.store') }}" class="space-y-4">
       @csrf
-      <input type="text" name="name" value="{{ old('name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2.5 w-full">
-      <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2.5 w-full">
-      <input type="text" name="subject" value="{{ old('subject') }}" placeholder="Konu" class="border rounded-lg px-3 py-2.5 w-full">
-      <textarea name="message" rows="5" placeholder="Mesajınız" required class="border rounded-lg px-3 py-2.5 w-full">{{ old('message') }}</textarea>
+      @include('themes._shared.partials.honeypot')
+      <label for="contact-name" class="sr-only">Ad Soyad</label>
+      <input type="text" id="contact-name" name="name" value="{{ old('name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="contact-email" class="sr-only">E-posta</label>
+      <input type="email" id="contact-email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="contact-subject" class="sr-only">Konu</label>
+      <input type="text" id="contact-subject" name="subject" value="{{ old('subject') }}" placeholder="Konu" class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="contact-message" class="sr-only">Mesajınız</label>
+      <textarea id="contact-message" name="message" rows="5" placeholder="Mesajınız" required class="border rounded-lg px-3 py-2.5 w-full">{{ old('message') }}</textarea>
       <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $primary }};">Gönder</button>
     </form>
   </div>

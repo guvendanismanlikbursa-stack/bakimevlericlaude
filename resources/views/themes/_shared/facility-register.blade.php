@@ -51,6 +51,7 @@
   <div class="bg-white p-6 md:p-7 rounded-2xl shadow-sm border border-gray-100">
     <form method="POST" action="{{ brand_route('facility-registration.store') }}" class="space-y-4">
       @csrf
+      @include('themes._shared.partials.honeypot')
       <div>
         <label class="text-sm font-medium block mb-1">Kurum Türü</label>
         <select name="facility_category_id" required class="border rounded-lg px-3 py-2.5 w-full">
@@ -61,7 +62,8 @@
         </select>
       </div>
 
-      <input type="text" name="name" value="{{ old('name') }}" placeholder="Kurum Adı" required class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="reg-name" class="sr-only">Kurum Adı</label>
+      <input type="text" id="reg-name" name="name" value="{{ old('name') }}" placeholder="Kurum Adı" required class="border rounded-lg px-3 py-2.5 w-full">
 
       <div>
         <label class="text-sm font-medium block mb-1">İl</label>
@@ -73,16 +75,29 @@
         </select>
       </div>
 
-      <input type="text" name="district" value="{{ old('district') }}" placeholder="İlçe" class="border rounded-lg px-3 py-2.5 w-full">
-      <input type="text" name="address" value="{{ old('address') }}" placeholder="Açık Adres" class="border rounded-lg px-3 py-2.5 w-full">
-      <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Kurum Telefonu" class="border rounded-lg px-3 py-2.5 w-full">
-      <textarea name="description" placeholder="Kurum hakkında kısa açıklama" rows="4" class="border rounded-lg px-3 py-2.5 w-full">{{ old('description') }}</textarea>
+      <label for="reg-district" class="sr-only">İlçe</label>
+      <input type="text" id="reg-district" name="district" value="{{ old('district') }}" placeholder="İlçe" class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="reg-address" class="sr-only">Açık Adres</label>
+      <input type="text" id="reg-address" name="address" value="{{ old('address') }}" placeholder="Açık Adres" class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="reg-phone" class="sr-only">Kurum Telefonu</label>
+      <input type="text" id="reg-phone" name="phone" value="{{ old('phone') }}" placeholder="Kurum Telefonu" class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="reg-description" class="sr-only">Kurum hakkında kısa açıklama</label>
+      <textarea id="reg-description" name="description" placeholder="Kurum hakkında kısa açıklama" rows="4" class="border rounded-lg px-3 py-2.5 w-full">{{ old('description') }}</textarea>
 
       <div class="grid grid-cols-2 gap-3">
-        <input type="number" name="capacity" value="{{ old('capacity') }}" placeholder="Kapasite" min="0" class="border rounded-lg px-3 py-2.5 w-full">
+        <div>
+          <label for="reg-capacity" class="sr-only">Kapasite</label>
+          <input type="number" id="reg-capacity" name="capacity" value="{{ old('capacity') }}" placeholder="Kapasite" min="0" class="border rounded-lg px-3 py-2.5 w-full">
+        </div>
         <div class="grid grid-cols-2 gap-2">
-          <input type="number" name="price_min" value="{{ old('price_min') }}" placeholder="Min. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
-          <input type="number" name="price_max" value="{{ old('price_max') }}" placeholder="Maks. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
+          <div>
+            <label for="reg-price-min" class="sr-only">Minimum Fiyat</label>
+            <input type="number" id="reg-price-min" name="price_min" value="{{ old('price_min') }}" placeholder="Min. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
+          </div>
+          <div>
+            <label for="reg-price-max" class="sr-only">Maksimum Fiyat</label>
+            <input type="number" id="reg-price-max" name="price_max" value="{{ old('price_max') }}" placeholder="Maks. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
+          </div>
         </div>
       </div>
 
@@ -95,9 +110,12 @@
       </a>
       <div id="js-facility-google-note" class="hidden text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">✓ Google'dan ad/e-posta dolduruldu, aşağıdan kontrol edip devam edin.</div>
 
+      <label for="js-applicant-name" class="sr-only">Yetkili Ad Soyad</label>
       <input type="text" name="applicant_name" id="js-applicant-name" value="{{ old('applicant_name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="js-applicant-email" class="sr-only">Yetkili E-posta</label>
       <input type="email" name="applicant_email" id="js-applicant-email" value="{{ old('applicant_email') }}" placeholder="E-posta (giriş bilgileri buraya gönderilecek)" required class="border rounded-lg px-3 py-2.5 w-full">
-      <input type="text" name="applicant_phone" value="{{ old('applicant_phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2.5 w-full">
+      <label for="reg-applicant-phone" class="sr-only">Yetkili Telefon</label>
+      <input type="text" id="reg-applicant-phone" name="applicant_phone" value="{{ old('applicant_phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2.5 w-full">
 
       <input type="hidden" name="lat" id="signup_lat">
       <input type="hidden" name="lng" id="signup_lng">

@@ -21,6 +21,12 @@ class OfferRequestController extends Controller
      */
     public function store(Request $request, OfferRequestNotificationService $notifier)
     {
+        // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php.
+        // Ayri validate() cagrisi bilerek - $validated dogrudan
+        // OfferRequest::create()'e gectigi icin 'website' anahtarinin
+        // karismasi istenmiyor.
+        $request->validate(['website' => 'max:0']);
+
         $validated = $request->validate([
             'facility_id' => 'nullable|integer|exists:facilities,id',
             'city_id' => 'nullable|integer|exists:cities,id',
@@ -76,6 +82,9 @@ class OfferRequestController extends Controller
      */
     public function storeBulk(Request $request, OfferRequestNotificationService $notifier)
     {
+        // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php.
+        $request->validate(['website' => 'max:0']);
+
         $validated = $request->validate([
             'facility_ids' => 'required|array|min:1|max:'.self::BULK_LIMIT,
             'facility_ids.*' => 'integer|distinct|exists:facilities,id',

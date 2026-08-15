@@ -60,15 +60,15 @@
     <p class="text-sm text-gray-500 mb-4">Ailelerin kurum profilinizle ilgili gerçek etkileşimleri.</p>
     <div class="grid grid-cols-3 gap-3">
       <div class="text-center">
-        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['views_count']) }}</div>
+        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['views_count'], 0, ',', '.') }}</div>
         <div class="text-xs text-gray-500 mt-1">Profil Görüntülenme</div>
       </div>
       <div class="text-center">
-        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['favorites_count']) }}</div>
+        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['favorites_count'], 0, ',', '.') }}</div>
         <div class="text-xs text-gray-500 mt-1">Favoriye Eklenme</div>
       </div>
       <div class="text-center">
-        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['reviews_count']) }}</div>
+        <div class="text-2xl font-black text-gray-950">{{ number_format($performance['reviews_count'], 0, ',', '.') }}</div>
         <div class="text-xs text-gray-500 mt-1">Onaylı Yorum</div>
       </div>
     </div>
@@ -92,12 +92,12 @@
         @endphp
         <div class="rounded-lg bg-gray-50 p-4">
           <div class="text-xs text-gray-500">Bu hafta görüntülenme</div>
-          <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($trend['views_this_week']) }}</div>
+          <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($trend['views_this_week'], 0, ',', '.') }}</div>
           <div class="text-xs font-bold mt-1 {{ $viewsDiff >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ $viewsDiff >= 0 ? '▲' : '▼' }} %{{ abs($viewsPct) }} geçen haftaya göre</div>
         </div>
         <div class="rounded-lg bg-gray-50 p-4">
           <div class="text-xs text-gray-500">Bu hafta gelen talep</div>
-          <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($trend['offer_requests_this_week']) }}</div>
+          <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($trend['offer_requests_this_week'], 0, ',', '.') }}</div>
           <div class="text-xs font-bold mt-1 {{ $offersDiff >= 0 ? 'text-green-600' : 'text-red-600' }}">{{ $offersDiff >= 0 ? '▲' : '▼' }} %{{ abs($offersPct) }} geçen haftaya göre</div>
         </div>
         <div class="rounded-lg bg-primary/10 p-4">
@@ -132,7 +132,7 @@
         @foreach($topImages as $img)
           <div class="relative rounded-lg overflow-hidden border border-gray-100">
             <img src="{{ asset('storage/'.$img->path) }}" class="w-full h-24 object-cover" alt="Kurum görseli">
-            <div class="absolute bottom-0 inset-x-0 bg-gray-950/70 text-white text-xs font-bold text-center py-1">{{ number_format($img->views_count) }} görüntülenme</div>
+            <div class="absolute bottom-0 inset-x-0 bg-gray-950/70 text-white text-xs font-bold text-center py-1">{{ number_format($img->views_count, 0, ',', '.') }} görüntülenme</div>
           </div>
         @endforeach
       </div>

@@ -591,7 +591,7 @@ if (! function_exists('facility_invitation_message')) {
         // teklif alamadin") versin.
         return str_replace(
             ['{kurum_adi}', '{goruntulenme}'],
-            [$facility->name, number_format($facility->views_count)],
+            [$facility->name, number_format($facility->views_count, 0, ',', '.')],
             $template
         );
     }

@@ -26,8 +26,10 @@
 
     <form method="POST" action="{{ route('admin.login.attempt') }}" class="space-y-4">
       @csrf
-      <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
-      <input type="password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
+      <label for="admin-login-email" class="sr-only">E-posta</label>
+      <input type="email" id="admin-login-email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
+      <label for="admin-login-password" class="sr-only">Şifre</label>
+      <input type="password" id="admin-login-password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
       <button class="w-full bg-gray-900 text-white py-2 rounded-lg font-semibold">Giriş Yap</button>
     </form>
     @if(app()->environment('local'))

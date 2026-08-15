@@ -33,6 +33,15 @@ class FacilityReviewController extends Controller
             return back()->withErrors(['review' => 'Yorum yapabilmek için önce bu kurumdan ücret/teklif bilgisi istemelisiniz.']);
         }
 
+        // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+        // yapilan spam/kotuye kullanim denetiminde bulundu - ayni aile hesabi
+        // ayni kuruma sinirsiz sayida tekrar yorum birakabiliyordu, hicbir
+        // teknik engel yoktu (admin onay kuyrugu doldurulabilir, veya
+        // rakip sabotaji icin ayni kisi 5+ olumsuz yorum birakabilirdi).
+        if (FacilityReview::where('family_user_id', $familyId)->where('facility_id', $facility->id)->exists()) {
+            return back()->withErrors(['review' => 'Bu kurum için zaten bir yorumunuz var.']);
+        }
+
         $validated = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
             'body' => 'nullable|string|max:1500',

@@ -37,19 +37,26 @@
       <h3 class="font-black mb-4 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
       <form method="POST" action="{{ brand_route('offer-requests.store-bulk') }}" class="space-y-3" id="bulk-quote-form">
         @csrf
+        @include('themes._shared.partials.honeypot')
         <div id="bulk-quote-facility-inputs"></div>
-        <select name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
+        <label for="bulk-care-for" class="sr-only">Kimin için?</label>
+        <select id="bulk-care-for" name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
           <option value="">Kimin için? (opsiyonel)</option>
           <option value="kendisi">Kendim için</option>
           <option value="anne-baba">Anne/Babam için</option>
           <option value="cocuk">Çocuğum için</option>
           <option value="yakin">Yakınım için</option>
         </select>
-        <input type="text" name="patient_name" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
-        <input type="text" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
-        <input type="text" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
-        <input type="email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
-        <textarea name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea>
+        <label for="bulk-patient-name" class="sr-only">Hasta/çocuk adı (opsiyonel)</label>
+        <input type="text" id="bulk-patient-name" name="patient_name" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+        <label for="bulk-full-name" class="sr-only">Adınız Soyadınız</label>
+        <input type="text" id="bulk-full-name" name="full_name" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+        <label for="bulk-phone" class="sr-only">Telefon</label>
+        <input type="text" id="bulk-phone" name="phone" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+        <label for="bulk-email" class="sr-only">E-posta</label>
+        <input type="email" id="bulk-email" name="email" placeholder="E-posta" class="border rounded-lg px-3 py-2 w-full">
+        <label for="bulk-message" class="sr-only">Mesajınız / ihtiyaç detayı</label>
+        <textarea id="bulk-message" name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea>
         <button class="btn-primary w-full py-2 rounded-lg font-black">Seçili Kurumlara Gönder</button>
         <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
       </form>
@@ -92,7 +99,7 @@
     compare.innerHTML = '<table class="w-full text-sm"><thead><tr><th class="w-44 p-4 bg-gray-50 text-left text-gray-500">Kriter</th>' + headers + '</tr></thead><tbody>'
       + row('Bölüm', function(i){ return esc(i.section || '-'); })
       + row('Kategori', function(i){ return esc(i.category || '-'); })
-      + row('Puan', function(i){ return '★ ' + esc(i.rating); })
+      + row('Puan', function(i){ return i.rating ? ('★ ' + esc(i.rating)) : 'Puan yok'; })
       + row('Fiyat', function(i){ return esc(i.price_min); })
       + row('Kapasite', function(i){ return esc(i.capacity); })
       + row('Özellikler', function(i){ return (i.services || []).map(esc).join('<br>') || '-'; })

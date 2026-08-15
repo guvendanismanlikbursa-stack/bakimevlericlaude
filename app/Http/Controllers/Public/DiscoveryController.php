@@ -120,7 +120,7 @@ class DiscoveryController extends Controller
             'title' => 'En Çok Görüntülenen Kurumlar',
             'subtitle' => 'Ziyaretçilerin profil sayfasını en çok açtığı kurumlar.',
             'facilities' => $facilities,
-            'badges' => $facilities->mapWithKeys(fn ($f) => [$f->id => '<span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">'.number_format($f->views_count).' görüntülenme</span>']),
+            'badges' => $facilities->mapWithKeys(fn ($f) => [$f->id => '<span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">'.number_format($f->views_count, 0, ',', '.').' görüntülenme</span>']),
             'activeSection' => $activeSection,
             'sections' => service_sections(),
         ]);

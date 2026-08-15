@@ -36,7 +36,7 @@
   </div>
 @else
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-2xl">
-    <div class="text-xs font-semibold text-gray-400 mb-1">Kalan: {{ number_format($remaining) }} kurum</div>
+    <div class="text-xs font-semibold text-gray-400 mb-1">Kalan: {{ number_format($remaining, 0, ',', '.') }} kurum</div>
     <h2 class="text-xl font-black text-gray-950">{{ $facility->name }}</h2>
     <p class="text-sm text-gray-500 mt-1">{{ $facility->city->name ?? '—' }} · {{ $facility->district ?: '—' }} · {{ $facility->category->name ?? '—' }}</p>
     <p class="text-sm text-gray-700 mt-3"><strong>Telefon:</strong> {{ $facility->phone }}</p>

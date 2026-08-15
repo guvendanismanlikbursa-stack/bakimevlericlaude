@@ -60,7 +60,7 @@
       @endphp
       <div class="rounded-lg bg-gray-50 p-3">
         <div class="text-xs text-gray-500">{{ $card['label'] }}</div>
-        <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($d['this_week']) }}</div>
+        <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($d['this_week'], 0, ',', '.') }}</div>
         <div class="text-xs font-bold mt-0.5 {{ ($diff >= 0) === $isErrorCard ? 'text-red-600' : 'text-green-600' }}">
           {{ $diff >= 0 ? '▲' : '▼' }} %{{ abs($pct) }} geçen haftaya göre
         </div>

@@ -22,7 +22,10 @@ class ContactController extends Controller
             'email' => 'required|email|max:150',
             'subject' => 'nullable|string|max:200',
             'message' => 'required|string|max:3000',
+            // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php
+            'website' => 'max:0',
         ]);
+        unset($validated['website']);
 
         $brand = app('currentBrand');
         $validated['brand'] = $brand['slug'];

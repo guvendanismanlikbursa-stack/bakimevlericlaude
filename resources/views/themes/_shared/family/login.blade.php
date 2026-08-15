@@ -12,8 +12,10 @@
 
   <form method="POST" action="{{ brand_route('family.login.attempt') }}" class="bg-white p-6 rounded-xl shadow-sm space-y-4">
     @csrf
-    <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="family-login-email" class="sr-only">E-posta</label>
+    <input type="email" id="family-login-email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="family-login-password" class="sr-only">Şifre</label>
+    <input type="password" id="family-login-password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
     <button class="btn-primary w-full py-2 rounded-lg font-semibold">Giriş Yap</button>
   </form>
   <p class="text-sm text-gray-500 mt-2 text-center"><a href="{{ brand_route('family.password.request') }}" class="text-primary font-semibold">Şifremi unuttum</a></p>

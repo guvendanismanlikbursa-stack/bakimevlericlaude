@@ -11,10 +11,10 @@
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <div class="font-black text-gray-950 mb-3">{{ $stat['name'] }}</div>
       <div class="grid grid-cols-2 gap-3 text-sm">
-        <div><div class="text-gray-500 text-xs">Bugün</div><div class="font-black text-lg">{{ number_format($stat['today']) }}</div></div>
-        <div><div class="text-gray-500 text-xs">Son 7 gün</div><div class="font-black text-lg">{{ number_format($stat['last_7_days']) }}</div></div>
-        <div><div class="text-gray-500 text-xs">Son 30 gün</div><div class="font-black text-lg">{{ number_format($stat['last_30_days']) }}</div></div>
-        <div><div class="text-gray-500 text-xs">Toplam</div><div class="font-black text-lg">{{ number_format($stat['all_time']) }}</div></div>
+        <div><div class="text-gray-500 text-xs">Bugün</div><div class="font-black text-lg">{{ number_format($stat['today'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Son 7 gün</div><div class="font-black text-lg">{{ number_format($stat['last_7_days'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Son 30 gün</div><div class="font-black text-lg">{{ number_format($stat['last_30_days'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Toplam</div><div class="font-black text-lg">{{ number_format($stat['all_time'], 0, ',', '.') }}</div></div>
       </div>
     </div>
   @endforeach
@@ -38,15 +38,15 @@
 <div class="grid sm:grid-cols-4 gap-4 mb-6">
   <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
     <div class="text-xs text-gray-500">Toplam Aile</div>
-    <div class="text-2xl font-black mt-1">{{ number_format($totalFamilies) }}</div>
+    <div class="text-2xl font-black mt-1">{{ number_format($totalFamilies, 0, ',', '.') }}</div>
   </div>
   <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
     <div class="text-xs text-gray-500">Konum Paylaşan</div>
-    <div class="text-2xl font-black mt-1">{{ number_format($withLocation) }} <span class="text-sm text-gray-400 font-normal">/ {{ number_format($totalFamilies) }}</span></div>
+    <div class="text-2xl font-black mt-1">{{ number_format($withLocation, 0, ',', '.') }} <span class="text-sm text-gray-400 font-normal">/ {{ number_format($totalFamilies, 0, ',', '.') }}</span></div>
   </div>
   <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
     <div class="text-xs text-gray-500">E-posta Doğrulayan</div>
-    <div class="text-2xl font-black mt-1">{{ number_format($verifiedCount) }} <span class="text-sm text-gray-400 font-normal">/ {{ number_format($totalFamilies) }}</span></div>
+    <div class="text-2xl font-black mt-1">{{ number_format($verifiedCount, 0, ',', '.') }} <span class="text-sm text-gray-400 font-normal">/ {{ number_format($totalFamilies, 0, ',', '.') }}</span></div>
   </div>
   <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
     <div class="text-xs text-gray-500">Farklı Şehir</div>

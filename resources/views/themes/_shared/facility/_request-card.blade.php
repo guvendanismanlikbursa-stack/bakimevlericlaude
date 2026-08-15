@@ -31,12 +31,15 @@
   @else
     <form method="POST" action="{{ brand_route('facility.quotes.store', $req) }}" class="grid md:grid-cols-[140px_150px_1fr_auto] gap-2 mt-3">
       @csrf
-      <input type="number" step="0.01" name="price" placeholder="Fiyat (₺)" required class="border rounded-lg px-3 py-2 text-sm w-full">
-      <select name="price_period" class="border rounded-lg px-3 py-2 text-sm w-full">
+      <label for="quote-price-{{ $req->id }}" class="sr-only">Fiyat (₺)</label>
+      <input type="number" step="0.01" id="quote-price-{{ $req->id }}" name="price" placeholder="Fiyat (₺)" required class="border rounded-lg px-3 py-2 text-sm w-full">
+      <label for="quote-period-{{ $req->id }}" class="sr-only">Fiyat periyodu</label>
+      <select id="quote-period-{{ $req->id }}" name="price_period" class="border rounded-lg px-3 py-2 text-sm w-full">
         <option value="monthly">Aylık</option>
         <option value="one_time">Tek Seferlik</option>
       </select>
-      <input type="text" name="message" placeholder="Kısa not (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm w-full">
+      <label for="quote-message-{{ $req->id }}" class="sr-only">Kısa not (opsiyonel)</label>
+      <input type="text" id="quote-message-{{ $req->id }}" name="message" placeholder="Kısa not (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm w-full">
       <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Teklif Gönder</button>
     </form>
   @endif

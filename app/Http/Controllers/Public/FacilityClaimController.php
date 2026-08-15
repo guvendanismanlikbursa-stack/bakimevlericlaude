@@ -58,6 +58,8 @@ class FacilityClaimController extends Controller
             'document' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'lat' => 'nullable|numeric|between:-90,90',
             'lng' => 'nullable|numeric|between:-180,180',
+            // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php
+            'website' => 'max:0',
         ]);
 
         if ($error = email_taken_by_other_account_type($data['applicant_email'])) {

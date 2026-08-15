@@ -19,7 +19,7 @@
   <div class="font-black text-gray-950 mb-3">En Çok Aranan Şehirler</div>
   <p class="text-sm text-gray-600">
     @foreach($cityCounts as $row)
-      <span class="font-semibold text-gray-800">{{ $row->city_name }}</span>: {{ number_format($row->total) }}@if(! $loop->last) &middot; @endif
+      <span class="font-semibold text-gray-800">{{ $row->city_name }}</span>: {{ number_format($row->total, 0, ',', '.') }}@if(! $loop->last) &middot; @endif
     @endforeach
   </p>
 </div>

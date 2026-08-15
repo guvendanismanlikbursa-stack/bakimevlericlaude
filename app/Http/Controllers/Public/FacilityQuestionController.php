@@ -22,6 +22,8 @@ class FacilityQuestionController extends Controller
         $data = $request->validate([
             'question' => 'required|string|max:800',
             'asker_name' => 'nullable|string|max:120',
+            // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php
+            'website' => 'max:0',
         ]);
 
         $familyUserId = session('family_user_id');

@@ -10,11 +10,11 @@
 <div class="grid sm:grid-cols-2 gap-4 mb-8">
   <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
     <div class="text-xs text-gray-500">Toplam Ziyaretçi</div>
-    <div class="text-3xl font-black mt-1">{{ number_format($totalGuests) }}</div>
+    <div class="text-3xl font-black mt-1">{{ number_format($totalGuests, 0, ',', '.') }}</div>
   </div>
   <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
     <div class="text-xs text-gray-500">Toplam Sohbet (bölüm bazlı)</div>
-    <div class="text-3xl font-black mt-1">{{ number_format($totalThreads) }}</div>
+    <div class="text-3xl font-black mt-1">{{ number_format($totalThreads, 0, ',', '.') }}</div>
   </div>
 </div>
 

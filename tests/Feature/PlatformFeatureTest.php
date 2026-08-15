@@ -528,6 +528,75 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(0, FacilityReview::count());
     }
 
+    // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+    // yapilan spam/kotuye kullanim denetiminde bulundu - ayni aile hesabi
+    // ayni kuruma sinirsiz sayida tekrar yorum birakabiliyordu (bkz.
+    // Public\FacilityReviewController::store).
+    public function test_facility_review_rejects_duplicate_submission_from_same_family(): void
+    {
+        OfferRequest::create(array_merge(
+            $this->offerData('bakimevleri', $this->rehabCategory, 'Rehab icin bilgi'),
+            ['facility_id' => $this->rehabFacilityClaimed->id]
+        ));
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/yorum', [
+                'rating' => 5,
+                'body' => 'Ilk yorumum.',
+            ])->assertRedirect();
+
+        $this->assertSame(1, FacilityReview::count());
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/yorum', [
+                'rating' => 1,
+                'body' => 'Ikinci (tekrar) yorumum.',
+            ])->assertSessionHasErrors('review');
+
+        $this->assertSame(1, FacilityReview::count());
+    }
+
+    // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+    // yapilan denetimde bulundu - hicbir herkese acik formda bot korumasi
+    // yoktu. honeypot alani (bkz. partials/honeypot.blade.php) doldurulmus
+    // gelirse form sessizce (bot icin gorunmez sekilde) reddedilir.
+    public function test_contact_form_honeypot_blocks_bot_submission(): void
+    {
+        $this->post('/site/bakimevleri/iletisim', [
+            'name' => 'Bot Basvurusu',
+            'email' => 'bot@example.com',
+            'message' => 'Otomatik doldurulmus form.',
+            'website' => 'http://spam-site.example',
+        ])->assertSessionHasErrors('website');
+
+        $this->assertSame(0, \App\Models\ContactMessage::count());
+
+        $this->post('/site/bakimevleri/iletisim', [
+            'name' => 'Gercek Kullanici',
+            'email' => 'gercek@example.com',
+            'message' => 'Gercek bir mesaj.',
+        ])->assertRedirect();
+
+        $this->assertSame(1, \App\Models\ContactMessage::count());
+    }
+
+    // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
+    // yapilan bicimlendirme denetiminde bulundu - number_format() argumansiz
+    // cagrildiginda PHP varsayilani (Ingilizce virgul/nokta) kullaniyordu,
+    // 1000'i gecen "goruntulenme" sayaclarinda "1,234" gibi yanlis formatli
+    // gorunuyordu (olmasi gereken "1.234"). facility-card.blade.php dahil
+    // ~14 dosyada duzeltildi, bu test en cok kullanilan kart bilesenini korur.
+    public function test_facility_card_shows_turkish_formatted_view_count(): void
+    {
+        $this->rehabFacilityClaimed->update(['views_count' => 1234]);
+
+        $response = $this->get('/site/bakimevleri/kurumlar?bolum=rehabilitasyon');
+
+        $response->assertOk()
+            ->assertSee('1.234 kez görüntülendi')
+            ->assertDontSee('1,234 kez görüntülendi');
+    }
+
     public function test_sitemap_and_profile_quality_surfaces_are_visible(): void
     {
         // Sitemap artik marka basina uretilir (Host header'a gore); her marka

@@ -12,6 +12,12 @@ class VisitRequestController extends Controller
 {
     public function store(Request $request)
     {
+        // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php.
+        // Ayri validate() cagrisi bilerek - $validated dogrudan
+        // VisitRequest::create()'e gectigi icin 'website' anahtarinin
+        // karismasi istenmiyor.
+        $request->validate(['website' => 'max:0']);
+
         $brand = current_brand();
         $facility = Facility::published()->forBrand($brand['category_scope'])
             ->where('is_claimed', true)
@@ -46,6 +52,9 @@ class VisitRequestController extends Controller
      */
     public function storeAvailability(Request $request)
     {
+        // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php.
+        $request->validate(['website' => 'max:0']);
+
         $brand = current_brand();
         $facility = Facility::published()->forBrand($brand['category_scope'])
             ->where('is_claimed', true)

@@ -74,7 +74,7 @@
         <div class="rounded-xl border p-4 mb-5" style="background: {{ $colors['soft'] }}; border-color: {{ $colors['primary'] }}33;">
           @if($facility->views_count > 0)
             <p class="text-sm font-bold" style="color: {{ $colors['primary'] }};">
-              👀 Kurumunuz şu ana kadar <span class="text-lg">{{ number_format($facility->views_count) }}</span> kez görüntülendi — ama sahiplenmediğiniz için ailelerden gelen fiyat/ziyaret taleplerini göremiyorsunuz.
+              👀 Kurumunuz şu ana kadar <span class="text-lg">{{ number_format($facility->views_count, 0, ',', '.') }}</span> kez görüntülendi — ama sahiplenmediğiniz için ailelerden gelen fiyat/ziyaret taleplerini göremiyorsunuz.
             </p>
           @endif
           @if($nearbyClaimedCount > 0)
@@ -138,20 +138,25 @@
 
       <form method="POST" action="{{ brand_route('facility-claim.store', ['slug' => $facility->slug]) }}" enctype="multipart/form-data" class="space-y-4">
         @csrf
+        @include('themes._shared.partials.honeypot')
         <input type="hidden" name="lat" id="js-claim-lat">
         <input type="hidden" name="lng" id="js-claim-lng">
-        <input type="text" name="applicant_name" value="{{ old('applicant_name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2.5 w-full">
-        <input type="email" name="applicant_email" value="{{ old('applicant_email') }}" placeholder="E-posta (giriş bilgileri buraya gönderilecek)" required class="border rounded-lg px-3 py-2.5 w-full">
-        <input type="text" name="applicant_phone" value="{{ old('applicant_phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2.5 w-full">
+        <label for="claim-applicant-name" class="sr-only">Ad Soyad</label>
+        <input type="text" id="claim-applicant-name" name="applicant_name" value="{{ old('applicant_name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2.5 w-full">
+        <label for="claim-applicant-email" class="sr-only">E-posta</label>
+        <input type="email" id="claim-applicant-email" name="applicant_email" value="{{ old('applicant_email') }}" placeholder="E-posta (giriş bilgileri buraya gönderilecek)" required class="border rounded-lg px-3 py-2.5 w-full">
+        <label for="claim-applicant-phone" class="sr-only">Telefon</label>
+        <input type="text" id="claim-applicant-phone" name="applicant_phone" value="{{ old('applicant_phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2.5 w-full">
         <div>
-          <label class="text-sm font-medium block mb-1">Evrak / Fatura Görseli <span class="text-gray-400 font-normal">(opsiyonel, daha sonra da ekleyebilirsiniz)</span></label>
-          <input type="file" name="document" accept="image/*" class="border rounded-lg px-3 py-2.5 w-full text-sm">
+          <label for="claim-document" class="text-sm font-medium block mb-1">Evrak / Fatura Görseli <span class="text-gray-400 font-normal">(opsiyonel, daha sonra da ekleyebilirsiniz)</span></label>
+          <input type="file" id="claim-document" name="document" accept="image/*" class="border rounded-lg px-3 py-2.5 w-full text-sm">
           {{-- 13 Agustos 2026: kullanicinin talebi - belge neden istendigi
                ve nasil kullanildigi acikca yazilmali, aksi halde yabanci
                bir platforma kimlik belgesi yuklerken tereddut olusur. --}}
           <p class="text-xs text-gray-400 mt-1">Bu belge sadece kurum yetkilisi olduğunuzu doğrulamak için kullanılır, sitede yayınlanmaz, sadece yetkili adminler görebilir. Şimdi eklemezseniz 24 saat içinde WhatsApp veya e-posta ile gönderebilirsiniz — aksi halde başvurunuz otomatik iptal edilir (kurum sahibi olmayan kişilerin kurumları ele geçirmesini önlemek için).</p>
         </div>
-        <textarea name="note" placeholder="Eklemek istediğiniz not (opsiyonel)" rows="3" class="border rounded-lg px-3 py-2.5 w-full">{{ old('note') }}</textarea>
+        <label for="claim-note" class="sr-only">Not (opsiyonel)</label>
+        <textarea id="claim-note" name="note" placeholder="Eklemek istediğiniz not (opsiyonel)" rows="3" class="border rounded-lg px-3 py-2.5 w-full">{{ old('note') }}</textarea>
         <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $colors['primary'] }};">Başvuruyu Gönder</button>
         {{-- 14 Agustos 2026: kullanicinin talebi - "hicbir taahhut yok" zaten
              fayda listesinde vardi ama diger 6 maddenin arasinda kayboluyordu;

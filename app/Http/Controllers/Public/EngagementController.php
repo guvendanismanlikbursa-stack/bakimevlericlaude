@@ -98,7 +98,14 @@ class EngagementController extends Controller
                 'district' => $facility->district,
                 'category' => $facility->category?->name,
                 'section' => $section['title'] ?? null,
-                'rating' => number_format((float) $facility->rating, 1),
+                // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi
+                // uzerine yapilan denetimde bulundu - daha once duzeltilen
+                // "★ 0.0" gosterim hatasinin (rating=0 iken sanki gercek bir
+                // puanmis gibi gorunmesi) bu Karsilastir/Favoriler sayfasinda
+                // TEKRARI - burasi tek istisna olarak rating>0 kontrolu
+                // yapmadan formatliyordu. null donup JS tarafinda "Puan yok"
+                // gosteriliyor (bkz. board.blade.php).
+                'rating' => $facility->rating > 0 ? number_format((float) $facility->rating, 1) : null,
                 'price_min' => $facility->price_min ? number_format($facility->price_min, 0, ',', '.') . ' TL' : 'Fiyat iste',
                 'capacity' => $facility->capacity ?: '-',
                 'services' => array_slice($facility->services ?? [], 0, 5),

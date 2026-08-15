@@ -37,6 +37,8 @@ class AuthController extends Controller
             'consent' => 'required|accepted',
             'signup_lat' => 'nullable|numeric|between:-90,90',
             'signup_lng' => 'nullable|numeric|between:-180,180',
+            // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php
+            'website' => 'max:0',
         ], [
             'consent.required' => 'Açık rıza metnini onaylamadan hesap oluşturamazsınız.',
             'consent.accepted' => 'Açık rıza metnini onaylamadan hesap oluşturamazsınız.',

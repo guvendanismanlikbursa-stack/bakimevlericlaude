@@ -13,11 +13,17 @@
 
   <form method="POST" action="{{ brand_route('family.register.attempt') }}" id="family-register-form" class="bg-white p-6 rounded-xl shadow-sm space-y-4">
     @csrf
-    <input type="text" name="name" value="{{ old('name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
-    <input type="password" name="password_confirmation" placeholder="Şifre (tekrar)" required class="border rounded-lg px-3 py-2 w-full">
+    @include('themes._shared.partials.honeypot')
+    <label for="family-reg-name" class="sr-only">Ad Soyad</label>
+    <input type="text" id="family-reg-name" name="name" value="{{ old('name') }}" placeholder="Ad Soyad" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="family-reg-email" class="sr-only">E-posta</label>
+    <input type="email" id="family-reg-email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="family-reg-phone" class="sr-only">Telefon</label>
+    <input type="text" id="family-reg-phone" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="family-reg-password" class="sr-only">Şifre</label>
+    <input type="password" id="family-reg-password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
+    <label for="family-reg-password-confirmation" class="sr-only">Şifre (tekrar)</label>
+    <input type="password" id="family-reg-password-confirmation" name="password_confirmation" placeholder="Şifre (tekrar)" required class="border rounded-lg px-3 py-2 w-full">
 
     <input type="hidden" name="signup_lat" id="signup_lat">
     <input type="hidden" name="signup_lng" id="signup_lng">

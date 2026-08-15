@@ -95,9 +95,9 @@ $siteRoutes = function () {
     Route::get('/rehber/{sectionSlug}', [LocationGuideController::class, 'index'])->name('location-guide.index');
     Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->name('location-guide.category');
     Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->name('location-guide.show');
-    Route::get('/kurumlar', [FacilityController::class, 'index'])->name('facilities.index');
+    Route::get('/kurumlar', [FacilityController::class, 'index'])->middleware('throttle:public-browse')->name('facilities.index');
     Route::get('/kurumlar-sayisi', [FacilityController::class, 'count'])->middleware('throttle:public-light')->name('facilities.count');
-    Route::get('/kurumlar/{slug}', [FacilityController::class, 'show'])->name('facilities.show');
+    Route::get('/kurumlar/{slug}', [FacilityController::class, 'show'])->middleware('throttle:public-browse')->name('facilities.show');
     Route::post('/kurumlar/{slug}/yorum', [FacilityReviewController::class, 'store'])->middleware('throttle:public-form')->name('reviews.store');
     Route::post('/kurumlar/{slug}/ziyaret-talebi', [VisitRequestController::class, 'store'])->middleware('throttle:public-form')->name('visit-requests.store');
     Route::post('/kurumlar/{slug}/kontenjan-sor', [VisitRequestController::class, 'storeAvailability'])->middleware('throttle:public-form')->name('visit-requests.availability');
@@ -250,19 +250,26 @@ $siteRoutes = function () {
 
             Route::get('/profil', [FacilityProfileController::class, 'edit'])->name('profile.edit');
             Route::put('/profil', [FacilityProfileController::class, 'update'])->name('profile.update');
-            Route::post('/profil/gorsel', [FacilityProfileController::class, 'uploadImage'])->name('profile.image.store');
+            // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi
+            // uzerine yapilan spam/kotuye kullanim denetiminde bulundu -
+            // anonim ucler (sahiplen, kurum-kaydi) zaten throttle:public-
+            // sensitive tasiyordu, ama oturum-ici dosya yukleme ucleri
+            // (profil gorseli, dekont) unutulmustu - ele gecirilmis/kotu
+            // niyetli bir hesap disk alani + admin bildirim kuyrugunu
+            // sinirsiz doldurabilirdi.
+            Route::post('/profil/gorsel', [FacilityProfileController::class, 'uploadImage'])->middleware('throttle:public-sensitive')->name('profile.image.store');
             Route::delete('/profil/gorsel/{image}', [FacilityProfileController::class, 'deleteImage'])->name('profile.image.destroy');
             Route::put('/profil/bildirim-tercihleri', [FacilityProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
 
             Route::get('/bakiyem', [FacilityWalletController::class, 'index'])->name('wallet.index');
-            Route::post('/bakiyem', [FacilityWalletController::class, 'store'])->name('wallet.store');
+            Route::post('/bakiyem', [FacilityWalletController::class, 'store'])->middleware('throttle:public-sensitive')->name('wallet.store');
 
             Route::get('/bildirimler', [FacilityNotificationController::class, 'index'])->name('notifications.index');
             Route::post('/bildirimler/{notification}/okundu', [FacilityNotificationController::class, 'markRead'])->name('notifications.read');
             Route::get('/bildirimler/sayi', [FacilityNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 
             Route::get('/paketler', [FacilitySubscriptionController::class, 'index'])->name('packages.index');
-            Route::post('/paketler/{package}', [FacilitySubscriptionController::class, 'store'])->name('packages.store');
+            Route::post('/paketler/{package}', [FacilitySubscriptionController::class, 'store'])->middleware('throttle:public-sensitive')->name('packages.store');
 
             Route::get('/sorular', [FacilityQuestionPanelController::class, 'index'])->name('questions.index');
             Route::post('/sorular/{question}/cevapla', [FacilityQuestionPanelController::class, 'answer'])->name('questions.answer');
@@ -271,7 +278,7 @@ $siteRoutes = function () {
             Route::post('/yorumlar/{review}/cevapla', [\App\Http\Controllers\Facility\ReviewController::class, 'reply'])->name('reviews.reply');
 
             Route::get('/ekip', [\App\Http\Controllers\Facility\TeamController::class, 'index'])->name('team.index');
-            Route::post('/ekip', [\App\Http\Controllers\Facility\TeamController::class, 'store'])->name('team.store');
+            Route::post('/ekip', [\App\Http\Controllers\Facility\TeamController::class, 'store'])->middleware('throttle:public-sensitive')->name('team.store');
             Route::delete('/ekip/{member}', [\App\Http\Controllers\Facility\TeamController::class, 'destroy'])->name('team.destroy');
         });
     });
