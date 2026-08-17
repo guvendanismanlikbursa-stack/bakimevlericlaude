@@ -86,7 +86,14 @@ class EngagementController extends Controller
         $lastAt = session($sessionKey);
 
         if (! $lastAt || now()->diffInHours($lastAt) >= 24) {
-            $facility->engagementEvents()->create(['type' => $data['type']]);
+            // GUVENLIK: bkz. FacilityController::show ayni tarihli yorum -
+            // bu ikincil analitik yazma basarisiz olsa bile butonun kendi
+            // islevini (tel:/wa.me acilmasi) engellememeli.
+            try {
+                $facility->engagementEvents()->create(['type' => $data['type']]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Iletisim tiklama olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+            }
             session([$sessionKey => now()]);
         }
 

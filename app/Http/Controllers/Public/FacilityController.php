@@ -196,7 +196,16 @@ class FacilityController extends Controller
                 // 17 Agustos 2026: kullanicinin talebi - son 30 gunluk
                 // goruntulenme rakami icin (bkz. Facility::engagementStats30d)
                 // ayni 24 saatlik tekillestirme ile bir olay kaydi da tutulur.
-                $facility->engagementEvents()->create(['type' => 'view']);
+                // GUVENLIK: try/catch ile sarmalandi - bu ikincil/analitik bir
+                // yazma islemi, sayfanin asil yuklenmesini engellememeli
+                // (canli olayda tam olarak yasandi: bir deploy'un dosya
+                // yukleme ile migration adimlari arasindaki birkac saniyelik
+                // pencerede gercek bir ziyaretci bu satirda 500 aldi).
+                try {
+                    $facility->engagementEvents()->create(['type' => 'view']);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Goruntulenme olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+                }
                 session([$viewedKey => now()]);
             }
         }
