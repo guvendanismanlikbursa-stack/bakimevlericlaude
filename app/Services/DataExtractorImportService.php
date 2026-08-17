@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 
 class DataExtractorImportService
 {
-    public function __construct(private FacilityImportImageService $imageService)
+    public function __construct(private FacilityImportImageService $imageService, private GeocodingService $geocodingService)
     {
     }
 
@@ -81,6 +81,19 @@ class DataExtractorImportService
 
             $phoneType = classify_phone_type($item['phone']);
 
+            // 17 Agustos 2026: bkz. DataImportRowApprovalService ayni tarihli
+            // yorum - bu dogrudan-yayinlama yolu (xlsx yukleme, onay bekletmez)
+            // icin de ayni otomatik geocoding fallback'i uygulanir.
+            $lat = $this->coordinate($item['lat']);
+            $lng = $this->coordinate($item['lng']);
+            if ($lat === null && $lng === null && filled($item['address'])) {
+                $coords = $this->geocodingService->geocodeAddress($item['address'], $districtModel?->name ?? $district, $city->name);
+                if ($coords) {
+                    $lat = $coords['lat'];
+                    $lng = $coords['lng'];
+                }
+            }
+
             try {
                 $facility = Facility::create([
                     'name' => $item['name'],
@@ -91,8 +104,8 @@ class DataExtractorImportService
                     'ownership_type' => $ownershipType,
                     'district' => $districtModel?->name ?? $district,
                     'address' => $item['address'],
-                    'lat' => $this->coordinate($item['lat']),
-                    'lng' => $this->coordinate($item['lng']),
+                    'lat' => $lat,
+                    'lng' => $lng,
                     'phone' => $item['phone'],
                     'phone_type' => $phoneType,
                     'invitation_status' => $phoneType === 'mobile' ? 'not_started' : ($phoneType === 'landline' ? 'landline_only' : 'contact_missing'),

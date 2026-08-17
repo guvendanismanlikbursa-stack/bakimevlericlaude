@@ -10,6 +10,7 @@ use App\Models\Facility;
 use App\Models\FacilityCategory;
 use App\Models\FacilityImage;
 use App\Services\FacilityArchiveService;
+use App\Services\GeocodingService;
 use App\Services\ImageCompressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -136,7 +137,7 @@ class FacilityController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, GeocodingService $geocodingService)
     {
         $data = $this->validateData($request);
         $data['slug'] = $this->uniqueSlug($data['name']);
@@ -145,6 +146,19 @@ class FacilityController extends Controller
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_claimed'] = false;
         $data['district_id'] = $this->resolveDistrictId($data['district'] ?? null, $data['city_id']);
+
+        // 17 Agustos 2026: kullanicinin talebi - admin panelden elle kurum
+        // eklerken koordinat girmez, sadece adres yazar; girilen adrese gore
+        // otomatik konumlandirilmazsa kurum sayfasinda Google Haritalar hic
+        // gorunmez (bkz. Facility::hasPreciseLocation()).
+        if (! filled($data['lat'] ?? null) && ! filled($data['lng'] ?? null) && filled($data['address'] ?? null)) {
+            $cityName = City::find($data['city_id'])?->name;
+            $coords = $geocodingService->geocodeAddress($data['address'], $data['district'] ?? null, $cityName);
+            if ($coords) {
+                $data['lat'] = $coords['lat'];
+                $data['lng'] = $coords['lng'];
+            }
+        }
 
         $facility = Facility::create($data);
 
@@ -164,12 +178,28 @@ class FacilityController extends Controller
         return view('admin.facilities.form', compact('facility', 'cities', 'categories', 'serviceSections', 'returnTo'));
     }
 
-    public function update(Request $request, Facility $facility)
+    public function update(Request $request, Facility $facility, GeocodingService $geocodingService)
     {
         $data = $this->validateData($request, $facility->id);
 
         if ($data['name'] !== $facility->name) {
             $data['slug'] = $this->uniqueSlug($data['name'], $facility->id);
+        }
+
+        // 17 Agustos 2026: kullanicinin talebi (bkz. store() ayni tarihli
+        // yorum) - admin koordinati elle degistirmemis (lat/lng bos
+        // birakilmis) ama adresi guncellemis/ilk kez girmisse, otomatik
+        // yeniden konumlandir. Admin daha once elle veya otomatik dogru bir
+        // koordinat girmisse ve adresi degistirmemisse DOKUNULMAZ.
+        if (! filled($data['lat'] ?? null) && ! filled($data['lng'] ?? null)
+            && filled($data['address'] ?? null)
+            && $data['address'] !== $facility->address) {
+            $cityName = City::find($data['city_id'])?->name;
+            $coords = $geocodingService->geocodeAddress($data['address'], $data['district'] ?? null, $cityName);
+            if ($coords) {
+                $data['lat'] = $coords['lat'];
+                $data['lng'] = $coords['lng'];
+            }
         }
 
         $data['services'] = $this->parseServices($request->input('services_raw'), $request->input('services', []));

@@ -10,6 +10,7 @@ use App\Models\BalanceLog;
 use App\Models\Facility;
 use App\Models\FacilityRegistration;
 use App\Models\FacilityUser;
+use App\Services\GeocodingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -48,12 +49,12 @@ class FacilityRegistrationController extends Controller
         return view('admin.registrations.show', compact('registration'));
     }
 
-    public function approve(Request $request, FacilityRegistration $registration)
+    public function approve(Request $request, FacilityRegistration $registration, GeocodingService $geocodingService)
     {
         $temporaryPassword = Str::password(14);
         $freeCredits = (int) config('platform.free_claim_credits', 5);
 
-        $mailPayload = DB::transaction(function () use ($registration, $temporaryPassword, $freeCredits) {
+        $mailPayload = DB::transaction(function () use ($registration, $temporaryPassword, $freeCredits, $geocodingService) {
             $registration = FacilityRegistration::whereKey($registration->id)->lockForUpdate()->firstOrFail();
             // 12 Agustos 2026: kullanicinin talebi - admin daha once
             // reddettigi bir kayit basvurusunu gerekirse sonradan
@@ -69,6 +70,15 @@ class FacilityRegistrationController extends Controller
                 return ['error' => $error];
             }
 
+            // 17 Agustos 2026: kullanicinin talebi - kendi kaydini yapan
+            // kurum yetkilisi formda koordinat girmez, sadece adres yazar.
+            // Onceden bu kurumlar hicbir zaman il-merkezi disinda gercek
+            // konuma sahip olmuyordu (bkz. GeocodingService yorumu).
+            $coords = null;
+            if (filled($registration->address)) {
+                $coords = $geocodingService->geocodeAddress($registration->address, $registration->district, $registration->city?->name);
+            }
+
             $facility = Facility::create([
                 'name' => $registration->name,
                 'slug' => $this->uniqueSlug($registration->name),
@@ -76,6 +86,8 @@ class FacilityRegistrationController extends Controller
                 'facility_category_id' => $registration->facility_category_id,
                 'district' => $registration->district,
                 'address' => $registration->address,
+                'lat' => $coords['lat'] ?? null,
+                'lng' => $coords['lng'] ?? null,
                 'phone' => $registration->phone,
                 'description' => $registration->description,
                 'capacity' => $registration->capacity,

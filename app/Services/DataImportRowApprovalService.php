@@ -14,7 +14,7 @@ use RuntimeException;
 
 class DataImportRowApprovalService
 {
-    public function __construct(private FacilityImportImageService $imageService)
+    public function __construct(private FacilityImportImageService $imageService, private GeocodingService $geocodingService)
     {
     }
 
@@ -79,6 +79,20 @@ class DataImportRowApprovalService
         $description = $item['description'] ?: $this->generatedDescription($item, $category);
         $phoneType = classify_phone_type($item['phone']);
 
+        // 17 Agustos 2026: kullanicinin talebi - Google Maps'ten cekilen
+        // satirda koordinat bazen bos gelir (kazima sirasinda kaybolmus
+        // olabilir); adres varsa burada otomatik tamamlanir, artik periyodik
+        // toplu geocoding'e bagimli degil (bkz. GeocodingService yorumu).
+        $lat = $this->coordinate($item['lat']);
+        $lng = $this->coordinate($item['lng']);
+        if ($lat === null && $lng === null && filled($item['address'])) {
+            $coords = $this->geocodingService->geocodeAddress($item['address'], $districtModel?->name ?? $item['district'], $city->name);
+            if ($coords) {
+                $lat = $coords['lat'];
+                $lng = $coords['lng'];
+            }
+        }
+
         $facility = Facility::create([
             'name' => $item['name'],
             'slug' => $this->uniqueSlug($item['name']),
@@ -88,8 +102,8 @@ class DataImportRowApprovalService
             'ownership_type' => $ownershipType,
             'district' => $districtModel?->name ?? $item['district'],
             'address' => $item['address'],
-            'lat' => $this->coordinate($item['lat']),
-            'lng' => $this->coordinate($item['lng']),
+            'lat' => $lat,
+            'lng' => $lng,
             'phone' => $item['phone'],
             'phone_type' => $phoneType,
             'invitation_status' => $phoneType === 'mobile' ? 'not_started' : ($phoneType === 'landline' ? 'landline_only' : 'contact_missing'),
