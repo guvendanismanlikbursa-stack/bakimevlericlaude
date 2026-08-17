@@ -102,6 +102,7 @@ $siteRoutes = function () {
     Route::post('/kurumlar/{slug}/ziyaret-talebi', [VisitRequestController::class, 'store'])->middleware('throttle:public-form')->name('visit-requests.store');
     Route::post('/kurumlar/{slug}/kontenjan-sor', [VisitRequestController::class, 'storeAvailability'])->middleware('throttle:public-form')->name('visit-requests.availability');
     Route::post('/kurumlar/{slug}/favori-say', [EngagementController::class, 'toggleFavoriteCount'])->middleware('throttle:public-light')->name('facilities.favorite-count');
+    Route::post('/kurumlar/{slug}/iletisim-tiklama', [EngagementController::class, 'trackContactClick'])->middleware('throttle:public-light')->name('facilities.contact-click');
     Route::post('/kurumlar/{slug}/gorsel/{image}/goruntulendi', [\App\Http\Controllers\Public\FacilityImageController::class, 'markViewed'])->middleware('throttle:public-light')->name('facilities.image.viewed');
     Route::post('/teklif-talebi', [OfferRequestController::class, 'store'])->middleware('throttle:public-form')->name('offer-requests.store');
     Route::get('/toplu-fiyat-al', [EngagementController::class, 'bulkQuote'])->name('engagement.bulk-quote');

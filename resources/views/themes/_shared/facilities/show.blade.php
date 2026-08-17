@@ -199,6 +199,63 @@
     @include('themes._shared.partials.image-lightbox')
     <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $galleryId }}', @json(brand_route('facilities.image.viewed', ['slug' => $facility->slug, 'image' => '__IMAGE_ID__']))); });</script>
 
+    {{-- 17 Agustos 2026: kullanicinin talebi - Kurum Performansi karti
+         galerinin hemen altina tasindi. Herkese acik alanda SADECE
+         goruntulenme rakami gosterilir; telefon/WhatsApp tiklamasi baslik
+         olarak gorunur ama rakami kilitlidir - bu veriyi sadece sahiplenmis
+         kurumun yetkilisi kendi panelinden gorebilir (bkz. facility/
+         dashboard.blade.php Performans Trendi). Amac: somut talep kanitini
+         gostermek ama detayi sahiplenme icin bir tesvik olarak saklamak. --}}
+    @php $perf = $facility->performanceSummary(); $stats30d = $facility->engagementStats30d(); @endphp
+    <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+      <h3 class="font-black text-gray-950 mb-1">Kurum Performansı</h3>
+      <p class="text-xs text-gray-400 mb-3">Son 30 gün</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+        <div>
+          <div class="text-gray-500 text-xs">👁️ Profil görüntüleme</div>
+          <div class="font-black">{{ number_format($stats30d['views'], 0, ',', '.') }}</div>
+        </div>
+        <div>
+          <div class="text-gray-500 text-xs">📞 Telefon tıklaması</div>
+          <div class="font-black text-gray-300">🔒</div>
+        </div>
+        <div>
+          <div class="text-gray-500 text-xs">💬 WhatsApp tıklaması</div>
+          <div class="font-black text-gray-300">🔒</div>
+        </div>
+        <div>
+          <div class="text-gray-500 text-xs">Son Güncelleme</div>
+          <div class="font-black">{{ $perf['last_updated_at']->diffForHumans() }}</div>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">🔒 Bu veriyi sadece kurum yetkilileri görebilir.</p>
+      <div class="mt-3 flex gap-2 flex-wrap">
+        @if($perf['is_claimed'])
+          <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Yetkilisi tarafından doğrulandı{{ $perf['claimed_at'] ? ' · '.$perf['claimed_at']->format('d.m.Y') : '' }}</span>
+        @else
+          <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">Henüz doğrulanmadı (ön kayıtlı profil)</span>
+        @endif
+      </div>
+    </div>
+
+    @if($facility->hasPreciseLocation())
+      {{-- 17 Agustos 2026: kullanicinin talebi - Google Haritalar konumu.
+           SADECE gercek adresten geocode edilmis kurumlarda gosterilir
+           (bkz. Facility::hasPreciseLocation) - il merkezi yedek
+           koordinatiyla aileyi yanlis yere yonlendirmemek icin. --}}
+      <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+        <h3 class="font-black text-gray-950 mb-3">Konum</h3>
+        <div class="rounded-lg overflow-hidden border border-gray-100">
+          <iframe
+            title="{{ $facility->name }} konumu"
+            src="https://maps.google.com/maps?q={{ $facility->lat }},{{ $facility->lng }}&z=15&output=embed"
+            width="100%" height="280" style="border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+        </div>
+        <a href="https://www.google.com/maps/dir/?api=1&destination={{ $facility->lat }},{{ $facility->lng }}" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 text-sm font-black" style="color: {{ $colors['primary'] }};">📍 Yol tarifi al</a>
+      </div>
+    @endif
+
     <div class="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
       <div class="text-sm font-black mb-3" style="color: {{ $colors['primary'] }};">Bu bölümde sorulacak aksiyonlar</div>
       <div class="grid sm:grid-cols-3 gap-3">
@@ -252,24 +309,6 @@
             Bilgi için iletişime geçin
           @endif
         </div>
-      </div>
-    </div>
-
-    @php $perf = $facility->performanceSummary(); @endphp
-    <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-      <h3 class="font-black text-gray-950 mb-3">Kurum Performansı</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-        <div><div class="text-gray-500 text-xs">İncelenme</div><div class="font-black">{{ number_format($perf['views_count'], 0, ',', '.') }}</div></div>
-        <div><div class="text-gray-500 text-xs">Favoriye Eklenme</div><div class="font-black">{{ number_format($perf['favorites_count'], 0, ',', '.') }}</div></div>
-        <div><div class="text-gray-500 text-xs">Alınan Teklif</div><div class="font-black">{{ number_format($perf['offers_count'], 0, ',', '.') }}</div></div>
-        <div><div class="text-gray-500 text-xs">Son Güncelleme</div><div class="font-black">{{ $perf['last_updated_at']->diffForHumans() }}</div></div>
-      </div>
-      <div class="mt-3 flex gap-2 flex-wrap">
-        @if($perf['is_claimed'])
-          <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Yetkilisi tarafından doğrulandı{{ $perf['claimed_at'] ? ' · '.$perf['claimed_at']->format('d.m.Y') : '' }}</span>
-        @else
-          <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">Henüz doğrulanmadı (ön kayıtlı profil)</span>
-        @endif
       </div>
     </div>
 
@@ -425,7 +464,31 @@
         </div>
       @else
         <h3 class="font-black mb-2 text-gray-950">Bu kurum henüz sahiplenilmedi</h3>
-        <p class="text-sm text-gray-500">Ücret/teklif bilgisi, ziyaret talebi ve kontenjan sorgusu ancak kurum yetkilisi profili sahiplenip onayladıktan sonra kullanılabilir. Bu bilgiler Google Maps verilerinden otomatik toplanmış ön kayıt profilidir.</p>
+        <p class="text-sm text-gray-500 mb-4">Ücret/teklif bilgisi, ziyaret talebi ve kontenjan sorgusu ancak kurum yetkilisi profili sahiplenip onayladıktan sonra kullanılabilir. Bu bilgiler Google Maps verilerinden otomatik toplanmış ön kayıt profilidir.</p>
+        {{-- 17 Agustos 2026: kullanicinin talebi - sahiplenilmemis kurumda
+             platform-ici teklif/ziyaret akisi olmadigi icin, ziyaretcinin
+             kuruma DOGRUDAN ulasabilecegi 2 buton (arama+WhatsApp) eklendi.
+             Tiklamalar Facility::engagementStats30d() icin kaydedilir -
+             kurum sahiplenmeye tesvik edilirken gercek talep kanitina
+             donusur (bkz. yukaridaki Kurum Performansi karti). --}}
+        @if($facility->phone)
+          <a href="tel:{{ $facility->phone }}" data-contact-track="phone_click" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mb-2" style="background: {{ $colors['primary'] }};">📞 Kurumu Ara</a>
+        @endif
+        @if($facilityWhatsappUrl = facility_whatsapp_url($facility))
+          <a href="{{ $facilityWhatsappUrl }}" target="_blank" rel="noopener" data-contact-track="whatsapp_click" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-center border-2" style="border-color:#25D366; color:#128C4A;">💬 WhatsApp'tan Yaz</a>
+        @endif
+        <script>
+        document.querySelectorAll('[data-contact-track]').forEach(function (el) {
+          el.addEventListener('click', function () {
+            fetch(@json(brand_route('facilities.contact-click', ['slug' => $facility->slug])), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
+              body: JSON.stringify({ type: el.dataset.contactTrack }),
+              keepalive: true,
+            }).catch(function () {});
+          });
+        });
+        </script>
       @endif
 
       @unless($facility->is_claimed)

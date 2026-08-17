@@ -3587,4 +3587,85 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue($visibleIds->contains($normal->id), 'source NULL olan gercek kurum kesif sorgusunda gorunmeli.');
         $this->assertFalse($visibleIds->contains($qaTest->id), 'source=qa_test olan test kurumu kesif sorgusunda gizlenmeli.');
     }
+
+    // 17 Agustos 2026: kullanicinin talebi - sahiplenilmemis kurum sayfasinda
+    // "size gercekten talep geliyor" kanitini gostermek icin eklenen 30
+    // gunluk goruntulenme/telefon/WhatsApp istatistigi. 35 gun once olan
+    // olay sayilmamali, 5 gun once olan sayilmali.
+    public function test_facility_engagement_stats_30d_only_counts_recent_events(): void
+    {
+        $facility = $this->rehabFacility;
+
+        $facility->engagementEvents()->create(['type' => 'view', 'created_at' => now()->subDays(35)]);
+        $facility->engagementEvents()->create(['type' => 'view', 'created_at' => now()->subDays(5)]);
+        $facility->engagementEvents()->create(['type' => 'view', 'created_at' => now()->subDays(1)]);
+        $facility->engagementEvents()->create(['type' => 'phone_click', 'created_at' => now()->subDays(2)]);
+        $facility->engagementEvents()->create(['type' => 'whatsapp_click', 'created_at' => now()->subDays(40)]);
+
+        $stats = $facility->fresh()->engagementStats30d();
+
+        $this->assertSame(2, $stats['views'], '35 gun onceki goruntulenme sayilmamali, sadece son 30 gun sayilmali.');
+        $this->assertSame(1, $stats['phone_clicks']);
+        $this->assertSame(0, $stats['whatsapp_clicks'], '40 gun onceki WhatsApp tiklamasi sayilmamali.');
+    }
+
+    public function test_facility_show_page_records_view_engagement_event(): void
+    {
+        $facility = $this->rehabFacilityClaimed;
+
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
+            ->assertOk();
+
+        $this->assertDatabaseHas('facility_engagement_events', ['facility_id' => $facility->id, 'type' => 'view']);
+    }
+
+    public function test_unclaimed_facility_page_shows_direct_contact_buttons_and_tracks_clicks(): void
+    {
+        $facility = $this->rehabFacility;
+        // facility_whatsapp_url() sadece mobil (05xx) formatli numaralarda
+        // link uretir - fixture'in varsayilan sabit hatti bunun disinda kalir.
+        $facility->update(['phone' => '05321234567']);
+
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
+            ->assertOk()
+            ->assertSee('Kurumu Ara')
+            ->assertSee('WhatsApp')
+            ->assertSee('🔒');
+
+        $this->postJson('/site/bakimeviara/kurumlar/'.$facility->slug.'/iletisim-tiklama', ['type' => 'phone_click'])
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $this->assertDatabaseHas('facility_engagement_events', ['facility_id' => $facility->id, 'type' => 'phone_click']);
+
+        // Ayni oturumda 2. tiklama 24 saat icinde tekrar sayilmamali.
+        $this->postJson('/site/bakimeviara/kurumlar/'.$facility->slug.'/iletisim-tiklama', ['type' => 'phone_click']);
+        $this->assertSame(1, DB::table('facility_engagement_events')->where('facility_id', $facility->id)->where('type', 'phone_click')->count());
+    }
+
+    public function test_claimed_facility_card_uses_full_layout_and_unclaimed_uses_compact_layout(): void
+    {
+        $response = $this->get('/site/bakimeviara/kurumlar?bolum=rehabilitasyon');
+
+        $response->assertOk();
+        // Sahiplenilmis kart: "Fiyat Al" ve "Karşılaştır" butonlari sadece buyuk kartta var.
+        $response->assertSee('Karşılaştır');
+        // On kayitli kart: kompakt kart rozeti.
+        $response->assertSee('Ön Kayıtlı');
+    }
+
+    public function test_has_precise_location_rejects_city_centroid_fallback(): void
+    {
+        $facility = $this->rehabFacility;
+        $centroid = config('turkiye_centroids.'.$facility->city->name);
+
+        $facility->update(['lat' => $centroid[0], 'lng' => $centroid[1]]);
+        $this->assertFalse($facility->fresh()->hasPreciseLocation(), 'Il merkezi koordinatiyla ayni olan konum hassas sayilmamali.');
+
+        $facility->update(['lat' => $centroid[0] + 0.05, 'lng' => $centroid[1] + 0.05]);
+        $this->assertTrue($facility->fresh()->hasPreciseLocation(), 'Il merkezinden belirgin sekilde farkli koordinat hassas sayilmali.');
+
+        $facility->update(['lat' => null, 'lng' => null]);
+        $this->assertFalse($facility->fresh()->hasPreciseLocation(), 'lat/lng bossa hassas konum olamaz.');
+    }
 }

@@ -83,6 +83,11 @@ class Facility extends Model
         return $this->hasMany(FacilityImage::class)->orderBy('sort_order');
     }
 
+    public function engagementEvents()
+    {
+        return $this->hasMany(FacilityEngagementEvent::class);
+    }
+
 
     public function serviceOptions()
     {
@@ -328,6 +333,50 @@ class Facility extends Model
             'is_claimed' => $this->is_claimed,
             'claimed_at' => $this->claimed_at,
         ];
+    }
+
+    // 17 Agustos 2026: kullanicinin talebi - sahiplenilmemis kurum sayfasinda
+    // "size gercekten talep geliyor" kanitini son 30 gune gore gosterme.
+    // Gunluk pencere (24 saat) dusuk trafikli kurumlarda cogunlukla 0
+    // gosterip mesaji zayiflatirdi; 30 gun daha istikrarli.
+    public function engagementStats30d(): array
+    {
+        $counts = $this->engagementEvents()
+            ->where('created_at', '>=', now()->subDays(30))
+            ->selectRaw('type, count(*) as total')
+            ->groupBy('type')
+            ->pluck('total', 'type');
+
+        return [
+            'views' => (int) ($counts['view'] ?? 0),
+            'phone_clicks' => (int) ($counts['phone_click'] ?? 0),
+            'whatsapp_clicks' => (int) ($counts['whatsapp_click'] ?? 0),
+        ];
+    }
+
+    /**
+     * 17 Agustos 2026: kullanicinin talebi - "yol tarifi"/harita SADECE
+     * kurumun GERCEK adresinden geocode edilmis konumu varsa gosterilmeli;
+     * aksi halde aileyi il merkezine (yanlis yere) yonlendirir. Ayri bir
+     * "hassasiyet" sutunu yok - geoFillCityCentroid() SADECE lat/lng bos
+     * kurumlari il merkeziyle doldurdugu icin, kaydedilen deger o ilin
+     * merkez koordinatiyla (turkiye_centroids.php) TAM ESLESIYORSA bu,
+     * gercek bir adresin tesadufen tam o noktaya denk gelmesinden
+     * (istatistiksel olarak imkansiza yakin) COK daha olası şekilde bir
+     * il-merkezi yedegidir.
+     */
+    public function hasPreciseLocation(): bool
+    {
+        if (! $this->lat || ! $this->lng) {
+            return false;
+        }
+
+        $centroid = config('turkiye_centroids.'.$this->city?->name);
+        if (! $centroid) {
+            return true;
+        }
+
+        return abs((float) $this->lat - $centroid[0]) > 0.0001 || abs((float) $this->lng - $centroid[1]) > 0.0001;
     }
 
     /**

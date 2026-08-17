@@ -12,6 +12,28 @@
   // aksiyonlar sadece sahiplenilmis kurumlarda anlamli.
   $isPreRegisteredCard = ! $facility->is_claimed;
 @endphp
+@if($isPreRegisteredCard)
+  {{-- 17 Agustos 2026: kullanicinin talebi - on kayitli kurumlar buyuk
+       kartla ayni yeri kapladigi icin listelerde az kurum gorunuyordu,
+       ayrica sahiplenilmis kurumlardan gorsel olarak ayrilmiyordu. "Benzer
+       Kurumlar" bolumundeki kucuk yatay mini-kart deseni burada da
+       kullanildi - tiklaninca yine ayni tam kurum detay sayfasi acilir,
+       ayrica bir aksiyon butonu yok. Sahiplenilmis kurumlarda buyuk kart
+       (asagida) DEGISMEDEN kaliyor. --}}
+  <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition group">
+    <div class="w-14 h-14 shrink-0 rounded-md overflow-hidden bg-gray-50 relative">
+      <img src="{{ $cardImage }}" alt="{{ $facility->name }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition">
+    </div>
+    <div class="min-w-0">
+      <div class="flex items-center gap-1.5">
+        <span class="bg-amber-100 text-amber-700 text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0">Ön Kayıtlı</span>
+        @if($facility->is_featured)<span class="text-[10px] font-black text-amber-700 shrink-0">⭐</span>@endif
+      </div>
+      <div class="text-sm font-black text-gray-950 line-clamp-1">{{ $facility->name }}</div>
+      <div class="text-xs text-gray-500 line-clamp-1">{{ $facility->city->name }} · {{ $facility->district }}</div>
+    </div>
+  </a>
+@else
 {{--
   14 Agustos 2026: kullanicinin talebi - "one cikan" kurumlar gorsel
   olarak da fark edilmeli, diger kartlarla ayni gorunmemeli (aksi halde
@@ -71,14 +93,10 @@
     </div>
   </a>
   <div class="px-4 pb-4 grid grid-cols-2 gap-2">
-    @if($isPreRegisteredCard)
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 text-center hover:bg-gray-50">İncele</a>
-      <a href="{{ brand_route('facility-claim.create', ['slug' => $facility->slug]) }}" class="rounded-lg px-3 py-2 text-sm font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Sahiplen</a>
-    @else
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 text-center hover:bg-gray-50">İncele</a>
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="rounded-lg px-3 py-2 text-sm font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Fiyat Al</a>
-      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
-      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
-    @endif
+    <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 text-center hover:bg-gray-50">İncele</a>
+    <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="rounded-lg px-3 py-2 text-sm font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Fiyat Al</a>
+    <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+    <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
   </div>
 </article>
+@endif

@@ -193,6 +193,10 @@ class FacilityController extends Controller
 
             if (! $lastViewedAt || now()->diffInHours($lastViewedAt) >= 24) {
                 $facility->increment('views_count');
+                // 17 Agustos 2026: kullanicinin talebi - son 30 gunluk
+                // goruntulenme rakami icin (bkz. Facility::engagementStats30d)
+                // ayni 24 saatlik tekillestirme ile bir olay kaydi da tutulur.
+                $facility->engagementEvents()->create(['type' => 'view']);
                 session([$viewedKey => now()]);
             }
         }

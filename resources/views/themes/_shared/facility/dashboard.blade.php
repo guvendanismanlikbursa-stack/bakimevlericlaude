@@ -122,6 +122,32 @@
     @endif
   </div>
 
+  {{-- 17 Agustos 2026: kullanicinin talebi - herkese acik kurum sayfasinda
+       kilitli gosterilen (sadece rozet, rakam yok) telefon/WhatsApp tiklama
+       sayilari, kurum yetkilisine BURADA tam rakamla gosterilir. Yukaridaki
+       Performans Trendi facility_daily_stats'a (gunluk zamanlanmis goreve)
+       bagimliyken, bu bolum Facility::engagementStats30d() ile CANLI ve
+       zamanlamaya bagimsiz hesaplanir. --}}
+  @php $contactStats30d = $facility->engagementStats30d(); @endphp
+  <div class="mb-8 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <h2 class="font-bold text-lg mb-1">İletişim İlgisi</h2>
+    <p class="text-sm text-gray-500 mb-4">Son 30 gün - profilinize gelen doğrudan iletişim ilgisi.</p>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="rounded-lg bg-gray-50 p-4">
+        <div class="text-xs text-gray-500">👁️ Profil görüntüleme</div>
+        <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($contactStats30d['views'], 0, ',', '.') }}</div>
+      </div>
+      <div class="rounded-lg bg-gray-50 p-4">
+        <div class="text-xs text-gray-500">📞 Telefon tıklaması</div>
+        <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($contactStats30d['phone_clicks'], 0, ',', '.') }}</div>
+      </div>
+      <div class="rounded-lg bg-gray-50 p-4">
+        <div class="text-xs text-gray-500">💬 WhatsApp tıklaması</div>
+        <div class="text-xl font-black text-gray-950 mt-1">{{ number_format($contactStats30d['whatsapp_clicks'], 0, ',', '.') }}</div>
+      </div>
+    </div>
+  </div>
+
   {{-- 13 Agustos 2026: kullanicinin talebi - "hangi gorselim daha cok
        ilgi cekiyor goremiyorum". --}}
   @if($topImages->isNotEmpty())

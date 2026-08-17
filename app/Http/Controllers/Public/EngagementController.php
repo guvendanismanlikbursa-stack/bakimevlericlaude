@@ -58,8 +58,47 @@ class EngagementController extends Controller
      * degistirmez (kac FARKLI tarayicinin ilgi gosterdiginin yaklasik
      * bir olcusudur, "su an favoride olan sayisi" degildir).
      */
-    public function toggleFavoriteCount(Request $request, string $slug)
+    /**
+     * 17 Agustos 2026: kullanicinin talebi - sahiplenilmemis kurum
+     * sayfasindaki dogrudan "Kurumu Ara"/"WhatsApp" butonlarina tiklanmasini
+     * kaydeder (bkz. FacilityEngagementEvent, Facility::engagementStats30d).
+     * Ayni ziyaretcinin ayni gun icinde tekrar tekrar tiklamasi sayiyi
+     * sismesin diye goruntulenme sayaciyla AYNI desen (oturumda 24 saat
+     * tekillestirme) kullanilir.
+     */
+    public function trackContactClick(Request $request)
     {
+        // 17 Agustos 2026: kullanicinin bildirdigi hata - marka-onekli
+        // (site/{brand}/...) rotalarda controller metoduna ekstra bir
+        // "string $slug" parametresi tanimlamak, Laravel'in bu projedeki
+        // rota parametrelerini (brand/slug) YANLIS SIRAYLA baglamasina yol
+        // aciyordu ($slug degiskeni gercekte 'bakimeviara' (marka) degerini
+        // aliyordu, testle kanitlandi). Ayni sebeple kardes
+        // FacilityImageController::markViewed() de $request->route(...) ile
+        // okuyor - ayni, kanitlanmis calisan desen burada da kullanildi.
+        $slug = $request->route('slug');
+        $data = $request->validate(['type' => 'required|in:phone_click,whatsapp_click']);
+
+        $brand = current_brand();
+        $facility = Facility::published()->forBrand($brand['category_scope'])->where('slug', $slug)->firstOrFail();
+
+        $sessionKey = "{$data['type']}_{$facility->id}";
+        $lastAt = session($sessionKey);
+
+        if (! $lastAt || now()->diffInHours($lastAt) >= 24) {
+            $facility->engagementEvents()->create(['type' => $data['type']]);
+            session([$sessionKey => now()]);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function toggleFavoriteCount(Request $request)
+    {
+        // 17 Agustos 2026: bkz. trackContactClick() ayni tarihli yorum - ayni
+        // parametre-baglama hatasindan (marka-onekli rotada ekstra "string
+        // $slug" parametresi) kaynakli, ayni cozum uygulandi.
+        $slug = $request->route('slug');
         $brand = current_brand();
         $facility = Facility::published()->forBrand($brand['category_scope'])->where('slug', $slug)->firstOrFail();
 
