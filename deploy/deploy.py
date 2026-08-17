@@ -142,7 +142,16 @@ def run(cmd, cwd=None, check=True):
 
 def step1_run_tests():
     info('Adim 1/7: yerel test paketi calistiriliyor...')
-    result = run(['php', 'vendor/bin/phpunit'], check=False)
+    # 17 Agustos 2026: bazi testler (ör. admin-panel-smoke-test/cache-refresh
+    # ops uclarini Artisan::call ile calistiranlar) yerel bootstrap/cache/
+    # routes-v7.php dosyasini GERCEKTEN diske yaziyor - 373 route x 3 marka
+    # bu cache'i cok buyuk yapiyor, ayni surecte SONRA gelen bir test onu
+    # tekrar yukleyince varsayilan 128M CLI memory_limit yetmiyordu (deploy
+    # burada "testler basarisiz" diyerek DURUYORDU, oysa testlerin kendisi
+    # -d memory_limit=512M ile calistirilinca sorunsuz geciyor). Kalici
+    # cozum o testleri izole etmek olurdu ama en guvenli/hizli onlem burada
+    # fazladan bellek payi tanimak.
+    result = run(['php', '-d', 'memory_limit=512M', 'vendor/bin/phpunit'], check=False)
     if result.returncode != 0:
         fail('Testler basarisiz - deploy DURDURULDU. Once testleri gecir, sonra tekrar dene.')
     ok('Testler yesil.')
