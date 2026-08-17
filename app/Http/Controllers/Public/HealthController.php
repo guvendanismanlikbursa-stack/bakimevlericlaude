@@ -111,6 +111,30 @@ class HealthController extends Controller
             }
         }
 
+        // 17 Agustos 2026: kullanicinin talebi - artik SADECE yedekleme
+        // degil, routes/console.php'deki TUM zamanlanmis gorevler
+        // (ScheduledJobMonitor ile isaretlenmis) burada izlenir. DIKKAT:
+        // henuz HIC calismamis (last_success_at NULL) bir gorev "gecikmede"
+        // SAYILMAZ - bu, bu ozelligin ilk deploy'undan hemen sonra (cron
+        // henuz bir kere bile calismadan) saglik kontrolunu yanlislikla
+        // kirmiz olurdu; sadece DAHA ONCE en az bir kere basarili calismis
+        // ama simdi beklenen sikliktan gecikmis gorevler FAIL sayilir. Bos
+        // tabloda (henuz hic kayit yok) dogal olarak 'ok' doner, bu yuzden
+        // backup kontrolunun aksine test ortaminda atlanmaya gerek yok.
+        try {
+            $overdue = \App\Models\ScheduledJobRun::whereNotNull('last_success_at')->get()
+                ->filter(fn ($job) => $job->isOverdue());
+            if ($overdue->isEmpty()) {
+                $checks['scheduled_jobs'] = 'ok';
+            } else {
+                $checks['scheduled_jobs'] = 'FAIL: gecikmede olan gorev(ler): '.$overdue->pluck('job_name')->implode(', ');
+                $healthy = false;
+            }
+        } catch (\Throwable $e) {
+            $checks['scheduled_jobs'] = 'FAIL: '.$e->getMessage();
+            $healthy = false;
+        }
+
         return response()->json([
             'status' => $healthy ? 'ok' : 'fail',
             'checks' => $checks,

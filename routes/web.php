@@ -453,5 +453,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/site-istatistikleri', [AdminSiteStatsController::class, 'index'])->name('site-stats.index');
         Route::get('/aileler/{familyUser}', [AdminSiteStatsController::class, 'showFamily'])->name('family-users.show');
         Route::get('/yakin-arama-kayitlari', [AdminNearbySearchController::class, 'index'])->name('nearby-searches.index');
+
+        // 17 Agustos 2026: kullanicinin talebi - bkz. ScheduledJobMonitor yorumu.
+        Route::get('/zamanlanan-gorevler', [\App\Http\Controllers\Admin\ScheduledJobController::class, 'index'])->name('scheduled-jobs.index');
     });
 });

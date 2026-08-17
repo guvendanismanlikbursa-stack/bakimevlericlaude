@@ -72,6 +72,13 @@
         <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $openErrorCount }}</span>
       @endif
     </a>
+    <a href="{{ route('admin.scheduled-jobs.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.scheduled-jobs.*') ? 'bg-gray-700 text-white' : '' }}">
+      <span>Zamanlanan Görevler</span>
+      @php($overdueJobCount = \App\Models\ScheduledJobRun::get()->filter(fn ($j) => $j->isOverdue())->count())
+      @if($overdueJobCount > 0)
+        <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $overdueJobCount }}</span>
+      @endif
+    </a>
     <a href="{{ route('admin.settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.settings.*') ? 'bg-gray-700 text-white' : '' }}">Ayarlar</a>
     <a href="{{ route('admin.chat-settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat-settings.*') ? 'bg-gray-700 text-white' : '' }}">Sohbet Çalışma Saatleri</a>
 

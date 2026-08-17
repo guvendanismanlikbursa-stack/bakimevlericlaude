@@ -3825,4 +3825,263 @@ class PlatformFeatureTest extends TestCase
             ->get('/admin/yorumlar')
             ->assertDontSee('Kaskad Yorumcu');
     }
+
+    public function test_scheduled_job_monitor_records_success_and_failure(): void
+    {
+        \App\Services\ScheduledJobMonitor::recordSuccess('deneme-gorevi', 60, 'cikti');
+        $job = \App\Models\ScheduledJobRun::where('job_name', 'deneme-gorevi')->first();
+        $this->assertNotNull($job);
+        $this->assertNotNull($job->last_success_at);
+        $this->assertSame(0, $job->consecutive_failures);
+
+        \App\Services\ScheduledJobMonitor::recordFailure('deneme-gorevi', 60, 'hata mesaji');
+        $job->refresh();
+        $this->assertNotNull($job->last_failure_at);
+        $this->assertSame(1, $job->consecutive_failures);
+
+        \App\Services\ScheduledJobMonitor::recordSuccess('deneme-gorevi', 60, 'tekrar basarili');
+        $job->refresh();
+        $this->assertSame(0, $job->consecutive_failures);
+    }
+
+    public function test_scheduled_job_marked_overdue_only_after_a_real_success_falls_behind(): void
+    {
+        $neverRun = \App\Models\ScheduledJobRun::create([
+            'job_name' => 'hic-calismamis-gorev',
+            'expected_frequency_minutes' => 60,
+        ]);
+        $this->assertTrue($neverRun->isOverdue());
+
+        $recentlySucceeded = \App\Models\ScheduledJobRun::create([
+            'job_name' => 'yeni-basarili-gorev',
+            'expected_frequency_minutes' => 60,
+            'last_success_at' => now(),
+        ]);
+        $this->assertFalse($recentlySucceeded->isOverdue());
+
+        $stale = \App\Models\ScheduledJobRun::create([
+            'job_name' => 'gecikmis-gorev',
+            'expected_frequency_minutes' => 60,
+            'last_success_at' => now()->subHours(3),
+        ]);
+        $this->assertTrue($stale->isOverdue());
+    }
+
+    public function test_health_check_ignores_never_run_jobs_but_fails_on_truly_overdue_ones(): void
+    {
+        \App\Models\ScheduledJobRun::create([
+            'job_name' => 'henuz-hic-calismamis',
+            'expected_frequency_minutes' => 60,
+        ]);
+
+        $this->get('/_saglik')->assertOk();
+
+        \App\Models\ScheduledJobRun::create([
+            'job_name' => 'gercekten-gecikmis',
+            'expected_frequency_minutes' => 60,
+            'last_success_at' => now()->subHours(5),
+        ]);
+
+        $response = $this->get('/_saglik');
+        $response->assertStatus(503);
+        $response->assertJsonFragment(['status' => 'fail']);
+        $this->assertStringContainsString('gercekten-gecikmis', $response->json('checks.scheduled_jobs'));
+    }
+
+    public function test_admin_scheduled_jobs_screen_shows_job_status(): void
+    {
+        \App\Models\ScheduledJobRun::create([
+            'job_name' => 'gorunur-gorev',
+            'expected_frequency_minutes' => 1440,
+            'last_success_at' => now(),
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/zamanlanan-gorevler')
+            ->assertOk()
+            ->assertSee('gorunur-gorev');
+    }
+
+    public function test_all_major_admin_screens_are_reachable_without_error(): void
+    {
+        $adminScreens = [
+            '/admin',
+            '/admin/kurumlar',
+            '/admin/kurum-davetleri',
+            '/admin/sahiplenme-basvurulari',
+            '/admin/kurum-kayit-basvurulari',
+            '/admin/ayarlar',
+            '/admin/bakiye-yuklemeleri',
+            '/admin/veri-cekici',
+            '/admin/teklif-talepleri',
+            '/admin/yorumlar',
+            '/admin/ziyaret-talepleri',
+            '/admin/mesajlar',
+            '/admin/whatsapp-tiklamalari',
+            '/admin/canli-sohbet',
+            '/admin/canli-sohbet-istatistik',
+            '/admin/canli-sohbet-ayarlari',
+            '/admin/sehirler',
+            '/admin/kullanicilar/aileler',
+            '/admin/kullanicilar/kurum-yetkilileri',
+            '/admin/kategoriler',
+            '/admin/sayfalar',
+            '/admin/sss',
+            '/admin/paketler',
+            '/admin/cop-kutusu',
+            '/admin/islem-gunlugu',
+            '/admin/hatalar',
+            '/admin/veri-denetimi',
+            '/admin/aile-sorulari',
+            '/admin/site-istatistikleri',
+            '/admin/yakin-arama-kayitlari',
+            '/admin/zamanlanan-gorevler',
+        ];
+
+        foreach ($adminScreens as $screen) {
+            $this->withSession(['admin_id' => $this->admin->id])
+                ->get($screen)
+                ->assertOk();
+        }
+    }
+
+    public function test_admin_manually_creating_facility_auto_geocodes_from_address(): void
+    {
+        Http::fake([
+            'nominatim.openstreetmap.org/*' => Http::response([
+                ['lat' => '40.1885000', 'lon' => '29.0610000'],
+            ]),
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kurumlar', [
+                'name' => 'Elle Eklenen Kurum',
+                'city_id' => $this->city->id,
+                'facility_category_id' => $this->rehabCategory->id,
+                'district' => 'Merkez',
+                'address' => 'Test Mahallesi Test Sokak No:1',
+            ])
+            ->assertRedirect();
+
+        $facility = Facility::where('name', 'Elle Eklenen Kurum')->firstOrFail();
+        $this->assertEquals(40.1885, $facility->lat);
+        $this->assertEquals(29.061, $facility->lng);
+    }
+
+    public function test_admin_editing_facility_address_without_coordinates_regeocodes(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->update(['lat' => null, 'lng' => null]);
+
+        Http::fake([
+            'nominatim.openstreetmap.org/*' => Http::response([
+                ['lat' => '41.0100000', 'lon' => '28.9700000'],
+            ]),
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$facility->id, [
+                'name' => $facility->name,
+                'city_id' => $facility->city_id,
+                'facility_category_id' => $facility->facility_category_id,
+                'district' => $facility->district,
+                'address' => 'Guncellenmis Yepyeni Adres No:5',
+            ])
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertEquals(41.01, $facility->lat);
+        $this->assertEquals(28.97, $facility->lng);
+    }
+
+    public function test_admin_editing_facility_without_address_change_does_not_call_geocoder(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->update(['lat' => null, 'lng' => null, 'address' => 'Degismeyen Adres']);
+
+        Http::fake();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$facility->id, [
+                'name' => $facility->name,
+                'city_id' => $facility->city_id,
+                'facility_category_id' => $facility->facility_category_id,
+                'district' => $facility->district,
+                'address' => 'Degismeyen Adres',
+            ])
+            ->assertRedirect();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_data_extractor_approval_auto_geocodes_when_scrape_missing_coordinates(): void
+    {
+        Http::fake([
+            'nominatim.openstreetmap.org/*' => Http::response([
+                ['lat' => '40.5000000', 'lon' => '29.5000000'],
+            ]),
+        ]);
+
+        $batch = DataImportBatch::create([
+            'source' => 'google_maps_veri_cekici_auto',
+            'admin_id' => $this->admin->id,
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->rehabCategory->id,
+            'file_name' => 'otomatik: geocode testi',
+            'total_rows' => 1,
+            'status' => 'pending_review',
+        ]);
+
+        $row = DataImportRow::create([
+            'data_import_batch_id' => $batch->id,
+            'row_number' => 1,
+            'status' => 'pending_review',
+            'name' => 'Koordinatsiz Veri Cekici Kurumu',
+            'phone' => '02240000099',
+            'payload' => [
+                'name' => 'Koordinatsiz Veri Cekici Kurumu',
+                'address' => 'Kazinan Adres No:9',
+                'district' => 'Merkez',
+                'phone' => '02240000099',
+            ],
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/veri-cekici/satir/'.$row->id.'/onayla', ['is_published' => 1])
+            ->assertRedirect();
+
+        $facility = Facility::where('name', 'Koordinatsiz Veri Cekici Kurumu')->firstOrFail();
+        $this->assertEquals(40.5, $facility->lat);
+        $this->assertEquals(29.5, $facility->lng);
+    }
+
+    public function test_facility_registration_approval_auto_geocodes_new_facility(): void
+    {
+        Http::fake([
+            'nominatim.openstreetmap.org/*' => Http::response([
+                ['lat' => '39.9000000', 'lon' => '32.8000000'],
+            ]),
+        ]);
+
+        $registration = \App\Models\FacilityRegistration::create([
+            'brand' => 'bakimevleri',
+            'name' => 'Kendi Kaydini Yapan Kurum',
+            'facility_category_id' => $this->rehabCategory->id,
+            'city_id' => $this->city->id,
+            'district' => 'Merkez',
+            'address' => 'Basvuru Adresi No:12',
+            'applicant_name' => 'Basvuran Kisi',
+            'applicant_email' => 'gecodetest@test.local',
+            'applicant_phone' => '05550000099',
+            'status' => 'pending',
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kurum-kayit-basvurulari/'.$registration->id.'/onayla')
+            ->assertRedirect();
+
+        $facility = Facility::where('name', 'Kendi Kaydini Yapan Kurum')->firstOrFail();
+        $this->assertEquals(39.9, $facility->lat);
+        $this->assertEquals(32.8, $facility->lng);
+    }
 }
