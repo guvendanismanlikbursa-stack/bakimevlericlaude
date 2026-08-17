@@ -4084,4 +4084,84 @@ class PlatformFeatureTest extends TestCase
         $this->assertEquals(39.9, $facility->lat);
         $this->assertEquals(32.8, $facility->lng);
     }
+
+    // 17 Agustos 2026: kullanicinin talebi uzerine yapilan SEO gelistirmesi
+    // sirasinda canli sitede bulunan hata - kurum sayfasindaki JSON-LD
+    // bloğunun anahtari '@@context' (cift @) olarak yazilmisti, bu yuzden
+    // Google'in yapilandirilmis veri ayristiricisi tarafindan GECERSIZ
+    // sayilip tum blok sessizce yok sayiliyordu - ozellik hicbir zaman
+    // calismamisti. Bu test hem o hatanin bir daha geri gelmedigini hem de
+    // yeni eklenen alanlarin (gorsel/konum/fiyat araligi) dogru
+    // uretildigini dogrular.
+    public function test_facility_page_publishes_valid_local_business_json_ld(): void
+    {
+        $this->elderlyFacility->update(['lat' => 41.05, 'lng' => 29.05]);
+        FacilityReview::create([
+            'facility_id' => $this->elderlyFacility->id,
+            'family_user_id' => $this->family->id,
+            'brand' => 'bakimevleri',
+            'reviewer_name' => 'JSON-LD Test Yorumcusu',
+            'rating' => 5,
+            'body' => 'Json-ld testi icin yorum.',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $html = $this->get('/kurumlar/'.$this->elderlyFacility->slug)->assertOk()->getContent();
+
+        preg_match_all('/<script type="application\/ld\+json">(.*?)<\/script>/s', $html, $matches);
+        $localBusinessBlock = null;
+        foreach ($matches[1] as $rawJson) {
+            $decoded = json_decode(trim($rawJson), true);
+            if ($decoded && isset($decoded['@type']) && str_ends_with((string) $decoded['@type'], 'Business')) {
+                $localBusinessBlock = $decoded;
+                break;
+            }
+        }
+
+        $this->assertNotNull($localBusinessBlock, 'Kurum sayfasinda gecerli bir *Business JSON-LD blogu bulunamadi.');
+        $this->assertSame('https://schema.org', $localBusinessBlock['@context']);
+        $this->assertArrayNotHasKey('@@context', $localBusinessBlock);
+        $this->assertSame($this->elderlyFacility->name, $localBusinessBlock['name']);
+        $this->assertSame('02120000000', $localBusinessBlock['telephone']);
+        $this->assertArrayHasKey('image', $localBusinessBlock);
+        $this->assertSame('GeoCoordinates', $localBusinessBlock['geo']['@type']);
+        $this->assertEquals(41.05, $localBusinessBlock['geo']['latitude']);
+        $this->assertEquals(29.05, $localBusinessBlock['geo']['longitude']);
+        $this->assertArrayHasKey('priceRange', $localBusinessBlock);
+        $this->assertSame(1, $localBusinessBlock['aggregateRating']['reviewCount']);
+        $this->assertEquals(5.0, $localBusinessBlock['aggregateRating']['ratingValue']);
+    }
+
+    public function test_facility_page_json_ld_omits_empty_optional_fields(): void
+    {
+        $bareFacility = Facility::create([
+            'name' => 'Bilgisi Eksik Kurum',
+            'slug' => 'bilgisi-eksik-kurum-jsonld',
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->elderlyCategory->id,
+            'services' => ['bakim'],
+            'is_published' => true,
+            'is_claimed' => false,
+        ]);
+
+        $html = $this->get('/kurumlar/'.$bareFacility->slug)->assertOk()->getContent();
+
+        preg_match_all('/<script type="application\/ld\+json">(.*?)<\/script>/s', $html, $matches);
+        $localBusinessBlock = null;
+        foreach ($matches[1] as $rawJson) {
+            $decoded = json_decode(trim($rawJson), true);
+            if ($decoded && isset($decoded['@type']) && str_ends_with((string) $decoded['@type'], 'Business')) {
+                $localBusinessBlock = $decoded;
+                break;
+            }
+        }
+
+        $this->assertNotNull($localBusinessBlock);
+        $this->assertArrayNotHasKey('telephone', $localBusinessBlock);
+        $this->assertArrayNotHasKey('description', $localBusinessBlock);
+        $this->assertArrayNotHasKey('geo', $localBusinessBlock);
+        $this->assertArrayNotHasKey('priceRange', $localBusinessBlock);
+        $this->assertArrayNotHasKey('aggregateRating', $localBusinessBlock);
+    }
 }

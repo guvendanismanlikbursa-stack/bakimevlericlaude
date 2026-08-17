@@ -560,21 +560,50 @@
   // olusmus gibi sunuluyordu, bu Google'in yapilandirilmis veri kurallarina
   // aykiri). Artik SADECE sitede gercekten onayli yorum varsa yayinlaniyor,
   // reviewCount de gercek sayiyi yansitiyor.
+  //
+  // 17 Agustos 2026: kullanicinin talebi uzerine yapilan SEO gelistirmesi
+  // sirasinda canli sayfada bulundu - anahtar '@@context' olarak yazilmisti
+  // (cift @), JSON ciktisinda GERCEKTEN "@@context" olarak yayinlaniyordu.
+  // Google'in yapilandirilmis veri ayristiricisi tam olarak '@context'
+  // bekler, "@@context" gecersiz sayilip TUM blok sessizce yok sayilir -
+  // yani bu ozellik simdiye kadar hicbir zaman calismamis. Ayni gecis
+  // sirasinda: bos alanlar artik "null" olarak degil hic yazilmiyor, kurum
+  // gorseli/tam kategoriye gore tur/fiyat araligi/gercek konum (varsa)
+  // eklendi - bkz. GeocodingService ayni tarihli calisma, artik cok daha
+  // fazla kurumun gercek koordinati var.
   $reviewCount = $facility->approvedReviews->count();
-  $facilitySchema = [
-    '@@context' => 'https://schema.org',
-    '@type' => 'LocalBusiness',
+  $schemaType = match ($sectionSlug) {
+    'cocuk' => 'ChildCare',
+    'rehabilitasyon' => 'MedicalBusiness',
+    default => 'LocalBusiness',
+  };
+  $facilitySchema = array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => $schemaType,
     'name' => $facility->name,
-    'description' => $facility->description,
-    'telephone' => $facility->phone,
-    'address' => [
-      '@type' => 'PostalAddress',
-      'streetAddress' => $facility->address,
-      'addressLocality' => trim(($facility->district ? $facility->district.', ' : '').($facility->city->name ?? '')),
-      'addressCountry' => 'TR',
-    ],
+    'description' => filled($facility->description) ? strip_tags($facility->description) : null,
+    'telephone' => $facility->phone ?: null,
+    'image' => facility_card_image($facility),
     'url' => brand_route('facilities.show', ['slug' => $facility->slug]),
-  ];
+    'address' => array_filter([
+      '@type' => 'PostalAddress',
+      'streetAddress' => $facility->address ?: null,
+      'addressLocality' => trim(($facility->district ? $facility->district.', ' : '').($facility->city->name ?? '')) ?: null,
+      'addressCountry' => 'TR',
+    ]),
+  ]);
+  if ($facility->hasPreciseLocation()) {
+    $facilitySchema['geo'] = [
+      '@type' => 'GeoCoordinates',
+      'latitude' => (float) $facility->lat,
+      'longitude' => (float) $facility->lng,
+    ];
+  }
+  if ($facility->price_min || $facility->price_max) {
+    $facilitySchema['priceRange'] = $facility->price_min && $facility->price_max
+      ? number_format($facility->price_min, 0).' - '.number_format($facility->price_max, 0).' TL'
+      : number_format($facility->price_min ?: $facility->price_max, 0).' TL';
+  }
   if ($reviewCount > 0) {
     $facilitySchema['aggregateRating'] = [
       '@type' => 'AggregateRating',
