@@ -15,7 +15,11 @@
   $campaignDeadline = facility_featured_campaign_deadline();
   $campaignActive = facility_featured_campaign_active();
   $campaignDeadlineLabel = $campaignDeadline->copy()->subDay()->translatedFormat('d F Y');
-  $campaignDaysLeft = max(0, now()->diffInDays($campaignDeadline, false));
+  // 17 Agustos 2026: kullanicinin bildirdigi hata - diffInDays(..., false)
+  // TAM SAYI degil, kesirli gun (ör. 14.478215201586) donduruyordu, sayfada
+  // ham haliyle basiliyordu. ceil() ile yukari yuvarlanir (gunun kalan
+  // kismi da "hala 1 gun var" sayilsin diye) ve int'e cevrilir.
+  $campaignDaysLeft = max(0, (int) ceil(now()->diffInDays($campaignDeadline, false)));
 
   $benefits = [
     ['title' => 'Profilinizi siz yönetin', 'text' => 'Görsel, açıklama, hizmet ve fiyat bilgilerini istediğiniz zaman güncelleyin — yanlış bilgi varsa da düzeltme yetkisi sadece sahiplenince size geçer.'],
@@ -78,9 +82,9 @@
             </p>
           @endif
           @if($nearbyClaimedCount > 0)
-            <p class="text-sm text-gray-600 mt-1.5">📍 {{ $facility->city->name ?? 'Bölgenizde' }}'de aynı kategoride <strong>{{ $nearbyClaimedCount }}</strong> kurum zaten sahiplenildi ve aktif teklif alıyor.</p>
+            <p class="text-sm text-gray-600 mt-1.5">📍 {{ $facility->city->name ?? 'Bölgenizde' }}'de aynı kategoride <strong>{{ $nearbyClaimedCount }}</strong> kurum sahiplenildi ve aktif teklif alıyor.</p>
           @elseif($categoryClaimedCount > 0)
-            <p class="text-sm text-gray-600 mt-1.5">📍 Aynı kategoride Türkiye genelinde <strong>{{ $categoryClaimedCount }}</strong> kurum zaten sahiplenildi ve aktif teklif alıyor.</p>
+            <p class="text-sm text-gray-600 mt-1.5">📍 Aynı kategoride Türkiye genelinde <strong>{{ $categoryClaimedCount }}</strong> kurum sahiplenildi ve aktif teklif alıyor.</p>
           @endif
         </div>
       @endif

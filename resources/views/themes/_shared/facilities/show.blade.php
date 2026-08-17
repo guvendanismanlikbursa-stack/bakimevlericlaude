@@ -464,7 +464,10 @@
         </div>
       @else
         <h3 class="font-black mb-2 text-gray-950">Bu kurum henüz sahiplenilmedi</h3>
-        <p class="text-sm text-gray-500 mb-4">Ücret/teklif bilgisi, ziyaret talebi ve kontenjan sorgusu ancak kurum yetkilisi profili sahiplenip onayladıktan sonra kullanılabilir. Bu bilgiler Google Maps verilerinden otomatik toplanmış ön kayıt profilidir.</p>
+        {{-- 17 Agustos 2026: kullanicinin talebi - "otomatik toplanmis"
+             ifadesi kazima/scraping cagrisimi yaptigi icin sakincali
+             olabilir, "olusturulmus" ile degistirildi. --}}
+        <p class="text-sm text-gray-500 mb-4">Ücret/teklif bilgisi, ziyaret talebi ve kontenjan sorgusu ancak kurum yetkilisi profili sahiplenip onayladıktan sonra kullanılabilir. Bu bilgiler Google Maps verilerinden oluşturulmuş ön kayıt profilidir.</p>
         {{-- 17 Agustos 2026: kullanicinin talebi - sahiplenilmemis kurumda
              platform-ici teklif/ziyaret akisi olmadigi icin, ziyaretcinin
              kuruma DOGRUDAN ulasabilecegi 2 buton (arama+WhatsApp) eklendi.
