@@ -4164,4 +4164,41 @@ class PlatformFeatureTest extends TestCase
         $this->assertArrayNotHasKey('priceRange', $localBusinessBlock);
         $this->assertArrayNotHasKey('aggregateRating', $localBusinessBlock);
     }
+
+    // 17 Agustos 2026: kullanicinin talebi - canli sitede id=1 bir kurumun
+    // slug'inin eski/teknik bir kalinti icerdigi (bkz. old_slug alani)
+    // bulundu. Admin kurum ismini degistirip slug yenilendiginde, ESKI
+    // adres artik sessizce 404 vermemeli - Google'da indekslenmis/
+    // paylasilmis olabilir.
+    public function test_renaming_facility_saves_old_slug_and_old_url_redirects_to_new_one(): void
+    {
+        $facility = $this->elderlyFacility;
+        $oldSlug = $facility->slug;
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$facility->id, [
+                'name' => 'Yeni Isimli Kurum',
+                'city_id' => $facility->city_id,
+                'facility_category_id' => $facility->facility_category_id,
+                'district' => $facility->district,
+                'address' => $facility->address,
+                'is_published' => 1,
+            ])
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertSame($oldSlug, $facility->old_slug);
+        $this->assertNotSame($oldSlug, $facility->slug);
+
+        $this->get('/kurumlar/'.$oldSlug)
+            ->assertRedirect('/kurumlar/'.$facility->slug)
+            ->assertStatus(301);
+
+        $this->get('/kurumlar/'.$facility->slug)->assertOk()->assertSee('Yeni Isimli Kurum');
+    }
+
+    public function test_unknown_facility_slug_still_returns_404(): void
+    {
+        $this->get('/kurumlar/hicbir-zaman-var-olmamis-bir-kurum-xyz')->assertNotFound();
+    }
 }

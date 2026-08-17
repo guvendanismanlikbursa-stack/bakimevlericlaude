@@ -9,7 +9,7 @@ class Facility extends Model
 {
     use SoftDeletes;
     protected $fillable = [
-        'name', 'slug', 'city_id', 'district_id', 'facility_category_id', 'ownership_type', 'district',
+        'name', 'slug', 'old_slug', 'city_id', 'district_id', 'facility_category_id', 'ownership_type', 'district',
         'address', 'lat', 'lng', 'phone', 'phone_type', 'email', 'source', 'source_payload', 'description', 'capacity', 'price_min',
         'price_max', 'services', 'cover_image', 'is_published',
         'is_featured', 'rating', 'is_claimed', 'claimed_at', 'ministry_verification',

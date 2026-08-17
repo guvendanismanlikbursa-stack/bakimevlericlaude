@@ -175,12 +175,27 @@ class FacilityController extends Controller
         $brand = current_brand();
         $slug = $request->route('slug');
 
-        $facility = Facility::published()
-            ->forBrand($brand['category_scope'])
+        $baseQuery = Facility::published()->forBrand($brand['category_scope']);
+
+        $facility = (clone $baseQuery)
             ->where('slug', $slug)
             ->with(['city', 'category', 'images', 'approvedReviews', 'answeredQuestions'])
             ->withAvg('approvedReviews', 'rating')
-            ->firstOrFail();
+            ->first();
+
+        if (! $facility) {
+            // 17 Agustos 2026: kullanicinin talebi - kurum ismi degisince
+            // slug de yenileniyor (bkz. Admin\FacilityController::update()),
+            // eski adres Google'da indekslenmis/paylasilmis olabilir. Yeni
+            // slug'la bulunamazsa eski slug'a bakip 301 ile dogru adrese
+            // yonlendirir - sessizce 404 vermek yerine.
+            $redirectTarget = (clone $baseQuery)->where('old_slug', $slug)->first();
+            if ($redirectTarget) {
+                return redirect(brand_route('facilities.show', ['slug' => $redirectTarget->slug]), 301);
+            }
+
+            abort(404);
+        }
 
         // "En cok goruntulenen kurumlar" ve performans sayfasi icin sayac.
         // 17 Agustos 2026: kullanicinin acik talebi - onceden ayni tarayici

@@ -184,6 +184,14 @@ class FacilityController extends Controller
 
         if ($data['name'] !== $facility->name) {
             $data['slug'] = $this->uniqueSlug($data['name'], $facility->id);
+            // 17 Agustos 2026: kullanicinin talebi - eski, artik canli
+            // gorulmeyecek bir slug (ör. "-curltest" gibi teknik bir ek
+            // tasiyan eski bir kayit) Google'da indekslenmis/paylasilmis
+            // olabilir; isim degisip slug yenilenince eski adres sessizce
+            // 404 vermesin diye SADECE en son eski slug saklanir (tam
+            // gecmis degil - basit tutmak icin) ve Public\FacilityController::
+            // show() bulamayinca buraya bakip 301 ile yeni adrese yonlendirir.
+            $data['old_slug'] = $facility->slug;
         }
 
         // 17 Agustos 2026: kullanicinin talebi (bkz. store() ayni tarihli
