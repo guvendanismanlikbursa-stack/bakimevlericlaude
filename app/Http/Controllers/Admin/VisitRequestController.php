@@ -15,7 +15,13 @@ class VisitRequestController extends Controller
 
     public function index(Request $request)
     {
-        $query = VisitRequest::with('facility.city', 'facility.category')->latest();
+        // 17 Agustos 2026: kullanicinin bildirdigi hata - kurum silinince
+        // (soft-delete) bagli ziyaret talepleri burada gorunmeye devam
+        // ediyordu. VisitRequest'te SoftDeletes olmadigi icin cop kutusuna
+        // tasinamiyor ama en azindan bu listede kurum trashed'ken gizlenir -
+        // whereHas() Facility'nin kendi SoftDeletingScope'unu otomatik
+        // uygular.
+        $query = VisitRequest::whereHas('facility')->with('facility.city', 'facility.category')->latest();
 
         if ($request->filled('brand')) {
             $query->where('brand', $request->brand);

@@ -183,30 +183,24 @@ class FacilityController extends Controller
             ->firstOrFail();
 
         // "En cok goruntulenen kurumlar" ve performans sayfasi icin sayac.
-        // Admin kendi kurumlarina bakarken ya da aynı ziyaretci sayfayi
-        // sik sik yeniledigin de sayac sismesin diye: admin oturumunda hic
-        // sayilmaz, digerlerinde ayni tarayici oturumunda ayni kurum 24
-        // saatte yalnizca bir kez sayilir.
+        // 17 Agustos 2026: kullanicinin acik talebi - onceden ayni tarayici
+        // oturumunda ayni kurum 24 saatte yalnizca bir kez sayiliyordu
+        // (dedup); kullanici bunu ISTEMEDIGINI bildirdi ("cok gorunmesi
+        // icin her inceleme sayfasina tiklama goruntuleme olarak
+        // islenmeli", "google botlari da dahil olmali") - dedup TAMAMEN
+        // kaldirildi, admin kendi oturumu disinda HER istek sayilir
+        // (bot/crawler dahil, IP/oturum bazli bir kisitlama yok).
         if (! session('admin_id')) {
-            $viewedKey = 'viewed_facility_'.$facility->id;
-            $lastViewedAt = session($viewedKey);
-
-            if (! $lastViewedAt || now()->diffInHours($lastViewedAt) >= 24) {
-                $facility->increment('views_count');
-                // 17 Agustos 2026: kullanicinin talebi - son 30 gunluk
-                // goruntulenme rakami icin (bkz. Facility::engagementStats30d)
-                // ayni 24 saatlik tekillestirme ile bir olay kaydi da tutulur.
-                // GUVENLIK: try/catch ile sarmalandi - bu ikincil/analitik bir
-                // yazma islemi, sayfanin asil yuklenmesini engellememeli
-                // (canli olayda tam olarak yasandi: bir deploy'un dosya
-                // yukleme ile migration adimlari arasindaki birkac saniyelik
-                // pencerede gercek bir ziyaretci bu satirda 500 aldi).
-                try {
-                    $facility->engagementEvents()->create(['type' => 'view']);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Goruntulenme olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
-                }
-                session([$viewedKey => now()]);
+            $facility->increment('views_count');
+            // GUVENLIK: try/catch ile sarmalandi - bu ikincil/analitik bir
+            // yazma islemi, sayfanin asil yuklenmesini engellememeli
+            // (canli olayda tam olarak yasandi: bir deploy'un dosya
+            // yukleme ile migration adimlari arasindaki birkac saniyelik
+            // pencerede gercek bir ziyaretci bu satirda 500 aldi).
+            try {
+                $facility->engagementEvents()->create(['type' => 'view']);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Goruntulenme olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
             }
         }
 

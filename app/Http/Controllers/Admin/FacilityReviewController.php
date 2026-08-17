@@ -13,7 +13,9 @@ class FacilityReviewController extends Controller
 
     public function index(Request $request)
     {
-        $query = FacilityReview::with('facility.city', 'facility.category')->latest();
+        // 17 Agustos 2026: bkz. Admin\VisitRequestController ayni tarihli
+        // yorum - kurum silinince bagli yorumlar burada gorunmemeli.
+        $query = FacilityReview::whereHas('facility')->with('facility.city', 'facility.category')->latest();
 
         if ($request->filled('brand')) {
             $query->where('brand', $request->brand);

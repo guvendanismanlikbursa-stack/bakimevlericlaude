@@ -14,7 +14,9 @@ class FacilityQuestionController extends Controller
 
     public function index(Request $request)
     {
-        $query = FacilityQuestion::with('facility')->latest();
+        // 17 Agustos 2026: bkz. Admin\VisitRequestController ayni tarihli
+        // yorum - kurum silinince bagli sorular burada gorunmemeli.
+        $query = FacilityQuestion::whereHas('facility')->with('facility')->latest();
 
         if ($request->filled('brand')) {
             $query->where('brand', $request->brand);

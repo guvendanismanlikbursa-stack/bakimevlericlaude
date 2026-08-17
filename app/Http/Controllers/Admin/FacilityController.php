@@ -241,7 +241,7 @@ class FacilityController extends Controller
         return str_starts_with($url, $allowed) ? $url : null;
     }
 
-    public function destroy(Facility $facility, FacilityArchiveService $archiveService)
+    public function destroy(Facility $facility, FacilityArchiveService $archiveService, \App\Services\FacilityCascadeService $cascadeService)
     {
         $archivePath = $archiveService->archiveBeforeDelete($facility);
 
@@ -253,6 +253,12 @@ class FacilityController extends Controller
         // yetkilileri de askiya alinir - ayni suspend deseni OfferRequest
         // Controller::suspendFacility'de zaten kullaniliyor.
         \App\Models\FacilityUser::where('facility_id', $facility->id)->update(['status' => 'suspended']);
+
+        // 17 Agustos 2026: kullanicinin bildirdigi hata - kurum silinince
+        // bagli sahiplenme basvurusu/teklif talebi/bakiye yuklemesi kayitlari
+        // kendi admin listelerinde "kurum silinmemis gibi" gorunmeye devam
+        // ediyordu. Bkz. FacilityCascadeService ayni tarihli yorum.
+        $cascadeService->softDeleteRelated($facility);
 
         $facility->delete();
 

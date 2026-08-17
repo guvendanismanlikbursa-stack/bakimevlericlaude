@@ -9,6 +9,7 @@ use App\Models\FacilityClaim;
 use App\Models\FacilityRegistration;
 use App\Models\OfferRequest;
 use App\Models\WalletTopup;
+use App\Services\FacilityCascadeService;
 use Illuminate\Http\Request;
 
 // canliyaal projesinden tasindi: "Cop Kutusu" — soft-delete edilmis
@@ -52,13 +53,20 @@ class TrashController extends Controller
         ]);
     }
 
-    public function restore(Request $request, string $type, int $id)
+    public function restore(Request $request, string $type, int $id, FacilityCascadeService $cascadeService)
     {
         abort_unless(array_key_exists($type, self::TYPES), 404);
 
         $modelClass = self::TYPES[$type];
         $item = $modelClass::onlyTrashed()->findOrFail($id);
         $item->restore();
+
+        // 17 Agustos 2026: bkz. FacilityCascadeService ayni tarihli yorum -
+        // kurum geri yuklenince bagli sahiplenme/teklif/bakiye kayitlari da
+        // (kurumla BIRLIKTE trashed olanlar) geri yuklenir.
+        if ($type === 'facility') {
+            $cascadeService->restoreRelated($item);
+        }
 
         // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
         // yapilan denetimde bulundu - onceden burada FacilityController::
@@ -87,7 +95,7 @@ class TrashController extends Controller
         return back()->with('success', self::LABELS[$type].' geri yuklendi.'.$facilityUsersNote);
     }
 
-    public function forceDestroy(Request $request, string $type, int $id)
+    public function forceDestroy(Request $request, string $type, int $id, FacilityCascadeService $cascadeService)
     {
         abort_unless(array_key_exists($type, self::TYPES), 404);
 
@@ -102,6 +110,13 @@ class TrashController extends Controller
         // kaliyor, hem gereksiz disk sisiyor hem kisisel veri (kimlik
         // belgesi/dekont) "kalici silindi" denildigi halde diskte kaliyordu.
         $this->deletePhysicalFiles($type, $item);
+
+        // 17 Agustos 2026: bkz. FacilityCascadeService ayni tarihli yorum -
+        // kurum kalici silinince bagli sahiplenme/teklif/bakiye kayitlari
+        // (dosyalari dahil) da kalici silinir.
+        if ($type === 'facility') {
+            $cascadeService->forceDeleteRelated($item);
+        }
 
         log_admin_event('trash_force_deleted', $item, ['type' => $type]);
         $item->forceDelete();

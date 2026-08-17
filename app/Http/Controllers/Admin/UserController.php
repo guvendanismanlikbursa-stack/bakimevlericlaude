@@ -70,7 +70,11 @@ class UserController extends Controller
 
     public function facilityUsers(Request $request)
     {
-        $query = FacilityUser::with('facility.category', 'facility.city');
+        // 17 Agustos 2026: bkz. Admin\VisitRequestController ayni tarihli
+        // yorum - kurum silinince bagli yetkili hesaplari (zaten "suspended"
+        // yapiliyordu ama listede kaliyordu) burada gorunmemeli. Kurum
+        // geri yuklenince (Cop Kutusu) tekrar gorunur olur.
+        $query = FacilityUser::whereHas('facility')->with('facility.category', 'facility.city');
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);

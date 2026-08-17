@@ -18,6 +18,7 @@ use App\Models\PlatformNotification;
 use App\Models\Message;
 use App\Models\OfferRequest;
 use App\Models\Quote;
+use App\Models\FacilityQuestion;
 use App\Models\VisitRequest;
 use App\Mail\FacilityClaimApprovedMail;
 use App\Mail\FacilityEmailVerificationMail;
@@ -3619,6 +3620,22 @@ class PlatformFeatureTest extends TestCase
         $this->assertDatabaseHas('facility_engagement_events', ['facility_id' => $facility->id, 'type' => 'view']);
     }
 
+    // 17 Agustos 2026: kullanicinin acik talebi - "cok gorunmesi icin her
+    // inceleme sayfasina tiklama goruntuleme olarak islenmeli" - onceki
+    // 24 saatlik oturum bazli tekillestirme kaldirildi, her ziyaret sayilir.
+    public function test_facility_view_count_has_no_session_deduplication(): void
+    {
+        $facility = $this->rehabFacilityClaimed;
+        $startCount = $facility->views_count;
+
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)->assertOk();
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)->assertOk();
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)->assertOk();
+
+        $this->assertSame($startCount + 3, $facility->fresh()->views_count, 'Ayni oturumdan 3 ziyaretin ucu de sayilmali, tekillestirme olmamali.');
+        $this->assertSame(3, DB::table('facility_engagement_events')->where('facility_id', $facility->id)->where('type', 'view')->count());
+    }
+
     public function test_unclaimed_facility_page_shows_direct_contact_buttons_and_tracks_clicks(): void
     {
         $facility = $this->rehabFacility;
@@ -3667,5 +3684,145 @@ class PlatformFeatureTest extends TestCase
 
         $facility->update(['lat' => null, 'lng' => null]);
         $this->assertFalse($facility->fresh()->hasPreciseLocation(), 'lat/lng bossa hassas konum olamaz.');
+    }
+
+    // 17 Agustos 2026: kullanicinin bildirdigi hata - kurum silinince bagli
+    // sahiplenme basvurusu/teklif talebi/bakiye yuklemesi kayitlari kendi
+    // admin listelerinde "kurum silinmemis gibi" gorunmeye devam ediyordu.
+    // Bkz. FacilityCascadeService.
+    public function test_deleting_facility_cascades_soft_delete_to_related_records(): void
+    {
+        $facility = $this->rehabFacility;
+
+        $claim = FacilityClaim::create([
+            'facility_id' => $facility->id,
+            'brand' => 'bakimeviara',
+            'applicant_name' => 'Yetkili',
+            'applicant_email' => 'kaskad-claim@test.local',
+            'applicant_phone' => '05552222222',
+            'document_path' => 'claims/ruhsat.png',
+            'status' => 'pending',
+        ]);
+        $offer = OfferRequest::create($this->offerData('bakimeviara', $this->rehabCategory, 'Kaskad talep'));
+        $offer->update(['facility_id' => $facility->id]);
+        $topup = WalletTopup::create([
+            'facility_id' => $facility->id,
+            'amount' => 500,
+            'receipt_path' => 'topups/dekont.png',
+            'status' => 'pending',
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/kurumlar/'.$facility->id)
+            ->assertRedirect();
+
+        $this->assertSoftDeleted('facility_claims', ['id' => $claim->id]);
+        $this->assertSoftDeleted('offer_requests', ['id' => $offer->id]);
+        $this->assertSoftDeleted('wallet_topups', ['id' => $topup->id]);
+
+        // Admin listelerinde artik gorunmemeli.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/sahiplenme-basvurulari?status=pending')
+            ->assertDontSee('kaskad-claim@test.local');
+    }
+
+    public function test_restoring_facility_from_trash_cascades_restore_to_related_records(): void
+    {
+        $facility = $this->rehabFacility;
+
+        $claim = FacilityClaim::create([
+            'facility_id' => $facility->id,
+            'brand' => 'bakimeviara',
+            'applicant_name' => 'Yetkili',
+            'applicant_email' => 'kaskad-restore@test.local',
+            'applicant_phone' => '05552222222',
+            'document_path' => 'claims/ruhsat.png',
+            'status' => 'pending',
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/kurumlar/'.$facility->id)
+            ->assertRedirect();
+        $this->assertSoftDeleted('facility_claims', ['id' => $claim->id]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/cop-kutusu/facility/'.$facility->id.'/geri-yukle')
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('facility_claims', ['id' => $claim->id, 'deleted_at' => null]);
+    }
+
+    public function test_force_deleting_facility_from_trash_cascades_permanent_delete(): void
+    {
+        Storage::fake('local');
+
+        $facility = $this->rehabFacility;
+        $claim = FacilityClaim::create([
+            'facility_id' => $facility->id,
+            'brand' => 'bakimeviara',
+            'applicant_name' => 'Yetkili',
+            'applicant_email' => 'kaskad-force@test.local',
+            'applicant_phone' => '05552222222',
+            'document_path' => 'claims/kaskad-ruhsat.png',
+            'status' => 'pending',
+        ]);
+        Storage::disk('local')->put($claim->document_path, 'test');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/kurumlar/'.$facility->id)
+            ->assertRedirect();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/cop-kutusu/facility/'.$facility->id.'/kalici-sil')
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('facility_claims', ['id' => $claim->id]);
+        Storage::disk('local')->assertMissing($claim->document_path);
+    }
+
+    public function test_admin_lists_hide_records_belonging_to_deleted_facility(): void
+    {
+        $facility = $this->rehabFacility;
+
+        VisitRequest::create([
+            'facility_id' => $facility->id,
+            'brand' => 'bakimeviara',
+            'full_name' => 'Kaskad Ziyaretci',
+            'phone' => '05559990000',
+            'status' => 'new',
+        ]);
+        FacilityQuestion::create([
+            'facility_id' => $facility->id,
+            'brand' => 'bakimeviara',
+            'asker_name' => 'Kaskad Soran',
+            'question' => 'Kaskad test sorusu?',
+            'status' => 'pending',
+        ]);
+        FacilityReview::create([
+            'facility_id' => $facility->id,
+            'family_user_id' => $this->family->id,
+            'brand' => 'bakimeviara',
+            'reviewer_name' => 'Kaskad Yorumcu',
+            'rating' => 5,
+            'body' => 'Kaskad test yorumu.',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/kurumlar/'.$facility->id)
+            ->assertRedirect();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/ziyaret-talepleri')
+            ->assertDontSee('Kaskad Ziyaretci');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/aile-sorulari')
+            ->assertDontSee('Kaskad Soran');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/yorumlar')
+            ->assertDontSee('Kaskad Yorumcu');
     }
 }
