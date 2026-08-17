@@ -110,6 +110,8 @@ class CheckUserFlows extends Command
             $unclaimedFacilitySlug = $this->ensureUnclaimedFacility($brandSlug);
             $facilityUserEmail = $this->ensureFacilityUser($brandSlug, $claimedFacilitySlug);
 
+            $failuresBeforeBrand = count($this->failures);
+
             $this->safeRun($brandSlug, 'Aile Kaydı ve Girişi', fn () => $this->checkFamilyRegisterAndLogin($brandSlug, $baseUrl));
             $this->safeRun($brandSlug, 'Kurum Sahiplenme Başvurusu', fn () => $this->checkFacilityClaim($brandSlug, $baseUrl, $unclaimedFacilitySlug));
             $this->safeRun($brandSlug, 'Kurum Kaydı (Sıfırdan Başvuru)', fn () => $this->checkFacilityRegistration($brandSlug, $baseUrl));
@@ -118,6 +120,20 @@ class CheckUserFlows extends Command
             $this->safeRun($brandSlug, 'Kurum Sorusu', fn () => $this->checkQuestion($brandSlug, $baseUrl, $claimedFacilitySlug));
             $this->safeRun($brandSlug, 'İletişim Formu', fn () => $this->checkContact($brandSlug, $baseUrl));
             $this->safeRun($brandSlug, 'Kurum Girişi', fn () => $this->checkFacilityLogin($brandSlug, $baseUrl, $facilityUserEmail));
+
+            // 17 Agustos 2026: kullanicinin kesin talebi - "olusturulan test
+            // verileri akabinde silinmeli", sabit QATEST Daily kurumlarinin
+            // (claimed/unclaimed + yetkili hesabi) admin panelinde SUREKLI
+            // gorunmesi kabul edilemezdi. Onceki tasarim bunlari GUNLER
+            // BOYUNCA yeniden kullaniyordu (idempotent upsert) - artik ayni
+            // gunun TUM kontrolleri hatasiz tamamlandiysa bu 2 kurum + yetkili
+            // hesabi hemen siliniyor (diger tum test-verisi turleriyle AYNI
+            // "basarili ise sil" kurali). Bir sonraki calisma onlari sifirdan
+            // yeniden olusturur - bu yuzden kalici degil, GECICI olmalari
+            // sagliklarini etkilemez.
+            if (count($this->failures) === $failuresBeforeBrand) {
+                $this->cleanupDailyFixtures($claimedFacilitySlug, $unclaimedFacilitySlug);
+            }
         }
 
         // 13 Agustos 2026: kullanicinin talebi - "her testten sonra basarili
@@ -355,6 +371,24 @@ class CheckUserFlows extends Command
         }
 
         return $email;
+    }
+
+    /**
+     * 17 Agustos 2026: kullanicinin kesin talebi - bkz. runChecks() ayni
+     * tarihli yorum. Sadece o gunun sabit fixture'larini (claimed/unclaimed
+     * kurum + yetkili hesabi) siler - gercek kullanici verisine dokunmaz.
+     */
+    private function cleanupDailyFixtures(string $claimedSlug, string $unclaimedSlug): void
+    {
+        foreach ([$claimedSlug, $unclaimedSlug] as $slug) {
+            $facility = DB::table('facilities')->where('slug', $slug)->first();
+            if (! $facility) {
+                continue;
+            }
+            DB::table('facility_users')->where('facility_id', $facility->id)->delete();
+            DB::table('facility_images')->where('facility_id', $facility->id)->delete();
+            DB::table('facilities')->where('id', $facility->id)->delete();
+        }
     }
 
     // ------------------------------------------------------------------
