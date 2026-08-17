@@ -188,9 +188,11 @@ class FacilityController extends Controller
         // (dedup); kullanici bunu ISTEMEDIGINI bildirdi ("cok gorunmesi
         // icin her inceleme sayfasina tiklama goruntuleme olarak
         // islenmeli", "google botlari da dahil olmali") - dedup TAMAMEN
-        // kaldirildi, admin kendi oturumu disinda HER istek sayilir
-        // (bot/crawler dahil, IP/oturum bazli bir kisitlama yok).
-        if (! session('admin_id')) {
+        // kaldirildi. Admin oturumu istisnasi da (session('admin_id'))
+        // KALDIRILDI - kullanici admin oturumuyla test ederken kendi
+        // ziyaretinin sayilmamasini "calismiyor" olarak yasadi; artik
+        // KOSULSUZ, istisnasiz her istek sayilir.
+        {
             $facility->increment('views_count');
             // GUVENLIK: try/catch ile sarmalandi - bu ikincil/analitik bir
             // yazma islemi, sayfanin asil yuklenmesini engellememeli
@@ -215,6 +217,14 @@ class FacilityController extends Controller
             ->limit(3)
             ->get();
 
-        return view("themes.{$brand['theme']}.facilities.show", compact('facility', 'related', 'serviceSection'));
+        // 17 Agustos 2026: kullanicinin "geri gelince hala eski sayi
+        // yaziyor" bildirdigi sikayeti icin ek guvenlik - tarayicinin
+        // (ozellikle geri/ileri tusu ile) bu sayfayi kendi onbellegi/
+        // bfcache'inden GERCEK bir sunucu istegi yapmadan gostermesini
+        // engeller, her ziyarette gercekten taze veri gelir.
+        return response()
+            ->view("themes.{$brand['theme']}.facilities.show", compact('facility', 'related', 'serviceSection'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 }
