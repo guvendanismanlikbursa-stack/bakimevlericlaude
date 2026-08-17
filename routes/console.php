@@ -142,14 +142,20 @@ ScheduledJobMonitor::attach(
 // bir kilit kesinlikle olu demektir - kendi kendini cok daha hizli
 // iyilestirsin diye kilit suresi 5 dakikaya dusuruldu.
 //
-// 17 Agustos 2026: ScheduledJobMonitor'a da baglandi - beklenen siklik 2
-// dakika (her dakika calismasi gerekiyor, 1 dakikalik kucuk gecikmeler
-// icin bosluk birakildi) - artik ayni sinif hata bir dahaki sefere
-// /admin/zamanlanan-gorevler'de saniyeler icinde gorulur.
+// 17 Agustos 2026: ScheduledJobMonitor'a baglandi. ILK deploy'da beklenen
+// siklik 2 dakika verilmisti ("her dakika calismasi gerekiyor") ama canlida
+// hemen /_saglik'i FAIL'e dusurdu: paylasimli cPanel hosting'in gercek cron
+// tetikleme sikligi Laravel'in ->everyMinute() tanimindan BAGIMSIZ - host
+// "* * * * *" calistirsa bile PHP process baslatma/kuyruk suresi ve olasi
+// host-tarafi throttling yuzunden pratikte dakikalar arasi bosluk normal.
+// 2 dakikalik esik gercek dunya jitter'ini tolere edemedi. Bu sistemin asil
+// amaci (15 Agustos olayi - kilit 24 SAAT takildi) dakika hassasiyeti degil,
+// saatler/gunler suren sessiz durmayi yakalamak, bu yuzden esik 15 dakikaya
+// (1.5x ile ~22 dakika tolerans) cikarildi.
 ScheduledJobMonitor::attach(
     Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
         ->everyMinute()
         ->withoutOverlapping(5),
     'queue:work',
-    2
+    15
 );
