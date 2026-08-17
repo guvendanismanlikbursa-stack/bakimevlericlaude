@@ -16,7 +16,7 @@ class CareAdvisorMatchService
 {
     public function match(array $criteria, array $categoryScope, array $keywordWeights = []): Collection
     {
-        $query = Facility::published()->forBrand($categoryScope)->with(['city', 'category', 'images']);
+        $query = Facility::discoverable()->forBrand($categoryScope)->with(['city', 'category', 'images']);
 
         if (! empty($criteria['city_id'])) {
             $query->where('city_id', $criteria['city_id']);

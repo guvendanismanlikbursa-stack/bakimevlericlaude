@@ -126,7 +126,7 @@ class SitemapController extends Controller
         // detay sayfalarina da genisletildi: sitemap artik markanin KENDI
         // bolumune ait kurumlari bildirir (digerleri hala calisir/gezilebilir,
         // sadece noindex - bkz. facilities/show.blade.php).
-        Facility::published()->forBrand($ownScopes)->orderBy('updated_at', 'desc')
+        Facility::discoverable()->forBrand($ownScopes)->orderBy('updated_at', 'desc')
             ->chunk(200, function ($facilities) use ($urls, $prefix) {
                 foreach ($facilities as $facility) {
                     $urls->push($this->url($prefix.'/kurumlar/'.$facility->slug, 'weekly', '0.8', $facility->updated_at));

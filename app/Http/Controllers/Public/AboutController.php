@@ -22,9 +22,9 @@ class AboutController extends Controller
         $brand = current_brand();
         $sections = service_sections();
 
-        $facilityCount = Facility::published()->forBrand($brand['category_scope'])->count();
-        $claimedCount = Facility::published()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
-        $cityCount = Facility::published()->forBrand($brand['category_scope'])
+        $facilityCount = Facility::discoverable()->forBrand($brand['category_scope'])->count();
+        $claimedCount = Facility::discoverable()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
+        $cityCount = Facility::discoverable()->forBrand($brand['category_scope'])
             ->join('cities', 'cities.id', '=', 'facilities.city_id')
             ->distinct('cities.id')
             ->count('cities.id');

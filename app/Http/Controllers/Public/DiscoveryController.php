@@ -30,7 +30,7 @@ class DiscoveryController extends Controller
     {
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::published()->claimed()
+        $facilities = Facility::discoverable()->claimed()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('claimed_at')
@@ -50,7 +50,7 @@ class DiscoveryController extends Controller
     {
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::published()
+        $facilities = Facility::discoverable()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('updated_at')
@@ -70,7 +70,7 @@ class DiscoveryController extends Controller
     {
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::published()
+        $facilities = Facility::discoverable()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('created_at')
@@ -90,7 +90,7 @@ class DiscoveryController extends Controller
     {
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::published()->claimed()
+        $facilities = Facility::discoverable()->claimed()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('claimed_at')
@@ -110,7 +110,7 @@ class DiscoveryController extends Controller
     {
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::published()
+        $facilities = Facility::discoverable()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('views_count')
@@ -163,7 +163,7 @@ class DiscoveryController extends Controller
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $images = FacilityImage::whereHas('facility', function ($q) use ($scopes) {
-                $q->published()->forBrand($scopes);
+                $q->discoverable()->forBrand($scopes);
             })
             ->with('facility.city')
             ->latest()

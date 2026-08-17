@@ -25,7 +25,7 @@ class HomeController extends Controller
         // (2., 3. sayfa...). Ayri bir 'featured_page' parametresi
         // kullaniliyor ki asagidaki $filteredFacilities->paginate()
         // (varsayilan 'page' parametresi) ile cakismasin.
-        $featured = Facility::published()
+        $featured = Facility::discoverable()
             ->forBrand($sectionScopes)
             ->where('is_featured', true)
             ->with(['city', 'category', 'images'])
@@ -34,7 +34,7 @@ class HomeController extends Controller
             ->paginate(6, ['*'], 'featured_page')
             ->withQueryString();
 
-        $preRegistered = Facility::published()
+        $preRegistered = Facility::discoverable()
             ->forBrand($sectionScopes)
             ->where('is_claimed', false)
             ->where('source', 'google_maps_veri_cekici')
@@ -51,11 +51,11 @@ class HomeController extends Controller
         // 12 Agustos 2026: kullanicinin talebi - anasayfa "maksimum premium"
         // seviyeye tasinirken guven veren gercek, canli rakamlar eklendi
         // (Hakkimizda sayfasindaki ayni yaklasim).
-        $facilityCount = Facility::published()->forBrand($brand['category_scope'])->count();
-        $cityCount = Facility::published()->forBrand($brand['category_scope'])
+        $facilityCount = Facility::discoverable()->forBrand($brand['category_scope'])->count();
+        $cityCount = Facility::discoverable()->forBrand($brand['category_scope'])
             ->join('cities', 'cities.id', '=', 'facilities.city_id')
             ->distinct('cities.id')->count('cities.id');
-        $claimedCount = Facility::published()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
+        $claimedCount = Facility::discoverable()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
 
         // 12 Agustos 2026: kullanicinin acik talebi - filtre formu
         // doldurulup gonderildiginde ayni sayfada, "Bilgi merkezi/Makale ve

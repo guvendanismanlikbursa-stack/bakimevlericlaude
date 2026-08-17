@@ -26,7 +26,7 @@ class PriceGuideController extends Controller
         $city = City::where('slug', $citySlug)->firstOrFail();
         $districtName = $this->resolveDistrict($city, $districtSlug);
 
-        $baseQuery = Facility::published()
+        $baseQuery = Facility::discoverable()
             ->forBrand($section['scopes'])
             ->where('city_id', $city->id);
 
@@ -62,7 +62,7 @@ class PriceGuideController extends Controller
         $city = City::where('slug', $citySlug)->firstOrFail();
         $districtName = $this->resolveDistrict($city, $districtSlug);
 
-        $baseQuery = Facility::published()
+        $baseQuery = Facility::discoverable()
             ->where('facility_category_id', $category->id)
             ->where('city_id', $city->id);
 

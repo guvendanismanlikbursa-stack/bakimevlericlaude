@@ -105,7 +105,7 @@ class FacilityController extends Controller
 
         $nearbyFacilities = [];
         if ($request->filled('lat') && $request->filled('lng') && is_numeric($request->lat) && is_numeric($request->lng)) {
-            $candidates = Facility::published()
+            $candidates = Facility::discoverable()
                 ->forBrand($scope)
                 ->whereNotNull('lat')->whereNotNull('lng')
                 ->with(['city', 'category', 'images'])
@@ -199,7 +199,7 @@ class FacilityController extends Controller
 
         $serviceSection = service_section_for_scope($facility->category?->brand_scope);
 
-        $related = Facility::published()
+        $related = Facility::discoverable()
             ->forBrand($serviceSection['scopes'] ?? $brand['category_scope'])
             ->where('facility_category_id', $facility->facility_category_id)
             ->where('id', '!=', $facility->id)

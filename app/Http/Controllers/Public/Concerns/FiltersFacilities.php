@@ -21,7 +21,7 @@ trait FiltersFacilities
     protected function filteredQuery(Request $request, array $scope, ?array $allBrandScopes = null)
     {
         $effectiveScope = ($request->filled('q') && $allBrandScopes) ? $allBrandScopes : $scope;
-        $query = Facility::published()->forBrand($effectiveScope);
+        $query = Facility::discoverable()->forBrand($effectiveScope);
 
         if ($request->filled('q')) {
             // facility_categories tablosunda da bir "name" kolonu var; bu

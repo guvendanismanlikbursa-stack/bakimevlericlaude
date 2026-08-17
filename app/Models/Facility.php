@@ -148,6 +148,28 @@ class Facility extends Model
         return $query->where('is_published', true);
     }
 
+    // 17 Agustos 2026: kullanicinin bildirdigi hata - platform:check-user-flows
+    // gunluk otomatik kontrolunun kalici QATEST Daily kurum sabitleri (bkz.
+    // CheckUserFlows::ensureClaimedFacility/ensureUnclaimedFacility, hepsi
+    // source='qa_test') GERCEK ailelerin karsisina keşif/listeleme
+    // yuzeylerinde (anasayfa, kurumlar listesi, rehber, "yeni eklenenler" vb.)
+    // cikiyordu. published() scope'unu degistirmedik cunku CheckUserFlows'un
+    // kendisi bu kurumlara DOGRUDAN slug ile (/kurumlar/{slug}) erisiyor -
+    // published()'i kisitlasaydik gunluk kontrolun kendisi kirilirdi. Bunun
+    // yerine SADECE gercekten "kesif/listeleme" yuzeylerinde kullanilacak
+    // ayri bir scope: dogrudan tek-kurum sayfalarinda (show/sahiplen/teklif/
+    // ziyaret/soru) hala published() kullanilir, degismedi.
+    public function scopeDiscoverable($query)
+    {
+        // DIKKAT: source cogu gercek kurumda NULL - "!= 'qa_test'" SQL'de
+        // NULL satirlari da (dogru degil, BILINMIYOR sonucu ureterek)
+        // SESSIZCE eler, bu ilk denemede TUM gercek kurumlari kesif
+        // sayfalarindan kaybetmisti. NULL'u acikca serbest birakmak sart.
+        return $query->published()->where(function ($q) {
+            $q->whereNull('source')->orWhere('source', '!=', 'qa_test');
+        });
+    }
+
     public function scopeClaimed($query)
     {
         return $query->where('is_claimed', true);

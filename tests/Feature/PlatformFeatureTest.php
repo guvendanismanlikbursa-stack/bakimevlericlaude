@@ -3551,4 +3551,40 @@ class PlatformFeatureTest extends TestCase
         $this->assertNotNull(FacilityCategory::find($category->id), 'Cop kutusunda kurumu olan kategori silinmemeli.');
         $this->assertSoftDeleted('facilities', ['id' => $facility->id]);
     }
+
+    // 17 Agustos 2026: kullanicinin bildirdigi hata - QATEST Daily gunluk
+    // kontrol kurumlari (source='qa_test') anasayfa/liste/rehber gibi kesif
+    // yuzeylerinde gercek ailelerin karsisina cikiyordu. Facility::
+    // scopeDiscoverable() eklendi - ILK denemede source != 'qa_test'
+    // kullanildi ama SQL'de bu, source'u NULL olan (yani neredeyse TUM
+    // gercek kurumlar) satirlari da SESSIZCE eliyordu (NULL != deger daima
+    // BILINMIYOR/false doner). Bu test her iki davranisi da kilitler.
+    public function test_discoverable_scope_hides_qa_test_facilities_but_keeps_null_source_facilities(): void
+    {
+        $normal = $this->facility('Gercek Kurum Null Source', $this->childCategory, true);
+        $this->assertNull($normal->source);
+
+        $qaTest = Facility::create([
+            'name' => 'QATEST Gizlenmesi Gereken Kurum',
+            'slug' => 'qatest-gizlenmesi-gereken-kurum',
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->childCategory->id,
+            'district' => 'Merkez',
+            'address' => 'Adres',
+            'phone' => '02120000000',
+            'description' => 'Aciklama',
+            'capacity' => 20,
+            'services' => ['bakim'],
+            'is_published' => true,
+            'is_claimed' => true,
+            'source' => 'qa_test',
+            'free_quote_credits' => 5,
+            'balance' => 0,
+        ]);
+
+        $visibleIds = Facility::discoverable()->pluck('id');
+
+        $this->assertTrue($visibleIds->contains($normal->id), 'source NULL olan gercek kurum kesif sorgusunda gorunmeli.');
+        $this->assertFalse($visibleIds->contains($qaTest->id), 'source=qa_test olan test kurumu kesif sorgusunda gizlenmeli.');
+    }
 }

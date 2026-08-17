@@ -78,7 +78,7 @@ class EngagementController extends Controller
     private function board(string $mode)
     {
         $brand = current_brand();
-        $facilities = Facility::published()
+        $facilities = Facility::discoverable()
             ->forBrand($brand['category_scope'])
             ->with(['city', 'category', 'images'])
             ->orderByDesc('is_featured')

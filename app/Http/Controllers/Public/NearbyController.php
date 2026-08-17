@@ -56,7 +56,7 @@ class NearbyController extends Controller
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Yakinimda ara kaydi olusturulamadi: ' . $e->getMessage());
         }
-        $hasNearbyFacilities = Facility::published()
+        $hasNearbyFacilities = Facility::discoverable()
             ->forBrand($brand['category_scope'])
             ->whereNotNull('lat')->whereNotNull('lng')
             ->exists();

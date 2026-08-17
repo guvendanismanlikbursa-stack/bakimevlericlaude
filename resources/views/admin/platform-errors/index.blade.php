@@ -49,7 +49,13 @@
            gerektiginde (ör. bana gostermek icin) hala erisilebilir. --}}
       <details class="mt-3">
         <summary class="text-xs font-semibold text-gray-400 cursor-pointer select-none">Teknik detay (isterseniz buraya tıklayıp bana gösterebilirsiniz)</summary>
-        <pre class="mt-2 bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs text-gray-600 whitespace-pre-wrap font-mono">{{ $error->message }}</pre>
+        {{-- 17 Agustos 2026: kullanicinin bildirdigi hata - stack trace'teki
+             dosya yollari (ör. uzun /home/.../vendor/... satirlari) bosluk
+             icermedigi icin whitespace-pre-wrap TEK BASINA onlari kiramiyordu,
+             tüm sayfa yatay tasiyordu. break-words (overflow-wrap:anywhere)
+             boslugu olmayan uzun tokenlari da zorla kirar; overflow-x-auto
+             yine de bir guvenlik agi olarak kalir. --}}
+        <pre class="mt-2 bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs text-gray-600 whitespace-pre-wrap break-words overflow-x-auto font-mono">{{ $error->message }}</pre>
       </details>
     </div>
   @empty

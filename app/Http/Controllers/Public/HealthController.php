@@ -68,6 +68,49 @@ class HealthController extends Controller
             $healthy = false;
         }
 
+        // 17 Agustos 2026: kullanicinin bildirdigi gercek olay - gece yedegi
+        // (backup:database, her gun 03:30'da zamanlanmis) bu docroot'ta
+        // sessizce calismiyordu, hicbir yerde gorunmuyordu ta ki kullanici
+        // fark edip sorana kadar. cron/schedule:run gunluk gorevlerin
+        // calisip calismadigini disaridan izleyen ayri bir mekanizma yoktu.
+        // Artik en son yedek dosyasi 36 saatten eskiyse (gunluk dongude
+        // makul bir tolerans payi) bu uc FAIL doner - dis izleme (UptimeRobot
+        // vb.) bunu yakalar.
+        // Test/CI ortaminda (GitHub Actions --no-dev kurulumu dahil) hic
+        // yedek dosyasi olmayabilir - bu, production'da izlenen gercek bir
+        // gorev-calisti-mi sinyali, yerel/CI ortamin gecerliligiyle ilgisi
+        // yok, bu yuzden testing ortaminda atlanir.
+        if (app()->environment('testing')) {
+            $checks['backup'] = 'atlandi (test ortami)';
+        } else {
+            try {
+                $backupDir = storage_path('app/private/backups');
+                $latest = null;
+                if (\Illuminate\Support\Facades\File::isDirectory($backupDir)) {
+                    foreach (\Illuminate\Support\Facades\File::files($backupDir) as $file) {
+                        if (str_starts_with($file->getFilename(), 'backup-') && $file->getExtension() === 'gz') {
+                            $latest = max($latest ?? 0, $file->getMTime());
+                        }
+                    }
+                }
+                if ($latest === null) {
+                    $checks['backup'] = 'FAIL: hic yedek dosyasi bulunamadi';
+                    $healthy = false;
+                } else {
+                    $ageHours = (now()->timestamp - $latest) / 3600;
+                    $checks['backup'] = $ageHours > 36
+                        ? 'FAIL: en son yedek '.round($ageHours).' saat once alinmis (gunluk gorev calismiyor olabilir)'
+                        : 'ok';
+                    if ($ageHours > 36) {
+                        $healthy = false;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $checks['backup'] = 'FAIL: '.$e->getMessage();
+                $healthy = false;
+            }
+        }
+
         return response()->json([
             'status' => $healthy ? 'ok' : 'fail',
             'checks' => $checks,

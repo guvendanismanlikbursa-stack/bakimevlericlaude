@@ -47,7 +47,7 @@ class LocationGuideController extends Controller
         $districts = districts_for_city($city->name);
         $districtName = $this->resolveDistrict($districts, $districtSlug);
 
-        $query = Facility::published()
+        $query = Facility::discoverable()
             ->forBrand($section['scopes'])
             ->where('city_id', $city->id)
             ->with(['city', 'category', 'images'])
@@ -105,7 +105,7 @@ class LocationGuideController extends Controller
         $districts = districts_for_city($city->name);
         $districtName = $this->resolveDistrict($districts, $districtSlug);
 
-        $query = Facility::published()
+        $query = Facility::discoverable()
             ->where('facility_category_id', $category->id)
             ->where('city_id', $city->id)
             ->with(['city', 'category', 'images'])

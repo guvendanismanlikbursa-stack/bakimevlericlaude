@@ -20,7 +20,7 @@ class StatsController extends Controller
         $activeSection = $request->query('bolum') ? active_service_section($request->query('bolum'), $brand) : null;
         $scope = $activeSection ? $activeSection['scopes'] : $brand['category_scope'];
 
-        $rows = Facility::published()
+        $rows = Facility::discoverable()
             ->forBrand($scope)
             ->join('cities', 'cities.id', '=', 'facilities.city_id')
             ->select('cities.name as city_name', 'cities.slug as city_slug', DB::raw('count(*) as total'))
