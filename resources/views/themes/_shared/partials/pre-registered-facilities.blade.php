@@ -9,25 +9,16 @@
   </div>
 
   @if(($preRegistered ?? collect())->isNotEmpty())
-    <div class="grid md:grid-cols-3 gap-5">
+    {{-- 18 Agustos 2026: kullanicinin talebi - on kayitli kurumlar TUM
+         sitelerde/aramalarda kucuk kart olarak gorunmeli, sadece kurum
+         detay sayfasindaki "Benzer Kurumlar" degil. Burada kendi buyuk kart
+         + "Sahiplen" butonlu ayri bir tasarim vardi (kullanicinin daha once
+         acikca reddettigi bir desen: on kayitli kartta tiklama SADECE tam
+         detay sayfasina gitmeli, ayri aksiyon butonu olmamali) - artik
+         digerleriyle aynı paylasilan kucuk yatay mini-kart kullaniliyor. --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       @foreach($preRegistered as $facility)
-        @php($cardImage = facility_card_image($facility, $section))
-        <article class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition min-w-0">
-          <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
-            <div class="h-40 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};">
-              <img src="{{ $cardImage }}" alt="{{ $facility->name }}" loading="lazy" class="w-full h-full object-cover">
-            </div>
-            <div class="p-4 min-w-0">
-              <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600 mb-2">Ön kayıtlı</span>
-              <h3 class="font-black text-gray-950 mb-1 break-words">{{ $facility->name }}</h3>
-              <p class="text-sm text-gray-500 break-words">{{ $facility->city->name }} &middot; {{ $facility->district }} &middot; {{ $facility->category->name }}</p>
-            </div>
-          </a>
-          <div class="px-4 pb-4 grid grid-cols-2 gap-2">
-            <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-center text-sm font-black text-gray-700 whitespace-nowrap">İncele</a>
-            <a href="{{ brand_route('facility-claim.create', ['slug' => $facility->slug]) }}" class="rounded-lg px-3 py-2 text-center text-sm font-black text-white whitespace-nowrap" style="background: {{ $colors['primary'] }};">Sahiplen</a>
-          </div>
-        </article>
+        @include('themes._shared.partials.facility-card', ['facility' => $facility])
       @endforeach
     </div>
   @else

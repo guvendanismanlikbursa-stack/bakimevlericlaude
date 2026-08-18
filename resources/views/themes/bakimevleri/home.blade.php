@@ -59,6 +59,17 @@
          guncellenir - bkz. location-filter-script.blade.php. --}}
     <form method="GET" action="{{ brand_route('home') }}" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-home-results" class="js-location-filter bg-white text-gray-900 rounded-xl shadow-sm p-5 border border-gray-100 grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
       <input type="hidden" name="bolum" value="{{ $section['slug'] }}">
+      {{-- 18 Agustos 2026: kullanicinin bildirdigi gercek hata - hicbir
+           filtre secmeden "Kurumları listele"ye basinca "hicbir kurum
+           bulunamiyordu": form BOS filtrelerle gonderilince hasActiveFilters()
+           false donuyor, sayfa listeleme yerine degismeden ayni tanitim
+           (Bilgi merkezi/Öne çıkanlar) blogunu gosteriyordu - kullanicinin
+           GORDUGU sey "hicbir sey olmadi/liste yok" oluyordu. Bu gizli alan
+           SADECE bu form GERCEKTEN gonderildiginde (buton tiklandiginda)
+           var olur; hasActiveFilters() artik bunu da sayiyor, boylece
+           "Kurumları listele" HER ZAMAN gercek bir liste gosterir - digerleri
+           bos birakilmis olsa bile. --}}
+      <input type="hidden" name="listele" value="1">
       <input type="search" name="q" value="{{ request('q') }}" placeholder="Kurum adıyla ara" class="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white">
       <select name="city" aria-label="İl" class="js-city border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">İl seçin</option>@foreach($cities as $city)<option value="{{ $city->slug }}">{{ $city->name }}</option>@endforeach</select>
       <select name="district" aria-label="İlçe" class="js-district border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white" disabled><option value="">Önce il seçin</option></select>

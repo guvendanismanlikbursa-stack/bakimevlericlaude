@@ -44,6 +44,10 @@
          bolum -> filtre -> bilgilendirme (baslik+gorsel). --}}
     <form id="js-quick-search" method="GET" action="{{ brand_route('home') }}" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-home-results" class="js-location-filter mb-10 bg-gray-50 border border-gray-200 rounded-lg p-4 grid md:grid-cols-7 gap-3 scroll-mt-24">
       <input type="hidden" name="bolum" value="{{ $section['slug'] }}">
+      {{-- 18 Agustos 2026: bkz. bakimevleri/home.blade.php ayni tarihli
+           yorum - form BOS filtrelerle gonderilince "hicbir kurum
+           bulunamiyordu" hatasinin duzeltmesi. --}}
+      <input type="hidden" name="listele" value="1">
       <input type="search" name="q" value="{{ request('q') }}" placeholder="Kurum adıyla ara" class="border rounded-md px-3 py-2.5 text-sm bg-white">
       <select name="city" aria-label="İl" class="js-city border rounded-md px-3 py-2.5 text-sm bg-white"><option value="">İl seçin</option>@foreach($cities as $city)<option value="{{ $city->slug }}">{{ $city->name }}</option>@endforeach</select>
       <select name="district" aria-label="İlçe" class="js-district border rounded-md px-3 py-2.5 text-sm bg-white" disabled><option value="">Önce il seçin</option></select>

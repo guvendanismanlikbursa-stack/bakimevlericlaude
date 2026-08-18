@@ -36,7 +36,15 @@
     <button type="button" onclick="toggleSegmentInfo('{{ $segmentIconId }}')" aria-label="Fiyat segmentleri hakkında bilgi"
       style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#facc15;color:#1f2937;font-size:13px;font-weight:900;box-shadow:0 1px 3px rgba(0,0,0,.3);border:2px solid #fde047;cursor:pointer;vertical-align:middle;">?</button>
 
-    <div id="{{ $segmentIconId }}" class="hidden absolute z-50 right-0 sm:left-0 sm:right-auto top-7 w-72 sm:w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-left">
+    {{-- 18 Agustos 2026: kullanicinin bildirdigi gercek hata - bu ikon filtre
+         formlarinda genelde satirin EN SAGINDAKI alan, "sm:left-0" (tablet/
+         masaustunde kutuyu SAGA dogru genisletme) ikonun sagindaki bosluk
+         yetersiz kalinca kutunun yarisini ekran/pencere disina tasiriyordu.
+         Kutu artik HER ekran boyutunda ikonun SOLUNA dogru acilir (right-0) -
+         icon genelde satirin sonunda oldugu icin bu yon her zaman guvenli;
+         ayrica cok dar ekranlarda da tasmayi kesin onlemek icin max-genislik
+         viewport'a gore sinirlandi. --}}
+    <div id="{{ $segmentIconId }}" class="hidden absolute z-50 right-0 top-7 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-left">
       <div class="flex items-center justify-between mb-2">
         <div class="text-sm font-black text-gray-900">Fiyat segmentleri</div>
         <button type="button" onclick="toggleSegmentInfo('{{ $segmentIconId }}')" class="text-gray-400 hover:text-gray-700 text-lg leading-none">&times;</button>

@@ -115,6 +115,16 @@ trait FiltersFacilities
      * bolum/sayfalama disinda en az bir kritere deger girdigini) anlamak
      * icin - HomeController bunu "sonuc mu, yoksa tanitim mi gosterilsin"
      * kararinda kullanir.
+     *
+     * 18 Agustos 2026: kullanicinin bildirdigi gercek hata - anasayfada
+     * hicbir filtre secmeden "Kurumları listele"ye basinca sonuc alani
+     * degismiyordu (butonun tek isi "listele" olmasina ragmen). Kok neden:
+     * TUM filtreler bos oldugunda bu metod false donuyordu, form GERCEKTEN
+     * gonderilmis olsa bile. Home formundaki gizli 'listele' alani (bkz.
+     * home.blade.php) SADECE form submit edildiginde var olur - varligi
+     * "kullanici listele/ara/bul butonuna bastı" anlamina gelir, digerleri
+     * bos olsa bile artik gercek bir liste (o bolumdeki TUM kurumlar)
+     * gosterilir.
      */
     protected function hasActiveFilters(Request $request): bool
     {
@@ -124,7 +134,8 @@ trait FiltersFacilities
             || $request->filled('category')
             || $request->filled('service')
             || $request->filled('price_tier')
-            || $request->filled('budget');
+            || $request->filled('budget')
+            || $request->has('listele');
     }
 
     /**

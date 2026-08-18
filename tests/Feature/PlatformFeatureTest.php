@@ -4201,4 +4201,57 @@ class PlatformFeatureTest extends TestCase
     {
         $this->get('/kurumlar/hicbir-zaman-var-olmamis-bir-kurum-xyz')->assertNotFound();
     }
+
+    // 18 Agustos 2026: kullanicinin bildirdigi gercek hata - anasayfada
+    // hicbir filtre secmeden "Kurumları listele"ye basinca "hicbir kurum
+    // bulunamiyordu". Kok neden: form BOS filtrelerle gonderildiginde
+    // hasActiveFilters() false donuyor, sayfa gercek bir liste yerine
+    // degismeden ayni tanitim ("Bilgi merkezi") blogunu gosteriyordu.
+    public function test_homepage_list_button_shows_all_facilities_even_with_no_other_filters(): void
+    {
+        $response = $this->get('/?bolum=yasli-bakim&q=&city=&district=&category=&service=&price_tier=&listele=1');
+
+        $response->assertOk()
+            ->assertSee('Filtre sonuçları')
+            ->assertSee($this->elderlyFacility->name);
+    }
+
+    public function test_homepage_without_list_marker_still_shows_landing_content(): void
+    {
+        // Sadece bir bolum karti tiklanip forma hic dokunulmadiginda
+        // (ornegin ?bolum=yasli-bakim) davranis DEGISMEMELI - "listele" gizli
+        // alani olmadan zorla liste/filtre moduna girilmemeli.
+        $this->get('/?bolum=yasli-bakim')->assertOk()->assertDontSee('Filtre sonuçları');
+    }
+
+    // 18 Agustos 2026: kullanicinin bildirdigi gercek hata - "ön kayıtlı
+    // kurumlar ana sayfa ve aramalarda kartları küçülsün dedim sadece bir
+    // bölüme uygulamışsın". Anasayfadaki "Ön Kayıtlı Kurumlar" bolumu kendi
+    // ayri BUYUK kart tasarimini (foto+"Sahiplen" butonu) kullaniyordu,
+    // digerleriyle (facility-card.blade.php) tutarli kucuk mini-karta hic
+    // gecirilmemisti.
+    public function test_homepage_pre_registered_section_uses_compact_card_not_large_one(): void
+    {
+        $preRegistered = Facility::create([
+            'name' => 'Anasayfa On Kayit Testi',
+            'slug' => 'anasayfa-on-kayit-testi',
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->elderlyCategory->id,
+            'district' => 'Merkez',
+            'address' => 'Adres',
+            'services' => ['bakim'],
+            'is_published' => true,
+            'is_claimed' => false,
+            'source' => 'google_maps_veri_cekici',
+        ]);
+
+        $response = $this->get('/?bolum=yasli-bakim')->assertOk()->assertSee($preRegistered->name);
+
+        $html = $response->getContent();
+        $this->assertStringNotContainsString('Sahiplen<', $html, 'Anasayfadaki on kayitli kurum hala eski buyuk kart+Sahiplen butonuyla gorunuyor.');
+        $this->assertMatchesRegularExpression(
+            '/flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2[^"]*"[^>]*>\s*<div class="w-14 h-14/s',
+            $html,
+        );
+    }
 }
