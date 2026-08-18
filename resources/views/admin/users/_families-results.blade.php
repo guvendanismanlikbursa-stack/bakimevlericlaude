@@ -1,4 +1,8 @@
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  {{-- 18 Agustos 2026: bkz. admin/facilities/_results.blade.php ayni
+       tarihli yorum - AJAX anlik filtre sonrasi tablo yeniden render
+       edilince islem sutunu dar ekranlarda erisilemez oluyordu. --}}
+  <div class="admin-table-scroll overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Ad</th><th class="p-3">Marka</th><th class="p-3">Telefon</th><th class="p-3">E-posta Durumu</th><th class="p-3">Hesap Durumu</th><th class="p-3">Kayıt Tarihi</th><th class="p-3 text-right">İşlem</th></tr></thead>
     <tbody class="divide-y">
@@ -39,5 +43,6 @@
       @endforelse
     </tbody>
   </table>
+  </div>
 </div>
 <div class="mt-6">{{ $families->links() }}</div>

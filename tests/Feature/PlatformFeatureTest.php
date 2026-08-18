@@ -3120,6 +3120,33 @@ class PlatformFeatureTest extends TestCase
         }
     }
 
+    // 18 Agustos 2026: kullanicinin bildirdigi gercek hata - "kurumlar
+    // sekmesindeki islemler gorunmuyor". Kok neden: admin/layout.blade.php
+    // sayfa YUKLENDIGINDE tablolari otomatik yatay-kaydirilabilir yapan JS,
+    // AJAX anlik filtre sonucu YENIDEN render edilen tabloyu bir daha
+    // sarmiyordu - dar ekranda son sutun (islem butonlari) erisilemez
+    // oluyordu. Duzeltme HEM ilk yuklemede HEM AJAX yanitinda
+    // admin-table-scroll sinifinin var oldugunu dogrular.
+    public function test_admin_instant_filter_tables_stay_horizontally_scrollable_after_ajax_refresh(): void
+    {
+        $pages = [
+            '/admin/kurumlar',
+            '/admin/kullanicilar/aileler',
+            '/admin/kullanicilar/kurum-yetkilileri',
+        ];
+
+        foreach ($pages as $page) {
+            $initial = $this->withSession(['admin_id' => $this->admin->id])->get($page);
+            $initial->assertOk();
+            $this->assertStringContainsString('admin-table-scroll', $initial->getContent(), "{$page} ilk yuklemede kaydirilabilir degil.");
+
+            $ajax = $this->withSession(['admin_id' => $this->admin->id])
+                ->get($page.'?q=', ['X-Requested-With' => 'XMLHttpRequest']);
+            $ajax->assertOk();
+            $this->assertStringContainsString('admin-table-scroll', $ajax->json('html'), "{$page} AJAX yenilemesinden sonra kaydirilabilir degil.");
+        }
+    }
+
     private function adminFacilityUpdatePayload(Facility $facility, array $overrides = []): array
     {
         return array_merge([

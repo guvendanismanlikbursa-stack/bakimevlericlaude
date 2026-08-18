@@ -1,4 +1,15 @@
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+  {{-- 18 Agustos 2026: kullanicinin bildirdigi gercek hata - "kurumlar
+       sekmesindeki islemler gorunmuyor". Kok neden: admin/layout.blade.php
+       SAYFA YUKLENDIGINDE sayfadaki her tabloyu otomatik olarak yatay
+       kaydirilabilir bir sarmalayiciya aliyor, AMA bu tablo AJAX anlik
+       filtreyle (data-instant-filter) her degistiginde SIFIRDAN
+       yeniden render ediliyor - o script tekrar CALISMADIGI icin yeni
+       tablo sarmalanmadan kaliyor, dar ekranlarda son sutunlar (Durum +
+       islem butonlari: Revize/Panelde Gor/Sil) erisilemez oluyor. Sarma
+       artik dogrudan burada (server tarafinda, HER render'da) yapiliyor -
+       JS'e hic bagli degil. --}}
+  <div class="admin-table-scroll overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="bg-gray-50 text-left text-gray-500">
       <tr><th class="p-3">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Durum</th><th class="p-3"></th></tr>
@@ -67,6 +78,7 @@
       @endforelse
     </tbody>
   </table>
+  </div>
 </div>
 <div class="mt-6">
   @include('partials.pagination-info', ['paginator' => $facilities])
