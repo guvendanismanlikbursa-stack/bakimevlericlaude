@@ -39,10 +39,19 @@ class FacilityController extends Controller
         // kategori kirilimi gibi agir aggregate'i her tus vurusunda tekrar
         // hesaplamamak icin bu yolda atlaniyor, sadece tablo+sayfalama doner.
         if ($request->ajax()) {
+            // 18 Agustos 2026: kullanicinin bildirdigi gercek hata - kurum
+            // gorseli eklerken tarayici GERI tusuna basinca ekranda ham
+            // JSON metni ({"count":...,"html":"..."}) goruldu. Kok neden:
+            // bu AJAX (fetch) yaniti hicbir cache basligi tasimiyordu,
+            // adres cubugu location-filter-script.blade.php'de
+            // history.replaceState ile URL'i degistiriyor - tarayici GERI
+            // tusuna basinca o URL'e AYNI (fetch'ten kalma) yaniti
+            // sunucuya sormadan onbellekten geri getirebiliyordu. no-store
+            // bu onbelleklemeyi tamamen engeller.
             return response()->json([
                 'count' => $facilities->total(),
                 'html' => view('admin.facilities._results', compact('facilities', 'ownershipTypes'))->render(),
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
 
         $brands = config('brands.brands');

@@ -89,6 +89,9 @@ class HomeController extends Controller
         // blogunu (filtre sonucu VEYA filtrelenmemis "Bilgi merkezi" hali)
         // dondurur - facilities/index.blade.php'deki ayni mekanizma.
         if ($request->ajax()) {
+            // 18 Agustos 2026: bkz. Public\FacilityController::index() ayni
+            // tarihli yorum - tarayici GERI tusunda ham JSON gorunmesini
+            // onlemek icin bu AJAX yaniti onbelleklenmez.
             return response()->json([
                 'html' => view("themes.{$brand['theme']}.home._results", compact(
                     'activeSection',
@@ -98,7 +101,7 @@ class HomeController extends Controller
                     'featured',
                     'sectionBreakdown'
                 ))->render(),
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
 
         return view("themes.{$brand['theme']}.home", compact(

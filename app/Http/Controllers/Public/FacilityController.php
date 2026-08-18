@@ -72,10 +72,18 @@ class FacilityController extends Controller
         // agir aggregate sorgulari ve arama loglamasini atlar (her tus
         // basisinda gereksiz yuk bindirmemek icin).
         if ($request->ajax()) {
+            // 18 Agustos 2026: kullanicinin bildirdigi gercek hata (admin
+            // panelinde bulundu, ayni JS mekanizmasi burada da kullaniliyor)
+            // - tarayici GERI tusuna basinca ekranda ham JSON metni
+            // gorunuyordu. Kok neden: adres cubugu history.replaceState ile
+            // guncelleniyor (bkz. location-filter-script.blade.php), bu
+            // AJAX yaniti hicbir cache basligi tasimadigi icin tarayici
+            // GERI tusunda sunucuya sormadan onbellekten (fetch'ten kalma
+            // JSON'i) geri getirebiliyordu.
             return response()->json([
                 'count' => $facilities->total(),
                 'html' => view('themes._shared.facilities._results', compact('facilities', 'activeSection', 'sectionBreakdown'))->render(),
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
 
         // "Harita mantiginda bolgesel dagilim" TUM filtrelenmis sonuclar

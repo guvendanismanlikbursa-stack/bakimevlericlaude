@@ -47,9 +47,12 @@ class UserController extends Controller
         $brands = config('brands.brands');
 
         if ($request->ajax()) {
+            // 18 Agustos 2026: bkz. Admin\FacilityController::index() ayni
+            // tarihli yorum - tarayici GERI tusunda ham JSON gorunmesini
+            // onlemek icin bu AJAX yaniti onbelleklenmez.
             return response()->json([
                 'html' => view('admin.users._families-results', compact('families', 'brands'))->render(),
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
 
         return view('admin.users.families', compact('families', 'brands'));
@@ -109,9 +112,12 @@ class UserController extends Controller
         }
 
         if ($request->ajax()) {
+            // 18 Agustos 2026: bkz. Admin\FacilityController::index() ayni
+            // tarihli yorum - tarayici GERI tusunda ham JSON gorunmesini
+            // onlemek icin bu AJAX yaniti onbelleklenmez.
             return response()->json([
                 'html' => view('admin.users._facility-users-results', compact('facilityUsers'))->render(),
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
 
         $cities = \App\Models\City::orderBy('name')->get();

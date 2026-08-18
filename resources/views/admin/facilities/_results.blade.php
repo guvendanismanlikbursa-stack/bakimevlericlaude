@@ -12,7 +12,7 @@
   <div class="admin-table-scroll overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="bg-gray-50 text-left text-gray-500">
-      <tr><th class="p-3">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Durum</th><th class="p-3"></th></tr>
+      <tr><th class="p-3">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Durum</th><th class="p-3">Son Güncelleme</th><th class="p-3"></th></tr>
     </thead>
     <tbody class="divide-y">
       @forelse($facilities as $f)
@@ -53,6 +53,12 @@
             @endif
           </td>
           <td class="p-3">{{ $f->is_published ? 'Yayında' : 'Taslak' }}</td>
+          {{-- 18 Agustos 2026: kullanicinin talebi - kurumlara sirayla
+               gorsel eklerken en son hangisine ekledigini takip edebilmek
+               icin. Gorsel ekleme, tam duzenleme formunun (isim/adres/vb.
+               ile ayni PUT istegi) bir parcasi oldugundan facilities.
+               updated_at zaten bu ani dogru yansitir. --}}
+          <td class="p-3 text-gray-500 whitespace-nowrap">{{ $f->updated_at?->format('d.m.Y H:i') ?? '—' }}</td>
           <td class="p-3 text-right space-x-2">
             <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600">Revize</a>
             @if($f->is_claimed && $f->facilityUsers->isNotEmpty())
@@ -74,7 +80,7 @@
           </td>
         </tr>
       @empty
-        <tr><td class="p-3 text-gray-400" colspan="8">Kayıt yok.</td></tr>
+        <tr><td class="p-3 text-gray-400" colspan="9">Kayıt yok.</td></tr>
       @endforelse
     </tbody>
   </table>

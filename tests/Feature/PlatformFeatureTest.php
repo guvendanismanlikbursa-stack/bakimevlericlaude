@@ -3147,6 +3147,39 @@ class PlatformFeatureTest extends TestCase
         }
     }
 
+    // 18 Agustos 2026: kullanicinin ekran goruntusuyle bildirdigi gercek
+    // hata - kurum gorseli eklerken tarayici GERI tusuna basinca ekranda
+    // ham JSON metni ({"count":...,"html":"..."}) gorundu. Kok neden:
+    // location-filter-script.blade.php AJAX (fetch) yanitindan sonra
+    // history.replaceState ile adres cubugunu degistiriyor, ama bu JSON
+    // yaniti hicbir cache basligi tasimiyordu - tarayici GERI tusunda o
+    // URL'e sunucuya sormadan fetch'ten kalma JSON'i onbellekten geri
+    // getirebiliyordu. TUM anlik-filtre uc noktalari artik no-store
+    // donuyor, bu test o basligin var oldugunu dogrular.
+    public function test_ajax_filter_endpoints_are_never_cached_to_prevent_raw_json_on_back_button(): void
+    {
+        $endpoints = [
+            '/admin/kurumlar',
+            '/admin/kullanicilar/aileler',
+            '/admin/kullanicilar/kurum-yetkilileri',
+        ];
+
+        foreach ($endpoints as $endpoint) {
+            $response = $this->withSession(['admin_id' => $this->admin->id])
+                ->get($endpoint.'?q=', ['X-Requested-With' => 'XMLHttpRequest']);
+            $response->assertOk();
+            $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control') ?? '', "{$endpoint} AJAX yaniti onbelleklenmeye acik kalmis.");
+        }
+
+        $public = $this->get('/kurumlar?bolum=yasli-bakim', ['X-Requested-With' => 'XMLHttpRequest']);
+        $public->assertOk();
+        $this->assertStringContainsString('no-store', $public->headers->get('Cache-Control') ?? '');
+
+        $home = $this->get('/?bolum=yasli-bakim&listele=1', ['X-Requested-With' => 'XMLHttpRequest']);
+        $home->assertOk();
+        $this->assertStringContainsString('no-store', $home->headers->get('Cache-Control') ?? '');
+    }
+
     private function adminFacilityUpdatePayload(Facility $facility, array $overrides = []): array
     {
         return array_merge([
