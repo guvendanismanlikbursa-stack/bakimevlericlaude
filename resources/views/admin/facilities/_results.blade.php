@@ -12,12 +12,18 @@
   <div class="admin-table-scroll overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="bg-gray-50 text-left text-gray-500">
-      <tr><th class="p-3">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Durum</th><th class="p-3">Son Güncelleme</th><th class="p-3"></th></tr>
+      <tr><th class="p-3 w-56">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Durum</th><th class="p-3">Son Güncelleme</th><th class="p-3"></th></tr>
     </thead>
     <tbody class="divide-y">
       @forelse($facilities as $f)
         <tr>
-          <td class="p-3 font-medium">{{ $f->name }}</td>
+          {{-- 18 Agustos 2026: kullanicinin bildirdigi gercek hata - Ad
+               sutunu asiri genis alan kapliyordu (bkz. .admin-table-scroll
+               table { min-width: max-content } - yatay kaydirma duzeltmesi
+               ayni zamanda hicbir sutunun sarilmasina izin vermiyordu).
+               Sabit bir genislik + break-words ile uzun isimler artik alt
+               satira geciyor, sutun tasmiyor. --}}
+          <td class="p-3 font-medium w-56 break-words">{{ $f->name }}</td>
           <td class="p-3">{{ $f->city->name }}</td>
           <td class="p-3">
             {{ $f->category->name }}

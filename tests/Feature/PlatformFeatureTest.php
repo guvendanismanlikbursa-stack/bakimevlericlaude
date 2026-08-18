@@ -3208,10 +3208,18 @@ class PlatformFeatureTest extends TestCase
     }
 
     // 14 Agustos 2026: kullanicinin talebi - "kaydet'e basinca 2 defa geri
-    // tusuna basmam gerekiyor". Admin filtrelenmis listeden bir kurumu
-    // duzenlemeye girip kaydedince, artik dogrudan O filtrelenmis listeye
-    // donmeli (bkz. Admin\FacilityController edit()/update()/safeReturnTo()).
-    public function test_admin_saving_facility_from_filtered_list_returns_to_that_list(): void
+    // tusuna basmam gerekiyor" (ilk cozum: kaydedince dogrudan filtrelenmis
+    // listeye donmek).
+    //
+    // 18 Agustos 2026: kullanicinin talebi uzerine bu GERI ALINDI - ayni
+    // kuruma birden fazla gorsel ekleyip/silen admin her kayittan sonra
+    // listeye atilmak istemiyor. Artik kayittan sonra AYNI duzenleme
+    // sayfasinda kalinir, filtrelenmis liste bilgisi query string'te tasinir
+    // ve sayfada GORUNUR bir "← Listeye dön" linki olarak sunulur - admin
+    // isini bitirdiginde kendi kontrolunde listeye doner (tarayici geri
+    // tusuna hic gerek kalmadan, orijinal "2 defa geri tusu" sikayeti de
+    // boylece cozulur).
+    public function test_admin_saving_facility_from_filtered_list_keeps_return_link_and_stays_on_edit_page(): void
     {
         // 14 Agustos 2026: gercek tarayicida bu deger Laravel'in kendi
         // url()->previous() mekanizmasiyla (StartSession'in her GET
@@ -3225,10 +3233,20 @@ class PlatformFeatureTest extends TestCase
             ->get('/admin/kurumlar/'.$this->rehabFacility->id.'/edit');
         $editResponse->assertOk();
         $editResponse->assertSee('name="return_to" value="'.$listUrl, false);
+        $editResponse->assertSee('href="'.$listUrl, false);
 
-        $this->withSession(['admin_id' => $this->admin->id])
-            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['return_to' => $listUrl]))
-            ->assertRedirect($listUrl);
+        $expectedEditUrl = route('admin.facilities.edit', $this->rehabFacility).'?return_to='.urlencode($listUrl);
+
+        $updateResponse = $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['return_to' => $listUrl]));
+        $updateResponse->assertRedirect($expectedEditUrl);
+
+        // Kaydettikten sonra donulen duzenleme sayfasi da ayni "Listeye dön"
+        // linkini korumali - ikinci bir gorsel islemi icin tekrar filtreli
+        // listeden girmeye gerek kalmasin.
+        $secondEditResponse = $this->withSession(['admin_id' => $this->admin->id])->get($expectedEditUrl);
+        $secondEditResponse->assertOk();
+        $secondEditResponse->assertSee('href="'.$listUrl, false);
     }
 
     public function test_admin_facility_update_ignores_foreign_return_to_url(): void

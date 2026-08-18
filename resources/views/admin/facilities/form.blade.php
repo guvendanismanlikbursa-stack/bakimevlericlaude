@@ -7,6 +7,15 @@
   $imageCount = $facility->exists ? $facility->images->count() : 0;
   $remainingImages = max(0, 10 - $imageCount);
 @endphp
+{{-- 18 Agustos 2026: kullanicinin talebi - kayittan sonra artik listeye
+     otomatik donulmuyor (bkz. Admin\FacilityController::update() ayni
+     tarihli yorum), admin ayni kurumda birden fazla gorsel ekleme/silme
+     islemini tek ziyarette rahatca yapabilsin diye. Filtrelenmis listeye
+     donus artik BU gorunur butonla, admin isini bitirdiginde kendi
+     kontrolunde yapilir. --}}
+@isset($returnTo)
+  <a href="{{ $returnTo }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-800 mb-3">← Listeye dön</a>
+@endisset
 <h1 class="text-2xl font-bold mb-6">{{ $facility->exists ? 'Kurumu Düzenle' : 'Yeni Kurum' }}</h1>
 
 <form method="POST" action="{{ $facility->exists ? route('admin.facilities.update', $facility) : route('admin.facilities.store') }}" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm p-6 grid md:grid-cols-2 gap-4 max-w-4xl">

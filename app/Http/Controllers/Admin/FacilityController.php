@@ -176,13 +176,20 @@ class FacilityController extends Controller
         return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum ön kayıt olarak eklendi. Şimdi demo görseller ekleyebilirsiniz.');
     }
 
-    public function edit(Facility $facility)
+    public function edit(Request $request, Facility $facility)
     {
         $cities = City::orderBy('name')->get();
         $categories = FacilityCategory::orderBy('name')->get();
         $serviceSections = service_sections();
         $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category']);
-        $returnTo = $this->safeReturnTo(url()->previous());
+        // 18 Agustos 2026: kullanicinin talebi - filtrelenmis listeden gelip
+        // ayni kurumda birden fazla gorsel ekleyip/silen admin artik HER
+        // kayittan sonra listeye geri atilmiyor (bkz. update() ayni tarihli
+        // yorum) - bu yuzden "hangi filtreli listeden geldi" bilgisi artik
+        // query string uzerinden (?return_to=...) TASINIYOR, aksi halde
+        // ikinci kayittan sonra url()->previous() bu DUZENLEME sayfasinin
+        // kendisini gosterir ve orijinal liste linki kaybolurdu.
+        $returnTo = $this->safeReturnTo($request->query('return_to')) ?? $this->safeReturnTo(url()->previous());
 
         return view('admin.facilities.form', compact('facility', 'cities', 'categories', 'serviceSections', 'returnTo'));
     }
@@ -242,13 +249,22 @@ class FacilityController extends Controller
         $this->storeUploadedImages($request, $facility);
 
         // 14 Agustos 2026: kullanicinin talebi - "kaydet'e basinca 2 defa
-        // geri tusuna basmam gerekiyor". Onceden her zaman ayni duzenleme
-        // sayfasina redirect ediyordu; admin filtrelenmis listeden gelmisse
-        // (bkz. edit() - $returnTo, gizli form alaniyla buraya tasiniyor)
-        // artik dogrudan O filtrelenmis listeye donuyor.
+        // geri tusuna basmam gerekiyor" -> ilk cozum: her zaman dogrudan
+        // filtrelenmis listeye donmekti.
+        //
+        // 18 Agustos 2026: kullanicinin talebi uzerine bu GERI ALINDI - bir
+        // kuruma gorsel ekleyip ayni ziyarette baska bir gorseli SILMEK
+        // isteyen admin, kaydettikten sonra listeye atilinca ayni kurumun
+        // duzenleme sayfasina TEKRAR girmek zorunda kaliyordu. Artik kayittan
+        // sonra HER ZAMAN ayni duzenleme sayfasinda kalinir (birden fazla
+        // gorsel islemi tek ziyarette rahatca yapilabilir); filtrelenmis
+        // listeye donus artik sayfadaki GORUNUR "◀ Listeye dön" butonuyla,
+        // admin isini bitirdiginde kendi kontrolunde yapilir - orijinal
+        // "2 defa geri tusu" sikayeti de boylece cozulmus olur (tarayici
+        // geri tusuna hic gerek kalmiyor).
         $returnTo = $this->safeReturnTo($request->input('return_to'));
 
-        return redirect($returnTo ?: route('admin.facilities.edit', $facility))
+        return redirect(route('admin.facilities.edit', $facility).($returnTo ? '?return_to='.urlencode($returnTo) : ''))
             ->with('success', 'Kurum güncellendi.');
     }
 
