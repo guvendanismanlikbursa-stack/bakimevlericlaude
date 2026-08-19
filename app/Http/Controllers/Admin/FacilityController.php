@@ -348,6 +348,138 @@ class FacilityController extends Controller
         return back()->with('success', 'Kurum ön kayıtlı hale getirildi ve bağlı kurum yetkilisi hesapları askıya alındı.');
     }
 
+    /**
+     * 19 Agustos 2026: kullanicinin talebi - kurumlari yerinde ziyaret edip
+     * fotograf/durum kontrolu yapan admin, kurum yetkilisi o an sahiplenmek
+     * isterse normal akistaki (basvuru + belge yukleme + admin onayi + mail
+     * bekleme) surece GEREK DUYMADAN dogrudan buradan gecici sifre
+     * verebilsin diye. GUVENLIK: belge/online basvuru burada YOKTUR cunku
+     * kimlik dogrulamasi zaten YUZ YUZE (admin bizzat orada) yapiliyor - bu
+     * normal FacilityClaim akisinin YERINE degil, ONA ALTERNATIF, sadece
+     * admin oturumundan tetiklenebilen ayri bir yoldur. Islem audit log'a
+     * "yerinde sahiplendirme" olarak acikca isaretlenir.
+     */
+    public function instantClaim(Request $request, Facility $facility)
+    {
+        abort_if($facility->is_claimed, 400, 'Bu kurum zaten sahiplenilmiş.');
+
+        $data = $request->validate([
+            'applicant_name' => 'required|string|max:120',
+            'applicant_email' => 'required|email|max:150',
+            'applicant_phone' => 'required|string|max:30',
+        ]);
+
+        if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
+            return back()->withErrors(['applicant_email' => $error]);
+        }
+
+        if (\App\Models\FacilityUser::where('email', $data['applicant_email'])->exists()) {
+            return back()->withErrors(['applicant_email' => 'Bu e-posta zaten bir kurum hesabına ait. Başka bir e-posta gerekiyor.']);
+        }
+
+        $temporaryPassword = Str::password(14);
+        $freeCredits = (int) config('platform.free_claim_credits', 5);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($facility, $data, $temporaryPassword, $freeCredits) {
+            $facility = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+            abort_if($facility->is_claimed, 400, 'Bu kurum zaten sahiplenilmiş.');
+
+            $facilityUser = \App\Models\FacilityUser::create([
+                'facility_id' => $facility->id,
+                'name' => $data['applicant_name'],
+                'email' => $data['applicant_email'],
+                'phone' => $data['applicant_phone'],
+                'password' => \Illuminate\Support\Facades\Hash::make($temporaryPassword),
+                'must_change_password' => true,
+                'status' => 'active',
+                'email_verified_at' => null,
+            ]);
+
+            $update = [
+                'is_claimed' => true,
+                'claimed_at' => now(),
+                'free_quote_credits' => (int) $facility->free_quote_credits + $freeCredits,
+                'invitation_status' => 'approved',
+                'invitation_status_at' => now(),
+            ];
+            if (facility_featured_campaign_active()) {
+                $update['is_featured'] = true;
+            }
+            $facility->update($update);
+
+            FacilityImage::where('facility_id', $facility->id)
+                ->where('path', 'like', 'facilities/demo/%')
+                ->delete();
+
+            \App\Models\BalanceLog::create([
+                'facility_id' => $facility->id,
+                'type' => 'claim_bonus_credits',
+                'amount' => 0,
+                'credits_amount' => $freeCredits,
+                'balance_after' => $facility->balance,
+                'credits_after' => $facility->free_quote_credits,
+                'admin_id' => session('admin_id'),
+                'note' => 'Yerinde (elle) sahiplendirme bonus hakkı.',
+            ]);
+
+            log_admin_event('facility_instant_claimed', $facility, [
+                'facility_user_email' => $facilityUser->email,
+            ]);
+        });
+
+        $facilityUser = \App\Models\FacilityUser::where('email', $data['applicant_email'])->firstOrFail();
+
+        // Kurumun kategorisine (yasli-bakim/cocuk/rehabilitasyon) uygun
+        // markayi bul - hosgeldin maili/giris linki o markanin alan adiyla
+        // gitsin (uc marka da ayni facility_users tablosunu paylastigi icin
+        // hangisiyle giris yapildigi islevsel olarak fark etmez, sadece
+        // e-postadaki linkin dogru/tanidik gorunmesi icin).
+        $facility->loadMissing('category');
+        $categoryScope = $facility->category?->brand_scope;
+        $brandSlug = null;
+        foreach (config('brands.brands') as $slug => $b) {
+            if (($b['default_section'] ?? null) === $categoryScope) {
+                $brandSlug = $slug;
+                break;
+            }
+        }
+        $brandSlug ??= array_key_first(config('brands.brands'));
+
+        $loginUrl = $this->instantClaimLoginUrl($brandSlug);
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($facilityUser->email)->sendNow(
+                new \App\Mail\FacilityWelcomeMail($facility->fresh(), $facilityUser->email, config('brands.brands.'.$brandSlug.'.name', $brandSlug), $loginUrl)
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Yerinde sahiplendirme hos geldin maili gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+        }
+
+        try {
+            \App\Http\Controllers\Facility\EmailVerificationController::send($facilityUser, config("brands.brands.{$brandSlug}"));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Yerinde sahiplendirme dogrulama maili gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+        }
+
+        return back()->with('instant_claim_credentials', [
+            'email' => $facilityUser->email,
+            'password' => $temporaryPassword,
+            'login_url' => $loginUrl,
+        ])->with('success', 'Kurum sahiplendirildi. Giriş bilgilerini aşağıdan görebilirsiniz.');
+    }
+
+    // bkz. Admin\FacilityClaimController::facilityLoginUrl() ayni mantik.
+    private function instantClaimLoginUrl(string $brand): string
+    {
+        $domain = config("brands.brands.{$brand}.domains.0");
+
+        if (app()->environment(['local', 'testing']) || ! $domain || ! str_ends_with($domain, '.com')) {
+            return route('brand.facility.login', ['brand' => $brand]);
+        }
+
+        return 'https://'.$domain.'/kurum-panel/giris';
+    }
+
     public function deleteImage(FacilityImage $image)
     {
         Storage::disk('public')->delete($image->path);

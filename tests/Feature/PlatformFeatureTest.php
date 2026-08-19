@@ -4332,4 +4332,89 @@ class PlatformFeatureTest extends TestCase
             $html,
         );
     }
+
+    // 19 Agustos 2026: kullanicinin bildirdigi gercek hata - kurum detay
+    // sayfasinda 5'ten az gorsel oldugunda kalan slotlar "Ek görsel alanı"
+    // yazan bos kutularla dolduruluyordu. Artik sadece gercek gorseller
+    // gosterilir; birden fazla gorsel varsa ana gorselde sol/sag ok +
+    // "x/toplam" sayaci olmali.
+    public function test_facility_page_gallery_hides_empty_placeholder_slots(): void
+    {
+        FacilityImage::create(['facility_id' => $this->elderlyFacility->id, 'path' => 'facilities/gorsel-1.png', 'sort_order' => 0]);
+        FacilityImage::create(['facility_id' => $this->elderlyFacility->id, 'path' => 'facilities/gorsel-2.png', 'sort_order' => 1]);
+
+        $html = $this->get('/kurumlar/'.$this->elderlyFacility->slug)->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('Ek görsel alanı', $html);
+        $this->assertStringContainsString('1/2', $html);
+        $this->assertStringContainsString('shiftFacilityMainImage', $html);
+    }
+
+    public function test_facility_page_gallery_has_no_counter_or_arrows_with_single_image(): void
+    {
+        FacilityImage::create(['facility_id' => $this->elderlyFacility->id, 'path' => 'facilities/tek-gorsel.png', 'sort_order' => 0]);
+
+        $html = $this->get('/kurumlar/'.$this->elderlyFacility->slug)->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('Ek görsel alanı', $html);
+        $this->assertStringNotContainsString('Önceki görsel', $html);
+        $this->assertStringNotContainsString('Sonraki görsel', $html);
+    }
+
+    // 19 Agustos 2026: kullanicinin talebi - kurumlari yerinde ziyaret eden
+    // admin, kurum yetkilisi o an sahiplenmek isterse normal basvuru+belge+
+    // onay bekleme surecine gerek kalmadan dogrudan gecici sifre versin.
+    public function test_admin_can_instant_claim_a_facility_on_site(): void
+    {
+        $facility = $this->rehabFacility;
+        $this->assertFalse($facility->is_claimed);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kurumlar/'.$facility->id.'/yerinde-sahiplendir', [
+                'applicant_name' => 'Yerinde Test Yetkilisi',
+                'applicant_email' => 'yerinde.test@example.com',
+                'applicant_phone' => '05551112233',
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('instant_claim_credentials');
+        $credentials = session('instant_claim_credentials');
+        $this->assertSame('yerinde.test@example.com', $credentials['email']);
+        $this->assertNotEmpty($credentials['password']);
+
+        $facility->refresh();
+        $this->assertTrue($facility->is_claimed);
+        $this->assertNotNull($facility->claimed_at);
+
+        $facilityUser = FacilityUser::where('email', 'yerinde.test@example.com')->first();
+        $this->assertNotNull($facilityUser);
+        $this->assertSame($facility->id, $facilityUser->facility_id);
+        $this->assertTrue($facilityUser->must_change_password);
+        $this->assertTrue(Hash::check($credentials['password'], $facilityUser->password));
+    }
+
+    public function test_admin_instant_claim_rejects_already_claimed_facility(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kurumlar/'.$this->rehabFacilityClaimed->id.'/yerinde-sahiplendir', [
+                'applicant_name' => 'Test',
+                'applicant_email' => 'baska.test@example.com',
+                'applicant_phone' => '05551112233',
+            ])
+            ->assertStatus(400);
+    }
+
+    public function test_admin_instant_claim_rejects_email_already_used_by_facility_user(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kurumlar/'.$this->rehabFacility->id.'/yerinde-sahiplendir', [
+                'applicant_name' => 'Test',
+                'applicant_email' => $this->facilityUser->email,
+                'applicant_phone' => '05551112233',
+            ])
+            ->assertSessionHasErrors('applicant_email');
+
+        $this->rehabFacility->refresh();
+        $this->assertFalse($this->rehabFacility->is_claimed);
+    }
 }

@@ -330,6 +330,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/kurumlar/gorsel/{image}', [AdminFacilityController::class, 'deleteImage'])->name('facilities.image.destroy');
         Route::post('/kurumlar/{facility}/bakiye-duzenle', [AdminBalanceController::class, 'adjust'])->name('facilities.balance.adjust');
         Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
+        Route::post('/kurumlar/{facility}/yerinde-sahiplendir', [AdminFacilityController::class, 'instantClaim'])->name('facilities.instant-claim');
 
         Route::get('/kurum-davetleri', [AdminFacilityInvitationController::class, 'index'])->name('invitations.index');
         Route::get('/kurum-davetleri/hizli-gonderim', [AdminFacilityInvitationController::class, 'quickSend'])->name('invitations.quick-send');

@@ -187,7 +187,35 @@
           </p>
         @endforeach
       @else
-        <p class="text-sm text-gray-500">Bu kurum henüz sahiplenilmedi (ön kayıtlı profil).</p>
+        <p class="text-sm text-gray-500 mb-3">Bu kurum henüz sahiplenilmedi (ön kayıtlı profil).</p>
+
+        {{-- 19 Agustos 2026: kullanicinin talebi - kurumu yerinde ziyaret
+             edip kurum yetkilisi o an sahiplenmek isterse, normal basvuru+
+             belge+onay bekleme surecine gerek kalmadan admin buradan
+             DOGRUDAN gecici sifre verebilsin (kimlik dogrulamasi zaten yuz
+             yuze yapiliyor). Bkz. Admin\FacilityController::instantClaim(). --}}
+        @if(session('instant_claim_credentials'))
+          @php $cred = session('instant_claim_credentials'); @endphp
+          <div class="rounded-lg border-2 border-green-300 bg-green-50 p-4 mb-3">
+            <p class="text-sm font-black text-green-800 mb-2">✓ Kurum sahiplendirildi - giriş bilgilerini kurum yetkilisine iletin:</p>
+            <p class="text-sm text-gray-800">E-posta: <span class="font-mono font-bold">{{ $cred['email'] }}</span></p>
+            <p class="text-sm text-gray-800">Geçici şifre: <span class="font-mono font-bold text-lg">{{ $cred['password'] }}</span></p>
+            <p class="text-sm text-gray-800">Giriş adresi: <a href="{{ $cred['login_url'] }}" target="_blank" class="text-primary underline">{{ $cred['login_url'] }}</a></p>
+            <p class="text-xs text-gray-500 mt-2">Bu bilgiler sadece bir kez gösterilir, sayfayı yenilerseniz kaybolur - şimdi not edin veya WhatsApp/SMS ile iletin.</p>
+          </div>
+        @endif
+
+        <details class="mb-1">
+          <summary class="text-sm font-semibold text-primary cursor-pointer">Yerinde sahiplendir (kurum yetkilisi şu an yanınızda)</summary>
+          <form method="POST" action="{{ route('admin.facilities.instant-claim', $facility) }}" class="mt-3 flex flex-wrap gap-2 items-end">
+            @csrf
+            <div><label class="text-xs text-gray-500 block">Yetkili Adı Soyadı</label><input type="text" name="applicant_name" required class="border rounded-lg px-3 py-1.5 text-sm w-44"></div>
+            <div><label class="text-xs text-gray-500 block">E-posta</label><input type="email" name="applicant_email" required class="border rounded-lg px-3 py-1.5 text-sm w-52"></div>
+            <div><label class="text-xs text-gray-500 block">Telefon</label><input type="text" name="applicant_phone" required class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
+            <button class="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold" onclick="return confirm('Bu kurumu şimdi sahiplendirip gecici şifre oluşturmak istediğinize emin misiniz?');">Sahiplendir</button>
+          </form>
+          @error('applicant_email')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </details>
       @endif
 
       @if($facility->claims->isNotEmpty())
