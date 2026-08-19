@@ -47,6 +47,10 @@ class FacilityClaimController extends Controller
             'applicant_name' => 'required|string|max:120',
             'applicant_email' => 'required|email|max:150',
             'applicant_phone' => 'required|string|max:30',
+            // 19 Agustos 2026: kullanicinin bildirdigi gercek eksik - aile
+            // kaydinda KVKK acik riza onay kutusu vardi, burada yoktu -
+            // kisisel veri (ad/e-posta/telefon) onaysiz toplaniyordu.
+            'consent' => 'required|accepted',
             'note' => 'nullable|string|max:1000',
             // 13 Agustos 2026: kullanicinin talebi - belge yukleme artik
             // basvuru aninda ZORUNLU DEGIL (surtunmeyi azaltmak icin, ör.
@@ -60,6 +64,9 @@ class FacilityClaimController extends Controller
             'lng' => 'nullable|numeric|between:-180,180',
             // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php
             'website' => 'max:0',
+        ], [
+            'consent.required' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
+            'consent.accepted' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
         ]);
 
         if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
@@ -124,6 +131,8 @@ class FacilityClaimController extends Controller
             'applicant_city_name' => $cityName,
             'distance_km' => $distanceKm,
             'applicant_ip' => $request->ip(),
+            'consent_accepted_at' => now(),
+            'consent_ip' => $request->ip(),
         ]);
 
         if (! in_array($facility->invitation_status, ['approved'], true)) {

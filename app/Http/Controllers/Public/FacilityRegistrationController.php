@@ -38,7 +38,7 @@ class FacilityRegistrationController extends Controller
 
         $applicantLat = $data['lat'] ?? null;
         $applicantLng = $data['lng'] ?? null;
-        unset($data['lat'], $data['lng']);
+        unset($data['lat'], $data['lng'], $data['consent']);
         $cityName = ($applicantLat !== null && $applicantLng !== null)
             ? ($geo->nearestCity($applicantLat, $applicantLng)['city'] ?? null)
             : null;
@@ -51,6 +51,8 @@ class FacilityRegistrationController extends Controller
             'applicant_lng' => $applicantLng,
             'applicant_city_name' => $cityName,
             'applicant_ip' => $request->ip(),
+            'consent_accepted_at' => now(),
+            'consent_ip' => $request->ip(),
         ]);
 
         \App\Models\Admin::all()->each(fn ($admin) => notify_user(
@@ -150,6 +152,13 @@ class FacilityRegistrationController extends Controller
             'applicant_phone' => 'required|string|max:30',
             'lat' => 'nullable|numeric|between:-90,90',
             'lng' => 'nullable|numeric|between:-180,180',
+            // 19 Agustos 2026: kullanicinin bildirdigi gercek eksik - aile
+            // kaydinda KVKK acik riza onay kutusu vardi, burada yoktu -
+            // kisisel veri (ad/e-posta/telefon) onaysiz toplaniyordu.
+            'consent' => 'required|accepted',
+        ], [
+            'consent.required' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
+            'consent.accepted' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
         ]);
     }
 }

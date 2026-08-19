@@ -999,6 +999,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'yetkili@test.local',
             'applicant_phone' => '05552222222',
             'document' => $this->fakePngUpload('ruhsat.png'),
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::firstOrFail();
@@ -1153,6 +1154,7 @@ class PlatformFeatureTest extends TestCase
             'document' => $this->fakePngUpload('ruhsat2.png'),
             'lat' => 41.01,
             'lng' => 28.98,
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'konumlu@test.local')->firstOrFail();
@@ -1176,6 +1178,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'konumsuz@test.local',
             'applicant_phone' => '05552223355',
             'document' => $this->fakePngUpload('ruhsat3.png'),
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'konumsuz@test.local')->firstOrFail();
@@ -1286,6 +1289,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'yetkili.uskudar@test.local',
             'applicant_phone' => '05551119922',
             'document' => $this->fakePngUpload('ruhsat-uskudar.png'),
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'yetkili.uskudar@test.local')->firstOrFail();
@@ -2643,6 +2647,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_name' => 'Belgesiz Yetkili',
             'applicant_email' => 'belgesiz@test.local',
             'applicant_phone' => '05553334444',
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::firstOrFail();
@@ -2676,6 +2681,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_name' => 'Eski Belgesiz',
             'applicant_email' => 'eski.belgesiz@test.local',
             'applicant_phone' => '05559998877',
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::firstOrFail();
@@ -2704,6 +2710,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'onecikan@test.local',
             'applicant_phone' => '05557778899',
             'document' => $this->fakePngUpload('ruhsat-onecikan.png'),
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'onecikan@test.local')->firstOrFail();
@@ -2731,6 +2738,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'kampanyasonrasi@test.local',
             'applicant_phone' => '05557778800',
             'document' => $this->fakePngUpload('ruhsat-kampanyasonrasi.png'),
+            'consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'kampanyasonrasi@test.local')->firstOrFail();
@@ -4416,5 +4424,129 @@ class PlatformFeatureTest extends TestCase
 
         $this->rehabFacility->refresh();
         $this->assertFalse($this->rehabFacility->is_claimed);
+    }
+
+    // 19 Agustos 2026: kullanicinin talebi - KVKK "silme hakki". Kullanici
+    // hesabini DOGRUDAN silemez, sadece talep olusturur - admin onaylayip
+    // gercek silmeyi (anonimlestirme) yapar.
+    public function test_family_can_request_account_deletion_and_admin_approves_it(): void
+    {
+        $response = $this->withSession(['family_user_id' => $this->family->id, 'family_user_name' => $this->family->name])
+            ->delete('/aile/profil', ['password' => 'Aile12345!']);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('account_deletion_requests', [
+            'requestable_type' => FamilyUser::class,
+            'requestable_id' => $this->family->id,
+            'status' => 'pending',
+        ]);
+
+        // Talep olustuktan sonra hesap HALA calisir durumda olmali - admin
+        // henuz onaylamadi.
+        $this->family->refresh();
+        $this->assertSame('active', $this->family->status);
+        $this->assertNotSame('Silinmiş Kullanıcı', $this->family->name);
+
+        $deletionRequest = \App\Models\AccountDeletionRequest::firstOrFail();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/hesap-silme-talepleri/'.$deletionRequest->id.'/onayla')
+            ->assertRedirect();
+
+        $this->family->refresh();
+        $this->assertSame('deleted', $this->family->status);
+        $this->assertSame('Silinmiş Kullanıcı', $this->family->name);
+        $this->assertStringContainsString('silinmis-', $this->family->email);
+
+        $deletionRequest->refresh();
+        $this->assertSame('completed', $deletionRequest->status);
+        $this->assertSame($this->admin->id, $deletionRequest->processed_by);
+    }
+
+    public function test_family_account_deletion_requires_correct_password(): void
+    {
+        $this->withSession(['family_user_id' => $this->family->id, 'family_user_name' => $this->family->name])
+            ->delete('/aile/profil', ['password' => 'yanlis-sifre'])
+            ->assertSessionHasErrors('password');
+
+        $this->assertDatabaseCount('account_deletion_requests', 0);
+    }
+
+    public function test_facility_user_can_request_account_deletion_and_admin_can_reject_it(): void
+    {
+        $response = $this->withSession(['facility_user_id' => $this->facilityUser->id, 'facility_user_name' => $this->facilityUser->name])
+            ->delete('/kurum-panel/profil', ['password' => 'Kurum12345!']);
+
+        $response->assertRedirect();
+        $deletionRequest = \App\Models\AccountDeletionRequest::firstOrFail();
+        $this->assertSame(FacilityUser::class, $deletionRequest->requestable_type);
+        $this->assertSame($this->facilityUser->id, $deletionRequest->requestable_id);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/hesap-silme-talepleri/'.$deletionRequest->id.'/reddet', ['admin_note' => 'Aktif talep var, reddedildi.'])
+            ->assertRedirect();
+
+        // Reddedilince hesap DOKUNULMADAN kalmali.
+        $this->facilityUser->refresh();
+        $this->assertNotSame('Silinmiş Kullanıcı', $this->facilityUser->name);
+        $this->assertSame('active', $this->facilityUser->status);
+
+        $deletionRequest->refresh();
+        $this->assertSame('rejected', $deletionRequest->status);
+
+        // Kurumun kendisi (Facility) bu islemden HIC etkilenmemeli.
+        $this->assertTrue($this->childFacility->fresh()->is_claimed);
+    }
+
+    public function test_admin_account_deletions_screen_loads(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/hesap-silme-talepleri')
+            ->assertOk();
+    }
+
+    // 19 Agustos 2026: kullanicinin bildirdigi gercek eksik - aile kaydinda
+    // KVKK onay kutusu vardi, sahiplenme basvurusunda yoktu.
+    public function test_facility_claim_requires_consent_checkbox(): void
+    {
+        Storage::fake('local');
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
+            'applicant_name' => 'Rizasiz Yetkili',
+            'applicant_email' => 'rizasiz@test.local',
+            'applicant_phone' => '05551110000',
+        ])->assertSessionHasErrors('consent');
+
+        $this->assertDatabaseMissing('facility_claims', ['applicant_email' => 'rizasiz@test.local']);
+    }
+
+    public function test_facility_claim_with_consent_stores_consent_timestamp(): void
+    {
+        Storage::fake('local');
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
+            'applicant_name' => 'Rizali Yetkili',
+            'applicant_email' => 'rizali@test.local',
+            'applicant_phone' => '05551110001',
+            'consent' => '1',
+        ])->assertRedirect();
+
+        $claim = FacilityClaim::where('applicant_email', 'rizali@test.local')->firstOrFail();
+        $this->assertNotNull($claim->consent_accepted_at);
+        $this->assertNotNull($claim->consent_ip);
+    }
+
+    public function test_facility_registration_requires_consent_checkbox(): void
+    {
+        $this->post('/site/bakimevleri/kurum-kaydi', [
+            'name' => 'Rizasiz Kurum',
+            'facility_category_id' => $this->rehabCategory->id,
+            'city_id' => $this->city->id,
+            'applicant_name' => 'Rizasiz Yetkili',
+            'applicant_email' => 'rizasiz.kayit@test.local',
+            'applicant_phone' => '05551110002',
+        ])->assertSessionHasErrors('consent');
+
+        $this->assertDatabaseMissing('facility_registrations', ['applicant_email' => 'rizasiz.kayit@test.local']);
     }
 }

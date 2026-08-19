@@ -161,6 +161,18 @@
         </div>
         <label for="claim-note" class="sr-only">Not (opsiyonel)</label>
         <textarea id="claim-note" name="note" placeholder="Eklemek istediğiniz not (opsiyonel)" rows="3" class="border rounded-lg px-3 py-2.5 w-full">{{ old('note') }}</textarea>
+
+        {{-- 19 Agustos 2026: kullanicinin bildirdigi gercek eksik - aile
+             kaydinda KVKK acik riza onay kutusu vardi, burada yoktu. --}}
+        <label class="flex items-start gap-2 text-xs text-gray-600 leading-relaxed">
+          <input type="checkbox" name="consent" required value="1" class="mt-0.5">
+          <span>
+            <a href="{{ brand_route('pages.show', ['slug' => 'kvkk']) }}" target="_blank" class="text-primary underline font-semibold">Açık Rıza Metni ve Kişisel Verilerin Korunması Aydınlatma Metni</a>'ni
+            okudum, kişisel verilerimin belirtilen amaçlarla işlenmesine açıkça rıza gösteriyorum.
+            <span class="font-semibold">Bu kutuyu işaretlemek zorunludur.</span>
+          </span>
+        </label>
+
         <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $colors['primary'] }};">Başvuruyu Gönder</button>
         {{-- 14 Agustos 2026: kullanicinin talebi - "hicbir taahhut yok" zaten
              fayda listesinde vardi ama diger 6 maddenin arasinda kayboluyordu;

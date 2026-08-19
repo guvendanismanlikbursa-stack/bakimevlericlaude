@@ -169,4 +169,24 @@
     'preferences' => $user->notification_preferences ?? [],
     'notificationFormAction' => brand_route('facility.profile.notifications.update'),
 ])
+
+{{-- 19 Agustos 2026: kullanicinin talebi - KVKK "silme hakki". Bu form
+     hesabi DOGRUDAN SILMEZ, sadece bir talep olusturur - gercek silme
+     islemini bir admin onaylar (bkz. Facility\ProfileController::destroy()).
+     DIKKAT: sadece BU yetkilinin kendi hesabi hedeflenir, kurumun kendisi
+     veya varsa diger yetkili hesaplari etkilenmez. --}}
+<div class="max-w-3xl mx-auto mt-6 bg-white p-6 rounded-xl shadow-sm border border-red-100">
+  <p class="text-sm font-semibold text-red-700 mb-1">Hesabımı Sil</p>
+  <p class="text-xs text-gray-500 mb-3">Kendi hesabınızın ve kişisel verilerinizin (ad, e-posta, telefon) silinmesini talep edebilirsiniz. Kurumunuzun profili veya varsa diğer yetkili hesapları bu talepten etkilenmez. Talebiniz ekibimiz tarafından incelenip kısa süre içinde işleme alınır.</p>
+  <form method="POST" action="{{ brand_route('facility.profile.destroy') }}" onsubmit="return confirm('Hesabınızın silinmesini talep etmek istediğinize emin misiniz?');" class="flex flex-wrap gap-2 items-end">
+    @csrf
+    @method('DELETE')
+    <div class="flex-1 min-w-[200px]">
+      <label for="facility-delete-password" class="block text-xs font-semibold text-gray-600 mb-1">Şifreniz</label>
+      <input type="password" id="facility-delete-password" name="password" required class="border rounded-lg px-3 py-2 w-full">
+    </div>
+    <button class="rounded-lg border border-red-200 text-red-700 px-4 py-2 text-sm font-semibold hover:bg-red-50">Silme talebi gönder</button>
+  </form>
+  @error('password')<p class="text-xs text-red-600 mt-2">{{ $message }}</p>@enderror
+</div>
 @endsection

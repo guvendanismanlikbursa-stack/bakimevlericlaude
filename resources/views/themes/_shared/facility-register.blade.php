@@ -120,6 +120,17 @@
       <input type="hidden" name="lat" id="signup_lat">
       <input type="hidden" name="lng" id="signup_lng">
 
+      {{-- 19 Agustos 2026: kullanicinin bildirdigi gercek eksik - aile
+           kaydinda KVKK acik riza onay kutusu vardi, burada yoktu. --}}
+      <label class="flex items-start gap-2 text-xs text-gray-600 leading-relaxed">
+        <input type="checkbox" name="consent" required value="1" class="mt-0.5">
+        <span>
+          <a href="{{ brand_route('pages.show', ['slug' => 'kvkk']) }}" target="_blank" class="text-primary underline font-semibold">Açık Rıza Metni ve Kişisel Verilerin Korunması Aydınlatma Metni</a>'ni
+          okudum, kişisel verilerimin belirtilen amaçlarla işlenmesine açıkça rıza gösteriyorum.
+          <span class="font-semibold">Bu kutuyu işaretlemek zorunludur.</span>
+        </span>
+      </label>
+
       <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $primary }};">Kaydı Gönder</button>
     </form>
   </div>

@@ -210,6 +210,7 @@ $siteRoutes = function () {
             Route::get('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'edit'])->name('profile.edit');
             Route::put('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'update'])->name('profile.update');
             Route::put('/profil/bildirim-tercihleri', [\App\Http\Controllers\Family\ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
+            Route::delete('/profil', [\App\Http\Controllers\Family\ProfileController::class, 'destroy'])->name('profile.destroy');
             Route::get('/bildirimler/sayi', [FamilyNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
             Route::post('/kayitli-aramalar', [\App\Http\Controllers\Family\SavedSearchController::class, 'store'])->name('saved-searches.store');
             Route::delete('/kayitli-aramalar/{savedSearch}', [\App\Http\Controllers\Family\SavedSearchController::class, 'destroy'])->name('saved-searches.destroy');
@@ -251,6 +252,7 @@ $siteRoutes = function () {
 
             Route::get('/profil', [FacilityProfileController::class, 'edit'])->name('profile.edit');
             Route::put('/profil', [FacilityProfileController::class, 'update'])->name('profile.update');
+            Route::delete('/profil', [FacilityProfileController::class, 'destroy'])->name('profile.destroy');
             // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi
             // uzerine yapilan spam/kotuye kullanim denetiminde bulundu -
             // anonim ucler (sahiplen, kurum-kaydi) zaten throttle:public-
@@ -436,6 +438,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/cop-kutusu/{type}/{id}/kalici-sil', [AdminTrashController::class, 'forceDestroy'])->name('trash.force-destroy');
 
         Route::get('/islem-gunlugu', [AdminAuditLogController::class, 'index'])->name('audit-log.index');
+
+        Route::get('/hesap-silme-talepleri', [\App\Http\Controllers\Admin\AccountDeletionController::class, 'index'])->name('account-deletions.index');
+        Route::post('/hesap-silme-talepleri/{accountDeletionRequest}/onayla', [\App\Http\Controllers\Admin\AccountDeletionController::class, 'approve'])->name('account-deletions.approve');
+        Route::post('/hesap-silme-talepleri/{accountDeletionRequest}/reddet', [\App\Http\Controllers\Admin\AccountDeletionController::class, 'reject'])->name('account-deletions.reject');
 
         Route::get('/hatalar', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'index'])->name('platform-errors.index');
         Route::post('/hatalar/{platformError}/coz', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'resolve'])->name('platform-errors.resolve');

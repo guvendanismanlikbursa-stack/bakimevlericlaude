@@ -73,6 +73,44 @@ class ProfileController extends Controller
         return back()->with('success', 'Bildirim tercihleriniz güncellendi.');
     }
 
+    /**
+     * 19 Agustos 2026: kullanicinin talebi - bkz. Family\ProfileController::
+     * destroy() ayni tarihli yorum, ayni desen. DIKKAT: bu SADECE bu kurum
+     * yetkilisinin KENDI hesabini (ad/e-posta/telefon) hedefler - kurumun
+     * kendisi (Facility) veya varsa DIGER yetkili hesaplari BU TALEPTEN
+     * ETKILENMEZ, kisisel veri sadece bu bireye ait.
+     */
+    public function destroy(Request $request)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+
+        $request->validate(['password' => 'required|string']);
+        if (! \Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return back()->withErrors(['password' => 'Şifre hatalı, talep oluşturulmadı.']);
+        }
+
+        if (\App\Models\AccountDeletionRequest::where('requestable_type', FacilityUser::class)
+            ->where('requestable_id', $user->id)->where('status', 'pending')->exists()) {
+            return back()->with('info', 'Silme talebiniz zaten alınmış, inceleniyor.');
+        }
+
+        \App\Models\AccountDeletionRequest::create([
+            'requestable_type' => FacilityUser::class,
+            'requestable_id' => $user->id,
+            'requested_at' => now(),
+            'status' => 'pending',
+        ]);
+
+        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+            $admin,
+            'account_deletion_requested',
+            'Hesap silme talebi',
+            $user->name.' ('.$user->facility?->name.') hesabını silmek istiyor.',
+        ));
+
+        return back()->with('success', 'Hesap silme talebiniz alındı. Ekibimiz talebinizi inceleyip kısa süre içinde işleme alacak.');
+    }
+
     public function update(Request $request)
     {
         $user = FacilityUser::with('facility.category')->findOrFail(session('facility_user_id'));

@@ -72,6 +72,13 @@
         <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $openErrorCount }}</span>
       @endif
     </a>
+    <a href="{{ route('admin.account-deletions.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.account-deletions.*') ? 'bg-gray-700 text-white' : '' }}">
+      <span>Hesap Silme Talepleri</span>
+      @php($pendingDeletionCount = \App\Models\AccountDeletionRequest::where('status', 'pending')->count())
+      @if($pendingDeletionCount > 0)
+        <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingDeletionCount }}</span>
+      @endif
+    </a>
     <a href="{{ route('admin.scheduled-jobs.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.scheduled-jobs.*') ? 'bg-gray-700 text-white' : '' }}">
       <span>Zamanlanan Görevler</span>
       @php($overdueJobCount = \App\Models\ScheduledJobRun::get()->filter(fn ($j) => $j->isOverdue())->count())

@@ -75,4 +75,46 @@ class ProfileController extends Controller
 
         return back()->with('success', 'Bildirim tercihleriniz güncellendi.');
     }
+
+    /**
+     * 19 Agustos 2026: kullanicinin talebi - KVKK "silme hakki" icin
+     * kullanicinin kendi hesabini/kisisel verisini silebilecegi hicbir yer
+     * yoktu. Kullanicinin acik talebiyle: bu buton hesabi DOGRUDAN SILMEZ,
+     * sadece bir SILME TALEBI olusturur - gercek silme (anonimlestirme)
+     * islemini admin panelden bir admin onaylayip yapar (bkz.
+     * Admin\AccountDeletionController::approve() - platformun diger tum
+     * "kullanici talebi -> admin onayi" akislariyla (sahiplenme, kayit,
+     * bakiye) ayni desen). Sifre onayi istenir - yanlislikla tek tikla
+     * talep olusturulmasin diye.
+     */
+    public function destroy(Request $request)
+    {
+        $family = FamilyUser::findOrFail(session('family_user_id'));
+
+        $request->validate(['password' => 'required|string']);
+        if (! Hash::check($request->password, $family->password)) {
+            return back()->withErrors(['password' => 'Şifre hatalı, talep oluşturulmadı.']);
+        }
+
+        if (\App\Models\AccountDeletionRequest::where('requestable_type', FamilyUser::class)
+            ->where('requestable_id', $family->id)->where('status', 'pending')->exists()) {
+            return back()->with('info', 'Silme talebiniz zaten alınmış, inceleniyor.');
+        }
+
+        \App\Models\AccountDeletionRequest::create([
+            'requestable_type' => FamilyUser::class,
+            'requestable_id' => $family->id,
+            'requested_at' => now(),
+            'status' => 'pending',
+        ]);
+
+        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+            $admin,
+            'account_deletion_requested',
+            'Hesap silme talebi',
+            $family->name.' hesabını silmek istiyor.',
+        ));
+
+        return back()->with('success', 'Hesap silme talebiniz alındı. Ekibimiz talebinizi inceleyip kısa süre içinde işleme alacak.');
+    }
 }
