@@ -264,8 +264,8 @@
         </div>
         <div id="{{ $menuGalleryId }}">
           <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="relative inline-block group">
-            <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-56 object-cover border-2 border-white shadow cursor-zoom-in group-hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
-            <span class="absolute bottom-2 right-2 bg-gray-950/80 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">🔍 Büyüt</span>
+            <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-20 object-cover border-2 border-white shadow cursor-zoom-in group-hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
+            <span class="absolute bottom-1 right-1 bg-gray-950/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1">🔍 Büyüt</span>
           </a>
         </div>
         @if($facility->menu_image_updated_at)
