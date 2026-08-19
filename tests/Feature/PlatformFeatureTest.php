@@ -4550,6 +4550,51 @@ class PlatformFeatureTest extends TestCase
         $this->assertDatabaseMissing('facility_registrations', ['applicant_email' => 'rizasiz.kayit@test.local']);
     }
 
+    // 19 Agustos 2026: kullanicinin talebi - kurum kendi kendine kayit
+    // olurken, sistemde ayni telefonla ZATEN sahiplenilmemis (on-kayitli)
+    // bir kurum varsa, yeni bir bekleyen basvuru olusturmak yerine
+    // dogrudan o kaydin sahiplenme formuna yonlendirilmeli - mukerrer
+    // kayit onlenir.
+    public function test_facility_registration_with_matching_unclaimed_facility_redirects_to_claim(): void
+    {
+        $preRegistered = $this->facility('Onceden Kayitli Huzurevi', $this->rehabCategory, false);
+        $preRegistered->update(['phone' => '05559998877']);
+
+        $response = $this->post('/site/bakimevleri/kurum-kaydi', [
+            'name' => 'Onceden Kayitli Huzurevi Ltd',
+            'facility_category_id' => $this->rehabCategory->id,
+            'city_id' => $this->city->id,
+            'phone' => '05559998877',
+            'applicant_name' => 'Yeni Basvuran',
+            'applicant_email' => 'mukerrer.basvuru@test.local',
+            'applicant_phone' => '05551110003',
+            'consent' => '1',
+        ]);
+
+        $response->assertRedirect(brand_route('facility-claim.create', $preRegistered->slug));
+        $this->assertDatabaseMissing('facility_registrations', ['applicant_email' => 'mukerrer.basvuru@test.local']);
+    }
+
+    public function test_facility_registration_with_matching_claimed_facility_shows_error(): void
+    {
+        $claimed = $this->facility('Zaten Sahiplenilmis Huzurevi', $this->rehabCategory, true);
+        $claimed->update(['phone' => '05553334455']);
+
+        $response = $this->post('/site/bakimevleri/kurum-kaydi', [
+            'name' => 'Zaten Sahiplenilmis Huzurevi A.S.',
+            'facility_category_id' => $this->rehabCategory->id,
+            'city_id' => $this->city->id,
+            'phone' => '05553334455',
+            'applicant_name' => 'Yeni Basvuran',
+            'applicant_email' => 'sahipli.mukerrer@test.local',
+            'applicant_phone' => '05551110004',
+            'consent' => '1',
+        ]);
+
+        $response->assertSessionHasErrors('name');
+        $this->assertDatabaseMissing('facility_registrations', ['applicant_email' => 'sahipli.mukerrer@test.local']);
+    }
+
     // 19 Agustos 2026: kullanicinin bildirdigi gercek hata - 3 domain ayni
     // veritabanini paylasiyor ama dosya deposu PAYLASILMIYORDU, bir domain'de
     // yuklenen kurum gorseli diger 2 domain'de kirik link (404) cikiyordu

@@ -205,16 +205,26 @@
           </div>
         @endif
 
-        <details class="mb-1">
-          <summary class="text-sm font-semibold text-primary cursor-pointer">Yerinde sahiplendir (kurum yetkilisi şu an yanınızda)</summary>
-          <form method="POST" action="{{ route('admin.facilities.instant-claim', $facility) }}" class="mt-3 flex flex-wrap gap-2 items-end">
+        {{-- 19 Agustos 2026: kullanicinin talebi ("1 ve 3. maddeleri duzelt",
+             madde 3) - kucuk/gri <details> baglantisi kolayca gozden
+             kaciyordu. Ayni katlanir davranis korunuyor, ama artik belirgin
+             renkli/ikonlu bir kart - admin sayfayi taradiginda gozunden
+             kacmasin diye. --}}
+        <details class="mb-1 group border-2 border-amber-300 bg-amber-50 rounded-lg overflow-hidden">
+          <summary class="list-none cursor-pointer select-none px-4 py-3 flex items-center gap-2 hover:bg-amber-100 transition">
+            <span class="text-lg leading-none">📍</span>
+            <span class="text-sm font-black text-amber-900">Yerinde sahiplendir</span>
+            <span class="text-xs text-amber-700">— kurum yetkilisi şu an yanınızdaysa buraya tıklayın</span>
+            <span class="ml-auto text-amber-600 transition-transform group-open:rotate-180">▾</span>
+          </summary>
+          <form method="POST" action="{{ route('admin.facilities.instant-claim', $facility) }}" class="px-4 pb-4 flex flex-wrap gap-2 items-end">
             @csrf
             <div><label class="text-xs text-gray-500 block">Yetkili Adı Soyadı</label><input type="text" name="applicant_name" required class="border rounded-lg px-3 py-1.5 text-sm w-44"></div>
             <div><label class="text-xs text-gray-500 block">E-posta</label><input type="email" name="applicant_email" required class="border rounded-lg px-3 py-1.5 text-sm w-52"></div>
             <div><label class="text-xs text-gray-500 block">Telefon</label><input type="text" name="applicant_phone" required class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
             <button class="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold" onclick="return confirm('Bu kurumu şimdi sahiplendirip gecici şifre oluşturmak istediğinize emin misiniz?');">Sahiplendir</button>
           </form>
-          @error('applicant_email')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+          @error('applicant_email')<p class="text-xs text-red-600 px-4 pb-3">{{ $message }}</p>@enderror
         </details>
       @endif
 

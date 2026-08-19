@@ -14,8 +14,11 @@ use RuntimeException;
 
 class DataImportRowApprovalService
 {
-    public function __construct(private FacilityImportImageService $imageService, private GeocodingService $geocodingService)
-    {
+    public function __construct(
+        private FacilityImportImageService $imageService,
+        private GeocodingService $geocodingService,
+        private FacilityDuplicateDetector $duplicateDetector,
+    ) {
     }
 
     public function approve(DataImportRow $row, bool $publish = true): Facility
@@ -219,72 +222,12 @@ class DataImportRowApprovalService
      * ayri fiziksel kurumlar olan isimler yanlislikla mukerrer sayilmasin
      * — sadece isim VE adres birebir ayniysa mukerrer kabul edilir.
      */
+    // 19 Agustos 2026: eslestirme mantigi FacilityDuplicateDetector'a
+    // tasindi - artik Public\FacilityRegistrationController da (kurumun
+    // KENDI yaptigi kayit basvurusu) ayni mantikla mukerrer kontrolu yapiyor.
     private function isDuplicate(array $item, City $city): bool
     {
-        $normalizedPhone = $this->normalizePhone($item['phone'] ?? '');
-
-        if ($normalizedPhone !== '') {
-            $phoneMatch = Facility::where('city_id', $city->id)
-                ->whereNotNull('phone')
-                ->get(['id', 'phone'])
-                ->contains(fn ($f) => $this->normalizePhone($f->phone) === $normalizedPhone);
-
-            if ($phoneMatch) {
-                return true;
-            }
-        }
-
-        $normalizedName = $this->normalizeName($item['name'] ?? '');
-        $normalizedAddress = $this->normalizeAddress($item['address'] ?? '');
-        if ($normalizedName === '' || $normalizedAddress === '') {
-            return false;
-        }
-
-        return Facility::where('city_id', $city->id)
-            ->get(['id', 'name', 'address'])
-            ->contains(fn ($f) => $this->normalizeName($f->name) === $normalizedName
-                && $this->normalizeAddress($f->address) === $normalizedAddress);
-    }
-
-    // 15 Agustos 2026: bkz. DataExtractorImportService::normalizePhone() ayni
-    // tarihli yorum - ulke kodu/basindaki sifir farki mukerrer kontrolunu
-    // atlatiyordu, classify_phone_type() ile ayni on-ek temizleme uygulandi.
-    private function normalizePhone(?string $phone): string
-    {
-        $digits = preg_replace('/\D+/', '', (string) $phone) ?: '';
-        if ($digits === '') {
-            return '';
-        }
-
-        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
-            $digits = substr($digits, 2);
-        } elseif (str_starts_with($digits, '0')) {
-            $digits = substr($digits, 1);
-        }
-
-        return $digits;
-    }
-
-    private function normalizeName(?string $name): string
-    {
-        $ascii = Str::of((string) $name)->lower()->ascii()->toString();
-        $clean = preg_replace('/[^a-z0-9]+/', ' ', $ascii);
-
-        return trim(preg_replace('/\s+/', ' ', $clean));
-    }
-
-    /**
-     * Google Maps'in adres alanini bazen dogru cekemedigi, "Adresi kopyala"
-     * (kopyala butonunun etiketi) gibi bir arayuz metnini adres sanip
-     * kaydettigi goruldu — bu placeholder'lar mukerrer kontrolunde
-     * kullanilirsa farkli isletmeleri yanlislikla ayni adrese sahip
-     * gosterip mukerrer sayabilir, bu yuzden bos sayilir.
-     */
-    private function normalizeAddress(?string $address): string
-    {
-        $normalized = $this->normalizeName($address);
-
-        return $normalized === 'adresi kopyala' ? '' : $normalized;
+        return $this->duplicateDetector->findDuplicate($item['phone'] ?? null, $item['name'] ?? null, $item['address'] ?? null, $city) !== null;
     }
 
     private function districtModel(City $city, ?string $district): ?District

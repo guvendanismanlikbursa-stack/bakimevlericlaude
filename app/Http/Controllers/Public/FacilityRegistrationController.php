@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\FacilityCategory;
 use App\Models\FacilityRegistration;
+use App\Services\FacilityDuplicateDetector;
 use App\Services\GeoLookupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class FacilityRegistrationController extends Controller
         return view("themes.{$brand['theme']}.facility-register", compact('categories', 'cities'));
     }
 
-    public function store(Request $request, GeoLookupService $geo)
+    public function store(Request $request, GeoLookupService $geo, FacilityDuplicateDetector $duplicateDetector)
     {
         // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php.
         // Ayri validate() cagrisi bilerek - $data spread ile create()'e
@@ -34,6 +35,27 @@ class FacilityRegistrationController extends Controller
 
         if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
             return back()->withErrors(['applicant_email' => $error])->withInput();
+        }
+
+        // 19 Agustos 2026: kullanicinin talebi - kurum kendi kendine kayit
+        // olurken, ayni kurum sistemde zaten (on-kayitli olarak, ör. Veri
+        // Cekici'den) varsa mukerrer kayit olusmasin. Ayni eslestirme
+        // mantigini (bkz. FacilityDuplicateDetector) Veri Cekici onayindan
+        // buraya da tasidik. Sahiplenilmemis eslesme bulunursa kullaniciyi
+        // yeni bir bekleyen basvuru yerine DOGRUDAN o kaydin sahiplenme
+        // formuna yonlendiriyoruz - panele cok daha hizli erisir. Zaten
+        // sahiplenilmis bir eslesme varsa (baskasi yonetiyor) acik bir
+        // hata mesaji gosterilir.
+        $city = City::find($data['city_id']);
+        if ($city && $duplicate = $duplicateDetector->findDuplicate($data['phone'] ?? null, $data['name'] ?? null, $data['address'] ?? null, $city)) {
+            if ($duplicate->is_claimed) {
+                return back()->withErrors([
+                    'name' => 'Bu kurum sistemimizde zaten kayıtlı ve başka bir yetkili tarafından yönetiliyor görünüyor. Bu sizin kurumunuzsa lütfen bizimle iletişime geçin.',
+                ])->withInput();
+            }
+
+            return redirect(brand_route('facility-claim.create', $duplicate->slug))
+                ->with('info', 'Kurumunuz "'.$duplicate->name.'" adıyla sistemimizde zaten ön-kayıtlı görünüyor. Yeni bir başvuru oluşturmak yerine bu kaydı sahiplenerek panelinize hemen erişebilirsiniz.');
         }
 
         $applicantLat = $data['lat'] ?? null;
