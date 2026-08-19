@@ -248,17 +248,29 @@
 
     {{-- 19 Agustos 2026: kullanicinin talebi - kurum yetkilisinin panelden
          yukledigi haftalik yemek listesi, ziyaretcinin tiklayip
-         buyutebilecegi sekilde kurum sayfasinda gosterilir. --}}
+         buyutebilecegi sekilde kurum sayfasinda gosterilir. Kullanicinin
+         ek talebi: "farkli bir alanda yayinlanmali, dikkat cekmeli" -
+         galeriden/diger kartlardan bilerek farkli (turuncu/amber vurgulu,
+         rozetli) bir tasarim; sade beyaz kart yerine goze carpsin. --}}
     @if($facility->menu_image_path)
       @php $menuGalleryId = 'ps-menu-'.$facility->id; @endphp
-      <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-        <h3 class="font-black text-gray-950 mb-3">🍽️ Yemek Listesi</h3>
+      <div class="mt-6 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-300 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl leading-none">🍽️</span>
+          <h3 class="font-black text-orange-950 text-lg">Yemek Listesi</h3>
+          @if($facility->menu_image_updated_at && $facility->menu_image_updated_at->gt(now()->subDays(7)))
+            <span class="bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">GÜNCEL</span>
+          @endif
+        </div>
         <div id="{{ $menuGalleryId }}">
-          <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="inline-block">
-            <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-48 object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
+          <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="relative inline-block group">
+            <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-56 object-cover border-2 border-white shadow cursor-zoom-in group-hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
+            <span class="absolute bottom-2 right-2 bg-gray-950/80 text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">🔍 Büyüt</span>
           </a>
         </div>
-        <p class="text-xs text-gray-400 mt-2">Büyütmek için görsele tıklayın.</p>
+        @if($facility->menu_image_updated_at)
+          <p class="text-xs text-orange-800/70 mt-2">Son güncelleme: {{ $facility->menu_image_updated_at->diffForHumans() }}</p>
+        @endif
       </div>
       <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $menuGalleryId }}'); });</script>
     @endif
