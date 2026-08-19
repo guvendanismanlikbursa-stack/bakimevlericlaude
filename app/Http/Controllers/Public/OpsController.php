@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -128,6 +128,7 @@ class OpsController extends Controller
             'test-platform-error' => $this->testPlatformError(),
             'cleanup-test-platform-errors' => $this->cleanupTestPlatformErrors(),
             'menu-image-demo-apply' => $this->menuImageDemoApply($request),
+            'restore-accidentally-deleted-claimed-facility-demo-images' => $this->restoreAccidentallyDeletedClaimedFacilityDemoImages(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -725,6 +726,44 @@ class OpsController extends Controller
         DB::table('facility_images')->whereIn('id', $rows->pluck('id'))->delete();
 
         return "SILINDI: {$rows->count()} demo gorsel kaydi, {$affectedFacilities} sahiplenilmis kurumdan.";
+    }
+
+    // 19 Agustos 2026: kullanicinin acik talebi uzerine geri alma - bir onceki
+    // demoImagesCleanup() cagrisi kullanicinin "test verilerini sil" talebini
+    // YANLIS genisletip 2 GERCEK sahiplenilmis kuruma dokunmustu (kullanici:
+    // "sahiplenen kurumlara karisma"). Silinen 6 satir BIREBIR ayni id/facility_id/
+    // path ile geri eklenir - kalici, tek seferlik bir duzeltme, tekrar
+    // kullanilmasi beklenmez.
+    private function restoreAccidentallyDeletedClaimedFacilityDemoImages(): string
+    {
+        $rows = [
+            ['id' => 3206, 'facility_id' => 642, 'path' => 'facilities/demo/6/1.webp', 'sort_order' => 0],
+            ['id' => 3208, 'facility_id' => 642, 'path' => 'facilities/demo/6/3.webp', 'sort_order' => 1],
+            ['id' => 3209, 'facility_id' => 642, 'path' => 'facilities/demo/6/4.webp', 'sort_order' => 2],
+            ['id' => 6868, 'facility_id' => 1374, 'path' => 'facilities/demo/7/3.webp', 'sort_order' => 0],
+            ['id' => 6869, 'facility_id' => 1374, 'path' => 'facilities/demo/7/4.webp', 'sort_order' => 1],
+            ['id' => 6870, 'facility_id' => 1374, 'path' => 'facilities/demo/7/5.webp', 'sort_order' => 2],
+        ];
+
+        $restored = 0;
+        foreach ($rows as $row) {
+            if (DB::table('facility_images')->where('id', $row['id'])->exists()) {
+                continue;
+            }
+            DB::table('facility_images')->insert([
+                'id' => $row['id'],
+                'facility_id' => $row['facility_id'],
+                'path' => $row['path'],
+                'sort_order' => $row['sort_order'],
+                'is_primary' => false,
+                'views_count' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $restored++;
+        }
+
+        return "Geri yuklenen kayit: {$restored}/6";
     }
 
     private function documentDiagnostic(Request $request): string
