@@ -4549,4 +4549,107 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertDatabaseMissing('facility_registrations', ['applicant_email' => 'rizasiz.kayit@test.local']);
     }
+
+    // 19 Agustos 2026: kullanicinin bildirdigi gercek hata - 3 domain ayni
+    // veritabanini paylasiyor ama dosya deposu PAYLASILMIYORDU, bir domain'de
+    // yuklenen kurum gorseli diger 2 domain'de kirik link (404) cikiyordu
+    // (canlida dogrulandi). Kullanicinin acik talebi: hangi siteden
+    // yuklenirse yuklensin ayni anda TUM sitelere yuklenmeli/silinmeli.
+    // Bu testler CrossDomainImageSync'in TESTING ortaminda hicbir gercek
+    // ag istegi yapmadan (otherDomains() bos donuyor) sorunsuz calistigini
+    // - yani mevcut yukleme/silme akislarini BOZMADIGINI - dogrular; asil
+    // senkronizasyon uc'unun (FacilityImageSyncController) davranisi ayri
+    // test edilir.
+    public function test_admin_uploading_facility_image_does_not_break_with_sync_service_wired_in(): void
+    {
+        Storage::fake('public');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, [
+                'images' => [$this->fakePngUpload('yeni-gorsel.png')],
+            ]))
+            ->assertRedirect();
+
+        $this->assertSame(1, $this->rehabFacility->images()->count());
+    }
+
+    public function test_admin_deleting_facility_image_does_not_break_with_sync_service_wired_in(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/silinecek.png', 'icerik');
+        $image = FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/silinecek.png', 'sort_order' => 0]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/kurumlar/gorsel/'.$image->id)
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('facility_images', ['id' => $image->id]);
+        Storage::disk('public')->assertMissing('facilities/silinecek.png');
+    }
+
+    public function test_facility_user_deleting_own_image_does_not_break_with_sync_service_wired_in(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/kendi-gorseli.png', 'icerik');
+        $image = FacilityImage::create(['facility_id' => $this->childFacility->id, 'path' => 'facilities/kendi-gorseli.png', 'sort_order' => 0]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->delete('/site/bakimeviara/kurum-panel/profil/gorsel/'.$image->id)
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('facility_images', ['id' => $image->id]);
+    }
+
+    // Asil senkronizasyon uc noktasi: gecerli Bearer token + bilinen yol
+    // biciminde gercekten dosya yazip/siliyor mu, gecersiz istekleri
+    // reddediyor mu.
+    public function test_facility_image_sync_endpoint_requires_valid_bearer_token(): void
+    {
+        config(['platform.ops_secret' => 'test-sync-secret']);
+        Storage::fake('public');
+
+        $this->post('/_internal/kurum-gorseli-sync', [
+            'path' => 'facilities/abcdefghijklmnop.webp',
+            'file' => $this->fakePngUpload('x.png'),
+        ])->assertStatus(403);
+
+        $this->withHeaders(['Authorization' => 'Bearer yanlis-token'])
+            ->post('/_internal/kurum-gorseli-sync', [
+                'path' => 'facilities/abcdefghijklmnop.webp',
+                'file' => $this->fakePngUpload('x.png'),
+            ])->assertStatus(403);
+    }
+
+    public function test_facility_image_sync_endpoint_rejects_invalid_path(): void
+    {
+        config(['platform.ops_secret' => 'test-sync-secret']);
+        Storage::fake('public');
+
+        $this->withHeaders(['Authorization' => 'Bearer test-sync-secret'])
+            ->post('/_internal/kurum-gorseli-sync', [
+                'path' => '../../../etc/passwd',
+                'file' => $this->fakePngUpload('x.png'),
+            ])->assertStatus(422);
+    }
+
+    public function test_facility_image_sync_endpoint_stores_and_deletes_file(): void
+    {
+        config(['platform.ops_secret' => 'test-sync-secret']);
+        Storage::fake('public');
+        $path = 'facilities/'.\Illuminate\Support\Str::random(32).'.webp';
+
+        $this->withHeaders(['Authorization' => 'Bearer test-sync-secret'])
+            ->post('/_internal/kurum-gorseli-sync', [
+                'path' => $path,
+                'file' => $this->fakePngUpload('x.png'),
+            ])->assertOk();
+
+        Storage::disk('public')->assertExists($path);
+
+        $this->withHeaders(['Authorization' => 'Bearer test-sync-secret'])
+            ->post('/_internal/kurum-gorseli-sil', ['path' => $path])
+            ->assertOk();
+
+        Storage::disk('public')->assertMissing($path);
+    }
 }

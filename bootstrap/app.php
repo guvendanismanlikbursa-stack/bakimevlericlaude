@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // kancamiz (asagida) sessizce anasayfaya yonlendiriyordu - deploy
         // script'i bunu "basarili" saniyordu ama gercekte hicbir komut
         // calismiyordu.
-        $middleware->validateCsrfTokens(except: ['_ops/*']);
+        $middleware->validateCsrfTokens(except: ['_ops/*', '_internal/*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // config('sentry.dsn') bos ise SDK zaten no-op kalir (bkz.

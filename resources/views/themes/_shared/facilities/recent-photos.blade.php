@@ -31,7 +31,7 @@
       @foreach($images as $image)
         <a href="{{ brand_route('facilities.show', ['slug' => $image->facility->slug]) }}" class="group block min-w-0">
           <div class="h-36 rounded-xl overflow-hidden bg-gray-100 border border-gray-100">
-            <img src="{{ asset('storage/'.$image->path) }}" alt="{{ $image->facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+            <img src="{{ facility_asset($image->path) }}" alt="{{ $image->facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
           </div>
           <p class="text-xs font-semibold text-gray-700 mt-1.5 truncate">{{ $image->facility->name }}</p>
           <p class="text-xs text-gray-400">{{ $image->facility->city->name ?? '' }} · {{ $image->created_at->diffForHumans() }}</p>

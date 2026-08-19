@@ -157,7 +157,7 @@
       <div class="grid grid-cols-3 gap-3">
         @foreach($topImages as $img)
           <div class="relative rounded-lg overflow-hidden border border-gray-100">
-            <img src="{{ asset('storage/'.$img->path) }}" class="w-full h-24 object-cover" alt="Kurum görseli">
+            <img src="{{ facility_asset($img->path) }}" class="w-full h-24 object-cover" alt="Kurum görseli">
             <div class="absolute bottom-0 inset-x-0 bg-gray-950/70 text-white text-xs font-bold text-center py-1">{{ number_format($img->views_count, 0, ',', '.') }} görüntülenme</div>
           </div>
         @endforeach

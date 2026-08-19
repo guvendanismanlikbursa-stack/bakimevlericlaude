@@ -480,9 +480,10 @@ class FacilityController extends Controller
         return 'https://'.$domain.'/kurum-panel/giris';
     }
 
-    public function deleteImage(FacilityImage $image)
+    public function deleteImage(FacilityImage $image, \App\Services\CrossDomainImageSync $imageSync)
     {
         Storage::disk('public')->delete($image->path);
+        $imageSync->syncDelete($image->path);
         $image->delete();
 
         return back()->with('success', 'Görsel silindi.');
@@ -516,6 +517,7 @@ class FacilityController extends Controller
                 'path' => $path,
                 'sort_order' => $start + $i,
             ]);
+            app(\App\Services\CrossDomainImageSync::class)->syncStore($path);
         }
     }
 

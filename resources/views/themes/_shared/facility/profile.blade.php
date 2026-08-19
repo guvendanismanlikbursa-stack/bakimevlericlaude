@@ -135,8 +135,8 @@
     <div id="ps-gallery-facility-profile" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
       @foreach($facility->images->take(10) as $img)
         <div class="relative group">
-          <a href="{{ asset('storage/'.$img->path) }}" data-pswp-width="1600" data-pswp-height="1200" target="_blank" rel="noopener">
-            <img src="{{ asset('storage/'.$img->path) }}" class="rounded-lg h-28 w-full object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} görseli">
+          <a href="{{ facility_asset($img->path) }}" data-pswp-width="1600" data-pswp-height="1200" target="_blank" rel="noopener">
+            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-28 w-full object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} görseli">
           </a>
           <form method="POST" action="{{ brand_route('facility.profile.image.destroy', $img) }}" class="absolute top-1 right-1">
             @csrf @method('DELETE')

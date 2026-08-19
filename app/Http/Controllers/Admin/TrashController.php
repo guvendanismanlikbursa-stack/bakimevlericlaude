@@ -127,8 +127,10 @@ class TrashController extends Controller
     private function deletePhysicalFiles(string $type, $item): void
     {
         if ($type === 'facility') {
+            $imageSync = app(\App\Services\CrossDomainImageSync::class);
             foreach ($item->images as $image) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($image->path);
+                $imageSync->syncDelete($image->path);
             }
         } elseif ($type === 'facility-claim' && $item->document_path) {
             \Illuminate\Support\Facades\Storage::disk('local')->delete($item->document_path);

@@ -34,7 +34,7 @@
     'rehabilitasyon' => ['İlk değerlendirme uzman tarafından mı yapılıyor?', 'Seans hedefleri ve süreleri yazılı mı?', 'Cihaz ve terapi alanları ihtiyaca uygun mu?', 'Ev programı ve ara takip veriliyor mu?', 'İlerleme raporu aile/kullanıcı ile paylaşılıyor mu?'],
   ][$sectionSlug] ?? [];
   $heroImage = $facility->images->first()
-    ? asset('storage/'.$facility->images->first()->path)
+    ? facility_asset($facility->images->first()->path)
     : ($section['hero_image'] ?? null);
 @endphp
 
@@ -170,7 +170,7 @@
              devam ediyor, sadece tiklanan gorselin GUNCEL index'inden acilir. --}}
         <div class="grid lg:grid-cols-[1.5fr_1fr] gap-3">
           <div class="relative">
-            <img id="{{ $galleryId }}-main" src="{{ asset('storage/'.$galleryImages->first()->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] || 0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] || 0);}" tabindex="0" role="button" aria-label="Galeriyi büyük görüntüle" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} ana görseli">
+            <img id="{{ $galleryId }}-main" src="{{ facility_asset($galleryImages->first()->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] || 0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] || 0);}" tabindex="0" role="button" aria-label="Galeriyi büyük görüntüle" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} ana görseli">
             @if($galleryCount > 1)
               <button type="button" onclick="event.stopPropagation(); shiftFacilityMainImage('{{ $galleryId }}', -1)" aria-label="Önceki görsel" class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-950/60 text-white text-lg flex items-center justify-center hover:bg-gray-950/80 transition">‹</button>
               <button type="button" onclick="event.stopPropagation(); shiftFacilityMainImage('{{ $galleryId }}', 1)" aria-label="Sonraki görsel" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-950/60 text-white text-lg flex items-center justify-center hover:bg-gray-950/80 transition">›</button>
@@ -180,7 +180,7 @@
           @if($galleryCount > 1)
             <div class="grid grid-cols-2 gap-3">
               @foreach($galleryImages->skip(1)->take(4) as $img)
-                <img src="{{ asset('storage/'.$img->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }});}" tabindex="0" role="button" aria-label="Galeri görseli {{ $loop->index + 2 }}, büyük görüntüle" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} görseli">
+                <img src="{{ facility_asset($img->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }});}" tabindex="0" role="button" aria-label="Galeri görseli {{ $loop->index + 2 }}, büyük görüntüle" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} görseli">
               @endforeach
             </div>
           @endif
@@ -188,7 +188,7 @@
         <script>
           window.facilityGalleryImages = window.facilityGalleryImages || {};
           window.facilityGalleryIndex = window.facilityGalleryIndex || {};
-          window.facilityGalleryImages['{{ $galleryId }}'] = @json($galleryImages->map(fn ($img) => asset('storage/'.$img->path))->values());
+          window.facilityGalleryImages['{{ $galleryId }}'] = @json($galleryImages->map(fn ($img) => facility_asset($img->path))->values());
           window.shiftFacilityMainImage = window.shiftFacilityMainImage || function (containerId, delta) {
             var imgs = window.facilityGalleryImages[containerId];
             if (!imgs || imgs.length < 2) return;
@@ -218,8 +218,8 @@
 
       <div id="{{ $galleryId }}" class="grid grid-cols-5 sm:grid-cols-10 gap-2 mt-3">
         @foreach($galleryImages as $img)
-          <a href="{{ asset('storage/'.$img->path) }}" data-pswp-width="1600" data-pswp-height="1200" data-image-id="{{ $img->id }}" target="_blank" rel="noopener">
-            <img src="{{ asset('storage/'.$img->path) }}" class="h-16 w-full rounded-lg object-cover border border-gray-100 cursor-zoom-in hover:opacity-80 transition" alt="{{ $facility->name }} küçük görsel">
+          <a href="{{ facility_asset($img->path) }}" data-pswp-width="1600" data-pswp-height="1200" data-image-id="{{ $img->id }}" target="_blank" rel="noopener">
+            <img src="{{ facility_asset($img->path) }}" class="h-16 w-full rounded-lg object-cover border border-gray-100 cursor-zoom-in hover:opacity-80 transition" alt="{{ $facility->name }} küçük görsel">
           </a>
         @endforeach
       </div>

@@ -232,6 +232,31 @@ if (! function_exists('seo_og_image')) {
     }
 }
 
+if (! function_exists('facility_asset')) {
+    /**
+     * 19 Agustos 2026: kullanicinin bildirdigi gercek hata - kurum gorseli
+     * hangi domain (bakimevleri.com/bakimevibul.com/bakimeviara.com)
+     * uzerinden yuklendiyse SADECE o domain'in sunucu diskinde fiziksel
+     * olarak var - 3 domain ayni veritabanini paylasiyor ama dosya deposu
+     * PAYLASILMIYOR. Bir domain uzerinden yuklenen gorsel diger 2 domain'de
+     * kirik link (404) olarak goruluyordu (canlida dogrulandi: ayni dosya
+     * bakimevleri.com'da 200, digerlerinde 404). Kalici cozum: TUM kurum
+     * gorselleri, hangi site acilirsa acilsin, HEP tek/ortak bir domain'den
+     * (bakimevleri.com) servis edilir - artik hicbir dosyayi domainler
+     * arasinda senkronize etmeye gerek yok. Yerel/test ortaminda
+     * (APP_URL localhost) bu sabit host'a zorlamak anlamsiz/bozucu olur,
+     * o yuzden sadece production'da devrede.
+     */
+    function facility_asset(string $path): string
+    {
+        if (app()->environment('local', 'testing')) {
+            return asset('storage/'.$path);
+        }
+
+        return 'https://bakimevleri.com/storage/'.$path;
+    }
+}
+
 if (! function_exists('facility_card_image')) {
     function facility_card_image($facility, ?array $section = null): string
     {
@@ -243,7 +268,7 @@ if (! function_exists('facility_card_image')) {
         }
 
         if ($image?->path) {
-            return asset('storage/'.$image->path);
+            return facility_asset($image->path);
         }
 
         $section = service_section_for_scope($facility->category->brand_scope);
@@ -255,7 +280,7 @@ if (! function_exists('facility_card_image')) {
         ][$slug] ?? 'demo-cards/yasli-bakim.png';
 
         if (file_exists(storage_path('app/public/'.$path))) {
-            return asset('storage/'.$path);
+            return facility_asset($path);
         }
 
         return $section['hero_image'] ?? '';

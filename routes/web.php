@@ -296,6 +296,13 @@ Route::get('/_internal/cron-runner', [CronRunnerController::class, 'run'])->name
 Route::get('/_saglik', [HealthController::class, 'check'])->name('health-check');
 // Deploy script'inin migrate/cache-refresh tetiklemesi icin token korumali uc - bkz. OpsController.
 Route::post('/_ops/{action}', [OpsController::class, 'run'])->middleware('throttle:public-sensitive')->name('ops.run');
+// 19 Agustos 2026: kullanicinin talebi - 3 domain ayni veritabanini
+// paylasiyor ama dosya deposu paylasilmiyordu (bir domain'de yuklenen
+// gorsel digerlerinde kirik cikiyordu). Bu 2 uc, CrossDomainImageSync
+// tarafindan DIGER domainlere ayni gorseli SENKRON olarak kopyalamak/
+// silmek icin cagrilir - token korumali, /_ops/{action} ile ayni desen.
+Route::post('/_internal/kurum-gorseli-sync', [\App\Http\Controllers\Internal\FacilityImageSyncController::class, 'store'])->name('internal.facility-image-sync.store');
+Route::post('/_internal/kurum-gorseli-sil', [\App\Http\Controllers\Internal\FacilityImageSyncController::class, 'destroy'])->name('internal.facility-image-sync.destroy');
 // Admin'in kurum/aile panelini "onlarin gozuyle" goruntulemesinden (impersonation)
 // cikip kendi paneline donmesi icin - bkz. Admin\UserController::impersonateFacilityUser/
 // -FamilyUser ve ImpersonationController. Bilerek facility.auth/family.auth

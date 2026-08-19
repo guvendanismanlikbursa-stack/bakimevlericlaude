@@ -223,10 +223,20 @@ class ProfileController extends Controller
             return back()->withErrors(['images' => 'Görsel(ler) yüklenirken bir sorun oluştu, lütfen tekrar deneyin.']);
         }
 
+        // 19 Agustos 2026: kullanicinin talebi - hangi domain'den yuklenirse
+        // yuklensin ayni anda diger 2 domain'e de kopyalanir (bkz.
+        // CrossDomainImageSync). Butun batch basariyla bittikten SONRA
+        // gonderiliyor - ust taraftaki hata durumunda geri alinan (silinen)
+        // gorseller hic senkronize edilmemis olur.
+        $imageSync = app(\App\Services\CrossDomainImageSync::class);
+        foreach ($uploaded as $path) {
+            $imageSync->syncStore($path);
+        }
+
         return back()->with('success', 'Görseller eklendi.');
     }
 
-    public function deleteImage(Request $request)
+    public function deleteImage(Request $request, \App\Services\CrossDomainImageSync $imageSync)
     {
         $user = FacilityUser::findOrFail(session('facility_user_id'));
         $image = $request->route('image');
@@ -237,6 +247,7 @@ class ProfileController extends Controller
         abort_unless((int) $image->facility_id === (int) $user->facility_id, 403);
 
         Storage::disk('public')->delete($image->path);
+        $imageSync->syncDelete($image->path);
         $image->delete();
 
         return back()->with('success', 'Görsel silindi.');

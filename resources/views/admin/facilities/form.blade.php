@@ -310,7 +310,7 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         @foreach($facility->images->take(10) as $img)
           <div class="relative">
-            <img src="{{ asset('storage/'.$img->path) }}" class="rounded-lg h-24 w-full object-cover border border-gray-100">
+            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-24 w-full object-cover border border-gray-100">
             <form method="POST" action="{{ route('admin.facilities.image.destroy', $img) }}" class="absolute top-1 right-1">
               @csrf @method('DELETE')
               <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>

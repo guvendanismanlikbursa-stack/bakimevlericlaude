@@ -156,7 +156,7 @@ class EngagementController extends Controller
                 'capacity' => $facility->capacity ?: '-',
                 'services' => array_slice($facility->services ?? [], 0, 5),
                 'description' => $facility->description,
-                'image' => $image ? asset('storage/' . $image->path) : null,
+                'image' => $image ? facility_asset($image->path) : null,
                 'url' => brand_route('facilities.show', ['slug' => $facility->slug]),
             ];
         })->values();
