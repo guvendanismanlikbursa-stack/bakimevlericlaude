@@ -127,6 +127,7 @@ class OpsController extends Controller
             'snapshot-facility-stats' => $this->snapshotFacilityStats(),
             'test-platform-error' => $this->testPlatformError(),
             'cleanup-test-platform-errors' => $this->cleanupTestPlatformErrors(),
+            'menu-image-demo-apply' => $this->menuImageDemoApply($request),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -2687,6 +2688,93 @@ class OpsController extends Controller
         session()->forget(['admin_id', 'admin_name']);
 
         return "Admin panel smoke test: {$ok} basarili, {$fail} hatali\n\n" . $out;
+    }
+
+    // 19 Agustos 2026: kullanicinin talebi - "bursa'daki butun on kayitli
+    // kurumlarin yemek listesi alanina" filigranli bir ornek gorsel koy.
+    // GUVENLIK: SADECE sahiplenilmemis (is_claimed=false) VE su an hic
+    // yemek listesi gorseli OLMAYAN (whereNull) kurumlari hedefler - bir
+    // kurum yetkilisi kendi gercek listesini yuklediyse ASLA uzerine
+    // yazilmaz.
+    //
+    // DIKKAT (kullanicinin acik talebi, ayni gunku canli gorsel olayindan
+    // hemen sonra): "paylasimli yemek gorseli OLMAMALI, her kurumun ayri
+    // olmali". Bu yuzden TEK bir ortak dosya yollari TUM kurumlara
+    // ATANMIYOR - her kurum icin KAYNAK gorselin BAGIMSIZ bir kopyasi
+    // (kendi rastgele dosya adiyla, gercek bir kurum yuklemesiyle
+    // AYIRT EDILEMEZ sekilde) olusturulur ve CrossDomainImageSync ile
+    // ANINDA 3 domain'e de yazilir - boylece bir kurum ileride kendi
+    // gercek listesini yukleyip eskisini sildiginde SADECE kendi
+    // kopyasi silinir, baska hicbir kurumu etkilemez.
+    //
+    // Paylasimli hostingte tek istekte binlerce kurumu isleme riskine
+    // karsi offset/limit ile sayfali calisir (bkz. facilityBorrowDemoImagesBulk
+    // ayni desen). dry_run=1 (varsayilan) hicbir sey degistirmez.
+    private function menuImageDemoApply(Request $request): string
+    {
+        $citySlug = (string) $request->query('city_slug', 'bursa');
+        $dryRun = $request->query('dry_run', '1') !== '0';
+        $limit = (int) $request->query('limit', 40);
+        $offset = (int) $request->query('offset', 0);
+        $sourcePath = 'facilities/demo/menu-sample-source.webp';
+
+        $city = DB::table('cities')->where('slug', $citySlug)->first();
+        if (! $city) {
+            return "HATA: '{$citySlug}' slug'li sehir bulunamadi.";
+        }
+
+        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+        if (! $disk->exists($sourcePath)) {
+            return "HATA: kaynak ornek gorsel diskte yok ({$sourcePath}). Once FTP ile yuklenmeli.";
+        }
+
+        $totalRemaining = Facility::where('city_id', $city->id)
+            ->where('is_claimed', false)
+            ->whereNull('menu_image_path')
+            ->whereNull('deleted_at')
+            ->count();
+
+        $facilities = Facility::where('city_id', $city->id)
+            ->where('is_claimed', false)
+            ->whereNull('menu_image_path')
+            ->whereNull('deleted_at')
+            ->orderBy('id')
+            ->offset($offset)
+            ->limit($limit)
+            ->get(['id', 'name']);
+
+        $out = "Sehir: {$citySlug} (id={$city->id})\n";
+        $out .= "Toplam etkilenecek kurum (sahiplenilmemis + yemek listesi bos): {$totalRemaining}\n";
+        $out .= "Bu pencerede islenen: {$facilities->count()} (offset={$offset}, limit={$limit})\n";
+        $out .= $dryRun ? "MOD: dry_run (hicbir sey degistirilmedi)\n\n" : "MOD: UYGULANDI - her kurum icin BAGIMSIZ bir kopya olusturuldu\n\n";
+
+        if (! $dryRun) {
+            $sourceContents = $disk->get($sourcePath);
+            $imageSync = app(\App\Services\CrossDomainImageSync::class);
+
+            foreach ($facilities as $f) {
+                $newPath = 'facilities/' . \Illuminate\Support\Str::random(32) . '.webp';
+                $disk->put($newPath, $sourceContents);
+                $imageSync->syncStore($newPath);
+
+                Facility::whereKey($f->id)->update([
+                    'menu_image_path' => $newPath,
+                    'menu_image_updated_at' => now(),
+                ]);
+
+                $out .= "  #{$f->id} {$f->name} -> {$newPath}\n";
+            }
+        } else {
+            foreach ($facilities as $f) {
+                $out .= "  #{$f->id} {$f->name}\n";
+            }
+        }
+
+        if ($totalRemaining > $offset + $limit) {
+            $out .= "\nNOT: bu pencere limite ulasti, kalanlari kapsamak icin offset=" . ($offset + $limit) . " ile tekrar cagirin.";
+        }
+
+        return $out;
     }
 }
 

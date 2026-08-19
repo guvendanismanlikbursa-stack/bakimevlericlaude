@@ -4741,6 +4741,42 @@ class PlatformFeatureTest extends TestCase
         Storage::disk('public')->assertExists($this->childFacility->menu_image_path);
     }
 
+    // 19 Agustos 2026: kullanicinin uyarisi - sahiplenilmemis kurumlara
+    // toplu atanan PAYLASILAN ornek yemek listesi gorseli (bkz.
+    // OpsController::menuImageDemoApply()) bir kurum sahiplenilip kendi
+    // gercek listesini yukledikten/kaldirdiktan SONRA fiziksel olarak
+    // silinmemeli - aksi halde ayni gorseli kullanan TUM diger on-kayitli
+    // kurumlarin listesi kirilir.
+    public function test_facility_user_uploading_own_menu_image_does_not_delete_shared_demo_image(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/demo/menu-sample.webp', 'paylasilan-ornek-icerik');
+        $this->childFacility->update(['menu_image_path' => 'facilities/demo/menu-sample.webp', 'menu_image_updated_at' => now()]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/profil/yemek-listesi', [
+                'menu_image' => $this->fakePngUpload('kendi-yemek-listesi.png'),
+            ])
+            ->assertRedirect();
+
+        Storage::disk('public')->assertExists('facilities/demo/menu-sample.webp');
+        $this->assertNotSame('facilities/demo/menu-sample.webp', $this->childFacility->fresh()->menu_image_path);
+    }
+
+    public function test_facility_user_removing_shared_demo_menu_image_does_not_delete_it_from_disk(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/demo/menu-sample.webp', 'paylasilan-ornek-icerik');
+        $this->childFacility->update(['menu_image_path' => 'facilities/demo/menu-sample.webp', 'menu_image_updated_at' => now()]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->delete('/site/bakimeviara/kurum-panel/profil/yemek-listesi')
+            ->assertRedirect();
+
+        $this->assertNull($this->childFacility->fresh()->menu_image_path);
+        Storage::disk('public')->assertExists('facilities/demo/menu-sample.webp');
+    }
+
     public function test_facility_user_can_delete_menu_image(): void
     {
         Storage::fake('public');

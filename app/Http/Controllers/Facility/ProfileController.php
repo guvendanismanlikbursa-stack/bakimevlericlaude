@@ -280,6 +280,15 @@ class ProfileController extends Controller
      * yuklesin". Galeriden ayri, TEK bir gorsel - her yeni yukleme
      * eskisinin (varsa) yerine gecer (eski dosya + cross-domain kopyalari
      * silinir), boylece kurum yetkilisi her hafta ayni yerden guncelleyebilir.
+     *
+     * DIKKAT (19 Agustos 2026, kullanicinin uyarisi): sahiplenilmemis
+     * kurumlara toplu atanan PAYLASILAN bir ornek gorsel var
+     * (facilities/demo/... - bkz. OpsController::menuImageDemoApply()).
+     * Bir kurum sahiplenilip yetkilisi KENDI gercek listesini yuklerse,
+     * eski deger bu paylasilan dosya olabilir - ASLA silinmemeli, aksi
+     * halde ayni gorseli kullanan TUM diger on-kayitli kurumlarin
+     * (3 domain'de birden) yemek listesi kirilir. Sadece kurum-basina
+     * ozel (facilities/demo/ ile baslamayan) eski dosyalar silinir.
      */
     public function uploadMenuImage(Request $request, \App\Services\CrossDomainImageSync $imageSync)
     {
@@ -306,7 +315,7 @@ class ProfileController extends Controller
 
         $imageSync->syncStore($path);
 
-        if ($oldPath) {
+        if ($oldPath && ! str_starts_with($oldPath, 'facilities/demo/')) {
             Storage::disk('public')->delete($oldPath);
             $imageSync->syncDelete($oldPath);
         }
@@ -320,8 +329,12 @@ class ProfileController extends Controller
         $facility = $user->facility;
 
         if ($facility->menu_image_path) {
-            Storage::disk('public')->delete($facility->menu_image_path);
-            $imageSync->syncDelete($facility->menu_image_path);
+            // bkz. uploadMenuImage() DIKKAT notu - paylasilan ornek dosya
+            // asla fiziksel olarak silinmez, sadece bu kurumdan kaldirilir.
+            if (! str_starts_with($facility->menu_image_path, 'facilities/demo/')) {
+                Storage::disk('public')->delete($facility->menu_image_path);
+                $imageSync->syncDelete($facility->menu_image_path);
+            }
             $facility->update(['menu_image_path' => null, 'menu_image_updated_at' => null]);
         }
 
