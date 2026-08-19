@@ -4704,6 +4704,77 @@ class PlatformFeatureTest extends TestCase
         $this->assertFalse($foreignImage->fresh()->is_primary);
     }
 
+    // 19 Agustos 2026: kullanicinin talebi - "kurum panellerine yemek
+    // listesi bolumu, kurum yetkilisi haftalik yemek listesinin gorselini
+    // yuklesin, kullanicilar goruntuleyip buyutebilsin".
+    public function test_facility_user_can_upload_menu_image(): void
+    {
+        Storage::fake('public');
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/profil/yemek-listesi', [
+                'menu_image' => $this->fakePngUpload('yemek-listesi.png'),
+            ])
+            ->assertRedirect();
+
+        $this->childFacility->refresh();
+        $this->assertNotNull($this->childFacility->menu_image_path);
+        $this->assertNotNull($this->childFacility->menu_image_updated_at);
+        Storage::disk('public')->assertExists($this->childFacility->menu_image_path);
+    }
+
+    public function test_facility_user_uploading_new_menu_image_replaces_old_one(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/eski-yemek-listesi.png', 'icerik');
+        $this->childFacility->update(['menu_image_path' => 'facilities/eski-yemek-listesi.png', 'menu_image_updated_at' => now()->subWeek()]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/profil/yemek-listesi', [
+                'menu_image' => $this->fakePngUpload('yeni-yemek-listesi.png'),
+            ])
+            ->assertRedirect();
+
+        $this->childFacility->refresh();
+        $this->assertNotSame('facilities/eski-yemek-listesi.png', $this->childFacility->menu_image_path);
+        Storage::disk('public')->assertMissing('facilities/eski-yemek-listesi.png');
+        Storage::disk('public')->assertExists($this->childFacility->menu_image_path);
+    }
+
+    public function test_facility_user_can_delete_menu_image(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/silinecek-yemek-listesi.png', 'icerik');
+        $this->childFacility->update(['menu_image_path' => 'facilities/silinecek-yemek-listesi.png', 'menu_image_updated_at' => now()]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->delete('/site/bakimeviara/kurum-panel/profil/yemek-listesi')
+            ->assertRedirect();
+
+        $this->childFacility->refresh();
+        $this->assertNull($this->childFacility->menu_image_path);
+        $this->assertNull($this->childFacility->menu_image_updated_at);
+        Storage::disk('public')->assertMissing('facilities/silinecek-yemek-listesi.png');
+    }
+
+    public function test_public_facility_page_shows_menu_image_when_set(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/gorunecek-yemek-listesi.png', 'icerik');
+        $this->childFacility->update(['menu_image_path' => 'facilities/gorunecek-yemek-listesi.png', 'menu_image_updated_at' => now()]);
+
+        $this->get('/site/bakimeviara/kurumlar/'.$this->childFacility->slug)
+            ->assertOk()
+            ->assertSee('Yemek Listesi');
+    }
+
+    public function test_public_facility_page_hides_menu_section_when_not_set(): void
+    {
+        $this->get('/site/bakimeviara/kurumlar/'.$this->rehabFacility->slug)
+            ->assertOk()
+            ->assertDontSee('Yemek Listesi');
+    }
+
     // Asil senkronizasyon uc noktasi: gecerli Bearer token + bilinen yol
     // biciminde gercekten dosya yazip/siliyor mu, gecersiz istekleri
     // reddediyor mu.

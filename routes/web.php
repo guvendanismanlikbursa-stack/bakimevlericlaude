@@ -263,6 +263,8 @@ $siteRoutes = function () {
             Route::post('/profil/gorsel', [FacilityProfileController::class, 'uploadImage'])->middleware('throttle:public-sensitive')->name('profile.image.store');
             Route::delete('/profil/gorsel/{image}', [FacilityProfileController::class, 'deleteImage'])->name('profile.image.destroy');
             Route::post('/profil/gorsel/{image}/ana-gorsel-yap', [FacilityProfileController::class, 'setPrimaryImage'])->name('profile.image.set-primary');
+            Route::post('/profil/yemek-listesi', [FacilityProfileController::class, 'uploadMenuImage'])->middleware('throttle:public-sensitive')->name('profile.menu-image.store');
+            Route::delete('/profil/yemek-listesi', [FacilityProfileController::class, 'deleteMenuImage'])->name('profile.menu-image.destroy');
             Route::put('/profil/bildirim-tercihleri', [FacilityProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
 
             Route::get('/bakiyem', [FacilityWalletController::class, 'index'])->name('wallet.index');

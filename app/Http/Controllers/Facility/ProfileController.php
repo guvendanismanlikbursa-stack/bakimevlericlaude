@@ -274,6 +274,60 @@ class ProfileController extends Controller
         return back()->with('success', 'Görsel silindi.');
     }
 
+    /**
+     * 19 Agustos 2026: kullanicinin talebi - "kurum panellerine yemek
+     * listesi bolumu, kurum yetkilisi haftalik yemek listesinin gorselini
+     * yuklesin". Galeriden ayri, TEK bir gorsel - her yeni yukleme
+     * eskisinin (varsa) yerine gecer (eski dosya + cross-domain kopyalari
+     * silinir), boylece kurum yetkilisi her hafta ayni yerden guncelleyebilir.
+     */
+    public function uploadMenuImage(Request $request, \App\Services\CrossDomainImageSync $imageSync)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+        $facility = $user->facility;
+
+        $request->validate([
+            'menu_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $path = app(ImageCompressionService::class)->store($request->file('menu_image'), 'facilities');
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            \Illuminate\Support\Facades\Log::error('Yemek listesi gorseli diske yazildiktan sonra dogrulanamadi.', ['facility_id' => $facility->id]);
+
+            return back()->withErrors(['menu_image' => 'Görsel yüklenirken bir sorun oluştu, lütfen tekrar deneyin.']);
+        }
+
+        $oldPath = $facility->menu_image_path;
+
+        $facility->update([
+            'menu_image_path' => $path,
+            'menu_image_updated_at' => now(),
+        ]);
+
+        $imageSync->syncStore($path);
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+            $imageSync->syncDelete($oldPath);
+        }
+
+        return back()->with('success', 'Yemek listesi güncellendi.');
+    }
+
+    public function deleteMenuImage(Request $request, \App\Services\CrossDomainImageSync $imageSync)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+        $facility = $user->facility;
+
+        if ($facility->menu_image_path) {
+            Storage::disk('public')->delete($facility->menu_image_path);
+            $imageSync->syncDelete($facility->menu_image_path);
+            $facility->update(['menu_image_path' => null, 'menu_image_updated_at' => null]);
+        }
+
+        return back()->with('success', 'Yemek listesi kaldırıldı.');
+    }
+
     private function sectionDetailFields(?array $serviceSection): array
     {
         return collect($serviceSection['profile_fields'] ?? [])

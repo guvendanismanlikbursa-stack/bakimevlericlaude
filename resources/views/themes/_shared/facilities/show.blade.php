@@ -246,6 +246,23 @@
     @include('themes._shared.partials.image-lightbox')
     <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $galleryId }}', @json(brand_route('facilities.image.viewed', ['slug' => $facility->slug, 'image' => '__IMAGE_ID__']))); });</script>
 
+    {{-- 19 Agustos 2026: kullanicinin talebi - kurum yetkilisinin panelden
+         yukledigi haftalik yemek listesi, ziyaretcinin tiklayip
+         buyutebilecegi sekilde kurum sayfasinda gosterilir. --}}
+    @if($facility->menu_image_path)
+      @php $menuGalleryId = 'ps-menu-'.$facility->id; @endphp
+      <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+        <h3 class="font-black text-gray-950 mb-3">🍽️ Yemek Listesi</h3>
+        <div id="{{ $menuGalleryId }}">
+          <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="inline-block">
+            <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-48 object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
+          </a>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">Büyütmek için görsele tıklayın.</p>
+      </div>
+      <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $menuGalleryId }}'); });</script>
+    @endif
+
     {{-- 17 Agustos 2026: kullanicinin talebi - Kurum Performansi karti
          galerinin hemen altina tasindi. Herkese acik alanda SADECE
          goruntulenme rakami gosterilir; telefon/WhatsApp tiklamasi baslik

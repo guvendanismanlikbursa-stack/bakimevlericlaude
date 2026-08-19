@@ -14,12 +14,13 @@ class Facility extends Model
         'price_max', 'services', 'cover_image', 'is_published',
         'is_featured', 'rating', 'is_claimed', 'claimed_at', 'ministry_verification',
         'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'favorites_count',
-        'invitation_status', 'invitation_status_at',
+        'invitation_status', 'invitation_status_at', 'menu_image_path', 'menu_image_updated_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'menu_image_updated_at' => 'datetime',
             // 28 Temmuz 2026: OfferRequest::city_id/facility_category_id
             // ZATEN integer'a cast'li (bkz. o model), Facility tarafinda
             // bu alanlar cast'siz olunca "yayin talebi" (broadcast) uygunluk

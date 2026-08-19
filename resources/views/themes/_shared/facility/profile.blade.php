@@ -172,6 +172,41 @@
       <div class="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm text-gray-500">10 görsel limiti doldu. Yeni görsel eklemek için önce mevcut görsellerden birini silin.</div>
     @endif
   </div>
+
+  {{-- 19 Agustos 2026: kullanicinin talebi - "kurum panellerine yemek
+       listesi bolumu, kurum yetkilisi haftalik yemek listesinin gorselini
+       yuklesin, kullanicilar goruntuleyip buyutebilsin". Galeriden ayri,
+       TEK bir gorsel - her yeni yukleme eskisinin yerine gecer. --}}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="mb-4">
+      <h2 class="font-bold">Yemek Listesi</h2>
+      <p class="text-sm text-gray-500">Haftalık yemek listenizin fotoğrafını yükleyin, ziyaretçiler kurum sayfanızda görüp büyüterek inceleyebilir.</p>
+    </div>
+
+    @if($facility->menu_image_path)
+      <div id="ps-menu-facility-profile" class="mb-4">
+        <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="inline-block">
+          <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-40 object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
+        </a>
+      </div>
+      @include('themes._shared.partials.image-lightbox')
+      <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('ps-menu-facility-profile'); });</script>
+      <p class="text-xs text-gray-400 mb-3">Son güncelleme: {{ $facility->menu_image_updated_at?->diffForHumans() }}</p>
+      <form method="POST" action="{{ brand_route('facility.profile.menu-image.destroy') }}" onsubmit="return confirm('Yemek listesi görselini kaldırmak istediğinize emin misiniz?');" class="inline">
+        @csrf @method('DELETE')
+        <button class="text-red-600 text-xs font-semibold">Kaldır</button>
+      </form>
+    @else
+      <div class="rounded-lg bg-gray-50 border border-dashed border-gray-300 p-4 text-sm text-gray-400 mb-4">Henüz yemek listesi görseli eklenmedi.</div>
+    @endif
+
+    <form method="POST" action="{{ brand_route('facility.profile.menu-image.store') }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row mt-3">
+      @csrf
+      <input type="file" name="menu_image" accept="image/*" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+      <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">{{ $facility->menu_image_path ? 'Yemek Listesini Güncelle' : 'Yemek Listesi Ekle' }}</button>
+    </form>
+    @error('menu_image')<p class="text-xs text-red-600 mt-2">{{ $message }}</p>@enderror
+  </div>
 </div>
 
 @include('themes._shared.partials.notification-preferences-form', [
