@@ -480,6 +480,18 @@ class FacilityController extends Controller
         return 'https://'.$domain.'/kurum-panel/giris';
     }
 
+    /**
+     * 19 Agustos 2026: kullanicinin talebi - 10 gorselden hangisinin ANA
+     * (kapak) gorsel oldugu secilebilsin. Bkz. Facility::primaryImage().
+     */
+    public function setPrimaryImage(FacilityImage $image)
+    {
+        FacilityImage::where('facility_id', $image->facility_id)->update(['is_primary' => false]);
+        $image->update(['is_primary' => true]);
+
+        return back()->with('success', 'Ana görsel güncellendi.');
+    }
+
     public function deleteImage(FacilityImage $image, \App\Services\CrossDomainImageSync $imageSync)
     {
         Storage::disk('public')->delete($image->path);

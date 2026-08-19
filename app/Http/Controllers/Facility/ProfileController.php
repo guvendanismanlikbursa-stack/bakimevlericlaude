@@ -236,6 +236,27 @@ class ProfileController extends Controller
         return back()->with('success', 'Görseller eklendi.');
     }
 
+    /**
+     * 19 Agustos 2026: kullanicinin talebi - kurum yetkilisi kendi 10
+     * gorselinden hangisinin ANA (kapak) gorsel oldugunu secebilsin. Bkz.
+     * Admin\FacilityController::setPrimaryImage() ayni mantik.
+     */
+    public function setPrimaryImage(Request $request)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+        $image = $request->route('image');
+        if (! $image instanceof FacilityImage) {
+            $image = FacilityImage::findOrFail($image);
+        }
+
+        abort_unless((int) $image->facility_id === (int) $user->facility_id, 403);
+
+        FacilityImage::where('facility_id', $user->facility_id)->update(['is_primary' => false]);
+        $image->update(['is_primary' => true]);
+
+        return back()->with('success', 'Ana görsel güncellendi.');
+    }
+
     public function deleteImage(Request $request, \App\Services\CrossDomainImageSync $imageSync)
     {
         $user = FacilityUser::findOrFail(session('facility_user_id'));

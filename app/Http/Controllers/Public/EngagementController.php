@@ -134,7 +134,7 @@ class EngagementController extends Controller
 
         $facilitiesForJs = $facilities->map(function (Facility $facility) {
             $section = service_section_for_scope($facility->category?->brand_scope);
-            $image = $facility->images->first();
+            $image = $facility->primaryImage();
 
             return [
                 'id' => $facility->id,

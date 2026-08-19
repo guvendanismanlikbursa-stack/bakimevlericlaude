@@ -33,8 +33,9 @@
     'cocuk' => ['Yaş grubu ve sınıf mevcudu uygun mu?', 'Servis, yemek ve güvenlik süreçleri yazılı mı?', 'Gelişim takibi aileyle düzenli paylaşılıyor mu?', 'Rehberlik/psikolog desteği var mı?', 'Özel ihtiyaçlarda bireysel plan hazırlanıyor mu?'],
     'rehabilitasyon' => ['İlk değerlendirme uzman tarafından mı yapılıyor?', 'Seans hedefleri ve süreleri yazılı mı?', 'Cihaz ve terapi alanları ihtiyaca uygun mu?', 'Ev programı ve ara takip veriliyor mu?', 'İlerleme raporu aile/kullanıcı ile paylaşılıyor mu?'],
   ][$sectionSlug] ?? [];
-  $heroImage = $facility->images->first()
-    ? facility_asset($facility->images->first()->path)
+  $primaryImage = $facility->primaryImage();
+  $heroImage = $primaryImage
+    ? facility_asset($primaryImage->path)
     : ($section['hero_image'] ?? null);
 @endphp
 
@@ -147,6 +148,23 @@
     @php
       $galleryImages = $facility->images->take(10);
       $galleryCount = $galleryImages->count();
+      // 19 Agustos 2026: kullanicinin talebi - admin/kurum yetkilisi hangi
+      // gorselin ANA (kapak) gorsel oldugunu secebiliyor (bkz.
+      // Facility::primaryImage()). Ana gorsel her zaman BUYUK alanda
+      // gosterilir, galerideki dogal sirasi (kucuk resim seridi) BOZULMAZ -
+      // sadece hangisinin baslangicta acik oldugu degisir.
+      $primaryImage = $facility->primaryImage();
+      $primaryIndex = 0;
+      $secondaryEntries = [];
+      foreach ($galleryImages as $idx => $img) {
+        if ($primaryImage && $img->id === $primaryImage->id) {
+          $primaryIndex = $idx;
+          continue;
+        }
+        if (count($secondaryEntries) < 4) {
+          $secondaryEntries[] = ['index' => $idx, 'image' => $img];
+        }
+      }
     @endphp
     <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
       <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-4">
@@ -170,17 +188,17 @@
              devam ediyor, sadece tiklanan gorselin GUNCEL index'inden acilir. --}}
         <div class="grid lg:grid-cols-[1.5fr_1fr] gap-3">
           <div class="relative">
-            <img id="{{ $galleryId }}-main" src="{{ facility_asset($galleryImages->first()->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] || 0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] || 0);}" tabindex="0" role="button" aria-label="Galeriyi büyük görüntüle" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} ana görseli">
+            <img id="{{ $galleryId }}-main" src="{{ facility_asset(($primaryImage ?? $galleryImages->first())->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] ?? {{ $primaryIndex }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] ?? {{ $primaryIndex }});}" tabindex="0" role="button" aria-label="Galeriyi büyük görüntüle" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} ana görseli">
             @if($galleryCount > 1)
               <button type="button" onclick="event.stopPropagation(); shiftFacilityMainImage('{{ $galleryId }}', -1)" aria-label="Önceki görsel" class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-950/60 text-white text-lg flex items-center justify-center hover:bg-gray-950/80 transition">‹</button>
               <button type="button" onclick="event.stopPropagation(); shiftFacilityMainImage('{{ $galleryId }}', 1)" aria-label="Sonraki görsel" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-950/60 text-white text-lg flex items-center justify-center hover:bg-gray-950/80 transition">›</button>
-              <span id="{{ $galleryId }}-counter" class="absolute top-2 right-2 bg-gray-950/70 text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none">1/{{ $galleryCount }}</span>
+              <span id="{{ $galleryId }}-counter" class="absolute top-2 right-2 bg-gray-950/70 text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none">{{ $primaryIndex + 1 }}/{{ $galleryCount }}</span>
             @endif
           </div>
           @if($galleryCount > 1)
             <div class="grid grid-cols-2 gap-3">
-              @foreach($galleryImages->skip(1)->take(4) as $img)
-                <img src="{{ facility_asset($img->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', {{ $loop->index + 1 }});}" tabindex="0" role="button" aria-label="Galeri görseli {{ $loop->index + 2 }}, büyük görüntüle" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} görseli">
+              @foreach($secondaryEntries as $entry)
+                <img src="{{ facility_asset($entry['image']->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $entry['index'] }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', {{ $entry['index'] }});}" tabindex="0" role="button" aria-label="Galeri görseli, büyük görüntüle" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} görseli">
               @endforeach
             </div>
           @endif
@@ -188,6 +206,7 @@
         <script>
           window.facilityGalleryImages = window.facilityGalleryImages || {};
           window.facilityGalleryIndex = window.facilityGalleryIndex || {};
+          window.facilityGalleryIndex['{{ $galleryId }}'] = {{ $primaryIndex }};
           window.facilityGalleryImages['{{ $galleryId }}'] = @json($galleryImages->map(fn ($img) => facility_asset($img->path))->values());
           window.shiftFacilityMainImage = window.shiftFacilityMainImage || function (containerId, delta) {
             var imgs = window.facilityGalleryImages[containerId];

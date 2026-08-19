@@ -260,12 +260,7 @@ if (! function_exists('facility_asset')) {
 if (! function_exists('facility_card_image')) {
     function facility_card_image($facility, ?array $section = null): string
     {
-        $image = null;
-        if ($facility) {
-            $image = $facility->relationLoaded('images')
-                ? $facility->images->first()
-                : $facility->images()->first();
-        }
+        $image = $facility?->primaryImage();
 
         if ($image?->path) {
             return facility_asset($image->path);

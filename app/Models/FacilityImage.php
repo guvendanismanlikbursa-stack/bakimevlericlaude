@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FacilityImage extends Model
 {
-    protected $fillable = ['facility_id', 'path', 'sort_order'];
+    protected $fillable = ['facility_id', 'path', 'sort_order', 'is_primary'];
 
     // 28 Temmuz 2026: canli uctan uca testte bulundu - facility_id INTEGER'a
     // cast edilmiyordu (MySQL/PDO string doner), oysa FacilityUser::facility_id
@@ -18,6 +18,7 @@ class FacilityImage extends Model
     {
         return [
             'facility_id' => 'integer',
+            'is_primary' => 'boolean',
         ];
     }
 

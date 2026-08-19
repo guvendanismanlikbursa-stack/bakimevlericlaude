@@ -1,7 +1,7 @@
 @php
   $section = service_section_for_scope($facility->category->brand_scope);
   $cardImage = facility_card_image($facility, $section);
-  $ownImagePath = $facility->relationLoaded('images') ? $facility->images->first()?->path : null;
+  $ownImagePath = $facility->relationLoaded('images') ? $facility->primaryImage()?->path : null;
   // 12 Agustos 2026: kullanicinin talebi - listeleme "sahte" hissettiriyordu
   // cunku cogu kart ayni ornek gorseli kullaniyor; gorseli gercek kurum
   // yuklemesi olmayan kartlarda kucuk, durust bir "Ornek gorsel" etiketi

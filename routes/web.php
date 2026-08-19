@@ -262,6 +262,7 @@ $siteRoutes = function () {
             // sinirsiz doldurabilirdi.
             Route::post('/profil/gorsel', [FacilityProfileController::class, 'uploadImage'])->middleware('throttle:public-sensitive')->name('profile.image.store');
             Route::delete('/profil/gorsel/{image}', [FacilityProfileController::class, 'deleteImage'])->name('profile.image.destroy');
+            Route::post('/profil/gorsel/{image}/ana-gorsel-yap', [FacilityProfileController::class, 'setPrimaryImage'])->name('profile.image.set-primary');
             Route::put('/profil/bildirim-tercihleri', [FacilityProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
 
             Route::get('/bakiyem', [FacilityWalletController::class, 'index'])->name('wallet.index');
@@ -337,6 +338,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->names('facilities')
             ->except(['show']);
         Route::delete('/kurumlar/gorsel/{image}', [AdminFacilityController::class, 'deleteImage'])->name('facilities.image.destroy');
+        Route::post('/kurumlar/gorsel/{image}/ana-gorsel-yap', [AdminFacilityController::class, 'setPrimaryImage'])->name('facilities.image.set-primary');
         Route::post('/kurumlar/{facility}/bakiye-duzenle', [AdminBalanceController::class, 'adjust'])->name('facilities.balance.adjust');
         Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
         Route::post('/kurumlar/{facility}/yerinde-sahiplendir', [AdminFacilityController::class, 'instantClaim'])->name('facilities.instant-claim');

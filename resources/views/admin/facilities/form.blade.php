@@ -308,9 +308,19 @@
         <span class="text-xs font-semibold rounded-full bg-gray-100 text-gray-600 px-3 py-1">{{ $imageCount }}/10</span>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {{-- 19 Agustos 2026: kullanicinin talebi - hangi gorselin ANA (kapak)
+             gorsel oldugu buradan secilebilir (bkz. Facility::primaryImage()). --}}
         @foreach($facility->images->take(10) as $img)
           <div class="relative">
-            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-24 w-full object-cover border border-gray-100">
+            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-24 w-full object-cover border-2 {{ $img->is_primary ? 'border-amber-400' : 'border-gray-100' }}">
+            @if($img->is_primary)
+              <span class="absolute bottom-1 left-1 bg-amber-400 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded">★ Ana Görsel</span>
+            @else
+              <form method="POST" action="{{ route('admin.facilities.image.set-primary', $img) }}" class="absolute bottom-1 left-1">
+                @csrf
+                <button class="bg-white/90 text-gray-700 text-[10px] font-semibold px-1.5 py-0.5 rounded hover:bg-white">Ana Görsel Yap</button>
+              </form>
+            @endif
             <form method="POST" action="{{ route('admin.facilities.image.destroy', $img) }}" class="absolute top-1 right-1">
               @csrf @method('DELETE')
               <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>

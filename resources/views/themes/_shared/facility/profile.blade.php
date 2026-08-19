@@ -133,11 +133,21 @@
     </div>
 
     <div id="ps-gallery-facility-profile" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
+      {{-- 19 Agustos 2026: kullanicinin talebi - hangi gorselin ANA (kapak)
+           gorsel oldugu buradan secilebilir (bkz. Facility::primaryImage()). --}}
       @foreach($facility->images->take(10) as $img)
         <div class="relative group">
           <a href="{{ facility_asset($img->path) }}" data-pswp-width="1600" data-pswp-height="1200" target="_blank" rel="noopener">
-            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-28 w-full object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} görseli">
+            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-28 w-full object-cover border-2 {{ $img->is_primary ? 'border-amber-400' : 'border-gray-100' }} cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} görseli">
           </a>
+          @if($img->is_primary)
+            <span class="absolute bottom-1 left-1 bg-amber-400 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded">★ Ana Görsel</span>
+          @else
+            <form method="POST" action="{{ brand_route('facility.profile.image.set-primary', $img) }}" class="absolute bottom-1 left-1">
+              @csrf
+              <button class="bg-white/90 text-gray-700 text-[10px] font-semibold px-1.5 py-0.5 rounded hover:bg-white">Ana Görsel Yap</button>
+            </form>
+          @endif
           <form method="POST" action="{{ brand_route('facility.profile.image.destroy', $img) }}" class="absolute top-1 right-1">
             @csrf @method('DELETE')
             <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>

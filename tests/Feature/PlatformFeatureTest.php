@@ -4600,6 +4600,65 @@ class PlatformFeatureTest extends TestCase
         $this->assertDatabaseMissing('facility_images', ['id' => $image->id]);
     }
 
+    // 19 Agustos 2026: kullanicinin talebi - "10 gorselden hangisi ana
+    // gorsel olacak secilebilinmeli" (hem admin hem kurum yetkilisi icin).
+    // Facility::primaryImage() varsayilan olarak images->first()'e (en
+    // dusuk sort_order) duser - bu testler hem varsayilan fallback'i hem
+    // de acikca is_primary=true secildiginde onun tercih edildigini
+    // dogrular.
+    public function test_facility_primary_image_falls_back_to_first_when_none_marked_primary(): void
+    {
+        $img1 = FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/a.png', 'sort_order' => 0]);
+        FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/b.png', 'sort_order' => 1]);
+
+        $this->assertSame($img1->id, $this->rehabFacility->fresh()->primaryImage()->id);
+    }
+
+    public function test_facility_primary_image_prefers_explicit_flag_over_sort_order(): void
+    {
+        FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/a.png', 'sort_order' => 0]);
+        $img2 = FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/b.png', 'sort_order' => 1, 'is_primary' => true]);
+
+        $this->assertSame($img2->id, $this->rehabFacility->fresh()->primaryImage()->id);
+    }
+
+    public function test_admin_can_set_primary_image(): void
+    {
+        $img1 = FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/a.png', 'sort_order' => 0]);
+        $img2 = FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/b.png', 'sort_order' => 1]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kurumlar/gorsel/'.$img2->id.'/ana-gorsel-yap')
+            ->assertRedirect();
+
+        $this->assertTrue($img2->fresh()->is_primary);
+        $this->assertFalse($img1->fresh()->is_primary);
+    }
+
+    public function test_facility_user_can_set_primary_image_on_own_facility(): void
+    {
+        $img1 = FacilityImage::create(['facility_id' => $this->childFacility->id, 'path' => 'facilities/c.png', 'sort_order' => 0]);
+        $img2 = FacilityImage::create(['facility_id' => $this->childFacility->id, 'path' => 'facilities/d.png', 'sort_order' => 1]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/profil/gorsel/'.$img2->id.'/ana-gorsel-yap')
+            ->assertRedirect();
+
+        $this->assertTrue($img2->fresh()->is_primary);
+        $this->assertFalse($img1->fresh()->is_primary);
+    }
+
+    public function test_facility_user_cannot_set_primary_image_on_other_facility(): void
+    {
+        $foreignImage = FacilityImage::create(['facility_id' => $this->rehabFacility->id, 'path' => 'facilities/yabanci.png', 'sort_order' => 0]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/profil/gorsel/'.$foreignImage->id.'/ana-gorsel-yap')
+            ->assertForbidden();
+
+        $this->assertFalse($foreignImage->fresh()->is_primary);
+    }
+
     // Asil senkronizasyon uc noktasi: gecerli Bearer token + bilinen yol
     // biciminde gercekten dosya yazip/siliyor mu, gecersiz istekleri
     // reddediyor mu.

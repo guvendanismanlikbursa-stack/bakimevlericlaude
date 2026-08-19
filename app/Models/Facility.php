@@ -83,6 +83,24 @@ class Facility extends Model
         return $this->hasMany(FacilityImage::class)->orderBy('sort_order');
     }
 
+    /**
+     * 19 Agustos 2026: kullanicinin talebi - admin/kurum yetkilisi 10
+     * gorselden hangisinin ANA (kapak) gorsel olacagini secebilsin. Kasitli
+     * olarak sort_order'i DEGISTIRMEZ (galeri sirasi bozulmasin) - ayri bir
+     * is_primary bayragi kullanilir. Hicbir gorsel acikca "ana" olarak
+     * isaretlenmemisse (ör. bu ozellikten once yuklenmis eski kurumlar),
+     * geriye donuk uyumluluk icin sort_order'i en dusuk olan (ilk yuklenen)
+     * gorsel varsayilan olarak kullanilir - onceki davranisla BIREBIR ayni.
+     */
+    public function primaryImage(): ?FacilityImage
+    {
+        if ($this->relationLoaded('images')) {
+            return $this->images->firstWhere('is_primary', true) ?? $this->images->first();
+        }
+
+        return $this->images()->where('is_primary', true)->first() ?? $this->images()->first();
+    }
+
     public function engagementEvents()
     {
         return $this->hasMany(FacilityEngagementEvent::class);
