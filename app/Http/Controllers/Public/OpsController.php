@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -129,6 +129,7 @@ class OpsController extends Controller
             'cleanup-test-platform-errors' => $this->cleanupTestPlatformErrors(),
             'menu-image-demo-apply' => $this->menuImageDemoApply($request),
             'restore-accidentally-deleted-claimed-facility-demo-images' => $this->restoreAccidentallyDeletedClaimedFacilityDemoImages(),
+            'sessions-gc' => $this->sessionsGc($request),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -764,6 +765,85 @@ class OpsController extends Controller
         }
 
         return "Geri yuklenen kayit: {$restored}/6";
+    }
+
+    // 20 Agustos 2026: storage/framework/sessions'ta Laravel'in lottery-tabanli
+    // otomatik GC'si (config/session.php 'lottery' => [2,100]) beklendigi gibi
+    // calismamis, dosyalar en az 13 Temmuz'dan beri hic silinmemis. Bu tek
+    // klasor, hesabin 500.000 dosya (inode) sinirinin doldugu asil kaynak.
+    // FTP ile tek tek silmek yuz binlerce round-trip gerektirip saatler
+    // surecegi icin, sunucunun kendi PHP'si yerel diskte dogrudan siler
+    // (network round-trip yok, saniyeler/dakikalar surer). Zaman butcesi
+    // dahilinde calisir, tek cagrida bitirmezse ayni action tekrar
+    // cagrilarak devam edilir (idempotent, silinen dosya sayisini rapor eder).
+    private function sessionsGc(Request $request): string
+    {
+        $dryRun = $request->query('dry_run', '1') !== '0';
+        $maxAgeMinutes = (int) $request->query('max_age_minutes', 180);
+        $budgetSeconds = (float) $request->query('budget_seconds', 25);
+
+        $dir = storage_path('framework/sessions');
+        if (! is_dir($dir)) {
+            return "Klasor bulunamadi: {$dir}";
+        }
+
+        $cutoff = time() - ($maxAgeMinutes * 60);
+        $start = microtime(true);
+
+        $scanned = 0;
+        $eligible = 0;
+        $deleted = 0;
+        $newest = null;
+        $oldest = null;
+
+        $handle = opendir($dir);
+        while (($name = readdir($handle)) !== false) {
+            if ($name === '.' || $name === '..' || $name === '.gitkeep') {
+                continue;
+            }
+            $path = $dir.DIRECTORY_SEPARATOR.$name;
+            if (! is_file($path)) {
+                continue;
+            }
+            $scanned++;
+            $mtime = @filemtime($path);
+            if ($mtime === false) {
+                continue;
+            }
+            if ($oldest === null || $mtime < $oldest) {
+                $oldest = $mtime;
+            }
+            if ($newest === null || $mtime > $newest) {
+                $newest = $mtime;
+            }
+            if ($mtime < $cutoff) {
+                $eligible++;
+                if (! $dryRun) {
+                    if (@unlink($path)) {
+                        $deleted++;
+                    }
+                }
+            }
+            if ((microtime(true) - $start) > $budgetSeconds) {
+                break;
+            }
+        }
+        closedir($handle);
+
+        $elapsed = round(microtime(true) - $start, 1);
+        $oldestStr = $oldest ? date('Y-m-d H:i', $oldest) : '-';
+        $newestStr = $newest ? date('Y-m-d H:i', $newest) : '-';
+
+        if ($dryRun) {
+            return "[ON IZLEME] {$scanned} dosya tarandi ({$elapsed}s icinde, butce doldugunda durdu), ".
+                "{$eligible} tanesi {$maxAgeMinutes} dakikadan eski (silinebilir). ".
+                "Taranan araliktaki en eski: {$oldestStr}, en yeni: {$newestStr}. ".
+                'Gercekten silmek icin dry_run=0 ile tekrar cagirin, tek cagri butceyi doldurursa ayni parametrelerle tekrar tekrar cagirin.';
+        }
+
+        return "SILINDI: {$deleted}/{$eligible} dosya ({$scanned} tarandi, {$elapsed}s). ".
+            "Taranan araliktaki en eski: {$oldestStr}, en yeni: {$newestStr}. ".
+            'Hala eski dosya kalmis olabilir, klasor kucuk gorunene kadar ayni cagriyi tekrarlayin.';
     }
 
     private function documentDiagnostic(Request $request): string

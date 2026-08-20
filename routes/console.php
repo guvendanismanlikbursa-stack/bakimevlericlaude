@@ -123,6 +123,17 @@ ScheduledJobMonitor::attach(
     60
 );
 
+// 20 Agustos 2026: storage/framework/sessions'ta Laravel'in lottery-tabanli
+// otomatik GC'si calismamis, dosyalar haftalarca birikip hesabin 500.000
+// dosya (inode) sinirini doldurmustu (bkz. App\Console\Commands\
+// CleanupOldSessionFiles). Lottery'ye guvenmek yerine burada garanti bir
+// zamanlanmis calisma eklendi.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:cleanup-old-sessions')->hourly(),
+    'platform:cleanup-old-sessions',
+    60
+);
+
 // Bakim: paylasimli (cPanel) hosting'de kalici bir "queue:work" daemon'i
 // (supervisor/systemd) kurulamadigindan, kuyruk mevcut "* * * * * schedule:run"
 // cron'una binerek her dakika en fazla ~50 saniye boyunca tuketilir. Kuyruk
