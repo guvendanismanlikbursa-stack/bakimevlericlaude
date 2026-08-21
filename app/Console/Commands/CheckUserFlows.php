@@ -496,6 +496,7 @@ class CheckUserFlows extends Command
                     ['name' => 'applicant_email', 'contents' => $email],
                     ['name' => 'applicant_phone', 'contents' => '05320000003'],
                     ['name' => 'note', 'contents' => 'Otomatik gunluk kontrol'],
+                    ['name' => 'consent', 'contents' => '1'],
                 ]);
         } finally {
             @unlink($imagePath);
@@ -545,6 +546,7 @@ class CheckUserFlows extends Command
             'applicant_name' => 'QATEST Daily Yetkili',
             'applicant_email' => $email,
             'applicant_phone' => '05320000005',
+            'consent' => '1',
         ]);
 
         if ($resp->status() >= 500) {
