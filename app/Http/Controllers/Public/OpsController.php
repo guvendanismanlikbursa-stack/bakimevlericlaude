@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -130,6 +130,7 @@ class OpsController extends Controller
             'menu-image-demo-apply' => $this->menuImageDemoApply($request),
             'restore-accidentally-deleted-claimed-facility-demo-images' => $this->restoreAccidentallyDeletedClaimedFacilityDemoImages(),
             'sessions-gc' => $this->sessionsGc($request),
+            'menu-image-repair' => $this->menuImageRepair($request),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -2892,6 +2893,61 @@ class OpsController extends Controller
         if ($totalRemaining > $offset + $limit) {
             $out .= "\nNOT: bu pencere limite ulasti, kalanlari kapsamak icin offset=" . ($offset + $limit) . " ile tekrar cagirin.";
         }
+
+        return $out;
+    }
+
+    // 21 Agustos 2026: 20 Agustos'taki dosya kotasi acil durumunda, bu
+    // menuImageDemoApply() ile 331 Bursa kurumu icin olusturulan BAGIMSIZ
+    // 195718 baytlik kopyalar, "supheli tekrar" sanilip byte-boyutu
+    // eslesmesiyle YANLISLIKLA topluca silinmisti (gercek sorun sessions
+    // klasoruymus, bkz. CleanupOldSessionFiles). facilities.menu_image_path
+    // veritabaninda hala o (artik var olmayan) yollari gosteriyordu, kirik
+    // gorsel olarak ortaya cikti. DB SATIRLARINA DOKUNULMAZ - sadece ayni
+    // yolda dosya eksikse kaynak orneginden yeniden olusturulur. Her domain
+    // kendi yerel diskini kontrol eder, bu yuzden 3 domainde de ayri ayri
+    // cagrilmalidir.
+    private function menuImageRepair(Request $request): string
+    {
+        $dryRun = $request->query('dry_run', '1') !== '0';
+        $sourcePath = 'facilities/demo/menu-sample-source.webp';
+        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+
+        if (! $disk->exists($sourcePath)) {
+            return "HATA: kaynak ornek gorsel diskte yok ({$sourcePath}).";
+        }
+
+        $facilities = Facility::whereNotNull('menu_image_path')
+            ->whereNull('deleted_at')
+            ->get(['id', 'name', 'menu_image_path']);
+
+        $missing = $facilities->filter(fn ($f) => $f->menu_image_path
+            && ! str_starts_with($f->menu_image_path, 'facilities/demo/')
+            && $disk->missing($f->menu_image_path));
+
+        if ($missing->isEmpty()) {
+            return "Kontrol edilen {$facilities->count()} kurumdan hicbirinde eksik dosya yok (bu domainde).";
+        }
+
+        $out = "Bu domainde eksik dosyasi olan kurum: {$missing->count()}/{$facilities->count()}\n\n";
+
+        if ($dryRun) {
+            foreach ($missing as $f) {
+                $out .= "  #{$f->id} {$f->name} -> {$f->menu_image_path}\n";
+            }
+            $out .= "\nGercekten onarmak icin dry_run=0 ile tekrar cagirin.";
+
+            return $out;
+        }
+
+        $sourceContents = $disk->get($sourcePath);
+        $restored = 0;
+        foreach ($missing as $f) {
+            $disk->put($f->menu_image_path, $sourceContents);
+            $restored++;
+            $out .= "  onarildi: #{$f->id} {$f->name} -> {$f->menu_image_path}\n";
+        }
+        $out .= "\nToplam onarilan: {$restored}";
 
         return $out;
     }
