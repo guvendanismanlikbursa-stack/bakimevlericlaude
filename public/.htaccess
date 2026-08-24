@@ -41,20 +41,24 @@ php_value post_max_size 60M
     # "her seyi public/ altina yonlendir" ic-rewrite'i CoktAN uygulanmis olur,
     # yani %{REQUEST_URI} bu noktada "/public/kurumlar" gibi GORUNMEZ bir ic
     # yol dondurur (canli testte dogrulandi: www yonlendirmesi kirik
-    # "https://bakimevibul.com/public/kurumlar" URL'ine gidiyordu, ayrica
-    # REQUEST_URI sorgu dizesini de icermez). %{THE_REQUEST} tarayicinin
-    # gonderdigi HAM/degismemis istek satirini yansitir, ic rewrite'lerden
-    # etkilenmez ve sorgu dizesini de korur.
+    # "https://bakimevibul.com/public/kurumlar" URL'ine gidiyordu). %{THE_REQUEST}
+    # tarayicinin gonderdigi HAM/degismemis istek satirini yansitir, ic
+    # rewrite'lerden etkilenmez. Sadece YOL yakalanir (sorgu dahil degil) -
+    # substitution'da '?' KULLANILMADIGI icin mod_rewrite orijinal sorgu
+    # dizesini otomatik olarak sona ekler (bunu elle yapmaya calisan ilk
+    # versiyon "?" karakterinin backreference icinde %3F'e kacirilmasi
+    # yuzunden "kurumlar%3fcity=bursa?city=bursa" gibi bozuk URL'ler
+    # uretmisti - canli testte yakalanip duzeltildi).
     RewriteCond %{HTTP_HOST} ^www\.bakimevibul\.com$ [NC]
-    RewriteCond %{THE_REQUEST} \s/+(\S*)\s
+    RewriteCond %{THE_REQUEST} \s/+([^?\s]*)
     RewriteRule ^ https://bakimevibul.com/%1 [R=301,L]
 
     RewriteCond %{HTTP_HOST} ^www\.bakimeviara\.com$ [NC]
-    RewriteCond %{THE_REQUEST} \s/+(\S*)\s
+    RewriteCond %{THE_REQUEST} \s/+([^?\s]*)
     RewriteRule ^ https://bakimeviara.com/%1 [R=301,L]
 
     RewriteCond %{HTTP_HOST} ^www\.bakimevleri\.com$ [NC]
-    RewriteCond %{THE_REQUEST} \s/+(\S*)\s
+    RewriteCond %{THE_REQUEST} \s/+([^?\s]*)
     RewriteRule ^ https://bakimevleri.com/%1 [R=301,L]
 
     RewriteCond %{REQUEST_FILENAME} !-d

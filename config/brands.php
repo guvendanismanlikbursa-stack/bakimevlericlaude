@@ -9,6 +9,13 @@ return [
         'yasli-bakim' => [
             'slug' => 'yasli-bakim',
             'title' => 'Yaşlı Bakım',
+            // 24 Agustos 2026: kullanicinin bildirdigi gercek hata - il/ilce
+            // rehber sayfalarinin basligi/H1/meta'si "title" alanini ("Yasli
+            // Bakim") kullaniyordu, ama kimse "yasli bakim" diye aramiyor -
+            // gercek arama terimi "bakimevi"/"bakimevleri" (bkz. rehber
+            // sayfasi title uretimi, location-guide.blade.php). Bu alan SEO
+            // baslik/H1/meta uretiminde 'title' yerine kullanilir.
+            'seo_title' => 'Bakımevi',
             'short_title' => 'Yaşlı',
             'icon' => 'elderly-care',
             'scopes' => ['yasli-bakim'],
@@ -28,6 +35,8 @@ return [
         'cocuk' => [
             'slug' => 'cocuk',
             'title' => 'Çocuk',
+            // bkz. yasli-bakim bolumundeki 24 Agustos 2026 yorumu - ayni sebep.
+            'seo_title' => 'Kreş',
             'short_title' => 'Çocuk',
             'icon' => 'child-care',
             'scopes' => ['cocuk-bakim', 'ozel-egitim'],
@@ -47,6 +56,9 @@ return [
         'rehabilitasyon' => [
             'slug' => 'rehabilitasyon',
             'title' => 'Rehabilitasyon',
+            // bkz. yasli-bakim bolumundeki 24 Agustos 2026 yorumu - bu bolumde
+            // "title" zaten aranan terimle ayni oldugu icin degisiklik yok.
+            'seo_title' => 'Rehabilitasyon Merkezi',
             'short_title' => 'Rehab',
             'icon' => 'rehab-care',
             'scopes' => ['rehabilitasyon', 'fizik-tedavi'],

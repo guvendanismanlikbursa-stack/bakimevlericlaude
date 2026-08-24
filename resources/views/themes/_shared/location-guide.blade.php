@@ -4,7 +4,11 @@
   $theme = $brand['theme'];
   $colors = $section['theme'];
   $placeTitle = $districtName ? $city->name . ' / ' . $districtName : $city->name;
-  $topicTitle = $category->name ?? $section['title'];
+  // 24 Agustos 2026: kullanicinin bildirdigi gercek hata - kategori
+  // secilmemisse baslik $section['title']'a ("Yasli Bakim" gibi) duserdu,
+  // ama kimse bu sekilde aramiyor - gercek arama terimi icin bkz.
+  // config/brands.php seo_title alani ("Bakimevi", "Kres" vb.).
+  $topicTitle = $category->name ?? $section['seo_title'] ?? $section['title'];
   $title = $placeTitle . ' ' . $topicTitle . ' kurumları';
   $breadcrumbItems = [
       ['name' => $brand['name'], 'url' => brand_route('home')],

@@ -1,5 +1,11 @@
 @extends('layouts.brand')
-@section('title', ($activeSection['title'] ?? 'Kurumlar').(request('city') ? ' - '.optional($cities->firstWhere('slug', request('city')))->name : '').' | Kurumları Bul')
+{{--
+  24 Agustos 2026: kullanicinin bildirdigi gercek hata - baslik
+  $activeSection['title'] ("Yasli Bakim" gibi) kullaniyordu, gercek
+  arama terimi icin bkz. config/brands.php seo_title alani (ayni
+  sebep, bkz. location-guide.blade.php ayni tarihli yorum).
+--}}
+@section('title', ($activeSection['seo_title'] ?? $activeSection['title'] ?? 'Kurumlar').(request('city') ? ' - '.optional($cities->firstWhere('slug', request('city')))->name : '').' | Kurumları Bul')
 @section('meta_description', ($activeSection['hero_subtitle'] ?? 'Bakım kurumlarını il, ilçe, hizmet ve bütçeye göre karşılaştırın.'))
 @if($activeSection && $activeSection['slug'] !== (current_brand()['default_section'] ?? null))
   {{-- bkz. layouts/brand.blade.php - bu markanin kendi bolumu disindaki
