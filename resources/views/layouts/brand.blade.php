@@ -461,7 +461,7 @@
       <ul class="space-y-1">
         @foreach(config('brands.brands') as $slug => $b)
           @if($slug !== $brand['slug'])
-            <li><a href="{{ route('brand.home', ['brand' => $slug]) }}" class="hover:text-primary">{{ $b['name'] }}</a></li>
+            <li><a href="https://{{ $b['domains'][0] }}/" class="hover:text-primary">{{ $b['name'] }}</a></li>
           @endif
         @endforeach
       </ul>

@@ -92,6 +92,16 @@ $siteRoutes = function () {
     Route::get('/bakim-danismani/sonuclar', [CareAdvisorController::class, 'results'])->name('care-advisor.results');
     Route::get('/karsilastir', [EngagementController::class, 'compare'])->name('engagement.compare');
     Route::get('/favoriler', [EngagementController::class, 'favorites'])->middleware('family.auth')->name('engagement.favorites');
+    // 24 Agustos 2026: Google Search Console'da bulundu - bolum belirtilmeden
+    // /rehber'e giden (muhtemelen eski/dis bir baglanti) istekler 404
+    // doruyordu, /rehber/{sectionSlug} zorunlu parametre bekliyor. Varsayilan
+    // boluma yonlendirilir.
+    Route::get('/rehber', function () {
+        $brand = current_brand();
+        $defaultSection = $brand['default_section'] ?? array_key_first(service_sections());
+
+        return redirect(brand_route('location-guide.index', ['sectionSlug' => $defaultSection]));
+    });
     Route::get('/rehber/{sectionSlug}', [LocationGuideController::class, 'index'])->name('location-guide.index');
     Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->name('location-guide.category');
     Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->name('location-guide.show');
@@ -316,7 +326,18 @@ Route::post('/impersonation/dur', [\App\Http\Controllers\Public\ImpersonationCon
 Route::middleware('track.visit')->group($siteRoutes);
 
 // 2) Localhost test modu: /site/{brand}/... ayni route'lari "brand." on ekiyle uretir
-Route::prefix('site/{brand}')->name('brand.')->middleware('track.visit')->group($siteRoutes);
+// 24 Agustos 2026: kullanicinin bildirdigi gercek hata - bu route grubu
+// UZUN SUREDIR production'da da (kosulsuz) acikti, footer'daki "Diger
+// Sitelerimiz" linki (bkz. layouts/brand.blade.php) yanlislikla route('brand.home')
+// kullanip buraya link veriyordu - Google bu prefix altinda TUM siteyi
+// (3 markanin hepsini, birbirinin ustune binen sekilde) ikinci kez taramis,
+// Search Console'da yuzlerce "kopya sayfa" ve capraz-marka sizintisi olarak
+// gorunmustu. Footer linki gercek domaine duzeltildi (kok neden), burada da
+// savunma amacli sadece local/testing'de acik birakildi - production'da
+// bu prefix artik 404 doner, Google zamanla bu URL'leri dizin disi birakir.
+if (app()->environment(['local', 'testing'])) {
+    Route::prefix('site/{brand}')->name('brand.')->middleware('track.visit')->group($siteRoutes);
+}
 
 /*
 |--------------------------------------------------------------------------

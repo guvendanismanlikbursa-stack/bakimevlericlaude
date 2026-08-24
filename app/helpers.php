@@ -214,12 +214,26 @@ if (! function_exists('site_content_page')) {
 
 
 if (! function_exists('canonical_url')) {
+    /**
+     * 24 Agustos 2026: kullanicinin bildirdigi gercek hata - eskiden burada
+     * url()->current() dogrudan kullanilirdi, yani hangi host'tan gelinmisse
+     * (www'li/www'siz) canonical etiketi de AYNI host'u yansitiyordu - www
+     * ile www'siz surumler birbirini "dogru" gosteriyordu, Google'da yuzlerce
+     * "kopya, farkli standart sayfa secildi" sorunu olusmustu. Artik
+     * canonical HER ZAMAN markanin birincil domaini (config/brands.php
+     * domains[0], www'siz) uzerinden uretilir - .htaccess'teki www->www'siz
+     * yonlendirmesiyle birlikte cift katmanli koruma saglar.
+     */
     function canonical_url(array $keep = ['bolum', 'city', 'district', 'category', 'service', 'price_tier', 'budget', 'page']): string
     {
         $query = array_intersect_key(request()->query(), array_flip($keep));
         ksort($query);
 
-        return $query ? url()->current().'?'.http_build_query($query) : url()->current();
+        $host = current_brand()['domains'][0] ?? request()->getHost();
+        $path = '/'.ltrim(request()->path(), '/');
+        $base = 'https://'.$host.($path === '/' ? '' : $path);
+
+        return $query ? $base.'?'.http_build_query($query) : $base;
     }
 }
 

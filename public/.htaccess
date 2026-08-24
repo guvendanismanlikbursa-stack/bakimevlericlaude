@@ -28,6 +28,16 @@ php_value post_max_size 60M
     RewriteCond %{HTTP_HOST} ^(www\.)?admin\.bakimevleri\.com$ [NC]
     RewriteRule ^ https://bakimevleri.com/admin/giris [R=301,L]
 
+    # 24 Agustos 2026: kullanicinin bildirdigi gercek hata - www ve www'siz
+    # surumler ayni icerigi sunuyordu ama araya bir yonlendirme yoktu,
+    # canonical_url() helper'i da (bkz. app/helpers.php) o an gelen host'u
+    # oldugu gibi yansitiyordu - Google Search Console'da yuzlerce sayfa
+    # "kopya, Google kullanicidan farkli bir standart sayfa secti" olarak
+    # gorunmustu. www'li istekler artik hep www'siz (config/brands.php
+    # domains[0] ile ayni) surume 301 ile yonlendirilir.
+    RewriteCond %{HTTP_HOST} ^www\.(bakimevleri\.com|bakimevibul\.com|bakimeviara\.com)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
