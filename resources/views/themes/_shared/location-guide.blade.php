@@ -100,7 +100,7 @@
             <div class="text-xs font-black text-primary mb-2">{{ $facility->category->name }}</div>
             <h3 class="font-black text-gray-950">{{ $facility->name }}</h3>
             <p class="text-sm text-gray-500 mt-1">{{ $facility->city->name }} · {{ $facility->district }}</p>
-            <div class="mt-3 flex items-center justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-500 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-black text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div>
+            <div class="mt-3 flex items-center justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-black text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div>
           </a>
         @empty
           <div class="md:col-span-2 bg-white border border-dashed rounded-xl p-8 text-center text-gray-500">Bu bölge için kayıtlı kurum bulunamadı. Yakın ilçelere veya genel listeye bakabilirsiniz.</div>

@@ -25,7 +25,7 @@
           @php $active = $item['slug'] === $section['slug']; @endphp
           <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="group relative section-card-beam rounded-2xl border p-4 min-h-[112px] overflow-hidden transition hover:-translate-y-0.5 hover:shadow-xl {{ $active ? 'text-white shadow-lg' : 'text-white border-gray-100 shadow-sm' }}" style="--beam-color: {{ $active ? '#ffffff' : $item['theme']['secondary'] }}; {{ $active ? 'background:'.$colors['primary'].'; border-color:'.$colors['primary'].';' : '' }}">
             @unless($active)
-              <img src="{{ $item['hero_image'] }}" alt="" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover">
+              <img src="{{ $item['hero_image_card'] ?? $item['hero_image'] }}" alt="" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover">
               <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/35 to-black/10"></div>
             @endunless
             <div class="relative flex items-start justify-between gap-3">

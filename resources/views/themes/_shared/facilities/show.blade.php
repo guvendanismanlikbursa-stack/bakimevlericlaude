@@ -399,7 +399,7 @@
         <div class="space-y-3">
           @forelse(($facility->approvedReviews ?? collect()) as $review)
             <div class="rounded-lg bg-gray-50 border border-gray-100 p-4">
-              <div class="flex items-center justify-between"><div class="font-black text-gray-950">{{ $review->reviewer_name }}</div><div class="text-amber-500 font-black">★ {{ $review->rating }}</div></div>
+              <div class="flex items-center justify-between"><div class="font-black text-gray-950">{{ $review->reviewer_name }}</div><div class="text-amber-700 font-black">★ {{ $review->rating }}</div></div>
               <p class="text-sm text-gray-600 mt-2">{{ $review->body }}</p>
               @if($review->facility_reply)
                 <div class="mt-3 rounded-lg bg-white border border-gray-200 p-3">

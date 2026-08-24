@@ -10,7 +10,7 @@
       <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
         <div class="flex items-center justify-between">
           <div class="font-black text-gray-950">{{ $review->reviewer_name }}</div>
-          <div class="text-amber-500 font-black">★ {{ $review->rating }}</div>
+          <div class="text-amber-700 font-black">★ {{ $review->rating }}</div>
         </div>
         <p class="text-sm text-gray-600 mt-2">{{ $review->body }}</p>
         <div class="text-xs text-gray-400 mt-2">{{ optional($review->approved_at)->format('d.m.Y') }}</div>

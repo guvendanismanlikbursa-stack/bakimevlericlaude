@@ -23,6 +23,12 @@ return [
             'hero_subtitle' => 'Bakımevi, huzurevi, Alzheimer bakımı ve yaşlı yaşam merkezlerini tek ekranda inceleyin; aile ihtiyacınıza uygun kurumlardan teklif alın.',
             'search_label' => 'Bakımevi, huzurevi veya yaşlı bakım merkezi ara',
             'hero_image' => '/images/hero-yasli-bakim.webp',
+            // 24 Agustos 2026: kullanicinin PageSpeed Insights ile bildirdigi
+            // gercek hata - anasayfadaki kucuk "bolum karti" (bkz. home.blade.php
+            // section-card-beam) bu buyuk (tam genislik banner icin olan)
+            // gorseli kucuk bir kutuda gosterip binlerce KB israf ediyordu.
+            // Bu, sadece o kucuk kart icin onceden kucultulmus ayri bir dosya.
+            'hero_image_card' => '/images/hero-yasli-bakim-card.webp',
             'theme' => ['primary' => '#1e6f5c', 'secondary' => '#f4a259', 'soft' => '#ecfdf5'],
             'features' => ['7/24 hemşire', 'Doktor kontrolü', 'Alzheimer bakımı', 'Demans bakımı', 'Palyatif bakım', 'Gündüz bakım', 'Tam zamanlı bakım', 'Fizik tedavi', 'Fiziksel aktivite', 'Diyetisyen', 'Sosyal etkinlik', 'Özel oda', 'Bahçe alanı'],
             'profile_fields' => ['Kapasite', 'Oda tipleri', 'Hemşire/doktor desteği', 'Demans/Alzheimer bakımı', 'Ziyaret saatleri', 'Beslenme planı'],
@@ -44,6 +50,8 @@ return [
             'hero_subtitle' => 'Kreş, gündüz bakım evi, anaokulu ve özel eğitim merkezlerini yaş grubu, şehir ve hizmetlere göre karşılaştırın.',
             'search_label' => 'Kreş, anaokulu veya özel eğitim merkezi ara',
             'hero_image' => '/images/hero-cocuk.webp',
+            // bkz. yasli-bakim bolumundeki 24 Agustos 2026 yorumu - ayni sebep.
+            'hero_image_card' => '/images/hero-cocuk-card.webp',
             'theme' => ['primary' => '#5b3a8e', 'secondary' => '#ffd166', 'soft' => '#faf5ff'],
             'features' => ['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı'],
             'profile_fields' => ['Yaş aralığı', 'Sınıf mevcudu', 'Eğitim programı', 'Rehberlik/psikolog', 'Servis güzergahı', 'Yemek/uyku düzeni'],
@@ -66,6 +74,8 @@ return [
             'hero_subtitle' => 'Fizik tedavi, nörolojik rehabilitasyon, özel terapi ve bakım desteklerini şehir/kategori bazında bulun.',
             'search_label' => 'Rehabilitasyon veya fizik tedavi merkezi ara',
             'hero_image' => '/images/hero-rehabilitasyon.webp',
+            // bkz. yasli-bakim bolumundeki 24 Agustos 2026 yorumu - ayni sebep.
+            'hero_image_card' => '/images/hero-rehabilitasyon-card.webp',
             'theme' => ['primary' => '#0b5d8c', 'secondary' => '#e63946', 'soft' => '#eaf4fb'],
             'features' => ['Fizyoterapist', 'Nörolojik rehabilitasyon', 'Ortopedik rehabilitasyon', 'Hidroterapi', 'Ergoterapi', 'Konuşma terapisi', 'Evde takip', 'Cihaz desteği'],
             'profile_fields' => ['Terapi branşları', 'Uzman kadro', 'Seans süresi', 'Cihaz/ekipman', 'Raporlama', 'Evde hizmet'],

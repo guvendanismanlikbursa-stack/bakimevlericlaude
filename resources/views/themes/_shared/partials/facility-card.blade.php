@@ -83,7 +83,7 @@
       <p class="text-sm text-gray-600 line-clamp-2 mb-4">{{ $facility->description }}</p>
       <div class="flex items-center justify-between">
         @if($facility->rating > 0)
-          <span class="text-amber-500 font-black text-sm">★ {{ number_format($facility->rating, 1) }}</span>
+          <span class="text-amber-700 font-black text-sm">★ {{ number_format($facility->rating, 1) }}</span>
           @if($facility->source === 'google_maps_veri_cekici')<span class="text-[10px] text-gray-400 font-semibold -ml-1">(Google)</span>@endif
         @else
           <span></span>

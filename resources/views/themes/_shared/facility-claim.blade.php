@@ -1,5 +1,18 @@
 @extends('layouts.brand')
 @section('title', '"'.$facility->name.'" Kurumunu Sahiplen')
+{{--
+  24 Agustos 2026: kullanicinin "sahiplenme basvurusu gelmiyor" sikayeti
+  uzerine erisim loglari incelendi - son ~10 gunde bu formu 992 FARKLI
+  kurum icin GERCEK insanlar goruntulemis (1140 goruntuleme) ama TEK BIR
+  gercek basvuru bile yapilmamis. Sebep: bu sayfa index,follow olarak
+  Google'da GORUNUYORDU (ayni gunku SEO denetiminde "kopya icerik"
+  listesinde de cikmisti) - kurum sahibi olmayan, sadece kurum HAKKINDA
+  arama yapan kisiler dogrudan bu FORMA dusuyor, sahiplenme niyeti
+  olmadigi icin hemen ayriliyordu. Form artik aramada gorunmez (noindex)
+  ama linkler takip edilir (follow) - gercek kurum sahipleri hala kendi
+  kurum profil sayfasindaki "Sahiplen" butonuyla buraya ulasir.
+--}}
+@section('robots_meta', 'noindex,follow')
 
 @section('content')
 @php

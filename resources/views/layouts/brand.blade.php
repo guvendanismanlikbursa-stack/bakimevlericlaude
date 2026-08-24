@@ -80,7 +80,18 @@
 @endphp
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap">
+{{--
+  24 Agustos 2026: kullanicinin PageSpeed Insights ile bildirdigi gercek
+  hata - normal <link rel="stylesheet"> Google Fonts CSS'i indirilene kadar
+  sayfanin ilk boyanmasini engelliyordu (~750ms kayip). Standart "once
+  arka planda yukle, gelince stylesheet'e cevir" deseni: media="print"
+  oldugu icin tarayici bunu render-blocking saymaz, yuklenince onload
+  media'yi "all" yapip gercek stylesheet'e donusturur. noscript, JS kapali
+  tarayicilar icin garanti fallback saglar.
+--}}
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap"></noscript>
 @vite('resources/css/app.css')
 <style>
   :root{ --primary: {{ $brand['primary_color'] }}; --secondary: {{ $brand['secondary_color'] }}; }

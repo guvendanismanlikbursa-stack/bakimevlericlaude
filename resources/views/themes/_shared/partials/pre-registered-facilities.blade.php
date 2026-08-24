@@ -3,7 +3,8 @@
     <div>
       <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Yeni eklenen ön kayıtlar</div>
       <h2 class="text-2xl md:text-3xl font-black text-gray-950">Ön Kayıtlı Kurumlar<span class="sr-only">On Kayitli Kurumlar</span></h2>
-      <p class="text-sm text-gray-500 mt-1">Admin onayından geçen, yetkili sahiplenmesi bekleyen kurum profilleri burada listelenir.</p>
+      {{-- 24 Agustos 2026: PageSpeed Insights kontrast uyarisi - bkz. trust-stats.blade.php ayni tarihli yorum --}}
+      <p class="text-sm text-gray-600 mt-1">Admin onayından geçen, yetkili sahiplenmesi bekleyen kurum profilleri burada listelenir.</p>
     </div>
     <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug'], 'pre_registered' => 1]) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-black whitespace-nowrap" style="color: {{ $colors['primary'] }};">Filtreli listeyi aç</a>
   </div>
