@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -131,6 +131,7 @@ class OpsController extends Controller
             'restore-accidentally-deleted-claimed-facility-demo-images' => $this->restoreAccidentallyDeletedClaimedFacilityDemoImages(),
             'sessions-gc' => $this->sessionsGc($request),
             'menu-image-repair' => $this->menuImageRepair($request),
+            'bursa-visit-export' => $this->bursaVisitExport($request),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -533,6 +534,62 @@ class OpsController extends Controller
         }
 
         return "Silinen kirik kayit: {$deleted}" . ($facilityId > 0 ? " (facility #{$facilityId})" : ' (tum kurumlar)');
+    }
+
+    // 24 Agustos 2026: kullanicinin talebi - Bursa'da yerinde ziyaret
+    // yapabilmesi icin ilce/adres bilgisiyle bir liste. Ayri bir "mahalle"
+    // kolonu veritabaninda yok (sadece ilce - district - var), bu yuzden
+    // adres metninin TAMAMI ayri bir kolonda verilir (cogu Turkiye adresi
+    // "... Mahallesi ..." iceriyor, kullanici oradan mahalleyi kendi
+    // gozuyle ayirt edebilir). Ilce, sonra adres alfabetik siralanir ki
+    // ayni ilcedeki/yakin adresteki kurumlar yan yana gelsin. Salt-okunur.
+    private function bursaVisitExport(Request $request): string
+    {
+        $onlyUnclaimed = $request->query('unclaimed_only', '1') !== '0';
+
+        $city = DB::table('cities')->where('slug', 'bursa')->first();
+        if (! $city) {
+            return "HATA: 'bursa' slug'li sehir bulunamadi.";
+        }
+
+        $query = DB::table('facilities')
+            ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+            ->where('facilities.city_id', $city->id)
+            ->whereIn('facilities.ownership_type', ['ozel', 'vakif'])
+            ->whereNull('facilities.deleted_at');
+
+        if ($onlyUnclaimed) {
+            $query->where('facilities.is_claimed', false);
+        }
+
+        $rows = $query
+            ->orderByRaw("COALESCE(NULLIF(facilities.district, ''), 'ZZZ_Ilce_Belirtilmemis')")
+            ->orderBy('facilities.address')
+            ->get([
+                'facilities.id',
+                'facilities.name',
+                'facilities.district',
+                'facilities.address',
+                'facilities.phone',
+                'facility_categories.name as category_name',
+                'facilities.invitation_status',
+            ]);
+
+        $out = "id\tKurum Adi\tIlce\tAdres (mahalleyi buradan ayirt edin)\tTelefon\tKategori\tDavet Durumu\n";
+        foreach ($rows as $r) {
+            $out .= implode("\t", [
+                $r->id,
+                $r->name,
+                $r->district ?: '(ilce yok)',
+                $r->address ?: '(adres yok)',
+                $r->phone ?: '(telefon yok)',
+                $r->category_name,
+                $r->invitation_status ?: 'not_started',
+            ])."\n";
+        }
+        $out .= "\nToplam satir: {$rows->count()}";
+
+        return $out;
     }
 
     // 12 Agustos 2026: kurum adiyla hizli arama - id, sahiplenme, kategori,
