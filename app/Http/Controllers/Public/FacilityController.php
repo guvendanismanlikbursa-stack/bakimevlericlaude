@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Public\Concerns\FiltersFacilities;
+use App\Http\Controllers\Public\Concerns\LimitsPaginationDepth;
 use App\Models\City;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
@@ -14,9 +15,12 @@ use Illuminate\Http\Request;
 class FacilityController extends Controller
 {
     use FiltersFacilities;
+    use LimitsPaginationDepth;
 
     public function index(Request $request, GeoLookupService $geo)
     {
+        $this->abortIfPageTooDeep($request);
+
         $brand = current_brand();
         $sections = service_sections();
         $activeSection = $request->query('bolum') ? active_service_section($request->query('bolum'), $brand) : null;

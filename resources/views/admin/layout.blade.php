@@ -28,72 +28,134 @@
     </div>
     <button type="button" id="admin-sidebar-close" class="md:hidden text-gray-300 hover:text-white text-2xl leading-none px-1" aria-label="Menüyü kapat">&times;</button>
   </div>
+  {{--
+    25 Agustos 2026: kullanicinin talebi - liste tek duz akan uzun bir
+    menuydu, asagi kaydirma cok fazlaydi. Her grup artik native <details>
+    ile acilir/kapanir bir akordiyon - JS gerektirmez. Kullanici o an
+    hangi grubun icindeki bir sayfadaysa, o grup varsayilan ACIK gelir
+    (routeIs kontrolu ile "open" niteligi eklenir), boylece "neredeyim"
+    hissi kaybolmaz.
+  --}}
+  @php
+    $groupOpen = [
+      'kullanicilar' => request()->routeIs('admin.users.families*') || request()->routeIs('admin.family-users.*') || request()->routeIs('admin.users.facility-users*'),
+      'kurumlar' => request()->routeIs('admin.facilities.*') || request()->routeIs('admin.claims.*') || request()->routeIs('admin.registrations.*') || request()->routeIs('admin.invitations.*') || request()->routeIs('admin.broker.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.cities.*'),
+      'donusum' => request()->routeIs('admin.offer-requests.*') || request()->routeIs('admin.visit-requests.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.questions.*') || request()->routeIs('admin.contact-messages.*') || request()->routeIs('admin.whatsapp-clicks.*') || request()->routeIs('admin.chat.*'),
+      'finans' => request()->routeIs('admin.topups.*') || request()->routeIs('admin.packages.*'),
+      'icerik' => request()->routeIs('admin.content-pages.*') || request()->routeIs('admin.faqs.*') || request()->routeIs('admin.data-extractor.*') || request()->routeIs('admin.trash.*') || request()->routeIs('admin.audit-log.*') || request()->routeIs('admin.data-quality.*') || request()->routeIs('admin.platform-errors.*') || request()->routeIs('admin.account-deletions.*') || request()->routeIs('admin.scheduled-jobs.*') || request()->routeIs('admin.settings.*') || request()->routeIs('admin.chat-settings.*'),
+    ];
+    $openErrorCount = \App\Models\PlatformError::whereNull('resolved_at')->count();
+    $pendingDeletionCount = \App\Models\AccountDeletionRequest::where('status', 'pending')->count();
+    $overdueJobCount = \App\Models\ScheduledJobRun::get()->filter(fn ($j) => $j->isOverdue())->count();
+  @endphp
   <nav class="p-3 text-sm space-y-1 flex-1 overflow-y-auto">
     <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.dashboard') ? 'bg-gray-700 text-white' : '' }}">Genel Bakış</a>
     <a href="{{ route('admin.site-stats.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.site-stats.*') ? 'bg-gray-700 text-white' : '' }}">Site İstatistikleri</a>
     <a href="{{ route('admin.nearby-searches.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.nearby-searches.*') ? 'bg-gray-700 text-white' : '' }}">Yakın Arama Kayıtları</a>
 
-    <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Kullanıcılar</div>
-    <a href="{{ route('admin.users.families') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.users.families*') || request()->routeIs('admin.family-users.*') ? 'bg-gray-700 text-white' : '' }}">Aileler</a>
-    <a href="{{ route('admin.users.facility-users') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.users.facility-users*') ? 'bg-gray-700 text-white' : '' }}">Kurum Yetkilileri</a>
+    <details class="group" @if($groupOpen['kullanicilar']) open @endif>
+      <summary class="flex items-center justify-between px-3 pt-4 pb-1 cursor-pointer list-none text-xs text-gray-500 uppercase tracking-wider hover:text-gray-300">
+        <span>Kullanıcılar</span>
+        <svg class="w-3 h-3 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+      <div class="space-y-1 pb-1">
+        <a href="{{ route('admin.users.families') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.users.families*') || request()->routeIs('admin.family-users.*') ? 'bg-gray-700 text-white' : '' }}">Aileler</a>
+        <a href="{{ route('admin.users.facility-users') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.users.facility-users*') ? 'bg-gray-700 text-white' : '' }}">Kurum Yetkilileri</a>
+      </div>
+    </details>
 
-    <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Kurumlar</div>
-    <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
-    <a href="{{ route('admin.claims.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.claims.*') ? 'bg-gray-700 text-white' : '' }}"><span>Sahiplenme Başvuruları</span>@if($pendingClaimsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingClaimsCount }}</span>@endif</a>
-    <a href="{{ route('admin.registrations.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.registrations.*') ? 'bg-gray-700 text-white' : '' }}"><span>Kurum Kayıt Başvuruları</span>@if($pendingRegistrationsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingRegistrationsCount }}</span>@endif</a>
-    <a href="{{ route('admin.invitations.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.invitations.*') ? 'bg-gray-700 text-white' : '' }}">Kurum Davetleri</a>
-    <a href="{{ route('admin.categories.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.categories.*') ? 'bg-gray-700 text-white' : '' }}">Kategoriler</a>
-    <a href="{{ route('admin.cities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.cities.*') ? 'bg-gray-700 text-white' : '' }}">Şehirler</a>
+    <details class="group" @if($groupOpen['kurumlar']) open @endif>
+      <summary class="flex items-center justify-between px-3 pt-4 pb-1 cursor-pointer list-none text-xs text-gray-500 uppercase tracking-wider hover:text-gray-300">
+        <span>Kurumlar</span>
+        <svg class="w-3 h-3 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+      <div class="space-y-1 pb-1">
+        <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
+        <a href="{{ route('admin.claims.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.claims.*') ? 'bg-gray-700 text-white' : '' }}"><span>Sahiplenme Başvuruları</span>@if($pendingClaimsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingClaimsCount }}</span>@endif</a>
+        <a href="{{ route('admin.registrations.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.registrations.*') ? 'bg-gray-700 text-white' : '' }}"><span>Kurum Kayıt Başvuruları</span>@if($pendingRegistrationsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingRegistrationsCount }}</span>@endif</a>
+        <a href="{{ route('admin.invitations.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.invitations.*') ? 'bg-gray-700 text-white' : '' }}">Kurum Davetleri</a>
+        {{-- 25 Agustos 2026: kullanicinin talebi - kisisel aracilik/komisyon takibi icin kucuk bir CRM. --}}
+        <a href="{{ route('admin.broker.facilities') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.facilities*') ? 'bg-gray-700 text-white' : '' }}">Anlaşmalı Kurumlar</a>
+        <a href="{{ route('admin.broker.referrals') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.referrals*') ? 'bg-gray-700 text-white' : '' }}">Aracılık Yönlendirmeleri</a>
+        <a href="{{ route('admin.categories.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.categories.*') ? 'bg-gray-700 text-white' : '' }}">Kategoriler</a>
+        <a href="{{ route('admin.cities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.cities.*') ? 'bg-gray-700 text-white' : '' }}">Şehirler</a>
+      </div>
+    </details>
 
-    <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Dönüşüm</div>
-    <a href="{{ route('admin.offer-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.offer-requests.*') ? 'bg-gray-700 text-white' : '' }}">Teklif Talepleri</a>
-    <a href="{{ route('admin.visit-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.visit-requests.*') ? 'bg-gray-700 text-white' : '' }}">Ziyaret Talepleri</a>
-    <a href="{{ route('admin.reviews.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.reviews.*') ? 'bg-gray-700 text-white' : '' }}">Yorumlar</a>
-    <a href="{{ route('admin.questions.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.questions.*') ? 'bg-gray-700 text-white' : '' }}">Aile Soruları</a>
-    <a href="{{ route('admin.contact-messages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.contact-messages.*') ? 'bg-gray-700 text-white' : '' }}">İletişim Mesajları</a>
-    <a href="{{ route('admin.whatsapp-clicks.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.whatsapp-clicks.*') ? 'bg-gray-700 text-white' : '' }}">WhatsApp Tıklamaları</a>
-    <a href="{{ route('admin.chat.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat.*') ? 'bg-gray-700 text-white' : '' }}"><span>Canlı Sohbet</span>@if($unreadChatThreadsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadChatThreadsCount }}</span>@endif</a>
+    <details class="group" @if($groupOpen['donusum']) open @endif>
+      <summary class="flex items-center justify-between px-3 pt-4 pb-1 cursor-pointer list-none text-xs text-gray-500 uppercase tracking-wider hover:text-gray-300">
+        <span>Dönüşüm</span>
+        <svg class="w-3 h-3 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+      <div class="space-y-1 pb-1">
+        <a href="{{ route('admin.offer-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.offer-requests.*') ? 'bg-gray-700 text-white' : '' }}">Teklif Talepleri</a>
+        <a href="{{ route('admin.visit-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.visit-requests.*') ? 'bg-gray-700 text-white' : '' }}">Ziyaret Talepleri</a>
+        <a href="{{ route('admin.reviews.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.reviews.*') ? 'bg-gray-700 text-white' : '' }}">Yorumlar</a>
+        <a href="{{ route('admin.questions.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.questions.*') ? 'bg-gray-700 text-white' : '' }}">Aile Soruları</a>
+        <a href="{{ route('admin.contact-messages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.contact-messages.*') ? 'bg-gray-700 text-white' : '' }}">İletişim Mesajları</a>
+        <a href="{{ route('admin.whatsapp-clicks.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.whatsapp-clicks.*') ? 'bg-gray-700 text-white' : '' }}">WhatsApp Tıklamaları</a>
+        <a href="{{ route('admin.chat.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat.*') ? 'bg-gray-700 text-white' : '' }}"><span>Canlı Sohbet</span>@if($unreadChatThreadsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadChatThreadsCount }}</span>@endif</a>
+      </div>
+    </details>
 
-    <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Finans</div>
-    <a href="{{ route('admin.topups.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.topups.*') ? 'bg-gray-700 text-white' : '' }}"><span>Bakiye Yüklemeleri</span>@if($pendingTopupsCount > 0)<span class="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingTopupsCount }}</span>@endif</a>
-    <a href="{{ route('admin.packages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.packages.*') ? 'bg-gray-700 text-white' : '' }}">Paketler</a>
+    <details class="group" @if($groupOpen['finans']) open @endif>
+      <summary class="flex items-center justify-between px-3 pt-4 pb-1 cursor-pointer list-none text-xs text-gray-500 uppercase tracking-wider hover:text-gray-300">
+        <span>Finans</span>
+        <svg class="w-3 h-3 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+      <div class="space-y-1 pb-1">
+        <a href="{{ route('admin.topups.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.topups.*') ? 'bg-gray-700 text-white' : '' }}"><span>Bakiye Yüklemeleri</span>@if($pendingTopupsCount > 0)<span class="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingTopupsCount }}</span>@endif</a>
+        <a href="{{ route('admin.packages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.packages.*') ? 'bg-gray-700 text-white' : '' }}">Paketler</a>
+      </div>
+    </details>
 
-    <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">İçerik & Sistem</div>
-    <a href="{{ route('admin.content-pages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.content-pages.*') ? 'bg-gray-700 text-white' : '' }}">Statik Sayfalar</a>
-    <a href="{{ route('admin.faqs.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.faqs.*') ? 'bg-gray-700 text-white' : '' }}">SSS</a>
-    <a href="{{ route('admin.data-extractor.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-extractor.*') ? 'bg-gray-700 text-white' : '' }}">Veri Çekici</a>
-    <a href="{{ route('admin.trash.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.trash.*') ? 'bg-gray-700 text-white' : '' }}">Çöp Kutusu</a>
-    <a href="{{ route('admin.audit-log.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.audit-log.*') ? 'bg-gray-700 text-white' : '' }}">İşlem Günlüğü</a>
-    <a href="{{ route('admin.data-quality.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-quality.*') ? 'bg-gray-700 text-white' : '' }}">Veri Denetimi</a>
-    <a href="{{ route('admin.platform-errors.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.platform-errors.*') ? 'bg-gray-700 text-white' : '' }}">
-      <span>Hatalar</span>
-      @php($openErrorCount = \App\Models\PlatformError::whereNull('resolved_at')->count())
-      @if($openErrorCount > 0)
-        <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $openErrorCount }}</span>
-      @endif
-    </a>
-    <a href="{{ route('admin.account-deletions.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.account-deletions.*') ? 'bg-gray-700 text-white' : '' }}">
-      <span>Hesap Silme Talepleri</span>
-      @php($pendingDeletionCount = \App\Models\AccountDeletionRequest::where('status', 'pending')->count())
-      @if($pendingDeletionCount > 0)
-        <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingDeletionCount }}</span>
-      @endif
-    </a>
-    <a href="{{ route('admin.scheduled-jobs.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.scheduled-jobs.*') ? 'bg-gray-700 text-white' : '' }}">
-      <span>Zamanlanan Görevler</span>
-      @php($overdueJobCount = \App\Models\ScheduledJobRun::get()->filter(fn ($j) => $j->isOverdue())->count())
-      @if($overdueJobCount > 0)
-        <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $overdueJobCount }}</span>
-      @endif
-    </a>
-    <a href="{{ route('admin.settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.settings.*') ? 'bg-gray-700 text-white' : '' }}">Ayarlar</a>
-    <a href="{{ route('admin.chat-settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat-settings.*') ? 'bg-gray-700 text-white' : '' }}">Sohbet Çalışma Saatleri</a>
+    <details class="group" @if($groupOpen['icerik']) open @endif>
+      <summary class="flex items-center justify-between px-3 pt-4 pb-1 cursor-pointer list-none text-xs text-gray-500 uppercase tracking-wider hover:text-gray-300">
+        <span>İçerik & Sistem</span>
+        <svg class="w-3 h-3 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </summary>
+      <div class="space-y-1 pb-1">
+        <a href="{{ route('admin.content-pages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.content-pages.*') ? 'bg-gray-700 text-white' : '' }}">Statik Sayfalar</a>
+        <a href="{{ route('admin.faqs.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.faqs.*') ? 'bg-gray-700 text-white' : '' }}">SSS</a>
+        <a href="{{ route('admin.data-extractor.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-extractor.*') ? 'bg-gray-700 text-white' : '' }}">Veri Çekici</a>
+        <a href="{{ route('admin.trash.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.trash.*') ? 'bg-gray-700 text-white' : '' }}">Çöp Kutusu</a>
+        <a href="{{ route('admin.audit-log.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.audit-log.*') ? 'bg-gray-700 text-white' : '' }}">İşlem Günlüğü</a>
+        <a href="{{ route('admin.data-quality.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-quality.*') ? 'bg-gray-700 text-white' : '' }}">Veri Denetimi</a>
+        <a href="{{ route('admin.platform-errors.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.platform-errors.*') ? 'bg-gray-700 text-white' : '' }}">
+          <span>Hatalar</span>
+          @if($openErrorCount > 0)
+            <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $openErrorCount }}</span>
+          @endif
+        </a>
+        <a href="{{ route('admin.account-deletions.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.account-deletions.*') ? 'bg-gray-700 text-white' : '' }}">
+          <span>Hesap Silme Talepleri</span>
+          @if($pendingDeletionCount > 0)
+            <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingDeletionCount }}</span>
+          @endif
+        </a>
+        <a href="{{ route('admin.scheduled-jobs.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.scheduled-jobs.*') ? 'bg-gray-700 text-white' : '' }}">
+          <span>Zamanlanan Görevler</span>
+          @if($overdueJobCount > 0)
+            <span class="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $overdueJobCount }}</span>
+          @endif
+        </a>
+        <a href="{{ route('admin.settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.settings.*') ? 'bg-gray-700 text-white' : '' }}">Ayarlar</a>
+        <a href="{{ route('admin.chat-settings.edit') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat-settings.*') ? 'bg-gray-700 text-white' : '' }}">Sohbet Çalışma Saatleri</a>
+      </div>
+    </details>
 
     @unless(app()->environment('production'))
-      <div class="text-xs text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">Test Linkleri (sadece local/staging)</div>
-      <a href="/site/bakimevibul" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-emerald-400 text-xs">bakimevibul.com</a>
-      <a href="/site/bakimeviara" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-purple-400 text-xs">bakimeviara.com</a>
-      <a href="/site/bakimevleri" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-blue-400 text-xs">bakimevleri.com</a>
+      <details class="group">
+        <summary class="flex items-center justify-between px-3 pt-4 pb-1 cursor-pointer list-none text-xs text-gray-500 uppercase tracking-wider hover:text-gray-300">
+          <span>Test Linkleri (sadece local/staging)</span>
+          <svg class="w-3 h-3 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <div class="space-y-1 pb-1">
+          <a href="/site/bakimevibul" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-emerald-400 text-xs">bakimevibul.com</a>
+          <a href="/site/bakimeviara" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-purple-400 text-xs">bakimeviara.com</a>
+          <a href="/site/bakimevleri" target="_blank" class="block px-3 py-2 rounded-lg hover:bg-gray-800 text-blue-400 text-xs">bakimevleri.com</a>
+        </div>
+      </details>
     @endunless
   </nav>
 

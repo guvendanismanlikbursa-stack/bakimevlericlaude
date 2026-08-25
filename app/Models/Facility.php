@@ -15,6 +15,7 @@ class Facility extends Model
         'is_featured', 'rating', 'is_claimed', 'claimed_at', 'ministry_verification',
         'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'favorites_count',
         'invitation_status', 'invitation_status_at', 'menu_image_path', 'menu_image_updated_at',
+        'is_broker_managed',
     ];
 
     protected function casts(): array
@@ -35,6 +36,7 @@ class Facility extends Model
             'is_published' => 'boolean',
             'is_featured' => 'boolean',
             'is_claimed' => 'boolean',
+            'is_broker_managed' => 'boolean',
             'claimed_at' => 'datetime',
             'price_min' => 'float',
             'price_max' => 'float',
@@ -82,6 +84,11 @@ class Facility extends Model
     public function images()
     {
         return $this->hasMany(FacilityImage::class)->orderBy('sort_order');
+    }
+
+    public function brokerReferrals()
+    {
+        return $this->hasMany(BrokerReferral::class);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Public\Concerns\LimitsPaginationDepth;
 use App\Models\Facility;
 use App\Models\FacilityImage;
 use App\Models\SearchQuery;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 // En Cok Goruntulenen, Son Eklenen Fotograflar.
 class DiscoveryController extends Controller
 {
+    use LimitsPaginationDepth;
+
     /**
      * Vitrin sayfalari brand genelinde degil, o an secili "bolum" (yasli-bakim/
      * cocuk/rehabilitasyon) kapsaminda filtrelenir; boylece "Yeni Eklenen
@@ -28,6 +31,8 @@ class DiscoveryController extends Controller
 
     public function verified(Request $request)
     {
+        $this->abortIfPageTooDeep($request);
+
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::discoverable()->claimed()
@@ -48,6 +53,8 @@ class DiscoveryController extends Controller
 
     public function recentlyUpdated(Request $request)
     {
+        $this->abortIfPageTooDeep($request);
+
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::discoverable()
@@ -68,6 +75,8 @@ class DiscoveryController extends Controller
 
     public function newlyAdded(Request $request)
     {
+        $this->abortIfPageTooDeep($request);
+
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::discoverable()
@@ -88,6 +97,8 @@ class DiscoveryController extends Controller
 
     public function recentlyClaimed(Request $request)
     {
+        $this->abortIfPageTooDeep($request);
+
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::discoverable()->claimed()
@@ -108,6 +119,8 @@ class DiscoveryController extends Controller
 
     public function mostViewed(Request $request)
     {
+        $this->abortIfPageTooDeep($request);
+
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $facilities = Facility::discoverable()
@@ -160,6 +173,8 @@ class DiscoveryController extends Controller
 
     public function recentPhotos(Request $request)
     {
+        $this->abortIfPageTooDeep($request);
+
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
         $images = FacilityImage::whereHas('facility', function ($q) use ($scopes) {

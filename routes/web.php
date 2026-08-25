@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\FacilityCategoryController as AdminFacilityCatego
 use App\Http\Controllers\Admin\FacilityClaimController as AdminFacilityClaimController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\FacilityInvitationController as AdminFacilityInvitationController;
+use App\Http\Controllers\Admin\BrokerController as AdminBrokerController;
 use App\Http\Controllers\Admin\FacilityRegistrationController as AdminFacilityRegistrationController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\FacilityQuestionController as AdminFacilityQuestionController;
@@ -370,6 +371,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/kurum-davetleri/hizli-gonderim', [AdminFacilityInvitationController::class, 'quickSend'])->name('invitations.quick-send');
         Route::get('/kurum-davetleri/{facility}/whatsapp-ac', [AdminFacilityInvitationController::class, 'openWhatsapp'])->name('invitations.whatsapp');
         Route::post('/kurum-davetleri/{facility}/durum', [AdminFacilityInvitationController::class, 'updateStatus'])->name('invitations.update-status');
+
+        Route::get('/aracilik/kurumlar', [AdminBrokerController::class, 'facilities'])->name('broker.facilities');
+        Route::post('/aracilik/kurumlar/{facility}/degistir', [AdminBrokerController::class, 'toggleFacility'])->name('broker.facilities.toggle');
+        Route::get('/aracilik/yonlendirmeler', [AdminBrokerController::class, 'referrals'])->name('broker.referrals');
+        Route::post('/aracilik/yonlendirmeler', [AdminBrokerController::class, 'storeReferral'])->name('broker.referrals.store');
+        Route::post('/aracilik/yonlendirmeler/{referral}', [AdminBrokerController::class, 'updateReferral'])->name('broker.referrals.update');
 
         Route::get('/sahiplenme-basvurulari', [AdminFacilityClaimController::class, 'index'])->name('claims.index');
         Route::get('/sahiplenme-basvurulari/{claim}', [AdminFacilityClaimController::class, 'show'])->name('claims.show');
