@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -88,6 +88,7 @@ class OpsController extends Controller
             'qa-check' => $this->qaCheck($request),
             'qa-setup' => $this->qaSetup($request),
             'qa-setup-unclaimed' => $this->qaSetupUnclaimed(),
+            'qa-instant-claim-test' => $this->qaInstantClaimTest($request),
             'qa-password-reset-link' => $this->qaPasswordResetLink($request),
             'qa-registration-edit-link' => $this->qaRegistrationEditLink($request),
             'qa-push-fix-subscription' => $this->qaPushFixSubscription($request),
@@ -2047,6 +2048,60 @@ class OpsController extends Controller
         DB::table('facility_users')->where('facility_id', $facilityId)->delete();
 
         return "QATEST Kurum Sahipsiz: facility_id={$facilityId} slug={$slug} (sahiplenilmemis, sahiplenme formu icin hazir)\n";
+    }
+
+    // 25 Agustos 2026: "Yerinde Sahiplendirme" duzeltmesini (giris bilgileri
+    // gorunmuyordu, bkz. Admin\FacilityController::instantClaim() yorumu)
+    // GERCEK controller kodunu canli sunucuda calistirarak dogrulamak icin -
+    // qa-approve-claim ile ayni desen (guvenlik: sadece @example.com).
+    // QATEST kurumunu kullanir, sonunda hem FacilityUser'i hem sahiplenme
+    // durumunu geri temizler ki tekrar tekrar calistirilabilsin.
+    private function qaInstantClaimTest(Request $request): string
+    {
+        $this->qaSetupUnclaimed();
+        $facility = Facility::where('slug', 'qatest-kurum-sahipsiz')->firstOrFail();
+
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok';
+        }
+        session(['admin_id' => $admin->id]);
+
+        $testEmail = 'qa-instant-claim-test@example.com';
+        $request->merge([
+            'applicant_name' => 'QA Test Yetkili',
+            'applicant_email' => $testEmail,
+            'applicant_phone' => '0532 000 00 09',
+        ]);
+
+        $controller = app(\App\Http\Controllers\Admin\FacilityController::class);
+        $response = $controller->instantClaim($request, $facility);
+
+        $facility->refresh();
+        $facilityUser = \App\Models\FacilityUser::where('email', $testEmail)->first();
+        $creds = session('instant_claim_credentials');
+        $success = session('success');
+
+        $out = 'facility.is_claimed=' . ($facility->is_claimed ? 'evet' : 'hayir') . "\n";
+        $out .= $facilityUser
+            ? "FacilityUser olusturuldu: #{$facilityUser->id} email={$facilityUser->email} must_change_password=" . ($facilityUser->must_change_password ? 'evet' : 'hayir') . "\n"
+            : "FacilityUser OLUSTURULAMADI\n";
+        $out .= 'redirect target: ' . $response->getTargetUrl() . "\n";
+        $out .= 'session[instant_claim_credentials]: ' . json_encode($creds, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        $out .= 'session[success]: ' . $success . "\n";
+
+        if ($facilityUser) {
+            $facilityUser->delete();
+        }
+        DB::table('facilities')->where('id', $facility->id)->update([
+            'is_claimed' => false,
+            'claimed_at' => null,
+            'invitation_status' => 'pending',
+            'invitation_status_at' => null,
+            'updated_at' => now(),
+        ]);
+
+        return $out;
     }
 
     // 28 Temmuz 2026: gercek SMTP kutusuna erisim olmadan sifre sifirlama
