@@ -339,6 +339,28 @@ Route::middleware('track.visit')->group($siteRoutes);
 // bu prefix artik 404 doner, Google zamanla bu URL'leri dizin disi birakir.
 if (app()->environment(['local', 'testing'])) {
     Route::prefix('site/{brand}')->name('brand.')->middleware('track.visit')->group($siteRoutes);
+} else {
+    // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - bir onceki
+    // duzeltme (yukarida) bu prefix'i production'da 404'e cevirmisti, ama
+    // erisim loglari incelendiginde bu adreslerin haftalardir bakimevibul.com
+    // trafiginin %25-53'unu, bakimeviara.com trafiginin %8-33'unu tasiyan,
+    // GERCEKTEN CALISAN (200 donen) girisler oldugu ortaya cikti - Google
+    // bunlari indekslemis, gercek kullanicilar bu adreslerden geliyordu.
+    // 404 dondurmek bu trafigi ANINDA kesti. Dogru cozum kopya icerigi
+    // ORTADAN KALDIRIRKEN trafigi de KORUYAN 301 yonlendirmesiydi - simdi
+    // duzeltiliyor: eski /site/{brand}/... adresine gelen istek, ayni yolun
+    // markanin gercek (www'siz) domaindeki karsiligina yonlendirilir, sorgu
+    // dizesi korunur. Google zamanla indeksini bu yonlendirmeye gore
+    // guncelleyip kopya sayfa sorununu kendiliginden temizler.
+    Route::get('site/{brand}/{path?}', function (string $brand, ?string $path = null) {
+        $domain = config("brands.brands.{$brand}.domains.0");
+        abort_if(! $domain, 404);
+
+        $target = 'https://'.$domain.($path ? '/'.$path : '');
+        $query = request()->getQueryString();
+
+        return redirect($target.($query ? '?'.$query : ''), 301);
+    })->where('path', '.*');
 }
 
 /*
