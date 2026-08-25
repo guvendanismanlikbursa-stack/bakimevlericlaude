@@ -63,7 +63,15 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
       if (overlayEl) { overlayEl.remove(); overlayEl = null; }
     };
 
-    const runFilter = () => {
+    // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - "Ara"ya
+    // basildiginda sonuc alani (bu form genelde bir hero/tanitim
+    // bolumunun UZERINDE, sonuclar ekranin cok asagisinda sessizce
+    // guncelleniyordu) sayfa hic kaymadigi icin kullaniciya "hicbir sey
+    // olmadi/filtre calismiyor" gibi gorunuyordu - 0 sonuc donen bir arama
+    // fark edilmeden kayboluyordu. Sadece "Ara"ya basildiginda/Enter'a
+    // basildiginda (her tus vurusunda DEGIL - o rahatsiz edici olurdu)
+    // sonuc alanina yumusak kaydirma yapilir.
+    const runFilter = (scrollToResults) => {
       if (!resultsEl) return;
       if (controller) controller.abort();
       hideSpinner();
@@ -93,6 +101,7 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
           if (countEl && typeof data.count !== 'undefined') countEl.textContent = Number(data.count).toLocaleString('tr-TR');
           window.history.replaceState(null, '', url);
           if (window.paintEngagementToggles) window.paintEngagementToggles();
+          if (scrollToResults) resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         })
         .catch((err) => {
           if (err.name === 'AbortError') return;
@@ -102,12 +111,14 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
     };
 
     form.querySelectorAll('input[type="search"], input[type="text"]').forEach((input) => {
-      input.addEventListener('input', runFilter);
+      input.addEventListener('input', () => runFilter(false));
     });
+    // select (ör. il/ilce/kurum turu) degistirmek acik bir eylem - yazarken
+    // her tus vurusunda kaymanin aksine, burada sonuca kaydirmak faydali.
     form.querySelectorAll('select').forEach((select) => {
-      select.addEventListener('change', runFilter);
+      select.addEventListener('change', () => runFilter(true));
     });
-    form.addEventListener('submit', (event) => { event.preventDefault(); runFilter(); });
+    form.addEventListener('submit', (event) => { event.preventDefault(); runFilter(true); });
   }
 });
 </script>

@@ -76,7 +76,7 @@
       <select name="category" aria-label="Kurum türü" class="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Kurum türü</option>@foreach($categories as $cat)<option value="{{ $cat->slug }}">{{ $cat->name }}</option>@endforeach</select>
       <select name="service" aria-label="Kurumun özellikleri" class="border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Kurumun özellikleri</option>@foreach($sectionServices as $service)<option value="{{ $service }}">{{ $service }}</option>@endforeach</select>
       <div class="flex items-center gap-1.5">
-        <select name="price_tier" aria-label="Fiyat segmenti" class="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Tüm segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
+        <select name="price_tier" aria-label="Fiyat segmenti" class="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white"><option value="">Tüm segmentler</option>@foreach(['ekonomik' => '🟢 Ekonomik', 'standart' => '🔵 Standart', 'premium' => '🟣 Premium', 'ultra_premium' => '🟡 Ultra Premium'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select>
         @include('themes._shared.partials.segment-info-icon', ['categories' => $categories, 'id' => 'segment-info-home', 'categorySelectName' => 'category'])
       </div>
       <button class="lg:col-span-6 rounded-lg text-white font-black px-4 py-2.5" style="background: {{ $colors['primary'] }};">Kurumları listele</button>
