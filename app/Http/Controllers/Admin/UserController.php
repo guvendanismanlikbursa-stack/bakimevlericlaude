@@ -148,7 +148,9 @@ class UserController extends Controller
     // kendi sifresini belirlesin.
     public function resetFacilityUserPassword(FacilityUser $facilityUser)
     {
-        $temporaryPassword = Str::password(14);
+        // 25 Agustos 2026: bkz. Facility\TeamController::invite() ayni
+        // tarihli yorum - sembolsuz sifre, mailde tam secilebilir/kopyalanabilir.
+        $temporaryPassword = Str::password(14, symbols: false);
 
         $facilityUser->update([
             'password' => Hash::make($temporaryPassword),
@@ -157,9 +159,19 @@ class UserController extends Controller
 
         log_admin_event('facility_user_password_reset', $facilityUser);
 
+        // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - bu mailin
+        // "Kurum Paneline Git" butonu HER ZAMAN sabit route('facility.login')
+        // (varsayilan/ilk marka, bakimevibul) linkine gidiyordu, kurumun
+        // GERCEKTE hangi siteden basvurdugunun onemi yoktu - ör. bakimevleri
+        // uzerinden sahiplenilmis bir kurumun yetkilisi butona tiklayinca
+        // bakimevibul'e dusuyordu. facility_login_brand_slug() (bkz.
+        // app/helpers.php ayni tarihli yorum) sahiplenme/kayit basvurusundaki
+        // GERCEK markayi bulur.
+        $loginUrl = facility_brand_login_url(facility_login_brand_slug($facilityUser->facility));
+
         try {
             \Illuminate\Support\Facades\Mail::to($facilityUser->email)->sendNow(
-                new \App\Mail\FacilityPasswordManuallyResetMail($facilityUser, $temporaryPassword, route('facility.login'))
+                new \App\Mail\FacilityPasswordManuallyResetMail($facilityUser, $temporaryPassword, $loginUrl)
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Kurum sifre sifirlama (admin) maili gonderilemedi: ' . $e->getMessage(), ['facility_user_id' => $facilityUser->id]);

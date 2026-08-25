@@ -296,6 +296,7 @@
             'admin_adjust_credits' => 'Admin hak düzenlemesi',
             'quote_charge_credit' => 'Teklif verildi (ücretsiz hak kullanıldı)',
             'quote_charge_balance' => 'Teklif verildi (bakiyeden düşüldü)',
+            'claim_reverted' => 'Sahiplenme geri alındı (bonus sıfırlandı)',
         ];
       @endphp
 
@@ -304,6 +305,13 @@
         @if($facility->balanceLogs->isEmpty())
           <p class="text-sm text-gray-500">Henüz bir hareket kaydı yok.</p>
         @else
+          {{-- 25 Agustos 2026: kullanicinin talebi - yanlislikla iki kez
+               eklenen "Sahiplenme bonus hakkı" gibi kayitlar dogrudan bu
+               tablodan duzenlenebilsin/silinebilsin. Girdi alanlari
+               tablodan sonraki gizli <form>'lara "form" ozniteligiyle
+               baglanir (referrals tablosundaki ayni desen) - <form>
+               elemani <tr>/<td> disina, HTML kurallarina uygun sekilde
+               tasinir. --}}
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
@@ -315,6 +323,7 @@
                   <th class="py-1.5 pr-3 text-right">Bakiye Sonrası</th>
                   <th class="py-1.5 pr-3 text-right">Hak Sonrası</th>
                   <th class="py-1.5">Not</th>
+                  <th class="py-1.5">İşlemler</th>
                 </tr>
               </thead>
               <tbody>
@@ -322,16 +331,36 @@
                   <tr class="border-b border-gray-50">
                     <td class="py-1.5 pr-3 whitespace-nowrap text-gray-500">{{ $log->created_at->format('d.m.Y H:i') }}</td>
                     <td class="py-1.5 pr-3">{{ $balanceLogTypeLabels[$log->type] ?? $log->type }}</td>
-                    <td class="py-1.5 pr-3 text-right {{ $log->amount < 0 ? 'text-red-600' : ($log->amount > 0 ? 'text-green-700' : '') }}">{{ $log->amount != 0 ? number_format($log->amount, 2, ',', '.').' TL' : '—' }}</td>
-                    <td class="py-1.5 pr-3 text-right {{ $log->credits_amount < 0 ? 'text-red-600' : ($log->credits_amount > 0 ? 'text-green-700' : '') }}">{{ $log->credits_amount != 0 ? $log->credits_amount : '—' }}</td>
+                    <td class="py-1.5 pr-3 text-right">
+                      <input type="number" step="0.01" name="amount" form="log-edit-{{ $log->id }}" value="{{ $log->amount }}" class="border rounded px-1.5 py-1 text-right text-sm w-24 {{ $log->amount < 0 ? 'text-red-600' : ($log->amount > 0 ? 'text-green-700' : '') }}">
+                    </td>
+                    <td class="py-1.5 pr-3 text-right">
+                      <input type="number" name="credits_amount" form="log-edit-{{ $log->id }}" value="{{ $log->credits_amount }}" class="border rounded px-1.5 py-1 text-right text-sm w-16 {{ $log->credits_amount < 0 ? 'text-red-600' : ($log->credits_amount > 0 ? 'text-green-700' : '') }}">
+                    </td>
                     <td class="py-1.5 pr-3 text-right text-gray-600">{{ number_format($log->balance_after, 2, ',', '.') }} TL</td>
                     <td class="py-1.5 pr-3 text-right text-gray-600">{{ $log->credits_after }}</td>
-                    <td class="py-1.5 text-gray-500">{{ $log->note }}</td>
+                    <td class="py-1.5">
+                      <input type="text" name="note" form="log-edit-{{ $log->id }}" value="{{ $log->note }}" class="border rounded px-1.5 py-1 text-sm w-full min-w-[140px]">
+                    </td>
+                    <td class="py-1.5 whitespace-nowrap">
+                      <button type="submit" form="log-edit-{{ $log->id }}" class="text-xs font-semibold text-primary hover:underline">Kaydet</button>
+                      <button type="submit" form="log-delete-{{ $log->id }}" class="text-xs font-semibold text-red-600 hover:underline ml-2">Sil</button>
+                    </td>
                   </tr>
                 @endforeach
               </tbody>
             </table>
           </div>
+          @foreach($facility->balanceLogs as $log)
+            <form id="log-edit-{{ $log->id }}" method="POST" action="{{ route('admin.facilities.balance-log.update', [$facility, $log]) }}" onsubmit="return confirm('Bu hareket kaydı güncellensin ve bakiye/hak buna göre yeniden hesaplansın mı?');">
+              @csrf
+              @method('PUT')
+            </form>
+            <form id="log-delete-{{ $log->id }}" method="POST" action="{{ route('admin.facilities.balance-log.destroy', [$facility, $log]) }}" onsubmit="return confirm('Bu hareket kaydı silinsin ve etkisi (tutar/hak) mevcut bakiyeden geri alınsın mı?');">
+              @csrf
+              @method('DELETE')
+            </form>
+          @endforeach
         @endif
       </div>
     </div>

@@ -387,6 +387,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/kurumlar/gorsel/{image}', [AdminFacilityController::class, 'deleteImage'])->name('facilities.image.destroy');
         Route::post('/kurumlar/gorsel/{image}/ana-gorsel-yap', [AdminFacilityController::class, 'setPrimaryImage'])->name('facilities.image.set-primary');
         Route::post('/kurumlar/{facility}/bakiye-duzenle', [AdminBalanceController::class, 'adjust'])->name('facilities.balance.adjust');
+        Route::put('/kurumlar/{facility}/bakiye-gecmisi/{balanceLog}', [AdminBalanceController::class, 'updateLog'])->name('facilities.balance-log.update');
+        Route::delete('/kurumlar/{facility}/bakiye-gecmisi/{balanceLog}', [AdminBalanceController::class, 'destroyLog'])->name('facilities.balance-log.destroy');
         Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
         Route::post('/kurumlar/{facility}/yerinde-sahiplendir', [AdminFacilityController::class, 'instantClaim'])->name('facilities.instant-claim');
 

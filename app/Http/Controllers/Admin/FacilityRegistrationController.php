@@ -51,7 +51,9 @@ class FacilityRegistrationController extends Controller
 
     public function approve(Request $request, FacilityRegistration $registration, GeocodingService $geocodingService)
     {
-        $temporaryPassword = Str::password(14);
+        // 25 Agustos 2026: bkz. Facility\TeamController::invite() ayni
+        // tarihli yorum - sembolsuz sifre, mailde tam secilebilir/kopyalanabilir.
+        $temporaryPassword = Str::password(14, symbols: false);
         $freeCredits = (int) config('platform.free_claim_credits', 5);
 
         $mailPayload = DB::transaction(function () use ($registration, $temporaryPassword, $freeCredits, $geocodingService) {

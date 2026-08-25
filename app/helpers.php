@@ -707,6 +707,77 @@ if (! function_exists('facility_whatsapp_url')) {
     }
 }
 
+if (! function_exists('facility_login_brand_slug')) {
+    /**
+     * 25 Agustos 2026: kullanicinin bildirdigi gercek hata - sifre
+     * sifirlama maili (Admin\UserController::resetFacilityUserPassword)
+     * HER ZAMAN sabit route('facility.login') (varsayilan/ilk marka)
+     * linkine gidiyordu, kurumun GERCEKTE hangi siteden basvurdugunun
+     * hicbir onemi yoktu. "Kurum yetkilisi hangi siteden basvuru yaparsa
+     * o siteye yonlendirmeli" talebi uzerine: markayi bulmak icin en
+     * guvenilir kaynak sirayla denenir - (1) sahiplenme basvurusundaki
+     * gercek 'brand' alani (hangi siteden basvuruldu, bkz.
+     * facility_claims.brand), (2) sifirdan kayit basvurusundaki ayni alan
+     * (facility_registrations.brand, basvuru sahibinin e-postasi
+     * uzerinden eslestirilir), (3) hicbiri yoksa (ör. yerinde
+     * sahiplendirme - basvuru kaydı hiç yok) kurumun kategorisine uygun
+     * markaya geri dusulur. Instant-claim'deki (eski private
+     * instantClaimLoginUrl) ve FacilityClaimController'daki (eski private
+     * facilityLoginUrl) BIRBIRINDEN BAGIMSIZ iki kopya buraya toplanarak
+     * sapma riski ortadan kaldirildi.
+     */
+    function facility_login_brand_slug(\App\Models\Facility $facility): string
+    {
+        $brand = \App\Models\FacilityClaim::where('facility_id', $facility->id)
+            ->where('status', 'approved')
+            ->latest('reviewed_at')
+            ->value('brand');
+
+        if (! $brand) {
+            $applicantEmail = $facility->facilityUsers()->value('email');
+            if ($applicantEmail) {
+                $brand = \App\Models\FacilityRegistration::where('applicant_email', $applicantEmail)
+                    ->where('status', 'approved')
+                    ->latest('reviewed_at')
+                    ->value('brand');
+            }
+        }
+
+        if ($brand && array_key_exists($brand, config('brands.brands'))) {
+            return $brand;
+        }
+
+        $facility->loadMissing('category');
+        $categoryScope = $facility->category?->brand_scope;
+        foreach (config('brands.brands') as $slug => $b) {
+            if (($b['default_section'] ?? null) === $categoryScope) {
+                return $slug;
+            }
+        }
+
+        return array_key_first(config('brands.brands'));
+    }
+}
+
+if (! function_exists('facility_brand_login_url')) {
+    /**
+     * bkz. facility_login_brand_slug() ayni tarihli yorum - dogru marka
+     * slug'i belirlendikten sonra o markanin GERCEK alan adine giden linki
+     * uretir (yerel/test ortaminda /site/{brand} test rotasina geri duser,
+     * cunku *.com alan adlari o ortamlarda cozulmez).
+     */
+    function facility_brand_login_url(string $brandSlug): string
+    {
+        $domain = config("brands.brands.{$brandSlug}.domains.0");
+
+        if (app()->environment(['local', 'testing']) || ! $domain || ! str_ends_with($domain, '.com')) {
+            return route('brand.facility.login', ['brand' => $brandSlug]);
+        }
+
+        return 'https://'.$domain.'/kurum-panel/giris';
+    }
+}
+
 if (! function_exists('facility_whatsapp_url_with_message')) {
     /**
      * 25 Agustos 2026: kullanicinin talebi - "Yerinde Sahiplendirme"

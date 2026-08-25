@@ -79,4 +79,69 @@ class BalanceController extends Controller
 
         return back()->with('success', 'Kurum bakiyesi/hak sayısı güncellendi.');
     }
+
+    /**
+     * 25 Agustos 2026: kullanicinin talebi - "Bakiye / Hak Gecmisi"
+     * tablosundaki tek tek kayitlar (ör. yanlislikla iki kez eklenen
+     * sahiplenme bonusu) dogrudan duzenlenebilsin/silinebilsin istendi.
+     * Silme, o kaydin etkisini (tutar/hak) mevcut bakiyeden geri cikartir;
+     * duzenleme, eski ile yeni deger arasindaki farki mevcut bakiyeye
+     * uygular. Ikisi de negatife dusmeyi engeller (adjust() ile ayni kural).
+     */
+    public function updateLog(Request $request, Facility $facility, BalanceLog $balanceLog)
+    {
+        abort_if($balanceLog->facility_id !== $facility->id, 404);
+
+        $data = $request->validate([
+            'amount' => 'nullable|numeric|min:-999999|max:999999',
+            'credits_amount' => 'nullable|integer|min:-100000|max:100000',
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        $newAmount = (float) ($data['amount'] ?? 0);
+        $newCredits = (int) ($data['credits_amount'] ?? 0);
+
+        DB::transaction(function () use ($facility, $balanceLog, $newAmount, $newCredits, $data) {
+            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+
+            $amountDelta = $newAmount - (float) $balanceLog->amount;
+            $creditsDelta = $newCredits - (int) $balanceLog->credits_amount;
+
+            $newBalance = max(0, (float) $locked->balance + $amountDelta);
+            $newFacilityCredits = max(0, (int) $locked->free_quote_credits + $creditsDelta);
+
+            $locked->update([
+                'balance' => $newBalance,
+                'free_quote_credits' => $newFacilityCredits,
+            ]);
+
+            $balanceLog->update([
+                'amount' => $newAmount,
+                'credits_amount' => $newCredits,
+                'balance_after' => $newBalance,
+                'credits_after' => $newFacilityCredits,
+                'note' => $data['note'] ?? $balanceLog->note,
+            ]);
+        });
+
+        return back()->with('success', 'Hareket kaydı güncellendi.');
+    }
+
+    public function destroyLog(Facility $facility, BalanceLog $balanceLog)
+    {
+        abort_if($balanceLog->facility_id !== $facility->id, 404);
+
+        DB::transaction(function () use ($facility, $balanceLog) {
+            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+
+            $locked->update([
+                'balance' => max(0, (float) $locked->balance - (float) $balanceLog->amount),
+                'free_quote_credits' => max(0, (int) $locked->free_quote_credits - (int) $balanceLog->credits_amount),
+            ]);
+
+            $balanceLog->delete();
+        });
+
+        return back()->with('success', 'Hareket kaydı silindi ve bakiye/hak buna göre güncellendi.');
+    }
 }

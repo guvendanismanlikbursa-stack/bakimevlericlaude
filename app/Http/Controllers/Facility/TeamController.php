@@ -42,7 +42,16 @@ class TeamController extends Controller
             return back()->withErrors(['email' => $error])->withInput();
         }
 
-        $temporaryPassword = Str::password(14);
+        // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - varsayilan
+        // Str::password() sembol de urettigi icin (\, <, (, ? gibi) mailde
+        // cift-tiklamayla TAMAMI secilemiyordu (kelime siniri sayiliyor) -
+        // kullanici PC'de kopyala-yapistir yapinca bile eksik/hatali sifre
+        // yapistiriyor, telefonda elle yazmak da asiri zor oluyordu. Sadece
+        // harf+rakam ureterek hem tek tikla/cift tikla tam secilebilir hem
+        // de elle yazilmasi kolay bir gecici sifreye gecildi - guvenlik
+        // farkı ihmal edilebilir duzeyde (14 karakter, ilk giriste zaten
+        // degistirilmesi ZORUNLU).
+        $temporaryPassword = Str::password(14, symbols: false);
 
         $staff = FacilityUser::create([
             'facility_id' => $owner->facility_id,

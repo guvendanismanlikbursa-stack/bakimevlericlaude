@@ -85,7 +85,9 @@ class FacilityClaimController extends Controller
         // tek sabit kapi budur (bkz. store() ve ExpireUndocumentedClaims).
         abort_if(! $claim->document_path, 400, 'Bu başvuruda henüz evrak yok, önce evrak eklenmeli.');
 
-        $temporaryPassword = Str::password(14);
+        // 25 Agustos 2026: bkz. Facility\TeamController::invite() ayni
+        // tarihli yorum - sembolsuz sifre, mailde tam secilebilir/kopyalanabilir.
+        $temporaryPassword = Str::password(14, symbols: false);
         $freeCredits = (int) config('platform.free_claim_credits', 5);
 
         $mailPayload = DB::transaction(function () use ($claim, $temporaryPassword, $freeCredits) {
@@ -170,7 +172,7 @@ class FacilityClaimController extends Controller
                 'facility' => $facility,
                 'email' => $claim->applicant_email,
                 'password' => $temporaryPassword,
-                'login_url' => $this->facilityLoginUrl($claim->brand),
+                'login_url' => facility_brand_login_url($claim->brand),
             ];
         });
 
@@ -247,24 +249,11 @@ class FacilityClaimController extends Controller
         return 'https://wa.me/'.$digits.'?text='.rawurlencode($message);
     }
 
-    /**
-     * Admin, kurumun kendi gercek marka domain'inden farkli bir domain'den
-     * (admin paneli) basvuru onaylayabilir; bu yuzden giris linki CURRENT
-     * request'in host'una degil, hedef markanin kendi yapilandirilmis
-     * domain'ine gore uretilir. Local/testing'de gercek .com domain'ler DNS'te
-     * cozulmedigi icin (bkz. config/brands.php domains[0]), bu ortamlarda
-     * mevcut /site/{brand} test-modu route'una geri dusulur.
-     */
-    private function facilityLoginUrl(string $brand): string
-    {
-        $domain = config("brands.brands.{$brand}.domains.0");
-
-        if (app()->environment(['local', 'testing']) || ! $domain || ! str_ends_with($domain, '.com')) {
-            return route('brand.facility.login', ['brand' => $brand]);
-        }
-
-        return 'https://'.$domain.'/kurum-panel/giris';
-    }
+    // 25 Agustos 2026: eski private facilityLoginUrl() kaldirildi, ayni
+    // mantik artik genel facility_brand_login_url() helper'inda (bkz.
+    // app/helpers.php) - Admin\FacilityController::instantClaim() ve
+    // Admin\UserController::resetFacilityUserPassword() de ayni fonksiyonu
+    // kullanir, uc ayri kopyanin birbirinden sapma riski ortadan kalkti.
 
     public function reject(Request $request, FacilityClaim $claim)
     {

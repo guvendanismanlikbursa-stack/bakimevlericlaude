@@ -330,11 +330,40 @@ class FacilityController extends Controller
 
     public function revertToPreRegistered(Facility $facility)
     {
-        $facility->update([
-            'is_claimed' => false,
-            'claimed_at' => null,
-            'source' => 'google_maps_veri_cekici',
-        ]);
+        // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - "Yerinde
+        // Sahiplendirme" denemeleri sonrasi buradan "ön kayıtlı"ya
+        // dondurulen bir kurum, her sahiplendirme+geri alma turunde
+        // kazandigi sahiplenme bonus hakkini (free_quote_credits) ASLA
+        // kaybetmiyordu - ayni kurum tekrar sahiplendirildiginde ustune
+        // tekrar bonus ekleniyor, sayi sinirsiz birikiyordu (5 -> 10 -> 15...).
+        // "Ön kayıtlı" bir kurumun temel hali her zaman free_quote_credits=0/
+        // balance=0'dir (bkz. DataImportRowApprovalService, DataExtractorImportService),
+        // bu yuzden geri alirken de ayni temele donulur - kaybolan tutar
+        // Bakiye/Hak Gecmisi'ne ayri bir kayit olarak dusulur ki iz kaybolmasin.
+        \Illuminate\Support\Facades\DB::transaction(function () use ($facility) {
+            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+
+            if ((float) $locked->balance != 0 || (int) $locked->free_quote_credits != 0) {
+                \App\Models\BalanceLog::create([
+                    'facility_id' => $locked->id,
+                    'type' => 'claim_reverted',
+                    'amount' => -1 * (float) $locked->balance,
+                    'credits_amount' => -1 * (int) $locked->free_quote_credits,
+                    'balance_after' => 0,
+                    'credits_after' => 0,
+                    'admin_id' => session('admin_id'),
+                    'note' => 'Kurum ön kayıtlıya döndürüldü, sahiplenme bonusu geri alındı.',
+                ]);
+            }
+
+            $locked->update([
+                'is_claimed' => false,
+                'claimed_at' => null,
+                'source' => 'google_maps_veri_cekici',
+                'balance' => 0,
+                'free_quote_credits' => 0,
+            ]);
+        });
 
         // 30 Temmuz 2026: bir kurum yanlislikla/deneme amacli sahiplenilip
         // sonra buradan "ön kayıtlı"ya döndürüldüğünde, o sahiplenmeyle
@@ -345,7 +374,7 @@ class FacilityController extends Controller
         // uygulanir.
         \App\Models\FacilityUser::where('facility_id', $facility->id)->update(['status' => 'suspended']);
 
-        return back()->with('success', 'Kurum ön kayıtlı hale getirildi ve bağlı kurum yetkilisi hesapları askıya alındı.');
+        return back()->with('success', 'Kurum ön kayıtlı hale getirildi, sahiplenme bonusu sıfırlandı ve bağlı kurum yetkilisi hesapları askıya alındı.');
     }
 
     /**
@@ -377,7 +406,9 @@ class FacilityController extends Controller
             return back()->withErrors(['applicant_email' => 'Bu e-posta zaten bir kurum hesabına ait. Başka bir e-posta gerekiyor.']);
         }
 
-        $temporaryPassword = Str::password(14);
+        // 25 Agustos 2026: bkz. Facility\TeamController::invite() ayni
+        // tarihli yorum - sembolsuz sifre, mailde tam secilebilir/kopyalanabilir.
+        $temporaryPassword = Str::password(14, symbols: false);
         $freeCredits = (int) config('platform.free_claim_credits', 5);
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($facility, $data, $temporaryPassword, $freeCredits) {
@@ -429,23 +460,14 @@ class FacilityController extends Controller
 
         $facilityUser = \App\Models\FacilityUser::where('email', $data['applicant_email'])->firstOrFail();
 
-        // Kurumun kategorisine (yasli-bakim/cocuk/rehabilitasyon) uygun
-        // markayi bul - hosgeldin maili/giris linki o markanin alan adiyla
-        // gitsin (uc marka da ayni facility_users tablosunu paylastigi icin
-        // hangisiyle giris yapildigi islevsel olarak fark etmez, sadece
-        // e-postadaki linkin dogru/tanidik gorunmesi icin).
-        $facility->loadMissing('category');
-        $categoryScope = $facility->category?->brand_scope;
-        $brandSlug = null;
-        foreach (config('brands.brands') as $slug => $b) {
-            if (($b['default_section'] ?? null) === $categoryScope) {
-                $brandSlug = $slug;
-                break;
-            }
-        }
-        $brandSlug ??= array_key_first(config('brands.brands'));
-
-        $loginUrl = $this->instantClaimLoginUrl($brandSlug);
+        // 25 Agustos 2026: kurumun hangi markaya ait sayilacagini (hosgeldin
+        // maili/giris linki icin) bulan mantik artik tek bir yerde -
+        // facility_login_brand_slug() (bkz. app/helpers.php ayni tarihli
+        // yorum). Burada zaten hicbir basvuru kaydı YOK (yerinde
+        // sahiplendirme), o yuzden fonksiyon kategoriye gore tahmine
+        // dusecek - bu onceki davranisla ayni.
+        $brandSlug = facility_login_brand_slug($facility);
+        $loginUrl = facility_brand_login_url($brandSlug);
 
         // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - kurum
         // gercekten sahiplendiriliyordu ama giris bilgisi ekranda hic
@@ -493,18 +515,6 @@ class FacilityController extends Controller
                 'whatsapp_url' => facility_whatsapp_url_with_message($facility, "Merhaba, \"{$facility->name}\" kurum panelinize giriş bilgileriniz:\n\nGiriş adresi: {$loginUrl}\nE-posta: {$facilityUser->email}\nGeçici şifre: {$temporaryPassword}\n\nİlk girişte yeni bir şifre belirlemeniz istenecektir."),
             ])
             ->with('success', "Kurum sahiplendirildi, giriş bilgileri {$facilityUser->email} adresine gönderildi. E-posta: {$facilityUser->email} · Geçici şifre: {$temporaryPassword}");
-    }
-
-    // bkz. Admin\FacilityClaimController::facilityLoginUrl() ayni mantik.
-    private function instantClaimLoginUrl(string $brand): string
-    {
-        $domain = config("brands.brands.{$brand}.domains.0");
-
-        if (app()->environment(['local', 'testing']) || ! $domain || ! str_ends_with($domain, '.com')) {
-            return route('brand.facility.login', ['brand' => $brand]);
-        }
-
-        return 'https://'.$domain.'/kurum-panel/giris';
     }
 
     /**
