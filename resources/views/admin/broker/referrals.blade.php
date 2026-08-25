@@ -33,90 +33,133 @@
     <summary class="cursor-pointer list-none p-4 font-bold text-sm flex items-center justify-between">
       <span>+ Yeni Yönlendirme Ekle</span>
     </summary>
-    <form method="POST" action="{{ route('admin.broker.referrals.store') }}" class="p-4 pt-0 grid grid-cols-1 md:grid-cols-3 gap-3">
+    <form method="POST" action="{{ route('admin.broker.referrals.store') }}" class="p-4 pt-0">
       @csrf
-      <select name="facility_id" required class="border rounded-lg px-3 py-2 text-sm">
-        <option value="">Kurum seçin</option>
-        @foreach($managedFacilities as $f)
-          <option value="{{ $f->id }}">{{ $f->name }}</option>
-        @endforeach
-      </select>
-      <input type="text" name="family_name" required placeholder="Aile adı" class="border rounded-lg px-3 py-2 text-sm">
-      <input type="text" name="family_phone" placeholder="Telefon (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm">
-      <input type="date" name="referred_at" required value="{{ now()->toDateString() }}" class="border rounded-lg px-3 py-2 text-sm">
-      <input type="number" step="0.01" min="0" name="fee_amount" placeholder="Beklenen komisyon (TL)" class="border rounded-lg px-3 py-2 text-sm">
-      <input type="text" name="notes" placeholder="Not (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm">
-      <button type="submit" class="bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-bold md:col-span-3">Ekle</button>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <select name="facility_id" required class="border rounded-lg px-3 py-2 text-sm">
+          <option value="">Kurum seçin</option>
+          @foreach($managedFacilities as $f)
+            <option value="{{ $f->id }}">{{ $f->name }}</option>
+          @endforeach
+        </select>
+        <input type="date" name="referred_at" required value="{{ now()->toDateString() }}" title="Yönlendirme tarihi" class="border rounded-lg px-3 py-2 text-sm">
+        <input type="number" step="0.01" min="0" name="fee_amount" placeholder="Beklenen komisyon (TL)" class="border rounded-lg px-3 py-2 text-sm">
+      </div>
+
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mt-4 mb-2">Aile / İletişim Kişisi</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <input type="text" name="family_name" required placeholder="Aile / iletişim kişisi adı" class="border rounded-lg px-3 py-2 text-sm">
+        <input type="text" name="family_phone" placeholder="Telefon (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm">
+      </div>
+
+      {{--
+        25 Agustos 2026: kullanicinin talebi - ucretsiz ziyaret hizmeti
+        (Guven Bakim Hizmetleri sehir hastanesi ekibi tarafindan) icin KIME
+        gidilecegi belli olmali. Aile iletisim kisisiyle hasta/sakin AYRI
+        kisiler oldugu icin ayri bir bolum.
+      --}}
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mt-4 mb-2">Hasta / Sakin Bilgileri (ücretsiz ziyaret için)</div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <input type="text" name="patient_name" placeholder="Hasta adı soyadı" class="border rounded-lg px-3 py-2 text-sm md:col-span-2">
+        <input type="number" min="0" max="130" name="patient_age" placeholder="Yaş" class="border rounded-lg px-3 py-2 text-sm">
+        <select name="patient_mobility" class="border rounded-lg px-3 py-2 text-sm">
+          <option value="">Hareket durumu</option>
+          @foreach($mobilityLabels as $key => $label)
+            <option value="{{ $key }}">{{ $label }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="flex items-center gap-4 mt-3 text-sm">
+        <span class="text-gray-500">Ücretsiz ziyaret istiyor mu?</span>
+        <label class="flex items-center gap-1.5"><input type="radio" name="wants_visit" value="1"> Evet</label>
+        <label class="flex items-center gap-1.5"><input type="radio" name="wants_visit" value="0"> Hayır</label>
+        <label class="flex items-center gap-1.5"><input type="radio" name="wants_visit" checked> Henüz sorulmadı</label>
+      </div>
+
+      <input type="text" name="notes" placeholder="Not (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm w-full mt-3">
+      <button type="submit" class="bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-bold mt-3">Ekle</button>
     </form>
   </details>
 @endif
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr>
-        <th class="p-3">Aile</th>
-        <th class="p-3">Kurum</th>
-        <th class="p-3">Yönlendirme Tarihi</th>
-        <th class="p-3">Aşama</th>
-        <th class="p-3">Komisyon</th>
-        <th class="p-3">Not</th>
-        <th class="p-3"></th>
-      </tr>
-    </thead>
-    <tbody class="divide-y align-top">
-      @forelse($referrals as $referral)
-        {{--
-          25 Agustos 2026: kullanicinin bildirdigi gercek hata - komisyon
-          ve not alanlari gizli (hidden) input'tu, sadece ekleme aninda
-          girilebiliyor, sonradan DUZENLENEMIYORDU. Artik hepsi gercek,
-          duzenlenebilir alanlar - tek "Kaydet" butonuyla birlikte kaydedilir.
-          Form, tabloya gecerli HTML kalsin diye <tr>'yi SARMIYOR - id ile
-          disaridaki input'lara "form" ozniteligiyle baglaniyor.
-        --}}
-        <form id="ref-{{ $referral->id }}" method="POST" action="{{ route('admin.broker.referrals.update', $referral) }}">@csrf</form>
-        <tr>
-          <td class="p-3">
-            <div class="font-medium">{{ $referral->family_name }}</div>
-            @if($referral->family_phone)<div class="text-xs text-gray-400">{{ $referral->family_phone }}</div>@endif
-          </td>
-          <td class="p-3">{{ $referral->facility->name ?? '(silinmiş kurum)' }}</td>
-          <td class="p-3 text-gray-500">
-            <div>{{ $referral->referred_at->format('d.m.Y') }}</div>
-            {{-- 25 Agustos 2026: kullanicinin bildirdigi gercek hata - bu tarih
-                 alani "Asama" sutununda baglamsiz duruyordu, "Yonlendirme
-                 Tarihi" sutununa, etiketiyle birlikte tasindi. --}}
-            <label class="block text-[10px] text-gray-400 mt-1.5 mb-0.5">Yerleşme tarihi</label>
-            <input type="date" name="placed_at" form="ref-{{ $referral->id }}" value="{{ optional($referral->placed_at)->toDateString() }}" class="border rounded-lg px-2 py-1 text-xs w-full">
-          </td>
-          <td class="p-3">
-            <div class="flex flex-col gap-1.5">
-              <select name="status" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1 text-xs">
-                @foreach($statusLabels as $key => $label)
-                  <option value="{{ $key }}" @selected($referral->status === $key)>{{ $label }}</option>
-                @endforeach
-              </select>
-              <select name="fee_status" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1 text-xs">
-                <option value="bekliyor" @selected($referral->fee_status === 'bekliyor')>Ödeme bekliyor</option>
-                <option value="odendi" @selected($referral->fee_status === 'odendi')>Ödendi</option>
-              </select>
-            </div>
-          </td>
-          <td class="p-3">
-            <input type="number" step="0.01" min="0" name="fee_amount" form="ref-{{ $referral->id }}" value="{{ $referral->fee_amount }}" placeholder="Tutar (TL)" class="border rounded-lg px-2 py-1 text-xs w-28">
-          </td>
-          <td class="p-3">
-            <input type="text" name="notes" form="ref-{{ $referral->id }}" value="{{ $referral->notes }}" placeholder="Not ekleyin..." class="border rounded-lg px-2 py-1 text-xs w-full min-w-[140px]">
-          </td>
-          <td class="p-3">
-            <button type="submit" form="ref-{{ $referral->id }}" class="bg-gray-900 text-white rounded-lg px-3 py-1.5 text-xs font-bold whitespace-nowrap">Kaydet</button>
-          </td>
-        </tr>
-      @empty
-        <tr><td colspan="7" class="p-6 text-center text-gray-400">Bu filtrede yönlendirme yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+<div class="space-y-3">
+  @forelse($referrals as $referral)
+    <form id="ref-{{ $referral->id }}" method="POST" action="{{ route('admin.broker.referrals.update', $referral) }}">@csrf</form>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <div class="flex flex-wrap items-start justify-between gap-3 mb-3 pb-3 border-b">
+        <div>
+          <div class="font-bold text-gray-950">{{ $referral->family_name }}</div>
+          @if($referral->family_phone)<div class="text-xs text-gray-400">{{ $referral->family_phone }}</div>@endif
+          <div class="text-sm text-gray-500 mt-1">{{ $referral->facility->name ?? '(silinmiş kurum)' }}</div>
+        </div>
+        <div class="text-right text-xs text-gray-400">
+          Yönlendirme: {{ $referral->referred_at->format('d.m.Y') }}
+          <label class="block mt-1">Yerleşme tarihi</label>
+          <input type="date" name="placed_at" form="ref-{{ $referral->id }}" value="{{ optional($referral->placed_at)->toDateString() }}" class="border rounded-lg px-2 py-1 text-xs mt-0.5">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Hasta adı</label>
+          <input type="text" name="patient_name" form="ref-{{ $referral->id }}" value="{{ $referral->patient_name }}" placeholder="Hasta adı soyadı" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Yaş</label>
+          <input type="number" min="0" max="130" name="patient_age" form="ref-{{ $referral->id }}" value="{{ $referral->patient_age }}" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Hareket durumu</label>
+          <select name="patient_mobility" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <option value="">-</option>
+            @foreach($mobilityLabels as $key => $label)
+              <option value="{{ $key }}" @selected($referral->patient_mobility === $key)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Ücretsiz ziyaret</label>
+          <select name="wants_visit" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <option value="" @selected(is_null($referral->wants_visit))>Henüz sorulmadı</option>
+            <option value="1" @selected($referral->wants_visit === true)>İstiyor</option>
+            <option value="0" @selected($referral->wants_visit === false)>İstemiyor</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Aşama</label>
+          <select name="status" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            @foreach($statusLabels as $key => $label)
+              <option value="{{ $key }}" @selected($referral->status === $key)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Komisyon (TL)</label>
+          <input type="number" step="0.01" min="0" name="fee_amount" form="ref-{{ $referral->id }}" value="{{ $referral->fee_amount }}" placeholder="Tutar" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Ödeme durumu</label>
+          <select name="fee_status" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <option value="bekliyor" @selected($referral->fee_status === 'bekliyor')>Ödeme bekliyor</option>
+            <option value="odendi" @selected($referral->fee_status === 'odendi')>Ödendi</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-gray-400 mb-0.5">Not</label>
+          <input type="text" name="notes" form="ref-{{ $referral->id }}" value="{{ $referral->notes }}" placeholder="Not ekleyin..." class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+      </div>
+
+      <div class="mt-3 text-right">
+        <button type="submit" form="ref-{{ $referral->id }}" class="bg-gray-900 text-white rounded-lg px-4 py-2 text-xs font-bold">Kaydet</button>
+      </div>
+    </div>
+  @empty
+    <div class="bg-white rounded-xl shadow-sm p-6 text-center text-gray-400">Bu filtrede yönlendirme yok.</div>
+  @endforelse
 </div>
 
 <div class="mt-4">{{ $referrals->links() }}</div>

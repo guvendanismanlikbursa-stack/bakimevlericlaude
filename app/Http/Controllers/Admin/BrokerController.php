@@ -33,6 +33,14 @@ class BrokerController extends Controller
         'iptal' => 'İptal / Vazgeçti',
     ];
 
+    // 25 Agustos 2026: kullanicinin talebi - ucretsiz ziyaret hizmeti icin
+    // hastanin hareket durumu (kime nasil bir ziyaret gerekecegi).
+    private const MOBILITY_LABELS = [
+        'yatalak' => 'Yatağa Bağımlı',
+        'kismi_bagimli' => 'Kısmi Bağımlı',
+        'yurutebiliyor' => 'Yürüyebiliyor',
+    ];
+
     /**
      * "Anlaşmalı Kurumlar" sekmesi: kurum listesinde arama yapip tek tikla
      * bir kurumu aracilik havuzuna ekleyip cikarabilme.
@@ -105,9 +113,10 @@ class BrokerController extends Controller
         $managedFacilities = Facility::where('is_broker_managed', true)->orderBy('name')->get(['id', 'name']);
         $groups = self::GROUPS;
         $statusLabels = self::STATUS_LABELS;
+        $mobilityLabels = self::MOBILITY_LABELS;
 
         return view('admin.broker.referrals', compact(
-            'referrals', 'group', 'groups', 'groupCounts', 'pendingFeeTotal', 'managedFacilities', 'statusLabels'
+            'referrals', 'group', 'groups', 'groupCounts', 'pendingFeeTotal', 'managedFacilities', 'statusLabels', 'mobilityLabels'
         ));
     }
 
@@ -117,10 +126,15 @@ class BrokerController extends Controller
             'facility_id' => 'required|exists:facilities,id',
             'family_name' => 'required|string|max:150',
             'family_phone' => 'nullable|string|max:30',
+            'patient_name' => 'nullable|string|max:150',
+            'patient_age' => 'nullable|integer|min:0|max:130',
+            'patient_mobility' => 'nullable|string|in:'.implode(',', array_keys(self::MOBILITY_LABELS)),
+            'wants_visit' => 'nullable|in:1,0',
             'fee_amount' => 'nullable|numeric|min:0',
             'referred_at' => 'required|date',
             'notes' => 'nullable|string|max:1000',
         ]);
+        $data['wants_visit'] = $request->filled('wants_visit') ? $request->boolean('wants_visit') : null;
 
         BrokerReferral::create($data + ['status' => 'yonlendirildi', 'fee_status' => 'bekliyor']);
 
@@ -135,7 +149,12 @@ class BrokerController extends Controller
             'fee_amount' => 'nullable|numeric|min:0',
             'placed_at' => 'nullable|date',
             'notes' => 'nullable|string|max:1000',
+            'patient_name' => 'nullable|string|max:150',
+            'patient_age' => 'nullable|integer|min:0|max:130',
+            'patient_mobility' => 'nullable|string|in:'.implode(',', array_keys(self::MOBILITY_LABELS)),
+            'wants_visit' => 'nullable|in:1,0',
         ]);
+        $data['wants_visit'] = $request->filled('wants_visit') ? $request->boolean('wants_visit') : null;
 
         $referral->update($data);
 
