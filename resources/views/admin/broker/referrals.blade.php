@@ -61,10 +61,20 @@
         <th class="p-3">Aşama</th>
         <th class="p-3">Komisyon</th>
         <th class="p-3">Not</th>
+        <th class="p-3"></th>
       </tr>
     </thead>
     <tbody class="divide-y align-top">
       @forelse($referrals as $referral)
+        {{--
+          25 Agustos 2026: kullanicinin bildirdigi gercek hata - komisyon
+          ve not alanlari gizli (hidden) input'tu, sadece ekleme aninda
+          girilebiliyor, sonradan DUZENLENEMIYORDU. Artik hepsi gercek,
+          duzenlenebilir alanlar - tek "Kaydet" butonuyla birlikte kaydedilir.
+          Form, tabloya gecerli HTML kalsin diye <tr>'yi SARMIYOR - id ile
+          disaridaki input'lara "form" ozniteligiyle baglaniyor.
+        --}}
+        <form id="ref-{{ $referral->id }}" method="POST" action="{{ route('admin.broker.referrals.update', $referral) }}">@csrf</form>
         <tr>
           <td class="p-3">
             <div class="font-medium">{{ $referral->family_name }}</div>
@@ -73,36 +83,31 @@
           <td class="p-3">{{ $referral->facility->name ?? '(silinmiş kurum)' }}</td>
           <td class="p-3 text-gray-500">{{ $referral->referred_at->format('d.m.Y') }}</td>
           <td class="p-3">
-            <form method="POST" action="{{ route('admin.broker.referrals.update', $referral) }}" class="flex flex-col gap-1.5">
-              @csrf
-              <select name="status" onchange="this.form.submit()" class="border rounded-lg px-2 py-1 text-xs">
+            <div class="flex flex-col gap-1.5">
+              <select name="status" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1 text-xs">
                 @foreach($statusLabels as $key => $label)
                   <option value="{{ $key }}" @selected($referral->status === $key)>{{ $label }}</option>
                 @endforeach
               </select>
-              <div class="flex items-center gap-1.5">
-                <select name="fee_status" onchange="this.form.submit()" class="border rounded-lg px-2 py-1 text-xs">
-                  <option value="bekliyor" @selected($referral->fee_status === 'bekliyor')>Ödeme bekliyor</option>
-                  <option value="odendi" @selected($referral->fee_status === 'odendi')>Ödendi</option>
-                </select>
-              </div>
-              <input type="hidden" name="fee_amount" value="{{ $referral->fee_amount }}">
-              <input type="hidden" name="placed_at" value="{{ optional($referral->placed_at)->toDateString() }}">
-              <input type="hidden" name="notes" value="{{ $referral->notes }}">
-            </form>
+              <select name="fee_status" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1 text-xs">
+                <option value="bekliyor" @selected($referral->fee_status === 'bekliyor')>Ödeme bekliyor</option>
+                <option value="odendi" @selected($referral->fee_status === 'odendi')>Ödendi</option>
+              </select>
+              <input type="date" name="placed_at" form="ref-{{ $referral->id }}" value="{{ optional($referral->placed_at)->toDateString() }}" title="Yerleşme tarihi (opsiyonel)" class="border rounded-lg px-2 py-1 text-xs">
+            </div>
           </td>
           <td class="p-3">
-            @if($referral->fee_amount)
-              <div class="font-bold">{{ number_format($referral->fee_amount, 2, ',', '.') }} TL</div>
-              <div class="text-xs {{ $referral->fee_status === 'odendi' ? 'text-green-600' : 'text-amber-600' }}">{{ $referral->fee_status === 'odendi' ? 'Ödendi' : 'Bekliyor' }}</div>
-            @else
-              <span class="text-gray-400 text-xs">-</span>
-            @endif
+            <input type="number" step="0.01" min="0" name="fee_amount" form="ref-{{ $referral->id }}" value="{{ $referral->fee_amount }}" placeholder="Tutar (TL)" class="border rounded-lg px-2 py-1 text-xs w-28">
           </td>
-          <td class="p-3 text-gray-500 max-w-[200px]">{{ $referral->notes ?: '-' }}</td>
+          <td class="p-3">
+            <input type="text" name="notes" form="ref-{{ $referral->id }}" value="{{ $referral->notes }}" placeholder="Not ekleyin..." class="border rounded-lg px-2 py-1 text-xs w-full min-w-[140px]">
+          </td>
+          <td class="p-3">
+            <button type="submit" form="ref-{{ $referral->id }}" class="bg-gray-900 text-white rounded-lg px-3 py-1.5 text-xs font-bold whitespace-nowrap">Kaydet</button>
+          </td>
         </tr>
       @empty
-        <tr><td colspan="6" class="p-6 text-center text-gray-400">Bu filtrede yönlendirme yok.</td></tr>
+        <tr><td colspan="7" class="p-6 text-center text-gray-400">Bu filtrede yönlendirme yok.</td></tr>
       @endforelse
     </tbody>
   </table>
