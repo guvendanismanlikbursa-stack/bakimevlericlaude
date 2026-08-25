@@ -81,7 +81,14 @@
             @if($referral->family_phone)<div class="text-xs text-gray-400">{{ $referral->family_phone }}</div>@endif
           </td>
           <td class="p-3">{{ $referral->facility->name ?? '(silinmiş kurum)' }}</td>
-          <td class="p-3 text-gray-500">{{ $referral->referred_at->format('d.m.Y') }}</td>
+          <td class="p-3 text-gray-500">
+            <div>{{ $referral->referred_at->format('d.m.Y') }}</div>
+            {{-- 25 Agustos 2026: kullanicinin bildirdigi gercek hata - bu tarih
+                 alani "Asama" sutununda baglamsiz duruyordu, "Yonlendirme
+                 Tarihi" sutununa, etiketiyle birlikte tasindi. --}}
+            <label class="block text-[10px] text-gray-400 mt-1.5 mb-0.5">Yerleşme tarihi</label>
+            <input type="date" name="placed_at" form="ref-{{ $referral->id }}" value="{{ optional($referral->placed_at)->toDateString() }}" class="border rounded-lg px-2 py-1 text-xs w-full">
+          </td>
           <td class="p-3">
             <div class="flex flex-col gap-1.5">
               <select name="status" form="ref-{{ $referral->id }}" class="border rounded-lg px-2 py-1 text-xs">
@@ -93,7 +100,6 @@
                 <option value="bekliyor" @selected($referral->fee_status === 'bekliyor')>Ödeme bekliyor</option>
                 <option value="odendi" @selected($referral->fee_status === 'odendi')>Ödendi</option>
               </select>
-              <input type="date" name="placed_at" form="ref-{{ $referral->id }}" value="{{ optional($referral->placed_at)->toDateString() }}" title="Yerleşme tarihi (opsiyonel)" class="border rounded-lg px-2 py-1 text-xs">
             </div>
           </td>
           <td class="p-3">
