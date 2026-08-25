@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -132,6 +132,7 @@ class OpsController extends Controller
             'sessions-gc' => $this->sessionsGc($request),
             'menu-image-repair' => $this->menuImageRepair($request),
             'bursa-visit-export' => $this->bursaVisitExport($request),
+            'mysql-tmp-diagnostics' => $this->mysqlTmpDiagnostics(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -2754,6 +2755,33 @@ class OpsController extends Controller
             . "user_ini.filename: " . ini_get('user_ini.filename') . "\n"
             . "user_ini.cache_ttl: " . ini_get('user_ini.cache_ttl') . "\n"
             . "(Uygulama tarafi limiti: tek gorsel basina 5MB, istek basina en fazla 10 gorsel - bkz. Facility/ProfileController::uploadImage)";
+    }
+
+    // 25 Agustos 2026: kullanicinin bildirdigi "/tmp: No space left on device"
+    // hatasi icin - hosting firmasi /tmp'yi buyutemeyecegini soyledi, bu
+    // yuzden MySQL'in gecici tabloyu DISKE (/tmp) DUSMEDEN once bellekte
+    // (RAM) tutabilecegi esik degerleri (tmp_table_size/max_heap_table_size)
+    // ve sunucu baslangicindan beri diske dusen toplam gecici tablo sayisini
+    // gosterir. Bu degerler kucukse (ör. varsayilan 16-64MB), hosting
+    // firmasindan bu ikisini artirmasi istenebilir - fiziksel /tmp
+    // buyutmekten cok daha kolay bir istek, cunku ek disk degil sadece
+    // MySQL'in zaten ayrilmis RAM'ini daha comert kullanmasini saglar.
+    private function mysqlTmpDiagnostics(): string
+    {
+        $vars = DB::select("SHOW VARIABLES WHERE Variable_name IN ('tmp_table_size','max_heap_table_size','tmpdir')");
+        $status = DB::select("SHOW GLOBAL STATUS WHERE Variable_name IN ('Created_tmp_tables','Created_tmp_disk_tables')");
+
+        $out = "MySQL gecici tablo ayarlari:\n";
+        foreach ($vars as $v) {
+            $out .= "  {$v->Variable_name} = {$v->Value}\n";
+        }
+        $out .= "\nSunucu baslangicindan beri (bu hesabin veritabani sunucusunda TUM baglantilar dahil):\n";
+        foreach ($status as $s) {
+            $out .= "  {$s->Variable_name} = {$s->Value}\n";
+        }
+        $out .= "\nOrnek: Created_tmp_disk_tables / Created_tmp_tables orani yuksekse, tmp_table_size/max_heap_table_size kucuk demektir - hosting firmasindan bu ikisini (ör. 64M'ye) artirmasini isteyin, bu /tmp'yi buyutmekten farkli, daha kolay bir taleptir.";
+
+        return $out;
     }
 
     // 3 Agustos 2026: "her rol panelindeki butun fonksiyonlar eksiksiz
