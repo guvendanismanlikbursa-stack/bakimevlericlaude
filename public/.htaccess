@@ -61,9 +61,18 @@ php_value post_max_size 60M
     RewriteCond %{THE_REQUEST} \s/+([^?\s]*)
     RewriteRule ^ https://bakimevleri.com/%1 [R=301,L]
 
+    # 25 Agustos 2026: kullanicinin bildirdigi gercek hata (canli trafik
+    # kaybi araştırılırken bulundu) - bu kural da AYNI "/public/" sizintisi
+    # hatasini tasiyordu (bkz. yukaridaki www yonlendirmesi yorumu, 24
+    # Agustos): %1 burada %{REQUEST_URI}'den geldigi icin "public/..."
+    # ic yolunu yansitiyordu - sondaki "/" kaldirilan HERHANGI bir adres
+    # (ör. eski /site/{brand}/ adresleri) "https://.../public/..." gibi
+    # KIRIK bir hedefe yonlendiriliyordu. %{THE_REQUEST} kullanilarak
+    # duzeltildi.
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
+    RewriteCond %{THE_REQUEST} \s/+(\S*?)/(?=\?|\s)
+    RewriteRule ^ https://%{HTTP_HOST}/%1 [L,R=301]
 
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
