@@ -160,4 +160,11 @@ class BrokerController extends Controller
 
         return back()->with('success', 'Yönlendirme güncellendi.');
     }
+
+    public function destroyReferral(BrokerReferral $referral)
+    {
+        $referral->delete();
+
+        return back()->with('success', 'Yönlendirme silindi.');
+    }
 }

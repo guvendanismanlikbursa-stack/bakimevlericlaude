@@ -82,18 +82,37 @@
   </details>
 @endif
 
-<div class="space-y-3">
+{{--
+  25 Agustos 2026: kullanicinin talebi - alan sayisi arttiginda her kart
+  tamamen acik durup asiri yer kapliyordu. Artik native <details> ile
+  KAPALI baslar - sadece kisa ozet (aile/hasta adi, kurum, asama rozeti)
+  gorunur, tiklaninca detaylar acilir. bkz. admin/layout.blade.php ayni
+  tarihli yorum - ayni akordiyon deseni.
+--}}
+<div class="space-y-2">
   @forelse($referrals as $referral)
     <form id="ref-{{ $referral->id }}" method="POST" action="{{ route('admin.broker.referrals.update', $referral) }}">@csrf</form>
-    <div class="bg-white rounded-xl shadow-sm p-4">
-      <div class="flex flex-wrap items-start justify-between gap-3 mb-3 pb-3 border-b">
+    <details class="bg-white rounded-xl shadow-sm group">
+      <summary class="cursor-pointer list-none p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <div class="min-w-0">
+            <div class="font-bold text-gray-950 truncate">{{ $referral->family_name }}@if($referral->patient_name) <span class="font-normal text-gray-400">· hasta: {{ $referral->patient_name }}</span>@endif</div>
+            <div class="text-xs text-gray-500 truncate">{{ $referral->facility->name ?? '(silinmiş kurum)' }} · {{ $referral->referred_at->format('d.m.Y') }}</div>
+          </div>
+        </div>
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap
+          {{ $referral->status === 'yerlesti' ? 'bg-green-100 text-green-700' : ($referral->status === 'iptal' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600') }}">
+          {{ $statusLabels[$referral->status] ?? $referral->status }}
+        </span>
+      </summary>
+
+      <div class="px-4 pb-4">
+      <div class="flex flex-wrap items-start justify-between gap-3 mb-3 pb-3 border-t pt-3">
         <div>
-          <div class="font-bold text-gray-950">{{ $referral->family_name }}</div>
-          @if($referral->family_phone)<div class="text-xs text-gray-400">{{ $referral->family_phone }}</div>@endif
-          <div class="text-sm text-gray-500 mt-1">{{ $referral->facility->name ?? '(silinmiş kurum)' }}</div>
+          @if($referral->family_phone)<div class="text-xs text-gray-400">Aile telefonu: {{ $referral->family_phone }}</div>@endif
         </div>
         <div class="text-right text-xs text-gray-400">
-          Yönlendirme: {{ $referral->referred_at->format('d.m.Y') }}
           <label class="block mt-1">Yerleşme tarihi</label>
           <input type="date" name="placed_at" form="ref-{{ $referral->id }}" value="{{ optional($referral->placed_at)->toDateString() }}" class="border rounded-lg px-2 py-1 text-xs mt-0.5">
         </div>
@@ -153,10 +172,16 @@
         </div>
       </div>
 
-      <div class="mt-3 text-right">
+      <div class="mt-3 flex items-center justify-between">
+        <form method="POST" action="{{ route('admin.broker.referrals.destroy', $referral) }}" onsubmit="return confirm('Bu yönlendirme kalıcı olarak silinsin mi?');">
+          @csrf
+          @method('DELETE')
+          <button type="submit" class="text-red-600 text-xs font-bold hover:underline">Kaydı Sil</button>
+        </form>
         <button type="submit" form="ref-{{ $referral->id }}" class="bg-gray-900 text-white rounded-lg px-4 py-2 text-xs font-bold">Kaydet</button>
       </div>
-    </div>
+      </div>
+    </details>
   @empty
     <div class="bg-white rounded-xl shadow-sm p-6 text-center text-gray-400">Bu filtrede yönlendirme yok.</div>
   @endforelse

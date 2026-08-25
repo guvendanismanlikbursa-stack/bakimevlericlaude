@@ -378,6 +378,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/aracilik/yonlendirmeler', [AdminBrokerController::class, 'referrals'])->name('broker.referrals');
         Route::post('/aracilik/yonlendirmeler', [AdminBrokerController::class, 'storeReferral'])->name('broker.referrals.store');
         Route::post('/aracilik/yonlendirmeler/{referral}', [AdminBrokerController::class, 'updateReferral'])->name('broker.referrals.update');
+        Route::delete('/aracilik/yonlendirmeler/{referral}', [AdminBrokerController::class, 'destroyReferral'])->name('broker.referrals.destroy');
 
         Route::get('/doluluk-durumu', [AdminOccupancyController::class, 'index'])->name('occupancy.index');
         Route::post('/doluluk-durumu/{facility}', [AdminOccupancyController::class, 'update'])->name('occupancy.update');
