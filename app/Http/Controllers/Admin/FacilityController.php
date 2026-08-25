@@ -447,6 +447,30 @@ class FacilityController extends Controller
 
         $loginUrl = $this->instantClaimLoginUrl($brandSlug);
 
+        // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - kurum
+        // gercekten sahiplendiriliyordu ama giris bilgisi ekranda hic
+        // GORUNMUYORDU (back()->with() ile tasinan ozel 'instant_claim_
+        // credentials' anahtari nedense kayboluyordu) VE eski
+        // FacilityWelcomeMail'de zaten sifre alani YOKTU (mail gitse bile
+        // sifreyi icermezdi). Kullanicinin acik talebi uzerine: (1) zaten
+        // calistigi kanitlanmis FacilityPasswordManuallyResetMail (bkz.
+        // Admin\UserController::resetFacilityUserPassword - AYNI sablon,
+        // sifreyi gercekten iceriyor) kullanilir, (2) back() yerine ayni
+        // sayfaya KESIN/degismez bir redirect() yapilir (back()'in
+        // guvendigi HTTP Referer/onceki-URL izlemesi bir sekilde
+        // basarisiz olmus olabilir), (3) 'success' mesajina da (admin
+        // layout'ta HER zaman calistigi kanitlanmis, genel bir mekanizma)
+        // ayni bilgiler yedek olarak eklenir - ozel kutu bir sekilde yine
+        // gorunmezse bile bilgi KESINLIKLE ekranda bir yerde olsun.
+        try {
+            \Illuminate\Support\Facades\Mail::to($facilityUser->email)->sendNow(
+                new \App\Mail\FacilityPasswordManuallyResetMail($facilityUser, $temporaryPassword, $loginUrl)
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Yerinde sahiplendirme giris bilgisi maili gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+            notify_admin_of_exception($e);
+        }
+
         try {
             \Illuminate\Support\Facades\Mail::to($facilityUser->email)->sendNow(
                 new \App\Mail\FacilityWelcomeMail($facility->fresh(), $facilityUser->email, config('brands.brands.'.$brandSlug.'.name', $brandSlug), $loginUrl)
@@ -461,11 +485,14 @@ class FacilityController extends Controller
             \Illuminate\Support\Facades\Log::warning('Yerinde sahiplendirme dogrulama maili gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
         }
 
-        return back()->with('instant_claim_credentials', [
-            'email' => $facilityUser->email,
-            'password' => $temporaryPassword,
-            'login_url' => $loginUrl,
-        ])->with('success', 'Kurum sahiplendirildi. Giriş bilgilerini aşağıdan görebilirsiniz.');
+        return redirect()->route('admin.facilities.edit', $facility)
+            ->with('instant_claim_credentials', [
+                'email' => $facilityUser->email,
+                'password' => $temporaryPassword,
+                'login_url' => $loginUrl,
+                'whatsapp_url' => facility_whatsapp_url_with_message($facility, "Merhaba, \"{$facility->name}\" kurum panelinize giriş bilgileriniz:\n\nGiriş adresi: {$loginUrl}\nE-posta: {$facilityUser->email}\nGeçici şifre: {$temporaryPassword}\n\nİlk girişte yeni bir şifre belirlemeniz istenecektir."),
+            ])
+            ->with('success', "Kurum sahiplendirildi, giriş bilgileri {$facilityUser->email} adresine gönderildi. E-posta: {$facilityUser->email} · Geçici şifre: {$temporaryPassword}");
     }
 
     // bkz. Admin\FacilityClaimController::facilityLoginUrl() ayni mantik.

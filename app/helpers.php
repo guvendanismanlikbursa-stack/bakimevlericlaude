@@ -707,6 +707,27 @@ if (! function_exists('facility_whatsapp_url')) {
     }
 }
 
+if (! function_exists('facility_whatsapp_url_with_message')) {
+    /**
+     * 25 Agustos 2026: kullanicinin talebi - "Yerinde Sahiplendirme"
+     * sonrasi olusan giris bilgilerini (sabit davet mesaji DEGIL, o an
+     * uretilen gecici sifreyi iceren OZEL bir mesaji) kurumun KAYITLI
+     * telefonunun WhatsApp'ina elle gonderebilmek icin. facility_whatsapp_url()
+     * ile ayni telefon-gecerliligi kontrolunu yapar, sadece mesaj metni
+     * disaridan verilir.
+     */
+    function facility_whatsapp_url_with_message(\App\Models\Facility $facility, string $message): ?string
+    {
+        if (classify_phone_type($facility->phone) !== 'mobile') {
+            return null;
+        }
+
+        $digits = normalize_whatsapp_number($facility->phone);
+
+        return 'https://wa.me/'.$digits.'?text='.rawurlencode($message);
+    }
+}
+
 if (! function_exists('sanitize_admin_html')) {
     /**
      * ContentPage::body gibi admin tarafindan yazilan ama sitede TUM

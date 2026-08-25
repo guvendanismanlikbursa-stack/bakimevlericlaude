@@ -18,6 +18,95 @@
 @endisset
 <h1 class="text-2xl font-bold mb-6">{{ $facility->exists ? 'Kurumu Düzenle' : 'Yeni Kurum' }}</h1>
 
+{{--
+  25 Agustos 2026: kullanicinin talebi - "Yerinde Sahiplendirme" kutusu
+  sayfanin en altindaydi, kurum yetkilisi yanindayken bulmak icin
+  asagi kaydirmak gerekiyordu. Artik sayfanin EN USTUNDE, ana forma
+  girmeden once.
+--}}
+@if($facility->exists)
+  <div class="max-w-4xl mb-8">
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold mb-3">Sahiplenme Durumu</h2>
+      @if($facility->is_claimed)
+        <p class="text-sm text-green-700 font-semibold">Sahiplenilmiş ({{ $facility->claimed_at?->format('d.m.Y') }})</p>
+        @foreach($facility->facilityUsers as $fu)
+          <p class="text-sm text-gray-600 mt-1">
+            Yetkili: {{ $fu->name }} ({{ $fu->email }}) &middot; {{ $fu->status }}
+            &middot; Kayıt IP: <span class="font-mono">{{ $fu->signup_ip ?? '—' }}</span>
+            @if($fu->signup_lat && $fu->signup_lng)
+              &middot; <a href="https://www.google.com/maps?q={{ $fu->signup_lat }},{{ $fu->signup_lng }}" target="_blank" class="text-primary font-semibold">Haritada gör →</a>
+            @endif
+          </p>
+        @endforeach
+      @else
+        <p class="text-sm text-gray-500 mb-3">Bu kurum henüz sahiplenilmedi (ön kayıtlı profil).</p>
+
+        {{-- 19 Agustos 2026: kullanicinin talebi - kurumu yerinde ziyaret
+             edip kurum yetkilisi o an sahiplenmek isterse, normal basvuru+
+             belge+onay bekleme surecine gerek kalmadan admin buradan
+             DOGRUDAN gecici sifre verebilsin (kimlik dogrulamasi zaten yuz
+             yuze yapiliyor). Bkz. Admin\FacilityController::instantClaim(). --}}
+        @if(session('instant_claim_credentials'))
+          @php $cred = session('instant_claim_credentials'); @endphp
+          <div class="rounded-lg border-2 border-green-300 bg-green-50 p-4 mb-3">
+            <p class="text-sm font-black text-green-800 mb-2">✓ Kurum sahiplendirildi - giriş bilgileri {{ $cred['email'] }} adresine gönderildi. Yine de kurum yetkilisine iletin:</p>
+            <p class="text-sm text-gray-800">E-posta: <span class="font-mono font-bold">{{ $cred['email'] }}</span></p>
+            <p class="text-sm text-gray-800">Geçici şifre: <span class="font-mono font-bold text-lg">{{ $cred['password'] }}</span></p>
+            <p class="text-sm text-gray-800">Giriş adresi: <a href="{{ $cred['login_url'] }}" target="_blank" class="text-primary underline">{{ $cred['login_url'] }}</a></p>
+            @if($cred['whatsapp_url'] ?? null)
+              <a href="{{ $cred['whatsapp_url'] }}" target="_blank" class="inline-flex items-center gap-1.5 mt-3 bg-[#25D366] text-white font-bold text-sm px-4 py-2 rounded-lg">📱 Kurumun WhatsApp'ına gönder</a>
+            @else
+              <p class="text-xs text-amber-700 mt-2">Kurumun kayıtlı telefonu WhatsApp için uygun görünmüyor (sabit hat/eksik) - giriş bilgilerini elle iletin.</p>
+            @endif
+            <p class="text-xs text-gray-500 mt-2">Bu kutu sadece bir kez gösterilir, sayfayı yenilerseniz kaybolur - şimdi not edin.</p>
+          </div>
+        @endif
+
+        {{-- 19 Agustos 2026: kullanicinin talebi ("1 ve 3. maddeleri duzelt",
+             madde 3) - kucuk/gri <details> baglantisi kolayca gozden
+             kaciyordu. Ayni katlanir davranis korunuyor, ama artik belirgin
+             renkli/ikonlu bir kart - admin sayfayi taradiginda gozunden
+             kacmasin diye. --}}
+        <details class="mb-1 group border-2 border-amber-300 bg-amber-50 rounded-lg overflow-hidden" open>
+          <summary class="list-none cursor-pointer select-none px-4 py-3 flex items-center gap-2 hover:bg-amber-100 transition">
+            <span class="text-lg leading-none">📍</span>
+            <span class="text-sm font-black text-amber-900">Yerinde sahiplendir</span>
+            <span class="text-xs text-amber-700">— kurum yetkilisi şu an yanınızdaysa buraya tıklayın</span>
+            <span class="ml-auto text-amber-600 transition-transform group-open:rotate-180">▾</span>
+          </summary>
+          {{--
+            25 Agustos 2026: kullanicinin bildirdigi gercek hata - buton
+            "Sahiplendir" yazisi beyazdi ve fark edilmiyordu; koyu yesil
+            metne, daha belirgin bir stile cevrildi. Ayrica confirm()
+            onceden BUTONUN onclick'indeydi - bir input alaninda Enter'a
+            basilip form dogrudan (butona hic dokunmadan) gonderilirse bu
+            onay hic calismazdi. Artik confirm() FORM'un onsubmit'inde,
+            hangi yoldan gonderilirse gonderilsin calisir.
+          --}}
+          <form method="POST" action="{{ route('admin.facilities.instant-claim', $facility) }}" class="px-4 pb-4 flex flex-wrap gap-2 items-end" onsubmit="return confirm('Bu kurumu şimdi sahiplendirip geçici şifre oluşturmak istediğinize emin misiniz?');">
+            @csrf
+            <div><label class="text-xs text-gray-500 block">Yetkili Adı Soyadı</label><input type="text" name="applicant_name" required class="border rounded-lg px-3 py-1.5 text-sm w-44"></div>
+            <div><label class="text-xs text-gray-500 block">E-posta</label><input type="email" name="applicant_email" required class="border rounded-lg px-3 py-1.5 text-sm w-52"></div>
+            <div><label class="text-xs text-gray-500 block">Telefon</label><input type="text" name="applicant_phone" required class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
+            <button type="submit" class="bg-white border-2 border-green-700 text-green-800 hover:bg-green-50 px-5 py-2 rounded-lg text-sm font-black">✓ Sahiplendir</button>
+          </form>
+          @error('applicant_email')<p class="text-xs text-red-600 px-4 pb-3">{{ $message }}</p>@enderror
+        </details>
+      @endif
+
+      @if($facility->claims->isNotEmpty())
+        <div class="mt-3">
+          <p class="text-xs text-gray-400 mb-1">Başvuru geçmişi:</p>
+          @foreach($facility->claims as $claim)
+            <a href="{{ route('admin.claims.show', $claim) }}" class="block text-xs text-blue-600">{{ $claim->applicant_name }} &middot; {{ $claim->status }} ({{ $claim->created_at->format('d.m.Y') }})</a>
+          @endforeach
+        </div>
+      @endif
+    </div>
+  </div>
+@endif
+
 <form method="POST" action="{{ $facility->exists ? route('admin.facilities.update', $facility) : route('admin.facilities.store') }}" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm p-6 grid md:grid-cols-2 gap-4 max-w-4xl">
   @csrf
   @if($facility->exists) @method('PUT') @endif
@@ -173,71 +262,6 @@
 
 @if($facility->exists)
   <div class="max-w-4xl mt-8 space-y-8">
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="font-bold mb-3">Sahiplenme Durumu</h2>
-      @if($facility->is_claimed)
-        <p class="text-sm text-green-700 font-semibold">Sahiplenilmiş ({{ $facility->claimed_at?->format('d.m.Y') }})</p>
-        @foreach($facility->facilityUsers as $fu)
-          <p class="text-sm text-gray-600 mt-1">
-            Yetkili: {{ $fu->name }} ({{ $fu->email }}) &middot; {{ $fu->status }}
-            &middot; Kayıt IP: <span class="font-mono">{{ $fu->signup_ip ?? '—' }}</span>
-            @if($fu->signup_lat && $fu->signup_lng)
-              &middot; <a href="https://www.google.com/maps?q={{ $fu->signup_lat }},{{ $fu->signup_lng }}" target="_blank" class="text-primary font-semibold">Haritada gör →</a>
-            @endif
-          </p>
-        @endforeach
-      @else
-        <p class="text-sm text-gray-500 mb-3">Bu kurum henüz sahiplenilmedi (ön kayıtlı profil).</p>
-
-        {{-- 19 Agustos 2026: kullanicinin talebi - kurumu yerinde ziyaret
-             edip kurum yetkilisi o an sahiplenmek isterse, normal basvuru+
-             belge+onay bekleme surecine gerek kalmadan admin buradan
-             DOGRUDAN gecici sifre verebilsin (kimlik dogrulamasi zaten yuz
-             yuze yapiliyor). Bkz. Admin\FacilityController::instantClaim(). --}}
-        @if(session('instant_claim_credentials'))
-          @php $cred = session('instant_claim_credentials'); @endphp
-          <div class="rounded-lg border-2 border-green-300 bg-green-50 p-4 mb-3">
-            <p class="text-sm font-black text-green-800 mb-2">✓ Kurum sahiplendirildi - giriş bilgilerini kurum yetkilisine iletin:</p>
-            <p class="text-sm text-gray-800">E-posta: <span class="font-mono font-bold">{{ $cred['email'] }}</span></p>
-            <p class="text-sm text-gray-800">Geçici şifre: <span class="font-mono font-bold text-lg">{{ $cred['password'] }}</span></p>
-            <p class="text-sm text-gray-800">Giriş adresi: <a href="{{ $cred['login_url'] }}" target="_blank" class="text-primary underline">{{ $cred['login_url'] }}</a></p>
-            <p class="text-xs text-gray-500 mt-2">Bu bilgiler sadece bir kez gösterilir, sayfayı yenilerseniz kaybolur - şimdi not edin veya WhatsApp/SMS ile iletin.</p>
-          </div>
-        @endif
-
-        {{-- 19 Agustos 2026: kullanicinin talebi ("1 ve 3. maddeleri duzelt",
-             madde 3) - kucuk/gri <details> baglantisi kolayca gozden
-             kaciyordu. Ayni katlanir davranis korunuyor, ama artik belirgin
-             renkli/ikonlu bir kart - admin sayfayi taradiginda gozunden
-             kacmasin diye. --}}
-        <details class="mb-1 group border-2 border-amber-300 bg-amber-50 rounded-lg overflow-hidden">
-          <summary class="list-none cursor-pointer select-none px-4 py-3 flex items-center gap-2 hover:bg-amber-100 transition">
-            <span class="text-lg leading-none">📍</span>
-            <span class="text-sm font-black text-amber-900">Yerinde sahiplendir</span>
-            <span class="text-xs text-amber-700">— kurum yetkilisi şu an yanınızdaysa buraya tıklayın</span>
-            <span class="ml-auto text-amber-600 transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <form method="POST" action="{{ route('admin.facilities.instant-claim', $facility) }}" class="px-4 pb-4 flex flex-wrap gap-2 items-end">
-            @csrf
-            <div><label class="text-xs text-gray-500 block">Yetkili Adı Soyadı</label><input type="text" name="applicant_name" required class="border rounded-lg px-3 py-1.5 text-sm w-44"></div>
-            <div><label class="text-xs text-gray-500 block">E-posta</label><input type="email" name="applicant_email" required class="border rounded-lg px-3 py-1.5 text-sm w-52"></div>
-            <div><label class="text-xs text-gray-500 block">Telefon</label><input type="text" name="applicant_phone" required class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
-            <button class="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold" onclick="return confirm('Bu kurumu şimdi sahiplendirip gecici şifre oluşturmak istediğinize emin misiniz?');">Sahiplendir</button>
-          </form>
-          @error('applicant_email')<p class="text-xs text-red-600 px-4 pb-3">{{ $message }}</p>@enderror
-        </details>
-      @endif
-
-      @if($facility->claims->isNotEmpty())
-        <div class="mt-3">
-          <p class="text-xs text-gray-400 mb-1">Başvuru geçmişi:</p>
-          @foreach($facility->claims as $claim)
-            <a href="{{ route('admin.claims.show', $claim) }}" class="block text-xs text-blue-600">{{ $claim->applicant_name }} &middot; {{ $claim->status }} ({{ $claim->created_at->format('d.m.Y') }})</a>
-          @endforeach
-        </div>
-      @endif
-    </div>
-
     <div class="bg-white rounded-xl shadow-sm p-6">
       <h2 class="font-bold mb-3">Bakiye / Hak (Manuel Düzenleme)</h2>
       <p class="text-sm text-gray-600 mb-3">Ücretsiz Hak: <strong>{{ $facility->free_quote_credits }}</strong> &middot; Bakiye: <strong>{{ number_format($facility->balance,2,',','.') }} TL</strong></p>
