@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -89,6 +89,7 @@ class OpsController extends Controller
             'qa-setup' => $this->qaSetup($request),
             'qa-setup-unclaimed' => $this->qaSetupUnclaimed(),
             'qa-instant-claim-test' => $this->qaInstantClaimTest($request),
+            'qa-verify-balance-brand-fixes' => $this->qaVerifyBalanceBrandFixes(),
             'qa-password-reset-link' => $this->qaPasswordResetLink($request),
             'qa-registration-edit-link' => $this->qaRegistrationEditLink($request),
             'qa-push-fix-subscription' => $this->qaPushFixSubscription($request),
@@ -2100,6 +2101,97 @@ class OpsController extends Controller
             'invitation_status_at' => null,
             'updated_at' => now(),
         ]);
+
+        return $out;
+    }
+
+    // 26 Agustos 2026: 25 Agustos'ta canliya alinan 4 duzeltmeyi (bonus
+    // hakkinin "ön kayıtlı"ya donuste sifirlanmasi, Bakiye/Hak Gecmisi
+    // kayitlarinin duzenlenebilir/silinebilir olmasi, dogru marka
+    // yonlendirmesi, sembolsuz gecici sifre) GERCEK production kodunu
+    // canli sunucuda calistirarak tek seferde dogrulayan kapsamli QA
+    // araci - kullanicinin "test etmeden soyleme" talebinin bir sonraki
+    // adimi, sadece kod incelemesine degil calisan kanitlara dayanmak icin.
+    private function qaVerifyBalanceBrandFixes(): string
+    {
+        $out = '';
+        $this->qaSetupUnclaimed();
+        $facility = Facility::where('slug', 'qatest-kurum-sahipsiz')->firstOrFail();
+
+        $admin = DB::table('admins')->first();
+        abort_if(! $admin, 500, 'HATA: hic admin yok');
+        session(['admin_id' => $admin->id]);
+
+        $testEmail = 'qa-verify-fixes@example.com';
+        $claimRequest = Request::create('/', 'POST', [
+            'applicant_name' => 'QA Verify',
+            'applicant_email' => $testEmail,
+            'applicant_phone' => '0532 000 00 09',
+        ]);
+
+        $facilityController = app(\App\Http\Controllers\Admin\FacilityController::class);
+        $facilityController->instantClaim($claimRequest, $facility);
+        $facility->refresh();
+
+        // (4) sifre sembolsuz mu?
+        $creds = session('instant_claim_credentials');
+        $password = $creds['password'] ?? '';
+        $out .= "(4) Sifre formati: \"{$password}\" -> " . (preg_match('/^[A-Za-z0-9]+$/', $password) ? 'OK (sadece harf+rakam)' : 'HATA (sembol iceriyor)') . "\n";
+
+        $creditsAfterClaim = (int) $facility->free_quote_credits;
+        $balanceBeforeRevert = (float) $facility->balance;
+        $out .= "Sahiplendirme sonrasi: bakiye={$balanceBeforeRevert} hak={$creditsAfterClaim}\n";
+
+        // (1) revertToPreRegistered GERCEK kodu bonusu sifirliyor mu?
+        $facilityController->revertToPreRegistered($facility);
+        $facility->refresh();
+        $revertLog = \App\Models\BalanceLog::where('facility_id', $facility->id)->where('type', 'claim_reverted')->latest('id')->first();
+        $out .= '(1) Geri alma sonrasi: bakiye=' . $facility->balance . ' hak=' . $facility->free_quote_credits
+            . ' -> ' . ($facility->balance == 0 && $facility->free_quote_credits == 0 ? 'OK (sifirlandi)' : 'HATA (sifirlanmadi)') . "\n";
+        $out .= '    claim_reverted log kaydi: ' . ($revertLog ? "VAR (credits_amount={$revertLog->credits_amount}, amount={$revertLog->amount})" : 'YOK - HATA') . "\n";
+
+        // (2) balance-log duzenle/sil GERCEK kodu calisiyor mu?
+        $balanceController = app(\App\Http\Controllers\Admin\BalanceController::class);
+        $manualLog = \App\Models\BalanceLog::create([
+            'facility_id' => $facility->id, 'type' => 'admin_adjust_credits', 'amount' => 0,
+            'credits_amount' => 7, 'balance_after' => $facility->balance, 'credits_after' => $facility->free_quote_credits + 7,
+            'admin_id' => $admin->id, 'note' => 'QA verify - duzenle/sil testi',
+        ]);
+        DB::table('facilities')->where('id', $facility->id)->update(['free_quote_credits' => $facility->free_quote_credits + 7]);
+        $facility->refresh();
+        $creditsBeforeEdit = $facility->free_quote_credits;
+
+        $updateRequest = Request::create('/', 'PUT', ['amount' => 0, 'credits_amount' => 3, 'note' => 'QA verify - duzenlendi']);
+        $balanceController->updateLog($updateRequest, $facility, $manualLog);
+        $facility->refresh();
+        $out .= "(2a) updateLog: hak {$creditsBeforeEdit} -> {$facility->free_quote_credits} -> " . ($facility->free_quote_credits == $creditsBeforeEdit - 4 ? 'OK (delta dogru uygulandi)' : 'HATA') . "\n";
+
+        $creditsBeforeDelete = $facility->free_quote_credits;
+        $balanceController->destroyLog($facility, $manualLog->fresh());
+        $facility->refresh();
+        $logStillExists = \App\Models\BalanceLog::find($manualLog->id);
+        $out .= "(2b) destroyLog: hak {$creditsBeforeDelete} -> {$facility->free_quote_credits}, kayit " . ($logStillExists ? 'HALA VAR - HATA' : 'silindi') . ' -> ' . ($facility->free_quote_credits == $creditsBeforeDelete - 3 ? 'OK' : 'HATA') . "\n";
+
+        // (3) marka tespiti: gercek bir sahiplenme basvurusu (facility_claims.brand)
+        // kaydi varsa KATEGORI TAHMININE degil ONA guveniyor mu?
+        $testClaim = \App\Models\FacilityClaim::create([
+            'facility_id' => $facility->id, 'brand' => 'bakimevleri', 'applicant_name' => 'QA Verify',
+            'applicant_email' => $testEmail, 'applicant_phone' => '0532 000 00 09', 'document_path' => 'qa-verify.jpg',
+            'status' => 'approved', 'reviewed_at' => now(),
+        ]);
+        $resolvedBrand = facility_login_brand_slug($facility->fresh());
+        $resolvedUrl = facility_brand_login_url($resolvedBrand);
+        $out .= "(3) facility_claims.brand=bakimevleri iken tespit edilen marka: {$resolvedBrand} -> " . ($resolvedBrand === 'bakimevleri' ? 'OK' : 'HATA (kategori tahminine dusmus olabilir)') . "\n";
+        $out .= "    Uretilen login URL: {$resolvedUrl}\n";
+        $testClaim->delete();
+
+        // temizlik
+        \App\Models\FacilityUser::where('email', $testEmail)->delete();
+        DB::table('facilities')->where('id', $facility->id)->update([
+            'is_claimed' => false, 'claimed_at' => null, 'invitation_status' => 'pending',
+            'invitation_status_at' => null, 'balance' => 0, 'free_quote_credits' => 0, 'updated_at' => now(),
+        ]);
+        \App\Models\BalanceLog::where('facility_id', $facility->id)->delete();
 
         return $out;
     }
