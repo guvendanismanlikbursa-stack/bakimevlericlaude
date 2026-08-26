@@ -202,6 +202,24 @@
   </div>
 
   <div class="md:col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-4">
+    <label class="text-sm font-semibold block mb-1">Oda Tipine Göre Fiyat Aralığı</label>
+    <p class="text-xs text-gray-500 mb-3">Sadece doldurduğunuz oda tipleri kurum sayfasında ayrı bir tablo olarak gösterilir. Boş bırakılırsa (daha önce girilmişse) o tipin kaydı silinir.</p>
+    @php $existingRoomTypes = $facility->exists ? $facility->roomTypes->keyBy('room_type') : collect(); @endphp
+    <div class="grid sm:grid-cols-2 gap-3">
+      @foreach(\App\Models\FacilityRoomType::TYPES as $key => $label)
+        @php $rt = $existingRoomTypes->get($key); @endphp
+        <div class="bg-white border rounded-lg p-3">
+          <div class="font-semibold text-sm mb-2">{{ $label }}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="number" step="0.01" min="0" name="room_types[{{ $key }}][price_min]" value="{{ old('room_types.'.$key.'.price_min', $rt->price_min ?? '') }}" placeholder="Min TL" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <input type="number" step="0.01" min="0" name="room_types[{{ $key }}][price_max]" value="{{ old('room_types.'.$key.'.price_max', $rt->price_max ?? '') }}" placeholder="Maks TL" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+          </div>
+        </div>
+      @endforeach
+    </div>
+  </div>
+
+  <div class="md:col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-4">
     <label class="text-sm font-semibold block mb-3">Bölüme göre özellik önerileri</label>
     <div class="grid md:grid-cols-3 gap-3">
       @foreach($serviceSections as $section)

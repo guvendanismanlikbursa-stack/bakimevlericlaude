@@ -388,6 +388,26 @@
       </div>
     </div>
 
+    @if($facility->roomTypes->isNotEmpty())
+    <div class="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 font-black text-gray-950 text-sm">Oda Tipine Göre Fiyat Aralığı</div>
+      <div class="divide-y divide-gray-100">
+        @foreach($facility->roomTypes as $roomType)
+          <div class="flex items-center justify-between px-4 py-2.5 text-sm">
+            <span class="text-gray-700">{{ $roomType->label() }}</span>
+            <span class="font-bold text-gray-950">
+              @if($roomType->price_min && $roomType->price_max)
+                {{ number_format($roomType->price_min,0,',','.') }} - {{ number_format($roomType->price_max,0,',','.') }} TL
+              @else
+                {{ number_format($roomType->price_min ?: $roomType->price_max,0,',','.') }} TL'den başlıyor
+              @endif
+            </span>
+          </div>
+        @endforeach
+      </div>
+    </div>
+    @endif
+
     @php
       $canReview = $facility->is_claimed
         && session('family_user_id')

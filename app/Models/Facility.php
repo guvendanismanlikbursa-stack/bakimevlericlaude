@@ -89,6 +89,11 @@ class Facility extends Model
         return $this->hasMany(FacilityImage::class)->orderBy('sort_order');
     }
 
+    public function roomTypes()
+    {
+        return $this->hasMany(FacilityRoomType::class)->orderBy('sort_order');
+    }
+
     public function brokerReferrals()
     {
         return $this->hasMany(BrokerReferral::class);

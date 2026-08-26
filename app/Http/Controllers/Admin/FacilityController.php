@@ -9,6 +9,7 @@ use App\Models\District;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
 use App\Models\FacilityImage;
+use App\Models\FacilityRoomType;
 use App\Services\FacilityArchiveService;
 use App\Services\GeocodingService;
 use App\Services\ImageCompressionService;
@@ -172,6 +173,7 @@ class FacilityController extends Controller
         $facility = Facility::create($data);
 
         $this->storeUploadedImages($request, $facility);
+        $this->syncRoomTypes($request, $facility);
 
         return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum ön kayıt olarak eklendi. Şimdi demo görseller ekleyebilirsiniz.');
     }
@@ -181,7 +183,7 @@ class FacilityController extends Controller
         $cities = City::orderBy('name')->get();
         $categories = FacilityCategory::orderBy('name')->get();
         $serviceSections = service_sections();
-        $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category']);
+        $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category', 'roomTypes']);
         // 18 Agustos 2026: kullanicinin talebi - filtrelenmis listeden gelip
         // ayni kurumda birden fazla gorsel ekleyip/silen admin artik HER
         // kayittan sonra listeye geri atilmiyor (bkz. update() ayni tarihli
@@ -247,6 +249,7 @@ class FacilityController extends Controller
         $facility->update($data);
 
         $this->storeUploadedImages($request, $facility);
+        $this->syncRoomTypes($request, $facility);
 
         // 14 Agustos 2026: kullanicinin talebi - "kaydet'e basinca 2 defa
         // geri tusuna basmam gerekiyor" -> ilk cozum: her zaman dogrudan
@@ -605,6 +608,41 @@ class FacilityController extends Controller
 
         if ($skipped) {
             session()->flash('image_warning', 'Şu görsel(ler) eklenemedi: '.implode(', ', $skipped));
+        }
+    }
+
+    /**
+     * 26 Agustos 2026: kullanicinin talebi - yasli bakim/huzurevi kurumlarinda
+     * oda tipine gore (tek/2/3 kisilik, paylasimli) ayri fiyat araligi.
+     * Sabit 4 tip disinda deger kabul edilmez (bkz. FacilityRoomType::TYPES).
+     * Bos birakilan bir tip varsa (admin daha once girmis, simdi temizlemis
+     * olabilir) o tipin kaydi silinir - sessizce eski veri kalmaz.
+     */
+    private function syncRoomTypes(Request $request, Facility $facility): void
+    {
+        $input = $request->input('room_types', []);
+        $order = 0;
+
+        foreach (FacilityRoomType::TYPES as $key => $label) {
+            $order++;
+            $min = $input[$key]['price_min'] ?? null;
+            $max = $input[$key]['price_max'] ?? null;
+            $min = is_numeric($min) ? (float) $min : null;
+            $max = is_numeric($max) ? (float) $max : null;
+
+            if ($min === null && $max === null) {
+                $facility->roomTypes()->where('room_type', $key)->delete();
+                continue;
+            }
+
+            if ($min !== null && $max !== null && $min > $max) {
+                [$min, $max] = [$max, $min];
+            }
+
+            $facility->roomTypes()->updateOrCreate(
+                ['room_type' => $key],
+                ['price_min' => $min, 'price_max' => $max, 'sort_order' => $order]
+            );
         }
     }
 
