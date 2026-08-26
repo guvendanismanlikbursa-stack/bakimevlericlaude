@@ -1,9 +1,9 @@
 @extends('admin.layout')
-@section('title', 'Bakım Takip Ziyaretleri')
+@section('title', 'Yakınımı Ziyaret Et Talepleri')
 
 @section('content')
 <div class="mb-6">
-  <h1 class="text-2xl font-bold">Bakım Takip Ziyaretleri</h1>
+  <h1 class="text-2xl font-bold">Yakınımı Ziyaret Et Talepleri</h1>
   <p class="text-sm text-gray-500 mt-1">Ailelerin, kurumda yatan yakınları için talep ettiği periyodik ziyaret+rapor hizmeti. Sadece "Ziyaret hizmetine açık" işaretli yaşlı bakım kurumları için aileye gösterilir.</p>
 </div>
 

@@ -5,7 +5,7 @@
   <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <div>
       <a href="{{ brand_route('family.dashboard') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-800 mb-2">← Panelime dön</a>
-      <h1 class="text-xl font-black text-gray-950">Bakım Takip Ziyaretlerim</h1>
+      <h1 class="text-xl font-black text-gray-950">Ziyaret Taleplerim</h1>
     </div>
     <a href="{{ brand_route('family.visit-service.create') }}" class="bg-primary text-white font-black text-sm px-4 py-2.5 rounded-lg">+ Yeni Talep</a>
   </div>

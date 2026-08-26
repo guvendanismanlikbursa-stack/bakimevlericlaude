@@ -4947,23 +4947,23 @@ class PlatformFeatureTest extends TestCase
 
         // yasli-bakim + acik -> CTA gorunmeli
         $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
-            ->assertOk()->assertSee('Bakım Takip Ziyareti Talep Et');
+            ->assertOk()->assertSee('Yakınımı Ziyaret Et');
 
         // fizik-tedavi + acik olsa bile -> KATEGORI DISI, GORUNMEMELI
         $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
-            ->assertOk()->assertDontSee('Bakım Takip Ziyareti Talep Et');
+            ->assertOk()->assertDontSee('Yakınımı Ziyaret Et');
 
         // yasli-bakim ama anahtar KAPALI (varsayilan) -> GORUNMEMELI
         $this->elderlyFacility->update(['allows_visit_service' => false]);
         $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
-            ->assertOk()->assertDontSee('Bakım Takip Ziyareti Talep Et');
+            ->assertOk()->assertDontSee('Yakınımı Ziyaret Et');
 
         // on kayitli (sahiplenilmemis) bir yasli-bakim kurumu + acik anahtar -> YINE DE GORUNMELI
         // (sahiplenme durumundan bagimsiz oldugunu dogrudan kanitlar)
         $unclaimedElderly = $this->facility('On Kayitli Yasli Bakim', $this->elderlyCategory, false);
         $unclaimedElderly->update(['allows_visit_service' => true]);
         $this->get('/site/bakimevleri/kurumlar/'.$unclaimedElderly->slug)
-            ->assertOk()->assertSee('Bakım Takip Ziyareti Talep Et');
+            ->assertOk()->assertSee('Yakınımı Ziyaret Et');
     }
 
     public function test_visit_service_request_and_report_lifecycle(): void

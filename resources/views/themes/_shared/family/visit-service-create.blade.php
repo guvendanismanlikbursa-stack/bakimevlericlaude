@@ -5,7 +5,7 @@
   <a href="{{ brand_route('family.dashboard') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-800 mb-4">← Panelime dön</a>
 
   <div class="bg-white rounded-xl shadow-sm p-6">
-    <h1 class="text-xl font-black text-gray-950 mb-1">Bakım Takip Ziyareti Talebi</h1>
+    <h1 class="text-xl font-black text-gray-950 mb-1">Yakınımı Ziyaret Et</h1>
     <p class="text-sm text-gray-600 mb-6">Kurumda kalan yakınınızı ekibimiz düzenli aralıklarla ziyaret eder, durumunu size raporlar. Talebinizi aldıktan sonra ekibimiz sizi telefonla arayıp sıklık ve ücreti netleştirir.</p>
 
     @if($facilities->isEmpty())

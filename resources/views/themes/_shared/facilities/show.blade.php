@@ -610,7 +610,7 @@
       @if(($facility->category->brand_scope ?? null) === 'yasli-bakim' && $facility->allows_visit_service)
         <div class="mt-6 pt-6 border-t">
           <p class="text-sm text-gray-600 mb-2">Yakınınız burada mı kalıyor? Ekibimiz düzenli ziyaret edip size raporlayabilir.</p>
-          <a href="{{ brand_route('family.visit-service.create', ['facility' => $facility->slug]) }}" class="block text-center bg-primary text-white font-black py-2 rounded-lg">Bakım Takip Ziyareti Talep Et</a>
+          <a href="{{ brand_route('family.visit-service.create', ['facility' => $facility->slug]) }}" class="block text-center bg-primary text-white font-black py-2 rounded-lg">Yakınımı Ziyaret Et</a>
         </div>
       @endif
     </div>
