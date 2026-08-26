@@ -212,6 +212,7 @@
       </div>
     @endif
     @if(session('error'))<div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm mb-6">{{ session('error') }}</div>@endif
+    @if(session('image_warning'))<div class="bg-amber-100 text-amber-800 px-4 py-3 rounded-lg text-sm mb-6">{{ session('image_warning') }}</div>@endif
     @if($errors->any())<div class="bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm mb-6"><ul class="list-disc list-inside">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
     @yield('content')
   </main>

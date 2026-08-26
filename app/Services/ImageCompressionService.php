@@ -28,11 +28,25 @@ class ImageCompressionService
     private const UPLOAD_MAX_DIMENSION = 1280;
     private const UPLOAD_QUALITY = 60;
 
+    /**
+     * @throws \RuntimeException mesaji 'unsupported_image_format' ise: Imagick/GD
+     *         kurulu ama BU dosyanin formatini/bicimini decode edemedi (bozuk dosya
+     *         ya da desteklenmeyen bir gorsel formati) - cagiran taraf bu dosyayi
+     *         atlayip kullaniciya bildirmeli, sessizce ham veriyi "gorsel" olarak
+     *         kaydetmemeli. Hicbir kutuphane kurulu degilse (cok nadir, minimal
+     *         PHP kurulumu) sikistirma atlanip orijinal dosya oldugu gibi kaydedilir.
+     */
     public function store(UploadedFile $file, string $directory, string $disk = 'public'): string
     {
+        $hasLibrary = extension_loaded('imagick') || (extension_loaded('gd') && function_exists('imagewebp'));
+
         $data = $this->compress($file);
 
         if ($data === null) {
+            if ($hasLibrary) {
+                throw new \RuntimeException('unsupported_image_format');
+            }
+
             return $file->store($directory, $disk);
         }
 
@@ -50,7 +64,6 @@ class ImageCompressionService
      */
     public function storeFromLocalFile(string $sourcePath, string $directory, string $disk = 'public', ?string $watermarkText = null, ?string $filename = null): string
     {
-        $mime = $this->detectMime($sourcePath);
         $data = null;
 
         if (extension_loaded('imagick')) {
@@ -58,7 +71,7 @@ class ImageCompressionService
         }
 
         if ($data === null && extension_loaded('gd') && function_exists('imagewebp')) {
-            $data = $this->processWithGd($sourcePath, $mime, $watermarkText);
+            $data = $this->processWithGd($sourcePath, $watermarkText);
         }
 
         if ($data === null) {
@@ -76,26 +89,27 @@ class ImageCompressionService
         return $path;
     }
 
-    private function detectMime(string $path): ?string
+    /**
+     * GD'nin kendi derlemesinin destekledigi HERHANGI bir formati (jpeg/png/
+     * webp/gif/bmp/avif...) magic-byte'lardan otomatik taniyip decode eder -
+     * sabit bir mime listesine bagli kalmaz, boylece GD surumu yeni bir
+     * format destekledikce kod degismeden otomatik kazanilir. 26 Agustos
+     * 2026: kullanicinin bildirdigi gercek hata - AVIF (Windows'un bazi
+     * ekran/dosya araclarinin urettigi modern format) formatindaki bir
+     * gorsel yuzunden TUM kurum kaydi olusturulamiyordu (bkz. FacilityController
+     * ayni tarihli yorum - artik boyle bir dosya tum formu degil, SADECE
+     * kendisini engeller).
+     */
+    private function decodeWithGd(string $realPath): mixed
     {
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $bytes = @file_get_contents($realPath);
 
-        return match ($ext) {
-            'jpg', 'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'webp' => 'image/webp',
-            default => null,
-        };
+        return $bytes !== false ? @imagecreatefromstring($bytes) : false;
     }
 
-    private function processWithGd(string $realPath, ?string $mime, ?string $watermarkText): ?string
+    private function processWithGd(string $realPath, ?string $watermarkText): ?string
     {
-        $source = match ($mime) {
-            'image/jpeg' => @imagecreatefromjpeg($realPath),
-            'image/png' => @imagecreatefrompng($realPath),
-            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($realPath) : null,
-            default => null,
-        };
+        $source = $this->decodeWithGd($realPath);
 
         if (! $source) {
             return null;
@@ -266,7 +280,7 @@ class ImageCompressionService
         try {
             $output = $driver === 'imagick'
                 ? $this->compressWithImagick($tmpPath)
-                : $this->compressWithGd($tmpPath, 'image/png');
+                : $this->compressWithGd($tmpPath);
 
             if ($output === null) {
                 return [
@@ -308,7 +322,7 @@ class ImageCompressionService
         // Bazi ucuz hosting GD derlemelerinde gd yuklu olsa da webp encode
         // fonksiyonu bulunmayabilir; bu durumda da orijinal dosyaya dus.
         if (extension_loaded('gd') && function_exists('imagewebp')) {
-            return $this->compressWithGd($realPath, $file->getMimeType());
+            return $this->compressWithGd($realPath);
         }
 
         return null;
@@ -348,14 +362,9 @@ class ImageCompressionService
         }
     }
 
-    private function compressWithGd(string $realPath, ?string $mime): ?string
+    private function compressWithGd(string $realPath): ?string
     {
-        $source = match ($mime) {
-            'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($realPath),
-            'image/png' => @imagecreatefrompng($realPath),
-            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($realPath) : null,
-            default => null,
-        };
+        $source = $this->decodeWithGd($realPath);
 
         if (! $source) {
             return null;

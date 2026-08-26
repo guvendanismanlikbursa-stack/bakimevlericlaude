@@ -168,10 +168,16 @@ class ProfileController extends Controller
         $user = FacilityUser::findOrFail(session('facility_user_id'));
         $currentCount = FacilityImage::where('facility_id', $user->facility_id)->count();
 
+        // 26 Agustos 2026: kullanicinin bildirdigi gercek hata (admin panelinde
+        // AVIF formatinda bir gorsel yuzunden kurum kaydi hic olusturulamiyordu,
+        // bkz. FacilityController ayni tarihli yorum) - sabit bir jpg/png/webp
+        // listesi yerine sadece dosya/boyut kontrolu yapilir, GERCEK format
+        // testi asagida ImageCompressionService'in decode denemesiyle yapilir
+        // (GD'nin derlemesinin destekledigi HERHANGI bir formati kabul eder).
         $request->validate([
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'image' => 'nullable|file|max:5120',
             'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'images.*' => 'file|max:5120',
         ]);
 
         $files = collect($request->file('images', []));
@@ -199,7 +205,14 @@ class ProfileController extends Controller
         $uploaded = [];
         try {
             foreach ($files as $i => $file) {
-                $path = app(ImageCompressionService::class)->store($file, 'facilities');
+                try {
+                    $path = app(ImageCompressionService::class)->store($file, 'facilities');
+                } catch (\RuntimeException $e) {
+                    if ($e->getMessage() === 'unsupported_image_format') {
+                        throw new \InvalidArgumentException("\"{$file->getClientOriginalName()}\" desteklenmeyen veya bozuk bir görsel dosyası.");
+                    }
+                    throw $e;
+                }
                 if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
                     throw new \RuntimeException('Gorsel diske yazildiktan sonra dogrulanamadi.');
                 }
@@ -220,7 +233,9 @@ class ProfileController extends Controller
             \Illuminate\Support\Facades\Log::error('Kurum galeri gorseli kaydedilemedi: ' . $e->getMessage(), ['facility_id' => $user->facility_id]);
             \Sentry\captureException($e);
 
-            return back()->withErrors(['images' => 'Görsel(ler) yüklenirken bir sorun oluştu, lütfen tekrar deneyin.']);
+            $message = $e instanceof \InvalidArgumentException ? $e->getMessage() : 'Görsel(ler) yüklenirken bir sorun oluştu, lütfen tekrar deneyin.';
+
+            return back()->withErrors(['images' => $message]);
         }
 
         // 19 Agustos 2026: kullanicinin talebi - hangi domain'den yuklenirse

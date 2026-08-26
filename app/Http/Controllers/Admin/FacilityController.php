@@ -554,19 +554,57 @@ class FacilityController extends Controller
 
         // 3 Agustos 2026: bkz. Facility\ProfileController::uploadImage ayni
         // yorum - yazimdan sonra dosyanin gercekten var oldugu dogrulanir.
-        foreach ($files as $i => $file) {
-            $path = app(ImageCompressionService::class)->store($file, 'facilities');
+        //
+        // 26 Agustos 2026: kullanicinin bildirdigi gercek hata - "images.*"
+        // icin sabit bir mime listesi (jpg/png/webp) validateData() icinde
+        // TUM formu (dolayisiyla kurumun kendisini) engelliyordu; ör. AVIF
+        // formatinda bir gorsel yuzunden yeni kurum HIC olusturulamiyordu.
+        // Artik format/boyut kontrolu burada, DOSYA BAZINDA yapilir - kotu
+        // bir gorsel sadece kendisini atlar, ne kurum kaydini ne diger
+        // gorselleri engeller; hangi dosyanin neden atlandigi admin'e
+        // acikca gosterilir (bkz. edit view 'image_warning' flash).
+        $skipped = [];
+        $saved = 0;
+
+        foreach ($files as $file) {
+            if (! $file->isValid()) {
+                $skipped[] = $file->getClientOriginalName().' (yükleme sırasında bir sorun oluştu)';
+                continue;
+            }
+
+            if ($file->getSize() > 5 * 1024 * 1024) {
+                $skipped[] = $file->getClientOriginalName().' (5MB sınırını aşıyor)';
+                continue;
+            }
+
+            try {
+                $path = app(ImageCompressionService::class)->store($file, 'facilities');
+            } catch (\RuntimeException $e) {
+                if ($e->getMessage() === 'unsupported_image_format') {
+                    $skipped[] = $file->getClientOriginalName().' (desteklenmeyen veya bozuk görsel dosyası)';
+                    continue;
+                }
+                throw $e;
+            }
+
             if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
                 \Illuminate\Support\Facades\Log::error('Kurum galeri gorseli (admin) kaydedilemedi.', ['facility_id' => $facility->id]);
                 \Sentry\captureException(new \RuntimeException('Gorsel diske yazildiktan sonra dogrulanamadi.'));
+                $skipped[] = $file->getClientOriginalName().' (kaydedilemedi)';
                 continue;
             }
+
             FacilityImage::create([
                 'facility_id' => $facility->id,
                 'path' => $path,
-                'sort_order' => $start + $i,
+                'sort_order' => $start + $saved,
             ]);
             app(\App\Services\CrossDomainImageSync::class)->syncStore($path);
+            $saved++;
+        }
+
+        if ($skipped) {
+            session()->flash('image_warning', 'Şu görsel(ler) eklenemedi: '.implode(', ', $skipped));
         }
     }
 
@@ -590,8 +628,6 @@ class FacilityController extends Controller
             // kaydetmeden geri donduruyordu.
             'price_max' => ['nullable', 'numeric', 'min:0', Rule::when($request->filled('price_min'), ['gte:price_min'])],
             'cover_image' => 'nullable|string|max:255',
-            'images' => 'nullable|array|max:10',
-            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'services_raw' => 'nullable|string',
             'services' => 'nullable|array',
             'services.*' => 'nullable|string|max:120',

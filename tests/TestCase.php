@@ -55,7 +55,13 @@ abstract class TestCase extends BaseTestCase
         }
 
         $path = $dir.'/'.uniqid('upload_', true).'.png';
-        file_put_contents($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII='));
+        // 26 Agustos 2026: onceki sabit base64 1x1 PNG'nin IDAT CRC'si bozuktu -
+        // finfo/mime bazli eski dogrulamayi (gorunuste "gecerli PNG") geciyordu
+        // ama GD'nin gercek PNG decode'u basarisiz oluyordu; bkz. ImageCompressionService
+        // ayni tarihli yorum - artik decode BASARISIZ olan dosyalar sessizce ham
+        // kaydedilmek yerine reddediliyor, bu yuzden testlerin GERCEKTEN gecerli
+        // (2x2, beyaz) bir PNG kullanmasi gerekiyor.
+        file_put_contents($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAFklEQVQImWP8//8/AwMDEwMDAwMDAwAkBgMBmjCi+wAAAABJRU5ErkJggg=='));
 
         return new UploadedFile($path, $name, 'image/png', null, true);
     }
