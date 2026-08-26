@@ -2,11 +2,17 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\Admin\AccountDeletionController;
 use App\Http\Controllers\Admin\BalanceController;
 use App\Http\Controllers\Admin\FacilityClaimController;
 use App\Http\Controllers\Admin\FacilityController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WalletTopupController;
+use App\Http\Controllers\Public\ImpersonationController;
+use App\Http\Middleware\FacilityUserAuth;
+use App\Http\Middleware\FamilyAuth;
 use App\Mail\FacilityPasswordManuallyResetMail;
+use App\Models\AccountDeletionRequest;
 use App\Models\BalanceLog;
 use App\Models\Facility;
 use App\Models\FacilityClaim;
@@ -111,6 +117,19 @@ class CheckAdminFlows extends Command
         $this->safeRun('Bakiye yükleme çift onay engeli', fn () => $this->checkWalletTopupDoubleApproveGuard());
         $this->safeRun('Sahiplenme başvurusu onayı', fn () => $this->checkFacilityClaimApprove());
 
+        // 26 Agustos 2026: Asama 2 - hesap durumu ve erisim islemleri
+        // (bkz. plan dosyasi). Sadece veritabani alanini degil, gercek
+        // ERISIM ENGELLEMESINI (FamilyAuth/FacilityUserAuth middleware'i)
+        // dogrudan calistirarak test eder.
+        $this->safeRun('Hesap askıya alma/aktifleştirme (Aile)', fn () => $this->checkFamilyStatusToggleEnforced());
+        $this->safeRun('Hesap askıya alma/aktifleştirme (Kurum Yetkilisi)', fn () => $this->checkFacilityUserStatusToggleEnforced());
+        $this->safeRun('Kullanıcı olarak görüntüleme (impersonation)', fn () => $this->checkImpersonationRoundTrip());
+        $this->safeRun('Kurum yetkilisi şifre sıfırlama', fn () => $this->checkFacilityPasswordResetInvalidatesOld());
+        $this->safeRun('Kurum yetkilisi hesabını silme', fn () => $this->checkDestroyFacilityUserDoesNotOrphan());
+        $this->safeRun('Sahiplenmeyi geri alma (erişim engeli)', fn () => $this->checkRevertSuspensionBlocksAccess());
+        $this->safeRun('Hesap silme talebi onayı', fn () => $this->checkAccountDeletionApprove());
+        $this->safeRun('Hesap silme talebi reddi', fn () => $this->checkAccountDeletionRejectLeavesAccountActive());
+
         if ($this->failures) {
             $this->error(count($this->failures).' hata bulundu.');
             record_platform_error(
@@ -199,6 +218,27 @@ class CheckAdminFlows extends Command
         FacilityClaim::where('facility_id', $facility->id)->delete();
         WalletTopup::withTrashed()->where('facility_id', $facility->id)->forceDelete();
         $facility->forceDelete();
+    }
+
+    /**
+     * FacilityUserAuth middleware'ini DOGRUDAN calistirir - sadece
+     * $user->status alanini degil, GERCEK erisim engelini test eder
+     * (bkz. Asama 2 senaryolari).
+     */
+    private function passesFacilityUserAuth(FacilityUser $facilityUser): bool
+    {
+        session(['facility_user_id' => $facilityUser->id]);
+        $request = Request::create('/');
+        $request->setLaravelSession(app('session.store'));
+
+        $reached = false;
+        (new FacilityUserAuth())->handle($request, function () use (&$reached) {
+            $reached = true;
+
+            return response('ok');
+        });
+
+        return $reached;
     }
 
     private function instantClaimRequest(string $email): Request
@@ -636,6 +676,331 @@ class CheckAdminFlows extends Command
         if (count($this->failures) === $failuresBefore) {
             FacilityUser::where('email', $email)->delete();
             $this->cleanupFacility($facility);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Asama 2 senaryolari - hesap durumu ve erisim islemleri
+    // ------------------------------------------------------------------
+
+    private function checkFamilyStatusToggleEnforced(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Hesap askıya alma/aktifleştirme (Aile)';
+        $email = 'qatest.admin.check.family-status@example.com';
+        FamilyUser::where('email', $email)->delete();
+        $family = FamilyUser::create([
+            'name' => 'QATEST', 'email' => $email, 'phone' => '05320000000',
+            'password' => Hash::make('QaTest12345!'), 'status' => 'active', 'email_verified_at' => now(),
+        ]);
+
+        app(UserController::class)->toggleFamilyStatus($family);
+        $family->refresh();
+        if ($family->status !== 'suspended') {
+            $this->recordFailure($flow, 'Askıya alma sonrası durum "suspended" olmadı.');
+        }
+
+        session(['family_user_id' => $family->id]);
+        $request = Request::create('/');
+        $request->setLaravelSession(app('session.store'));
+        $reached = false;
+        (new FamilyAuth())->handle($request, function () use (&$reached) {
+            $reached = true;
+
+            return response('ok');
+        });
+        if ($reached) {
+            $this->recordFailure($flow, 'Askıya alınmış bir aile hesabı panele erişebildi (middleware engellemedi).');
+        }
+
+        app(UserController::class)->toggleFamilyStatus($family->fresh());
+        $family->refresh();
+        if ($family->status !== 'active') {
+            $this->recordFailure($flow, 'Yeniden aktifleştirme sonrası durum "active" olmadı.');
+        }
+
+        session(['family_user_id' => $family->id]);
+        $request2 = Request::create('/');
+        $request2->setLaravelSession(app('session.store'));
+        $reached2 = false;
+        (new FamilyAuth())->handle($request2, function () use (&$reached2) {
+            $reached2 = true;
+
+            return response('ok');
+        });
+        if (! $reached2) {
+            $this->recordFailure($flow, 'Yeniden aktifleştirilen hesap hâlâ erişim sağlayamıyor.');
+        }
+
+        session()->forget('family_user_id');
+        if (count($this->failures) === $failuresBefore) {
+            $family->delete();
+        }
+    }
+
+    private function checkFacilityUserStatusToggleEnforced(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Hesap askıya alma/aktifleştirme (Kurum Yetkilisi)';
+        $facility = $this->freshUnclaimedFacility('status-toggle');
+        $email = 'qatest.admin.check.facility-status@example.com';
+        FacilityUser::where('email', $email)->delete();
+        $facilityUser = FacilityUser::create([
+            'facility_id' => $facility->id, 'name' => 'QATEST', 'email' => $email,
+            'password' => Hash::make('QaTest12345!'), 'status' => 'active',
+            'must_change_password' => false, 'email_verified_at' => now(),
+        ]);
+
+        app(UserController::class)->toggleFacilityUserStatus($facilityUser);
+        $facilityUser->refresh();
+        if ($facilityUser->status !== 'suspended') {
+            $this->recordFailure($flow, 'Askıya alma sonrası durum "suspended" olmadı.');
+        }
+        if ($this->passesFacilityUserAuth($facilityUser)) {
+            $this->recordFailure($flow, 'Askıya alınmış bir kurum yetkilisi panele erişebildi (middleware engellemedi).');
+        }
+
+        app(UserController::class)->toggleFacilityUserStatus($facilityUser->fresh());
+        $facilityUser->refresh();
+        if ($facilityUser->status !== 'active') {
+            $this->recordFailure($flow, 'Yeniden aktifleştirme sonrası durum "active" olmadı.');
+        }
+        if (! $this->passesFacilityUserAuth($facilityUser)) {
+            $this->recordFailure($flow, 'Yeniden aktifleştirilen hesap hâlâ erişim sağlayamıyor.');
+        }
+
+        session()->forget('facility_user_id');
+        if (count($this->failures) === $failuresBefore) {
+            $facilityUser->delete();
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkImpersonationRoundTrip(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Kullanıcı olarak görüntüleme (impersonation)';
+        session(['admin_id' => $this->adminId, 'admin_name' => 'QATEST Admin']);
+
+        $email = 'qatest.admin.check.impersonation@example.com';
+        FamilyUser::where('email', $email)->delete();
+        $family = FamilyUser::create([
+            'name' => 'QATEST', 'email' => $email, 'phone' => '05320000000',
+            'password' => Hash::make('QaTest12345!'), 'status' => 'active', 'email_verified_at' => now(),
+        ]);
+
+        app(UserController::class)->impersonateFamilyUser($family);
+
+        if (session('admin_id') !== null) {
+            $this->recordFailure($flow, 'Görüntüleme başlarken admin oturumu tamamen temizlenmedi.');
+        }
+        if ((int) session('family_user_id') !== $family->id) {
+            $this->recordFailure($flow, 'Görüntüleme başlarken hedef aile oturumu kurulmadı.');
+        }
+        if ((int) session('impersonator_admin_id') !== $this->adminId) {
+            $this->recordFailure($flow, 'Orijinal admin kimliği impersonator_admin_id altında saklanmadı.');
+        }
+
+        $stopRequest = Request::create('/');
+        $stopRequest->setLaravelSession(app('session.store'));
+        app(ImpersonationController::class)->stop($stopRequest);
+
+        if ((int) session('admin_id') !== $this->adminId) {
+            $this->recordFailure($flow, 'Görüntüleme bitince orijinal admin oturumu geri yüklenmedi.');
+        }
+        if (session('family_user_id') !== null || session('impersonator_admin_id') !== null) {
+            $this->recordFailure($flow, 'Görüntüleme bitince hedef kullanıcı/impersonator izleri oturumda kaldı.');
+        }
+
+        session(['admin_id' => $this->adminId]);
+        if (count($this->failures) === $failuresBefore) {
+            $family->delete();
+        }
+    }
+
+    private function checkFacilityPasswordResetInvalidatesOld(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Kurum yetkilisi şifre sıfırlama';
+        $facility = $this->freshUnclaimedFacility('password-reset');
+        $email = 'qatest.admin.check.password-reset@example.com';
+        FacilityUser::where('email', $email)->delete();
+        $oldPassword = 'QaTestEski12345!';
+        $facilityUser = FacilityUser::create([
+            'facility_id' => $facility->id, 'name' => 'QATEST', 'email' => $email,
+            'password' => Hash::make($oldPassword), 'status' => 'active',
+            'must_change_password' => false, 'email_verified_at' => now(),
+        ]);
+
+        app(UserController::class)->resetFacilityUserPassword($facilityUser);
+        $facilityUser->refresh();
+
+        if (Hash::check($oldPassword, $facilityUser->password)) {
+            $this->recordFailure($flow, 'Şifre sıfırlandıktan sonra ESKİ şifre hâlâ geçerli.');
+        }
+        if (! $facilityUser->must_change_password) {
+            $this->recordFailure($flow, 'must_change_password işaretlenmedi.');
+        }
+
+        $sentMails = Mail::sent(FacilityPasswordManuallyResetMail::class, fn ($mail) => $mail->facilityUser->is($facilityUser));
+        if ($sentMails->isEmpty()) {
+            $this->recordFailure($flow, 'Yeni şifre maili gönderilmedi.');
+        } elseif (! Hash::check($sentMails->first()->temporaryPassword, $facilityUser->password)) {
+            $this->recordFailure($flow, 'Mailde gönderilen yeni şifre, kayıtlı şifreyle eşleşmiyor.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $facilityUser->delete();
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkDestroyFacilityUserDoesNotOrphan(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Kurum yetkilisi hesabını silme';
+        $facility = $this->freshUnclaimedFacility('destroy-user');
+        $email = 'qatest.admin.check.destroy-user@example.com';
+        FacilityUser::where('email', $email)->delete();
+        $facilityUser = FacilityUser::create([
+            'facility_id' => $facility->id, 'name' => 'QATEST', 'email' => $email,
+            'password' => Hash::make('QaTest12345!'), 'status' => 'active',
+            'must_change_password' => false, 'email_verified_at' => now(),
+        ]);
+        $topup = WalletTopup::create([
+            'facility_id' => $facility->id, 'facility_user_id' => $facilityUser->id,
+            'amount' => 50, 'receipt_path' => 'qatest-admin-check.jpg', 'status' => 'pending',
+        ]);
+
+        app(UserController::class)->destroyFacilityUser($facilityUser);
+
+        if (FacilityUser::find($facilityUser->id)) {
+            $this->recordFailure($flow, 'Hesap silindikten sonra hâlâ veritabanında mevcut.');
+        }
+        if (! Facility::find($facility->id)) {
+            $this->recordFailure($flow, 'Kurum yetkilisi silinince kurumun kendisi de yanlışlıkla silindi.');
+        }
+        $topup->refresh();
+        if ($topup->facility_user_id !== null) {
+            $this->recordFailure($flow, 'Silinen hesaba ait bakiye yükleme kaydının facility_user_id alanı null olmadı (yetim referans riski).');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $topup->forceDelete();
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkRevertSuspensionBlocksAccess(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Sahiplenmeyi geri alma (erişim engeli)';
+        $facility = $this->freshUnclaimedFacility('revert-access-block');
+        $email = 'qatest.admin.check.revert-access-block@example.com';
+        FacilityUser::where('email', $email)->delete();
+
+        $controller = app(FacilityController::class);
+        $controller->instantClaim($this->instantClaimRequest($email), $facility);
+        $facility->refresh();
+        $facilityUser = FacilityUser::where('email', $email)->first();
+        if (! $facilityUser) {
+            $this->recordFailure($flow, 'Test kurulumu başarısız - kurum yetkilisi oluşturulamadı.');
+
+            return;
+        }
+        $facilityUser->update(['email_verified_at' => now(), 'must_change_password' => false]);
+
+        $controller->revertToPreRegistered($facility);
+        $facilityUser->refresh();
+
+        if ($facilityUser->status !== 'suspended') {
+            $this->recordFailure($flow, 'Geri alma sonrası kurum yetkilisi hesabı askıya alınmadı.');
+        }
+        if ($this->passesFacilityUserAuth($facilityUser)) {
+            $this->recordFailure($flow, 'Askıya alınmış olmasına rağmen kurum yetkilisi panele erişebildi.');
+        }
+
+        session()->forget('facility_user_id');
+        if (count($this->failures) === $failuresBefore) {
+            FacilityUser::where('email', $email)->delete();
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkAccountDeletionApprove(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Hesap silme talebi onayı';
+        $email = 'qatest.admin.check.deletion-approve@example.com';
+        FamilyUser::where('email', $email)->delete();
+        $family = FamilyUser::create([
+            'name' => 'QATEST Silinecek', 'email' => $email, 'phone' => '05320000000',
+            'password' => Hash::make('QaTest12345!'), 'status' => 'active', 'email_verified_at' => now(),
+        ]);
+        $deletionRequest = AccountDeletionRequest::create([
+            'requestable_type' => FamilyUser::class, 'requestable_id' => $family->id,
+            'requested_at' => now(), 'status' => 'pending',
+        ]);
+
+        app(AccountDeletionController::class)->approve($deletionRequest);
+        $family->refresh();
+        $deletionRequest->refresh();
+
+        if ($family->status !== 'deleted') {
+            $this->recordFailure($flow, 'Onay sonrası hesap durumu "deleted" olmadı.');
+        }
+        if ($family->email === $email) {
+            $this->recordFailure($flow, 'Onay sonrası e-posta anonimleştirilmedi (KVKK riski).');
+        }
+        if ($deletionRequest->status !== 'completed') {
+            $this->recordFailure($flow, 'Talep durumu "completed" olarak işaretlenmedi.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $deletionRequest->delete();
+            $family->delete();
+        }
+    }
+
+    private function checkAccountDeletionRejectLeavesAccountActive(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Hesap silme talebi reddi';
+        $email = 'qatest.admin.check.deletion-reject@example.com';
+        FamilyUser::where('email', $email)->delete();
+        $family = FamilyUser::create([
+            'name' => 'QATEST Reddedilecek', 'email' => $email, 'phone' => '05320000000',
+            'password' => Hash::make('QaTest12345!'), 'status' => 'active', 'email_verified_at' => now(),
+        ]);
+        $deletionRequest = AccountDeletionRequest::create([
+            'requestable_type' => FamilyUser::class, 'requestable_id' => $family->id,
+            'requested_at' => now(), 'status' => 'pending',
+        ]);
+
+        app(AccountDeletionController::class)->reject(Request::create('/', 'POST', ['admin_note' => 'QATEST red']), $deletionRequest);
+        $family->refresh();
+        $deletionRequest->refresh();
+
+        if ($family->status !== 'active' || $family->email !== $email) {
+            $this->recordFailure($flow, 'Reddedilen bir talep hesabı değiştirdi (kısmen silinmiş olabilir).');
+        }
+        if ($deletionRequest->status !== 'rejected') {
+            $this->recordFailure($flow, 'Talep durumu "rejected" olarak işaretlenmedi.');
+        }
+
+        $blocked = false;
+        try {
+            app(AccountDeletionController::class)->approve($deletionRequest->fresh());
+        } catch (\Throwable $e) {
+            $blocked = method_exists($e, 'getStatusCode') && $e->getStatusCode() === 400;
+        }
+        if (! $blocked) {
+            $this->recordFailure($flow, 'Zaten reddedilmiş bir talep sonradan onaylanabildi.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $deletionRequest->delete();
+            $family->delete();
         }
     }
 }

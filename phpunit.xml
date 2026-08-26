@@ -9,6 +9,13 @@
         </testsuite>
     </testsuites>
     <php>
+        <!-- 26 Agustos 2026: Admin panel regresyon testi (CheckAdminFlowsCommandTest)
+             eklendikten sonra tam paket (210 test) varsayilan 128M PHP
+             memory_limit sinirinin (halihazirda 122M'de calisiyordu) hemen
+             ustune cikti - GERCEK bir sizinti degil (512M ile peak kullanim
+             sadece 130M), sadece test surecinin toplam kumulatif yuku PHP'nin
+             varsayilan sinirina cok yakindi. Guvenli bir marjla sabitlendi. -->
+        <ini name="memory_limit" value="256M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="base64:7jX1vxIvvxYzE0whngqq70YpXGzUxnWKiNoOMvNK0/A="/>
         <env name="APP_DEBUG" value="true"/>
