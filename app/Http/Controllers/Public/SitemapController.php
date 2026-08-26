@@ -91,6 +91,19 @@ class SitemapController extends Controller
                         $district['has_facilities'] ? '0.55' : '0.35',
                         $city->updated_at
                     ));
+                    // 26 Agustos 2026: kullanicinin talebi - "il+ilce olarak
+                    // maksimum kapsamli olmali", ozellikle fiyat odakli
+                    // aramalar icin (aileler once fiyat arastiriyor). Bu
+                    // ilce-seviye fiyat-rehberi URL'leri eskiden HIC
+                    // eklenmiyordu (sadece il-seviye + kategori+ilce
+                    // kombinasyonu vardi) - rehber/... ile BIREBIR ayni
+                    // kapsamda esitlendi.
+                    $urls->push($this->url(
+                        $prefix.'/fiyat-rehberi/'.$section['slug'].'/'.$city->slug.'/'.$district['slug'],
+                        $district['has_facilities'] ? 'weekly' : 'monthly',
+                        $district['has_facilities'] ? '0.55' : '0.35',
+                        $city->updated_at
+                    ));
                 }
             }
 

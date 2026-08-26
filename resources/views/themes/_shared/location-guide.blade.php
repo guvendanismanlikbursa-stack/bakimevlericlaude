@@ -52,6 +52,10 @@
       <div class="text-sm font-black mb-3" style="color: {{ $theme === 'bakimevleri' ? '#fff' : $colors['primary'] }};">Hızlı aksiyon</div>
       <div class="grid gap-2">
         <a href="{{ brand_route('facilities.index', array_filter(['bolum' => $section['slug'], 'city' => $city->slug, 'district' => $districtName])) }}" class="rounded-lg px-4 py-3 text-sm font-black text-white text-center" style="background: {{ $colors['primary'] }};">Bu bölgedeki kurumları listele</a>
+        {{-- 26 Agustos 2026: kullanicinin talebi - aileler once fiyat
+             arastiriyor, bu yuzden fiyat-odakli kardes sayfaya (bkz.
+             PriceGuideController) buradan da guclu bir ic link verilir. --}}
+        <a href="{{ $category ? brand_route('price-guide.category', array_filter(['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug, 'districtSlug' => $districtName ? Str::slug($districtName) : null])) : brand_route('price-guide.show', array_filter(['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => $districtName ? Str::slug($districtName) : null])) }}" class="rounded-lg border px-4 py-3 text-sm font-black text-center {{ $theme === 'bakimevleri' ? 'border-white/20 text-white' : 'border-gray-200 text-gray-700' }}">{{ $placeTitle }} fiyatlarını gör</a>
         <a href="{{ brand_route('engagement.wizard', ['bolum' => $section['slug']]) }}" class="rounded-lg border px-4 py-3 text-sm font-black text-center {{ $theme === 'bakimevleri' ? 'border-white/20 text-white' : 'border-gray-200 text-gray-700' }}">Karar sihirbazına git</a>
       </div>
     </div>
@@ -93,6 +97,39 @@
           @endforeach
         </div>
       </div>
+
+      {{-- 26 Agustos 2026: kullanicinin talebi - "il+kategori" aramalarinda
+           gorunmemenin bir nedeni govde metninin binlerce sayfada birebir
+           ayni olmasiydi. Bu kutu GERCEK veriden (bkz. LocationGuideController::
+           priceRangeFor()) hesaplanir, hicbir iki il/ilce/kategori sayfasi
+           ayni degeri gostermez - fiyat girilmis kurum yoksa hic gorunmez. --}}
+      @if($priceRange)
+        <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-6">
+          <h2 class="text-lg font-black text-gray-950 mb-2">{{ $placeTitle }} {{ $topicTitle }} fiyat aralığı</h2>
+          <p class="text-gray-700 leading-relaxed">
+            @if($priceRange['min'] === $priceRange['max'])
+              Bu bölgede fiyat bilgisi paylaşan kurumlarda aylık ücret <strong>{{ number_format($priceRange['min'], 0, ',', '.') }} TL</strong> civarındadır.
+            @else
+              Bu bölgede fiyat bilgisi paylaşan {{ $priceRange['priced_count'] }} kurumda aylık ücretler <strong>{{ number_format($priceRange['min'], 0, ',', '.') }} TL</strong> ile <strong>{{ number_format($priceRange['max'], 0, ',', '.') }} TL</strong> arasında değişiyor.
+            @endif
+            Kesin fiyat oda tipi, bakım yoğunluğu ve dahil hizmetlere göre değişebilir; net teklif için kuruma doğrudan ulaşmanızı öneririz.
+          </p>
+        </div>
+      @endif
+
+      @if(!empty($content['faq_preview']))
+        <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-6">
+          <h2 class="text-lg font-black text-gray-950 mb-4">{{ $placeTitle }} hakkında sıkça sorulan sorular</h2>
+          <div class="space-y-4">
+            @foreach($content['faq_preview'] as [$question, $answer])
+              <div>
+                <div class="font-bold text-gray-900">{{ $question }}</div>
+                <p class="text-gray-600 text-sm leading-relaxed mt-1">{{ $answer }}</p>
+              </div>
+            @endforeach
+          </div>
+        </div>
+      @endif
 
       <div class="grid md:grid-cols-2 gap-4">
         @forelse($facilities as $facility)

@@ -1,6 +1,11 @@
 @extends('layouts.brand')
 @php
-  $topicTitle = $category->name ?? $section['title'];
+  // 26 Agustos 2026: kullanicinin talebi - "bakimevi fiyatlari" gibi
+  // gercek arama terimleri icin bkz. config/brands.php seo_title alani
+  // ("Bakimevi", "Kres" vb.) - $section['title'] ("Yasli Bakim" gibi)
+  // kimsenin aramadigi bir terim. bkz. location-guide.blade.php ayni
+  // tarihli/mantikli duzeltme.
+  $topicTitle = $category->name ?? $section['seo_title'] ?? $section['title'];
   $placeTitle = ($districtName ?? null) ? $city->name.' / '.$districtName : $city->name;
   $breadcrumbItems = [
       ['name' => $brand['name'], 'url' => brand_route('home')],
