@@ -4,8 +4,13 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\Admin\AccountDeletionController;
 use App\Http\Controllers\Admin\BalanceController;
+use App\Http\Controllers\Admin\BrokerController;
+use App\Http\Controllers\Admin\CityController;
+use App\Http\Controllers\Admin\DocumentController;
+use App\Http\Controllers\Admin\FacilityCategoryController;
 use App\Http\Controllers\Admin\FacilityClaimController;
 use App\Http\Controllers\Admin\FacilityController;
+use App\Http\Controllers\Admin\OccupancyController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WalletTopupController;
 use App\Http\Controllers\Public\ImpersonationController;
@@ -14,7 +19,10 @@ use App\Http\Middleware\FamilyAuth;
 use App\Mail\FacilityPasswordManuallyResetMail;
 use App\Models\AccountDeletionRequest;
 use App\Models\BalanceLog;
+use App\Models\BrokerReferral;
+use App\Models\City;
 use App\Models\Facility;
+use App\Models\FacilityCategory;
 use App\Models\FacilityClaim;
 use App\Models\FamilyUser;
 use App\Models\FacilityUser;
@@ -24,7 +32,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 // 26 Agustos 2026: kullanicinin talebi - "her bolumde ki her ozellik mutlaka
 // farkli senaryolarla test edilmeli". App\Console\Commands\CheckUserFlows.php
@@ -129,6 +139,19 @@ class CheckAdminFlows extends Command
         $this->safeRun('Sahiplenmeyi geri alma (erişim engeli)', fn () => $this->checkRevertSuspensionBlocksAccess());
         $this->safeRun('Hesap silme talebi onayı', fn () => $this->checkAccountDeletionApprove());
         $this->safeRun('Hesap silme talebi reddi', fn () => $this->checkAccountDeletionRejectLeavesAccountActive());
+
+        // 26 Agustos 2026: Asama 3 - su ana kadar hicbir yerde (ne PHPUnit'te
+        // ne adminPanelSmokeTest'te) test edilmemis bolumler (bkz. plan
+        // dosyasi): Doluluk Durumu, Aracilik CRM, Belge Goruntuleme, Sehir/
+        // Kategori olusturma-silme.
+        $this->safeRun('Doluluk Durumu güncelleme', fn () => $this->checkOccupancyUpdate());
+        $this->safeRun('Aracılık - Anlaşmalı Kurum işaretleme', fn () => $this->checkBrokerFacilityToggle());
+        $this->safeRun('Aracılık - Yönlendirme yaşam döngüsü', fn () => $this->checkBrokerReferralLifecycle());
+        $this->safeRun('Belge görüntüleme (dosya sunumu)', fn () => $this->checkDocumentShowServesFile());
+        $this->safeRun('Belge görüntüleme (güvenlik/hata kontrolleri)', fn () => $this->checkDocumentShowRejectsInvalid());
+        $this->safeRun('Şehir oluşturma ve silme koruması', fn () => $this->checkCityCreateAndTrashedGuard());
+        $this->safeRun('Kategori oluşturma ve fiyat segmenti güncelleme', fn () => $this->checkCategoryCreateAndPriceTiers());
+        $this->safeRun('Kategori silme koruması (çöp kutusu)', fn () => $this->checkCategoryTrashedGuard());
 
         if ($this->failures) {
             $this->error(count($this->failures).' hata bulundu.');
@@ -1001,6 +1024,283 @@ class CheckAdminFlows extends Command
         if (count($this->failures) === $failuresBefore) {
             $deletionRequest->delete();
             $family->delete();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Asama 3 senaryolari - su ana kadar hicbir yerde test edilmemis bolumler
+    // ------------------------------------------------------------------
+
+    private function checkOccupancyUpdate(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Doluluk Durumu güncelleme';
+        $facility = $this->freshUnclaimedFacility('occupancy');
+        $controller = app(OccupancyController::class);
+
+        $controller->update(Request::create('/', 'POST', ['vacant_beds_male' => 3, 'vacant_beds_female' => 5]), $facility);
+        $facility->refresh();
+        if ((int) $facility->vacant_beds_male !== 3 || (int) $facility->vacant_beds_female !== 5 || ! $facility->vacant_beds_updated_at) {
+            $this->recordFailure($flow, 'Geçerli doluluk bilgisi doğru kaydedilmedi.');
+        }
+
+        $rejected = false;
+        try {
+            $controller->update(Request::create('/', 'POST', ['vacant_beds_male' => -1]), $facility);
+        } catch (ValidationException) {
+            $rejected = true;
+        }
+        if (! $rejected) {
+            $this->recordFailure($flow, 'Negatif boş yatak sayısı reddedilmedi.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkBrokerFacilityToggle(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Aracılık - Anlaşmalı Kurum işaretleme';
+        $facility = $this->freshUnclaimedFacility('broker-toggle');
+        $controller = app(BrokerController::class);
+
+        $controller->toggleFacility($facility);
+        $facility->refresh();
+        if (! $facility->is_broker_managed) {
+            $this->recordFailure($flow, 'İlk işaretlemede is_broker_managed true olmadı.');
+        }
+
+        $controller->toggleFacility($facility);
+        $facility->refresh();
+        if ($facility->is_broker_managed) {
+            $this->recordFailure($flow, 'İkinci işaretlemede (geri alma) is_broker_managed false olmadı.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkBrokerReferralLifecycle(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Aracılık - Yönlendirme yaşam döngüsü';
+        $facility = $this->freshUnclaimedFacility('broker-referral');
+        $controller = app(BrokerController::class);
+
+        $controller->storeReferral(Request::create('/', 'POST', [
+            'facility_id' => $facility->id, 'family_name' => 'QATEST Aile',
+            'patient_name' => 'QATEST Hasta', 'patient_age' => 70, 'patient_mobility' => 'yurutebiliyor',
+            'referred_at' => now()->toDateString(),
+        ]));
+        $referral = BrokerReferral::where('facility_id', $facility->id)->first();
+
+        if (! $referral) {
+            $this->recordFailure($flow, 'Yeni yönlendirme oluşturulmadı.');
+        } else {
+            if ($referral->status !== 'yonlendirildi' || $referral->fee_status !== 'bekliyor') {
+                $this->recordFailure($flow, 'Yeni yönlendirmenin varsayılan durumu yanlış.');
+            }
+
+            $controller->updateReferral(Request::create('/', 'POST', [
+                'status' => 'yerlesti', 'fee_status' => 'odendi', 'fee_amount' => 500,
+            ]), $referral);
+            $referral->refresh();
+            if ($referral->status !== 'yerlesti' || $referral->fee_status !== 'odendi' || (float) $referral->fee_amount !== 500.0) {
+                $this->recordFailure($flow, 'Yönlendirme güncellemesi doğru uygulanmadı.');
+            }
+
+            $controller->destroyReferral($referral);
+            if (BrokerReferral::find($referral->id)) {
+                $this->recordFailure($flow, 'Silinen yönlendirme hâlâ veritabanında mevcut.');
+            }
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkDocumentShowServesFile(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Belge görüntüleme (dosya sunumu)';
+        $facility = $this->freshUnclaimedFacility('document-show');
+        $path = 'claims/qatest-admin-check-document.png';
+        Storage::disk('local')->put($path, 'QATEST-BINARY-CONTENT');
+
+        $claim = FacilityClaim::create([
+            'facility_id' => $facility->id, 'brand' => 'bakimevleri', 'applicant_name' => 'QATEST',
+            'applicant_email' => 'qatest.admin.check.document-show@example.com', 'applicant_phone' => '0532 000 00 09',
+            'document_path' => $path, 'status' => 'pending',
+        ]);
+
+        $response = app(DocumentController::class)->show('claim', $claim->id);
+        if ($response->getStatusCode() !== 200) {
+            $this->recordFailure($flow, "Geçerli bir belge için beklenmeyen HTTP durumu: {$response->getStatusCode()}.");
+        }
+
+        Storage::disk('local')->delete($path);
+        if (count($this->failures) === $failuresBefore) {
+            $claim->delete();
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkDocumentShowRejectsInvalid(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Belge görüntüleme (güvenlik/hata kontrolleri)';
+        $controller = app(DocumentController::class);
+
+        $blockedType = false;
+        try {
+            $controller->show('invalid-type', 1);
+        } catch (\Throwable $e) {
+            $blockedType = method_exists($e, 'getStatusCode') && $e->getStatusCode() === 404;
+        }
+        if (! $blockedType) {
+            $this->recordFailure($flow, 'Geçersiz belge türü 404 ile reddedilmedi.');
+        }
+
+        $blockedMissing = false;
+        try {
+            $controller->show('claim', 999999999);
+        } catch (\Throwable $e) {
+            $blockedMissing = ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException)
+                || (method_exists($e, 'getStatusCode') && $e->getStatusCode() === 404);
+        }
+        if (! $blockedMissing) {
+            $this->recordFailure($flow, 'Var olmayan bir belge kaydı için 404 dönmedi.');
+        }
+
+        $facility = $this->freshUnclaimedFacility('document-missing-file');
+        $claim = FacilityClaim::create([
+            'facility_id' => $facility->id, 'brand' => 'bakimevleri', 'applicant_name' => 'QATEST',
+            'applicant_email' => 'qatest.admin.check.document-missing@example.com', 'applicant_phone' => '0532 000 00 09',
+            'document_path' => 'claims/qatest-hic-olmayan-dosya.png', 'status' => 'pending',
+        ]);
+        $blockedNoFile = false;
+        try {
+            $controller->show('claim', $claim->id);
+        } catch (\Throwable $e) {
+            $blockedNoFile = method_exists($e, 'getStatusCode') && $e->getStatusCode() === 404;
+        }
+        if (! $blockedNoFile) {
+            $this->recordFailure($flow, 'Diskte dosyası olmayan bir kayıt için 404 dönmedi.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $claim->delete();
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkCityCreateAndTrashedGuard(): void
+    {
+        $flow = 'Şehir oluşturma ve silme koruması';
+        $name = 'QATEST Admin Check Şehir';
+        City::where('name', $name)->delete();
+        $controller = app(CityController::class);
+
+        $controller->store(Request::create('/', 'POST', ['name' => $name]));
+        $city = City::where('name', $name)->first();
+        if (! $city) {
+            $this->recordFailure($flow, 'Yeni şehir oluşturulmadı.');
+
+            return;
+        }
+
+        $rejectedDuplicate = false;
+        try {
+            $controller->store(Request::create('/', 'POST', ['name' => $name]));
+        } catch (ValidationException) {
+            $rejectedDuplicate = true;
+        }
+        if (! $rejectedDuplicate) {
+            $this->recordFailure($flow, 'Aynı isimle ikinci bir şehir oluşturulabildi.');
+        }
+
+        $facility = $this->freshUnclaimedFacility('city-trashed-guard');
+        $facility->update(['city_id' => $city->id]);
+        $facility->delete();
+
+        $controller->destroy($city);
+        if (! City::find($city->id)) {
+            $this->recordFailure($flow, 'Sadece çöp kutusundaki bir kuruma sahip şehir silinebildi - geri dönüşü olmayan kurum kaybı riski.');
+        }
+
+        $facility->forceDelete();
+        $controller->destroy($city->fresh());
+        if (City::find($city->id)) {
+            $this->recordFailure($flow, 'Bağlı kurum kalmayınca (blocker temizlendikten sonra) şehir yine de silinemedi.');
+        }
+    }
+
+    private function checkCategoryCreateAndPriceTiers(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Kategori oluşturma ve fiyat segmenti güncelleme';
+        $name = 'QATEST Admin Check Kategori';
+        FacilityCategory::where('name', $name)->delete();
+        $controller = app(FacilityCategoryController::class);
+
+        $controller->store(Request::create('/', 'POST', ['name' => $name, 'brand_scope' => 'yasli-bakim']));
+        $category = FacilityCategory::where('name', $name)->first();
+        if (! $category) {
+            $this->recordFailure($flow, 'Yeni kategori oluşturulmadı.');
+
+            return;
+        }
+
+        $controller->updatePriceTiers(Request::create('/', 'POST', [
+            'price_tier_standart_min' => 1000, 'price_tier_premium_min' => 2000, 'price_tier_ultra_min' => 3000,
+        ]), $category);
+        $category->refresh();
+        if ((int) $category->price_tier_standart_min !== 1000 || (int) $category->price_tier_premium_min !== 2000 || (int) $category->price_tier_ultra_min !== 3000) {
+            $this->recordFailure($flow, 'Fiyat segmenti eşikleri doğru kaydedilmedi.');
+        }
+
+        $rejected = false;
+        try {
+            $controller->updatePriceTiers(Request::create('/', 'POST', [
+                'price_tier_standart_min' => 3000, 'price_tier_premium_min' => 2000, 'price_tier_ultra_min' => 1000,
+            ]), $category);
+        } catch (ValidationException) {
+            $rejected = true;
+        }
+        if (! $rejected) {
+            $this->recordFailure($flow, 'Sıralaması bozuk (artan olmayan) eşikler kabul edildi.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $category->delete();
+        }
+    }
+
+    private function checkCategoryTrashedGuard(): void
+    {
+        $flow = 'Kategori silme koruması (çöp kutusu)';
+        $name = 'QATEST Admin Check Kategori Guard';
+        FacilityCategory::where('name', $name)->delete();
+        $controller = app(FacilityCategoryController::class);
+        $category = FacilityCategory::create(['name' => $name, 'slug' => Str::slug($name), 'brand_scope' => 'yasli-bakim']);
+
+        $facility = $this->freshUnclaimedFacility('category-trashed-guard');
+        $facility->update(['facility_category_id' => $category->id]);
+        $facility->delete();
+
+        $controller->destroy($category);
+        if (! FacilityCategory::find($category->id)) {
+            $this->recordFailure($flow, 'Sadece çöp kutusundaki bir kuruma sahip kategori silinebildi.');
+        }
+
+        $facility->forceDelete();
+        $controller->destroy($category->fresh());
+        if (FacilityCategory::find($category->id)) {
+            $this->recordFailure($flow, 'Bağlı kurum kalmayınca kategori yine de silinemedi.');
         }
     }
 }
