@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Admin;
+use App\Models\Facility;
 use App\Models\FacilityUser;
 use App\Models\OfferRequest;
 use App\Models\Quote;
@@ -12,6 +14,15 @@ use Illuminate\Support\Collection;
  * olusunca ilgili kurum(lar)in panelinde bildirim cikmasi icin kullanilir.
  * Talep her zaman kurum panelinde (dashboard sorgusuyla) zaten gorunur; bu
  * servis SADECE push-tarzi bildirimi (bell/rozet) ekler.
+ *
+ * 26 Agustos 2026: kullanicinin acik talebi - anlasmali (aracilik,
+ * is_broker_managed) kurumlarin panelini kurumun kendisi degil ADMIN
+ * takip ediyor, bu yuzden bu kurumlarin KENDI hesabina (FacilityUser)
+ * ARTIK HICBIR bildirim gitmiyor - ilgili TUM bildirim turleri (yeni
+ * teklif, aileden mesaj, teklif kabul/red) bunun yerine TUM admin'lere
+ * gider, tiklaninca dogrudan o kurumun paneline atlar (bkz.
+ * Admin\BrokerController::quickJump(), notification_action_url()
+ * 'broker_*' case'leri).
  */
 class OfferRequestNotificationService
 {
@@ -22,27 +33,21 @@ class OfferRequestNotificationService
         $title = 'Yeni ücret/teklif talebi';
         $body = $offerRequest->full_name.' bir ücret/teklif talebi gönderdi.';
 
-        $this->recipients($offerRequest)->each(
-            fn (FacilityUser $user) => notify_user($user, 'offer_request', $title, $body, [
-                'offer_request_id' => $offerRequest->id,
-            ])
-        );
+        $recipients = $this->recipients($offerRequest)->load('facility');
 
-        // 26 Agustos 2026: kullanicinin talebi - anlasmali (aracilik)
-        // kurumlarin panelini kurumun kendisi degil ADMIN takip ediyor -
-        // dogrudan-talep + broker-managed kombinasyonunda TUM admin'lere
-        // de ayrica bildirim gider, tiklaninca dogrudan o kurumun
-        // paneline atlar (bkz. Admin\BrokerController::quickJump(),
-        // notification_action_url() 'broker_offer_request' case'i).
-        if ($offerRequest->facility_id && $offerRequest->facility?->is_broker_managed) {
-            \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+        $recipients->reject(fn (FacilityUser $user) => $user->facility?->is_broker_managed)
+            ->each(fn (FacilityUser $user) => notify_user($user, 'offer_request', $title, $body, [
+                'offer_request_id' => $offerRequest->id,
+            ]));
+
+        $recipients->pluck('facility')->filter(fn (?Facility $f) => $f?->is_broker_managed)->unique('id')
+            ->each(fn (Facility $facility) => Admin::all()->each(fn (Admin $admin) => notify_user(
                 $admin,
                 'broker_offer_request',
                 'Anlaşmalı kurum: yeni talep',
-                "\"{$offerRequest->facility->name}\" için yeni bir ücret/teklif talebi geldi.",
-                ['facility_id' => $offerRequest->facility_id, 'offer_request_id' => $offerRequest->id],
-            ));
-        }
+                "\"{$facility->name}\" için yeni bir ücret/teklif talebi geldi.",
+                ['facility_id' => $facility->id, 'offer_request_id' => $offerRequest->id],
+            )));
     }
 
     /**
@@ -55,18 +60,19 @@ class OfferRequestNotificationService
      */
     public function notifyNewMessageFromFamily(OfferRequest $offerRequest): void
     {
-        $offerRequest->loadMissing('familyUser', 'acceptedQuote.facility');
+        $offerRequest->loadMissing('familyUser', 'facility', 'acceptedQuote.facility');
         $familyName = $offerRequest->familyUser->name ?? $offerRequest->full_name;
 
-        $recipientFacilityId = $offerRequest->facility_id ?? $offerRequest->acceptedQuote?->facility_id;
-        if (! $recipientFacilityId) {
+        $facility = $offerRequest->facility_id ? $offerRequest->facility : $offerRequest->acceptedQuote?->facility;
+        if (! $facility) {
             return;
         }
 
-        FacilityUser::where('facility_id', $recipientFacilityId)->get()->each(
-            fn (FacilityUser $user) => notify_user($user, 'new_message', 'Yeni mesaj', $familyName.' size mesaj gönderdi.', [
-                'offer_request_id' => $offerRequest->id,
-            ])
+        $this->notifyFacilityOrBrokerAdmins(
+            $facility,
+            'new_message', 'Yeni mesaj', $familyName.' size mesaj gönderdi.',
+            'broker_new_message', 'Anlaşmalı kurum: yeni mesaj', "\"{$facility->name}\" kurumuna {$familyName} yeni bir mesaj gönderdi.",
+            $offerRequest->id
         );
     }
 
@@ -77,20 +83,59 @@ class OfferRequestNotificationService
     // ayni desen: sadece o kurumun tum yetkililerine.
     public function notifyQuoteAccepted(Quote $quote): void
     {
-        FacilityUser::where('facility_id', $quote->facility_id)->get()->each(
-            fn (FacilityUser $user) => notify_user($user, 'quote_accepted', 'Teklifiniz kabul edildi', 'Aile teklifinizi kabul etti, mesajlaşma ekranından iletişime geçebilirsiniz.', [
-                'offer_request_id' => $quote->offer_request_id,
-            ])
+        $quote->loadMissing('facility');
+        if (! $quote->facility) {
+            return;
+        }
+
+        $this->notifyFacilityOrBrokerAdmins(
+            $quote->facility,
+            'quote_accepted', 'Teklifiniz kabul edildi', 'Aile teklifinizi kabul etti, mesajlaşma ekranından iletişime geçebilirsiniz.',
+            'broker_quote_accepted', 'Anlaşmalı kurum: teklif kabul edildi', "Aile \"{$quote->facility->name}\" kurumunun teklifini kabul etti, mesajlaşma ekranından iletişime geçebilirsiniz.",
+            $quote->offer_request_id
         );
     }
 
     public function notifyQuotesDeclined(Collection $declinedQuotes): void
     {
         $declinedQuotes->each(function (Quote $quote) {
-            FacilityUser::where('facility_id', $quote->facility_id)->get()->each(
-                fn (FacilityUser $user) => notify_user($user, 'quote_declined', 'Talep başka kurum tarafından karşılandı', 'Aile bu talep için başka bir kurumun teklifini kabul etti.')
+            $quote->loadMissing('facility');
+            if (! $quote->facility) {
+                return;
+            }
+
+            $this->notifyFacilityOrBrokerAdmins(
+                $quote->facility,
+                'quote_declined', 'Talep başka kurum tarafından karşılandı', 'Aile bu talep için başka bir kurumun teklifini kabul etti.',
+                'broker_quote_declined', 'Anlaşmalı kurum: talep başka kurumca karşılandı', "Aile \"{$quote->facility->name}\" kurumuna gönderdiği talep için başka bir kurumun teklifini kabul etti.",
+                $quote->offer_request_id
             );
         });
+    }
+
+    /**
+     * Tek bir kurumu hedefleyen bildirimler icin ortak yonlendirme: kurum
+     * anlasmali (is_broker_managed) DEGILSE kendi yetkililerine, ANLASMALI
+     * ise kendisi yerine TUM admin'lere gider (bkz. sinif basi yorumu).
+     */
+    private function notifyFacilityOrBrokerAdmins(
+        Facility $facility,
+        string $facilityUserType, string $facilityTitle, string $facilityBody,
+        string $brokerType, string $brokerTitle, string $brokerBody,
+        ?int $offerRequestId = null
+    ): void {
+        if ($facility->is_broker_managed) {
+            Admin::all()->each(fn (Admin $admin) => notify_user(
+                $admin, $brokerType, $brokerTitle, $brokerBody,
+                array_filter(['facility_id' => $facility->id, 'offer_request_id' => $offerRequestId])
+            ));
+
+            return;
+        }
+
+        FacilityUser::where('facility_id', $facility->id)->get()->each(
+            fn (FacilityUser $user) => notify_user($user, $facilityUserType, $facilityTitle, $facilityBody, array_filter(['offer_request_id' => $offerRequestId]))
+        );
     }
 
     public function recipients(OfferRequest $offerRequest)
