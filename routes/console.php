@@ -63,6 +63,19 @@ ScheduledJobMonitor::attach(
     60 * 24
 );
 
+// 26 Agustos 2026: kullanicinin talebi - "her bolumde ki her ozellik
+// mutlaka farkli senaryolarla test edilmeli". CheckUserFlows sadece genel
+// site akislarini dener, admin paneline hic dokunmaz - bu haftaki gercek
+// hatalarin (yerinde sahiplendirme, sahiplenmeyi geri alma) TAMAMI tam
+// olarak bu kor noktadaydi (bkz. App\Console\Commands\CheckAdminFlows).
+// 08:45'teki kontrolden 5 dakika sonra calisir ki GET_LOCK pencereleri
+// cakismasin.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:check-admin-flows')->dailyAt('08:50'),
+    'platform:check-admin-flows',
+    60 * 24
+);
+
 // 15 Agustos 2026: kullanicinin talebi - "testler hata bulunca otomatik
 // duzeltebilecek script" icin bilerek DAR kapsamli bir cozum: sadece
 // CheckUserFlows'un basarisiz akislarda inceleme icin biraktigi eski
