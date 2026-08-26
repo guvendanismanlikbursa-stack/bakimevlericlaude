@@ -5,14 +5,22 @@ namespace App\Console\Commands;
 use App\Http\Controllers\Admin\AccountDeletionController;
 use App\Http\Controllers\Admin\BalanceController;
 use App\Http\Controllers\Admin\BrokerController;
+use App\Http\Controllers\Admin\ChatSettingsController;
 use App\Http\Controllers\Admin\CityController;
+use App\Http\Controllers\Admin\ContentPageController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\FacilityCategoryController;
 use App\Http\Controllers\Admin\FacilityClaimController;
 use App\Http\Controllers\Admin\FacilityController;
+use App\Http\Controllers\Admin\FacilityInvitationController;
+use App\Http\Controllers\Admin\FacilityQuestionController;
+use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\OccupancyController;
+use App\Http\Controllers\Admin\PlatformErrorController;
+use App\Http\Controllers\Admin\SubscriptionPackageController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WalletTopupController;
+use App\Http\Controllers\Admin\WhatsappClickController;
 use App\Http\Controllers\Public\ImpersonationController;
 use App\Http\Middleware\FacilityUserAuth;
 use App\Http\Middleware\FamilyAuth;
@@ -20,15 +28,24 @@ use App\Mail\FacilityPasswordManuallyResetMail;
 use App\Models\AccountDeletionRequest;
 use App\Models\BalanceLog;
 use App\Models\BrokerReferral;
+use App\Models\ChatWorkingHour;
 use App\Models\City;
+use App\Models\ContentPage;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
 use App\Models\FacilityClaim;
+use App\Models\FacilityQuestion;
 use App\Models\FamilyUser;
 use App\Models\FacilityUser;
+use App\Models\Faq;
+use App\Models\PlatformError;
+use App\Models\Setting;
+use App\Models\SubscriptionPackage;
 use App\Models\WalletTopup;
+use App\Models\WhatsappClick;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -152,6 +169,25 @@ class CheckAdminFlows extends Command
         $this->safeRun('Şehir oluşturma ve silme koruması', fn () => $this->checkCityCreateAndTrashedGuard());
         $this->safeRun('Kategori oluşturma ve fiyat segmenti güncelleme', fn () => $this->checkCategoryCreateAndPriceTiers());
         $this->safeRun('Kategori silme koruması (çöp kutusu)', fn () => $this->checkCategoryTrashedGuard());
+
+        // 26 Agustos 2026: Asama 4 (son asama) - geri kalan, daha dusuk
+        // riskli CRUD bolumleri (bkz. plan dosyasi). BILEREK DISINDA
+        // BIRAKILAN: DataQualityController'daki fixPhoneType/fixDistrict/
+        // fixNameCleanup/fixMiscategory - bunlar TEK bir kuruma degil
+        // TUM facilities tablosuna GERCEK, KALICI degisiklik uygulayan
+        // toplu islemler (bkz. DataQualityService); gunluk otomatik bir
+        // kontrolun bunlari sessizce (admin onayi olmadan) her gece tum
+        // veritabaninda tetiklemesi is riski tasir - bu islemler zaten
+        // PlatformFeatureTest.php icinde IZOLE bir test veritabanina karsi
+        // test ediliyor, o yeterli kapsam.
+        $this->safeRun('Sayfa oluşturma/güncelleme/silme + HTML temizliği', fn () => $this->checkContentPageLifecycleAndSanitization());
+        $this->safeRun('SSS oluşturma/güncelleme/silme + önbellek temizliği', fn () => $this->checkFaqLifecycleAndCacheInvalidation());
+        $this->safeRun('Paket oluşturma/güncelleme/silme + önbellek temizliği', fn () => $this->checkSubscriptionPackageLifecycle());
+        $this->safeRun('Canlı sohbet çalışma saatleri', fn () => $this->checkChatSettingsUpdate());
+        $this->safeRun('Aile sorusu silme (moderasyon)', fn () => $this->checkFacilityQuestionDestroy());
+        $this->safeRun('Hata kaydı çözüldü işaretleme/silme', fn () => $this->checkPlatformErrorResolveAndDestroy());
+        $this->safeRun('WhatsApp tıklama kaydı silme', fn () => $this->checkWhatsappClickDestroy());
+        $this->safeRun('Kurum davet durumu güncelleme', fn () => $this->checkFacilityInvitationStatusUpdate());
 
         if ($this->failures) {
             $this->error(count($this->failures).' hata bulundu.');
@@ -1301,6 +1337,263 @@ class CheckAdminFlows extends Command
         $controller->destroy($category->fresh());
         if (FacilityCategory::find($category->id)) {
             $this->recordFailure($flow, 'Bağlı kurum kalmayınca kategori yine de silinemedi.');
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Asama 4 senaryolari - geri kalan, daha dusuk riskli CRUD bolumleri
+    // ------------------------------------------------------------------
+
+    private function checkContentPageLifecycleAndSanitization(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Sayfa oluşturma/güncelleme/silme + HTML temizliği';
+        $title = 'QATEST Admin Check Sayfa';
+        ContentPage::where('title', $title)->delete();
+        $controller = app(ContentPageController::class);
+
+        $controller->store(Request::create('/', 'POST', [
+            'brand' => 'bakimevleri', 'type' => 'page', 'title' => $title,
+            'body' => '<p>Merhaba</p><script>alert(1)</script><p onclick="evil()">tıkla</p>',
+        ]));
+        $page = ContentPage::where('title', $title)->first();
+        if (! $page) {
+            $this->recordFailure($flow, 'Yeni sayfa oluşturulmadı.');
+
+            return;
+        }
+        if (str_contains($page->body, '<script') || str_contains($page->body, 'onclick')) {
+            $this->recordFailure($flow, 'Sayfa içeriğindeki tehlikeli HTML (script/onclick) temizlenmedi - XSS riski.');
+        }
+        if (! str_contains($page->body, 'Merhaba')) {
+            $this->recordFailure($flow, 'Zararsız içerik de yanlışlıkla silinmiş olabilir.');
+        }
+
+        $newTitle = 'QATEST Admin Check Sayfa Güncellendi';
+        $controller->update(Request::create('/', 'POST', [
+            'brand' => 'bakimevleri', 'type' => 'page', 'title' => $newTitle, 'body' => '<p>Güncel</p>',
+        ]), $page);
+        $page->refresh();
+        if ($page->title !== $newTitle || $page->slug !== Str::slug($newTitle)) {
+            $this->recordFailure($flow, 'Başlık değişince sayfa/slug doğru güncellenmedi.');
+        }
+
+        $controller->destroy($page);
+        if (ContentPage::find($page->id)) {
+            $this->recordFailure($flow, 'Sayfa silindikten sonra hâlâ mevcut.');
+        }
+    }
+
+    private function checkFaqLifecycleAndCacheInvalidation(): void
+    {
+        $flow = 'SSS oluşturma/güncelleme/silme + önbellek temizliği';
+        $question = 'QATEST Admin Check Soru?';
+        Faq::where('question', $question)->delete();
+        $controller = app(FaqController::class);
+        Cache::put('faqs:bakimevleri', 'ESKI-DEGER', 60);
+
+        $controller->store(Request::create('/', 'POST', [
+            'brand' => 'bakimevleri', 'question' => $question, 'answer' => 'QATEST cevap',
+        ]));
+        $faq = Faq::where('question', $question)->first();
+        if (! $faq) {
+            $this->recordFailure($flow, 'Yeni SSS kaydı oluşturulmadı.');
+
+            return;
+        }
+        if (Cache::has('faqs:bakimevleri')) {
+            $this->recordFailure($flow, 'Yeni SSS eklenince ilgili önbellek temizlenmedi.');
+        }
+
+        Cache::put('faqs:bakimevleri', 'ESKI-DEGER', 60);
+        $controller->update(Request::create('/', 'POST', ['question' => $question, 'answer' => 'QATEST güncellenmiş cevap']), $faq);
+        $faq->refresh();
+        if ($faq->answer !== 'QATEST güncellenmiş cevap') {
+            $this->recordFailure($flow, 'SSS güncellemesi kaydedilmedi.');
+        }
+        if (Cache::has('faqs:bakimevleri')) {
+            $this->recordFailure($flow, 'SSS güncellenince önbellek temizlenmedi.');
+        }
+
+        $controller->destroy($faq);
+        if (Faq::find($faq->id)) {
+            $this->recordFailure($flow, 'SSS silindikten sonra hâlâ mevcut.');
+        }
+    }
+
+    private function checkSubscriptionPackageLifecycle(): void
+    {
+        $flow = 'Paket oluşturma/güncelleme/silme + önbellek temizliği';
+        $name = 'QATEST Admin Check Paket';
+        SubscriptionPackage::where('name', $name)->delete();
+        $controller = app(SubscriptionPackageController::class);
+        Cache::put('subscription_packages:active', 'ESKI-DEGER', 60);
+
+        $controller->store(Request::create('/', 'POST', ['name' => $name, 'price' => 199, 'bonus_quote_credits' => 3]));
+        $package = SubscriptionPackage::where('name', $name)->first();
+        if (! $package) {
+            $this->recordFailure($flow, 'Yeni paket oluşturulmadı.');
+
+            return;
+        }
+        if (Cache::has('subscription_packages:active')) {
+            $this->recordFailure($flow, 'Yeni paket eklenince önbellek temizlenmedi.');
+        }
+
+        Cache::put('subscription_packages:active', 'ESKI-DEGER', 60);
+        $controller->update(Request::create('/', 'POST', ['name' => $name, 'price' => 299]), $package);
+        $package->refresh();
+        if ((float) $package->price !== 299.0) {
+            $this->recordFailure($flow, 'Paket güncellemesi kaydedilmedi.');
+        }
+        if (Cache::has('subscription_packages:active')) {
+            $this->recordFailure($flow, 'Paket güncellenince önbellek temizlenmedi.');
+        }
+
+        $controller->destroy($package);
+        if (SubscriptionPackage::find($package->id)) {
+            $this->recordFailure($flow, 'Paket silindikten sonra hâlâ mevcut.');
+        }
+    }
+
+    /**
+     * 26 Agustos 2026: bu ayarlar (canli sohbet mesaji + haftalik calisma
+     * saatleri) qatest- ile izole edilemeyen KURESEL/GERCEK ayarlardir -
+     * test oncesi orijinal degerler yedeklenir, try/finally ile SONUNDA
+     * KESIN olarak geri yuklenir ki gercek admin ayarlarina asla kalici
+     * dokunulmasin (basarili/basarisiz farketmez).
+     */
+    private function checkChatSettingsUpdate(): void
+    {
+        $flow = 'Canlı sohbet çalışma saatleri';
+        $controller = app(ChatSettingsController::class);
+
+        $originalMessage = Setting::where('key', 'chat_offline_message')->value('value');
+        $originalHour = ChatWorkingHour::where('weekday', 1)->first();
+        $originalHourData = $originalHour ? $originalHour->only(['open_time', 'close_time', 'is_active']) : null;
+
+        try {
+            $message = 'QATEST çevrimdışı mesajı '.now()->timestamp;
+            $controller->update(Request::create('/', 'POST', [
+                'offline_message' => $message,
+                'days' => [1 => ['is_active' => '1', 'open_time' => '09:00', 'close_time' => '18:00']],
+            ]));
+
+            if (Setting::get('chat_offline_message') !== $message) {
+                $this->recordFailure($flow, 'Çevrimdışı mesajı kaydedilmedi.');
+            }
+            $hour = ChatWorkingHour::where('weekday', 1)->first();
+            if (! $hour || ! str_starts_with((string) $hour->open_time, '09:00')) {
+                $this->recordFailure($flow, 'Çalışma saati doğru kaydedilmedi.');
+            }
+
+            $rejected = false;
+            try {
+                $controller->update(Request::create('/', 'POST', [
+                    'offline_message' => $message,
+                    'days' => [1 => ['is_active' => '1', 'open_time' => '18:00', 'close_time' => '09:00']],
+                ]));
+            } catch (ValidationException) {
+                $rejected = true;
+            }
+            if (! $rejected) {
+                $this->recordFailure($flow, 'Kapanış saati açılıştan önce olan geçersiz bir aralık kabul edildi.');
+            }
+        } finally {
+            if ($originalMessage !== null) {
+                Setting::set('chat_offline_message', $originalMessage);
+            } else {
+                Setting::where('key', 'chat_offline_message')->delete();
+                Cache::forget('setting:chat_offline_message');
+            }
+            if ($originalHourData) {
+                ChatWorkingHour::where('weekday', 1)->update($originalHourData);
+            } else {
+                ChatWorkingHour::where('weekday', 1)->delete();
+            }
+        }
+    }
+
+    private function checkFacilityQuestionDestroy(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Aile sorusu silme (moderasyon)';
+        $facility = $this->freshUnclaimedFacility('question-destroy');
+        $question = FacilityQuestion::create([
+            'facility_id' => $facility->id, 'brand' => 'bakimevleri', 'asker_name' => 'QATEST',
+            'question' => 'QATEST admin check sorusu', 'status' => 'pending',
+        ]);
+
+        app(FacilityQuestionController::class)->destroy($question);
+
+        if (FacilityQuestion::find($question->id)) {
+            $this->recordFailure($flow, 'Soru silindikten sonra hâlâ mevcut.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $this->cleanupFacility($facility);
+        }
+    }
+
+    private function checkPlatformErrorResolveAndDestroy(): void
+    {
+        $flow = 'Hata kaydı çözüldü işaretleme/silme';
+        $error = PlatformError::create([
+            'source' => 'qatest_admin_check', 'title' => 'QATEST admin check hatası',
+            'message' => 'Bu kayıt otomatik admin panel kontrolü tarafından oluşturulmuştur.',
+        ]);
+        $controller = app(PlatformErrorController::class);
+
+        $controller->resolve($error);
+        $error->refresh();
+        if (! $error->resolved_at) {
+            $this->recordFailure($flow, 'Hata "çözüldü" olarak işaretlenmedi.');
+        }
+
+        $controller->destroy($error);
+        if (PlatformError::find($error->id)) {
+            $this->recordFailure($flow, 'Hata kaydı silindikten sonra hâlâ mevcut.');
+        }
+    }
+
+    private function checkWhatsappClickDestroy(): void
+    {
+        $flow = 'WhatsApp tıklama kaydı silme';
+        $click = WhatsappClick::create(['brand' => 'bakimevleri', 'page_url' => 'https://bakimevleri.com/qatest-admin-check']);
+
+        app(WhatsappClickController::class)->destroy($click);
+
+        if (WhatsappClick::find($click->id)) {
+            $this->recordFailure($flow, 'Kayıt silindikten sonra hâlâ mevcut.');
+        }
+    }
+
+    private function checkFacilityInvitationStatusUpdate(): void
+    {
+        $failuresBefore = count($this->failures);
+        $flow = 'Kurum davet durumu güncelleme';
+        $facility = $this->freshUnclaimedFacility('invitation-status');
+        $facility->update(['invitation_status' => 'not_started', 'ownership_type' => 'ozel']);
+        $controller = app(FacilityInvitationController::class);
+
+        $controller->updateStatus(Request::create('/', 'POST', ['status' => 'do_not_contact']), $facility);
+        $facility->refresh();
+        if ($facility->invitation_status !== 'do_not_contact' || ! $facility->invitation_status_at) {
+            $this->recordFailure($flow, 'Davet durumu doğru güncellenmedi.');
+        }
+
+        $rejected = false;
+        try {
+            $controller->updateStatus(Request::create('/', 'POST', ['status' => 'gecersiz-bir-durum']), $facility);
+        } catch (ValidationException) {
+            $rejected = true;
+        }
+        if (! $rejected) {
+            $this->recordFailure($flow, 'Geçersiz bir davet durumu kabul edildi.');
+        }
+
+        if (count($this->failures) === $failuresBefore) {
+            $this->cleanupFacility($facility);
         }
     }
 }
