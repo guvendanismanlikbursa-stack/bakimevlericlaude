@@ -583,10 +583,16 @@
 
       {{-- 26 Agustos 2026: kullanicinin talebi - is basvurusu butonu SADECE
            sahiplenilmis veya aracilik (is_broker_managed) kurumlarda, VE
-           SADECE yasli-bakim/cocuk bolumlerinde (rehabilitasyon HARIC)
-           gorunur - hicbir haberi olmayan bir on-kayitli kuruma "sana
-           eleman buldum" demek anlamsiz olurdu (kullanicinin acik talebi). --}}
-      @if(($facility->is_claimed || $facility->is_broker_managed) && ($facility->category->brand_scope ?? null) !== 'rehabilitasyon')
+           SADECE yasli-bakim/cocuk bolumlerinde gorunur - hicbir haberi
+           olmayan bir on-kayitli kuruma "sana eleman buldum" demek anlamsiz
+           olurdu (kullanicinin acik talebi). Ayni gun bulunan gercek hata:
+           "!== 'rehabilitasyon'" kontrolu SADECE o tek brand_scope degerini
+           disliyordu, ama "Nörolojik Rehabilitasyon Merkezi" kategorisinin
+           brand_scope'u 'fizik-tedavi' oldugu icin sizip buton yanlislikla
+           bir rehabilitasyon kurumunda goruyordu - DAHIL ETME listesine
+           cevrildi (bkz. JobApplicationController::abortUnlessEligible()
+           ayni tarihli yorum, sunucu tarafi kontrol de ayni sekilde duzeltildi). --}}
+      @if(($facility->is_claimed || $facility->is_broker_managed) && in_array($facility->category->brand_scope ?? null, ['yasli-bakim', 'cocuk-bakim'], true))
         <div class="mt-6 pt-6 border-t">
           <p class="text-sm text-gray-600 mb-2">Bu kurumda çalışmak ister misiniz?</p>
           <a href="{{ brand_route('job-application.create', ['slug' => $facility->slug]) }}" class="block text-center border border-primary text-primary font-black py-2 rounded-lg">Burada Çalışmak İstiyorum</a>

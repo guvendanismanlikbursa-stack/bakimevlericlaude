@@ -27,7 +27,19 @@ class FacilityImageSyncController extends Controller
 {
     // ImageCompressionService::store()/storeFromLocalFile() tarafindan
     // uretilen TUM gercek yol bicimleriyle eslesir (bkz. o servis).
-    private const PATH_PATTERN = '/^facilities\/[A-Za-z0-9_\-]{6,60}\.(webp|jpg|jpeg|png)$/';
+    //
+    // 26 Agustos 2026: kullanicinin "admin panelinde hata gorunuyor"
+    // bildirimiyle bulunan gercek hata - bu desen sadece DUZ (facilities/
+    // {rastgele-32-karakter}.webp) yuklemeleri kabul ediyordu, 'veri cekici'
+    // demo gorsel havuzunun kullandigi ALT KLASORLU yollari (ör.
+    // facilities/demo/{kategori_id}/{n}.webp, facilities/demo/menu-sample-
+    // source.webp) TANIMIYORDU. Admin panelinden bir demo gorseli silinince
+    // (bkz. Admin\FacilityController::deleteImage()) diger 2 domain'e
+    // senkron silme istegi bu regex'e takilip 422 ile reddediliyor, admin'e
+    // "Hatalar" ekraninda gercek bir hata olarak dusuyordu - dosyanin
+    // KENDISI silinen domain'de dogru silinse de DIGER 2 domain'de kirik
+    // kaliyordu. Simdi demo/ alt klasor yapisi da acikca kabul edilir.
+    private const PATH_PATTERN = '/^facilities\/(demo\/[A-Za-z0-9_\-]{1,60}(\/[A-Za-z0-9_\-]{1,60})?|[A-Za-z0-9_\-]{6,60})\.(webp|jpg|jpeg|png)$/';
 
     public function store(Request $request): Response
     {

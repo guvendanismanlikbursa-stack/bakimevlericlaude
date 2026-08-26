@@ -79,7 +79,15 @@ class JobApplicationController extends Controller
     {
         abort_unless($facility->is_claimed || $facility->is_broker_managed, 404);
         $facility->loadMissing('category');
-        abort_if($facility->category?->brand_scope === 'rehabilitasyon', 404);
+        // 26 Agustos 2026: kullanicinin bildirdigi gercek hata - eskiden
+        // sadece brand_scope==='rehabilitasyon' DISLANIYORDU, ama "Nörolojik
+        // Rehabilitasyon Merkezi" kategorisinin brand_scope'u 'fizik-tedavi'
+        // (rehabilitasyon DEGIL) - bu yuzden acikca bir rehabilitasyon
+        // kurumunda buton/route hatali sekilde gorunuyordu. Kullanicinin
+        // orijinal talebi "SADECE yasli-bakim/cocuk-bakim" idi - artik
+        // DAHIL ETME listesiyle dogru uygulaniyor (ozel-egitim/rehabilitasyon/
+        // fizik-tedavi'nin TUMU otomatik disarida kalir).
+        abort_unless(in_array($facility->category?->brand_scope, ['yasli-bakim', 'cocuk-bakim'], true), 404);
     }
 
     private function facilityForRequest(Request $request, array $categoryScope): Facility

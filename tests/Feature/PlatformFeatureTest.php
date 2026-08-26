@@ -4875,4 +4875,63 @@ class PlatformFeatureTest extends TestCase
 
         Storage::disk('public')->assertMissing($path);
     }
+
+    public function test_facility_image_sync_endpoint_accepts_demo_pool_subfolder_paths(): void
+    {
+        // 26 Agustos 2026: kullanicinin bildirdigi gercek canli hata -
+        // eskiden PATH_PATTERN sadece duz 'facilities/{rastgele}.webp'
+        // yollarini kabul ediyordu, 'veri cekici' demo gorsel havuzunun
+        // alt klasorlu yollarini (facilities/demo/{kategori}/{n}.webp) 422
+        // ile reddediyordu - bir demo gorseli admin panelinden silinince
+        // diger 2 domain'e senkron silme istegi hep basarisiz oluyordu.
+        // Bkz. FacilityImageSyncController::PATH_PATTERN ayni tarihli yorum.
+        config(['platform.ops_secret' => 'test-sync-secret']);
+        Storage::fake('public');
+        $path = 'facilities/demo/5/1.webp';
+        Storage::disk('public')->put($path, 'icerik');
+
+        $this->withHeaders(['Authorization' => 'Bearer test-sync-secret'])
+            ->post('/_internal/kurum-gorseli-sil', ['path' => $path])
+            ->assertOk();
+
+        Storage::disk('public')->assertMissing($path);
+    }
+
+    public function test_job_application_button_only_shows_for_yasli_bakim_and_cocuk_bakim_categories(): void
+    {
+        // 26 Agustos 2026: kullanicinin bildirdigi gercek canli hata (bakimeviara.com'da
+        // yakalandi) - eskiden gorunurluk kontrolu sadece brand_scope==='rehabilitasyon'
+        // degerini disliyordu; "Nörolojik Rehabilitasyon Merkezi" gibi brand_scope'u
+        // 'fizik-tedavi' olan kategoriler sizip butonu/route'u YANLISLIKLA gosteriyordu.
+        // Bu test hem 'ozel-egitim' hem 'fizik-tedavi' fixture'larinin DOGRU sekilde
+        // DISLANDIGINI, hem de yasli-bakim/cocuk-bakim'in DAHIL edildigini dogrudan
+        // asserts eder - bkz. JobApplicationController::abortUnlessEligible() ve
+        // themes/_shared/facilities/show.blade.php ayni tarihli yorumlar.
+        $cocukBakimCategory = FacilityCategory::create(['name' => 'Kres', 'slug' => 'kres-test', 'brand_scope' => 'cocuk-bakim']);
+        $cocukBakimFacility = $this->facility('Kres Kurum', $cocukBakimCategory, true);
+
+        // yasli-bakim (sahiplenilmis) -> buton gorunmeli, route erisilebilir
+        $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
+            ->assertOk()->assertSee('Burada Çalışmak İstiyorum');
+        $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug.'/is-basvurusu')->assertOk();
+
+        // cocuk-bakim (sahiplenilmis) -> buton gorunmeli, route erisilebilir
+        $this->get('/site/bakimevleri/kurumlar/'.$cocukBakimFacility->slug)
+            ->assertOk()->assertSee('Burada Çalışmak İstiyorum');
+        $this->get('/site/bakimevleri/kurumlar/'.$cocukBakimFacility->slug.'/is-basvurusu')->assertOk();
+
+        // ozel-egitim (sahiplenilmis) -> buton GORUNMEMELI, route 404
+        $this->get('/site/bakimevleri/kurumlar/'.$this->childFacility->slug)
+            ->assertOk()->assertDontSee('Burada Çalışmak İstiyorum');
+        $this->get('/site/bakimevleri/kurumlar/'.$this->childFacility->slug.'/is-basvurusu')->assertNotFound();
+
+        // fizik-tedavi (sahiplenilmis) -> buton GORUNMEMELI, route 404
+        // (canlida yakalanan gercek hatanin BIREBIR senaryosu)
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
+            ->assertOk()->assertDontSee('Burada Çalışmak İstiyorum');
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/is-basvurusu')->assertNotFound();
+
+        // fizik-tedavi (sahiplenilmemis) -> zaten 404 (is_claimed=false)
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/is-basvurusu')->assertNotFound();
+    }
 }
