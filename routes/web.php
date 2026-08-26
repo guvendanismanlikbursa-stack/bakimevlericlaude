@@ -232,6 +232,10 @@ $siteRoutes = function () {
             Route::get('/bildirimler/sayi', [FamilyNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
             Route::post('/kayitli-aramalar', [\App\Http\Controllers\Family\SavedSearchController::class, 'store'])->name('saved-searches.store');
             Route::delete('/kayitli-aramalar/{savedSearch}', [\App\Http\Controllers\Family\SavedSearchController::class, 'destroy'])->name('saved-searches.destroy');
+
+            Route::get('/ziyaret-servisi', [\App\Http\Controllers\Family\VisitServiceController::class, 'index'])->name('visit-service.index');
+            Route::get('/ziyaret-servisi/yeni', [\App\Http\Controllers\Family\VisitServiceController::class, 'create'])->name('visit-service.create');
+            Route::post('/ziyaret-servisi', [\App\Http\Controllers\Family\VisitServiceController::class, 'store'])->middleware('throttle:public-form')->name('visit-service.store');
         });
     });
 
@@ -459,6 +463,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/ziyaret-talepleri', [AdminVisitRequestController::class, 'index'])->name('visit-requests.index');
         Route::put('/ziyaret-talepleri/{visitRequest}', [AdminVisitRequestController::class, 'update'])->name('visit-requests.update');
         Route::delete('/ziyaret-talepleri/{visitRequest}', [AdminVisitRequestController::class, 'destroy'])->name('visit-requests.destroy');
+
+        Route::get('/bakim-takip-ziyaretleri', [\App\Http\Controllers\Admin\VisitServiceController::class, 'index'])->name('visit-service.index');
+        Route::get('/bakim-takip-ziyaretleri/{visitServiceRequest}', [\App\Http\Controllers\Admin\VisitServiceController::class, 'show'])->name('visit-service.show');
+        Route::put('/bakim-takip-ziyaretleri/{visitServiceRequest}/durum', [\App\Http\Controllers\Admin\VisitServiceController::class, 'updateStatus'])->name('visit-service.update-status');
+        Route::post('/bakim-takip-ziyaretleri/{visitServiceRequest}/rapor', [\App\Http\Controllers\Admin\VisitServiceController::class, 'storeReport'])->name('visit-service.store-report');
+        Route::delete('/bakim-takip-ziyaretleri/rapor/{report}', [\App\Http\Controllers\Admin\VisitServiceController::class, 'destroyReport'])->name('visit-service.destroy-report');
 
         Route::get('/mesajlar', [AdminContactMessageController::class, 'index'])->name('contact-messages.index');
         Route::patch('/mesajlar/{contactMessage}/okundu', [AdminContactMessageController::class, 'markRead'])->name('contact-messages.read');

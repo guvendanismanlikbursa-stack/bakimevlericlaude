@@ -40,7 +40,7 @@
     $groupOpen = [
       'kullanicilar' => request()->routeIs('admin.users.families*') || request()->routeIs('admin.family-users.*') || request()->routeIs('admin.users.facility-users*'),
       'kurumlar' => request()->routeIs('admin.facilities.*') || request()->routeIs('admin.claims.*') || request()->routeIs('admin.registrations.*') || request()->routeIs('admin.invitations.*') || request()->routeIs('admin.broker.*') || request()->routeIs('admin.occupancy.*') || request()->routeIs('admin.job-applications.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.cities.*'),
-      'donusum' => request()->routeIs('admin.offer-requests.*') || request()->routeIs('admin.visit-requests.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.questions.*') || request()->routeIs('admin.contact-messages.*') || request()->routeIs('admin.whatsapp-clicks.*') || request()->routeIs('admin.chat.*'),
+      'donusum' => request()->routeIs('admin.offer-requests.*') || request()->routeIs('admin.visit-requests.*') || request()->routeIs('admin.visit-service.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.questions.*') || request()->routeIs('admin.contact-messages.*') || request()->routeIs('admin.whatsapp-clicks.*') || request()->routeIs('admin.chat.*'),
       'finans' => request()->routeIs('admin.topups.*') || request()->routeIs('admin.packages.*'),
       'icerik' => request()->routeIs('admin.content-pages.*') || request()->routeIs('admin.faqs.*') || request()->routeIs('admin.data-extractor.*') || request()->routeIs('admin.trash.*') || request()->routeIs('admin.audit-log.*') || request()->routeIs('admin.data-quality.*') || request()->routeIs('admin.platform-errors.*') || request()->routeIs('admin.account-deletions.*') || request()->routeIs('admin.scheduled-jobs.*') || request()->routeIs('admin.settings.*') || request()->routeIs('admin.chat-settings.*'),
     ];
@@ -92,6 +92,7 @@
       <div class="space-y-1 pb-1">
         <a href="{{ route('admin.offer-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.offer-requests.*') ? 'bg-gray-700 text-white' : '' }}">Teklif Talepleri</a>
         <a href="{{ route('admin.visit-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.visit-requests.*') ? 'bg-gray-700 text-white' : '' }}">Ziyaret Talepleri</a>
+        <a href="{{ route('admin.visit-service.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.visit-service.*') ? 'bg-gray-700 text-white' : '' }}">Bakım Takip Ziyaretleri</a>
         <a href="{{ route('admin.reviews.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.reviews.*') ? 'bg-gray-700 text-white' : '' }}">Yorumlar</a>
         <a href="{{ route('admin.questions.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.questions.*') ? 'bg-gray-700 text-white' : '' }}">Aile Soruları</a>
         <a href="{{ route('admin.contact-messages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.contact-messages.*') ? 'bg-gray-700 text-white' : '' }}">İletişim Mesajları</a>

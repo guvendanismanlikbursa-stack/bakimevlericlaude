@@ -485,6 +485,10 @@ if (! function_exists('notification_action_url')) {
                 'topup_approved', 'topup_rejected' => brand_route('facility.wallet.index'),
                 'claim_submitted' => route('admin.claims.index'),
                 'job_application_submitted' => route('admin.job-applications.index'),
+                'visit_service_request_submitted' => isset($data['visit_service_request_id'])
+                    ? route('admin.visit-service.show', $data['visit_service_request_id']) : route('admin.visit-service.index'),
+                'visit_service_report_logged' => isset($data['visit_service_request_id']) && $isFamilyUser
+                    ? brand_route('family.visit-service.index') : null,
                 // 26 Agustos 2026: kullanicinin talebi - anlasmali (aracilik)
                 // kurumlara gelen talepler icin admin'e giden bildirim,
                 // tiklaninca "Kullanicilar -> ara -> Kullanici olarak gör"

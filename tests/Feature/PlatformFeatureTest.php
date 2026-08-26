@@ -4934,4 +4934,91 @@ class PlatformFeatureTest extends TestCase
         // fizik-tedavi (sahiplenilmemis) -> zaten 404 (is_claimed=false)
         $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/is-basvurusu')->assertNotFound();
     }
+
+    public function test_visit_service_cta_only_shows_for_yasli_bakim_facilities_with_flag_enabled(): void
+    {
+        // 26 Agustos 2026: kullanicinin talebi - "bakim takip ziyareti" hizmeti
+        // SADECE yasli-bakim bolumunde VE admin'in acikca izin verdigi
+        // (allows_visit_service) kurumlarda gorunur - sahiplenme durumundan
+        // (is_claimed/is_broker_managed) BAGIMSIZDIR (kullanicinin acik talebi:
+        // on kayitli bir kurum da admin onayiyla acik olabilir).
+        $this->elderlyFacility->update(['allows_visit_service' => true]);
+        $this->rehabFacilityClaimed->update(['allows_visit_service' => true]);
+
+        // yasli-bakim + acik -> CTA gorunmeli
+        $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
+            ->assertOk()->assertSee('Bakım Takip Ziyareti Talep Et');
+
+        // fizik-tedavi + acik olsa bile -> KATEGORI DISI, GORUNMEMELI
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
+            ->assertOk()->assertDontSee('Bakım Takip Ziyareti Talep Et');
+
+        // yasli-bakim ama anahtar KAPALI (varsayilan) -> GORUNMEMELI
+        $this->elderlyFacility->update(['allows_visit_service' => false]);
+        $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
+            ->assertOk()->assertDontSee('Bakım Takip Ziyareti Talep Et');
+
+        // on kayitli (sahiplenilmemis) bir yasli-bakim kurumu + acik anahtar -> YINE DE GORUNMELI
+        // (sahiplenme durumundan bagimsiz oldugunu dogrudan kanitlar)
+        $unclaimedElderly = $this->facility('On Kayitli Yasli Bakim', $this->elderlyCategory, false);
+        $unclaimedElderly->update(['allows_visit_service' => true]);
+        $this->get('/site/bakimevleri/kurumlar/'.$unclaimedElderly->slug)
+            ->assertOk()->assertSee('Bakım Takip Ziyareti Talep Et');
+    }
+
+    public function test_visit_service_request_and_report_lifecycle(): void
+    {
+        // 26 Agustos 2026: kullanicinin talebi - aile kurumda yatan yakinina
+        // periyodik ziyaret+rapor talep eder, admin talebi gorur ve her
+        // fiziksel ziyaretten sonra bir rapor kaydi dusurur, aile bunu kendi
+        // panelinde her zaman gorur. Uctan uca: talep -> admin bildirimi ->
+        // rapor -> aile bildirimi -> durum 'aktif'e gecer -> aile rapor kaydini gorur.
+        $this->elderlyFacility->update(['allows_visit_service' => true]);
+
+        // kategori disi bir kuruma zorla talep gonderme denemesi reddedilmeli
+        // (sunucu tarafi kontrol, sadece UI'da gizlemek yetmez)
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/aile/ziyaret-servisi', [
+                'facility_id' => $this->rehabFacilityClaimed->id,
+                'patient_name' => 'Bypass Denemesi',
+                'phone' => '05559998877',
+            ])->assertNotFound();
+
+        $response = $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/aile/ziyaret-servisi', [
+                'facility_id' => $this->elderlyFacility->id,
+                'patient_name' => 'Test Hasta',
+                'patient_age' => 80,
+                'patient_condition' => 'Yatalak',
+                'desired_frequency' => 'Ayda 2 kez',
+                'phone' => '05559998877',
+            ]);
+        $response->assertRedirect('/site/bakimevleri/aile/ziyaret-servisi');
+
+        $visitServiceRequest = \App\Models\VisitServiceRequest::where('patient_name', 'Test Hasta')->firstOrFail();
+        $this->assertSame('yeni', $visitServiceRequest->status);
+        $this->assertSame($this->elderlyFacility->id, $visitServiceRequest->facility_id);
+
+        $adminNotifCount = \App\Models\PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->where('type', 'visit_service_request_submitted')->count();
+        $this->assertSame(1, $adminNotifCount);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/bakim-takip-ziyaretleri/'.$visitServiceRequest->id.'/rapor', [
+                'visited_at' => now()->toDateString(),
+                'note' => 'Ziyaret edildi, her şey yolunda.',
+            ])->assertRedirect();
+
+        $visitServiceRequest->refresh();
+        $this->assertSame('aktif', $visitServiceRequest->status);
+        $this->assertSame(1, $visitServiceRequest->reports()->count());
+
+        $familyNotifCount = \App\Models\PlatformNotification::where('notifiable_type', \App\Models\FamilyUser::class)
+            ->where('notifiable_id', $this->family->id)->where('type', 'visit_service_report_logged')->count();
+        $this->assertSame(1, $familyNotifCount);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get('/site/bakimevleri/aile/ziyaret-servisi')
+            ->assertOk()->assertSee('Ziyaret edildi, her şey yolunda.');
+    }
 }

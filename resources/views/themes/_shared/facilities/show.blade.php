@@ -598,6 +598,21 @@
           <a href="{{ brand_route('job-application.create', ['slug' => $facility->slug]) }}" class="block text-center border border-primary text-primary font-black py-2 rounded-lg">Burada Çalışmak İstiyorum</a>
         </div>
       @endif
+
+      {{-- 26 Agustos 2026: kullanicinin talebi - "bakim takip ziyareti"
+           (ucretli, aile paneli uzerinden talep edilen periyodik ziyaret+
+           rapor hizmeti). SADECE yasli-bakim bolumunde VE admin'in acikca
+           izin verdigi (allows_visit_service) kurumlarda gorunur - kurumun
+           onayi olmadan ucuncu bir ziyaretci gonderilmesi rahatsizlik
+           yaratabilir. Sahiplenme durumundan (is_claimed/is_broker_managed)
+           BILEREK BAGIMSIZ - on kayitli bir kurum da admin onayiyla acik
+           olabilir (kullanicinin acik talebi). --}}
+      @if(($facility->category->brand_scope ?? null) === 'yasli-bakim' && $facility->allows_visit_service)
+        <div class="mt-6 pt-6 border-t">
+          <p class="text-sm text-gray-600 mb-2">Yakınınız burada mı kalıyor? Ekibimiz düzenli ziyaret edip size raporlayabilir.</p>
+          <a href="{{ brand_route('family.visit-service.create', ['facility' => $facility->slug]) }}" class="block text-center bg-primary text-white font-black py-2 rounded-lg">Bakım Takip Ziyareti Talep Et</a>
+        </div>
+      @endif
     </div>
   </div>
 </div>

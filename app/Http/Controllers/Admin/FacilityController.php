@@ -156,6 +156,7 @@ class FacilityController extends Controller
         $data['services'] = $this->parseServices($request->input('services_raw'), $request->input('services', []));
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
+        $data['allows_visit_service'] = $request->boolean('allows_visit_service');
         $data['is_claimed'] = false;
         $data['district_id'] = $this->resolveDistrictId($data['district'] ?? null, $data['city_id']);
 
@@ -235,6 +236,7 @@ class FacilityController extends Controller
         $data['services'] = $this->parseServices($request->input('services_raw'), $request->input('services', []));
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
+        $data['allows_visit_service'] = $request->boolean('allows_visit_service');
         // 14 Agustos 2026: kullanicinin talebi - "ilce senkronizasyonu"
         // (bkz. DataQualityService::districtAudit() - metin/FK uyumsuzlugu
         // sorunu). Eslesme bulunamazsa MEVCUT district_id'ye DOKUNULMAZ -

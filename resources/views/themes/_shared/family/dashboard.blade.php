@@ -81,6 +81,13 @@
       <div class="font-black text-gray-950 mt-1">Hesap Bilgilerim</div>
       <p class="text-sm text-gray-500 mt-2 hidden sm:block">Ad, telefon ve şifrenizi güncelleyin.</p>
     </a>
+    {{-- 26 Agustos 2026: kullanicinin talebi - "bakim takip ziyareti"
+         (ucretli, kurumda kalan yakina periyodik ziyaret+rapor) talebi. --}}
+    <a href="{{ brand_route('family.visit-service.index') }}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 hover:shadow-md">
+      <div class="text-xs font-semibold text-primary">Yerinde Takip</div>
+      <div class="font-black text-gray-950 mt-1">Bakım Takip Ziyareti</div>
+      <p class="text-sm text-gray-500 mt-2 hidden sm:block">Yakınınızı düzenli ziyaret edip size raporlayalım.</p>
+    </a>
   </div>
 
   {{-- 14 Agustos 2026: kullanicinin talebi - kaydedilen aramalar burada

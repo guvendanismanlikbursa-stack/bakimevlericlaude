@@ -54,4 +54,9 @@ class FamilyUser extends Model
     {
         return $this->morphMany(PushSubscription::class, 'subscribable');
     }
+
+    public function visitServiceRequests()
+    {
+        return $this->hasMany(VisitServiceRequest::class)->latest();
+    }
 }

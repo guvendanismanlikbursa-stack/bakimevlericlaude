@@ -252,6 +252,11 @@
   <div class="flex gap-6 md:col-span-2">
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" value="1" @checked(old('is_published', $facility->exists ? $facility->is_published : true))> Yayında</label>
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_featured" value="1" @checked(old('is_featured', $facility->is_featured))> Öne çıkar</label>
+    {{-- 26 Agustos 2026: kullanicinin talebi - "bakim takip ziyareti" hizmeti
+         SADECE yasli-bakim bolumunde VE kurumun onayi alindiktan sonra
+         admin'in acikca isaretledigi kurumlarda gorunur (bkz. facilities.
+         allows_visit_service migration ayni tarihli yorum). --}}
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="allows_visit_service" value="1" @checked(old('allows_visit_service', $facility->allows_visit_service))> Ziyaret hizmetine açık</label>
   </div>
 
   <div>

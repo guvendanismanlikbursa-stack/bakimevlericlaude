@@ -16,6 +16,7 @@ class Facility extends Model
         'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'favorites_count',
         'invitation_status', 'invitation_status_at', 'menu_image_path', 'menu_image_updated_at',
         'is_broker_managed', 'vacant_beds_male', 'vacant_beds_female', 'vacant_beds_updated_at',
+        'allows_visit_service',
     ];
 
     protected function casts(): array
@@ -37,6 +38,7 @@ class Facility extends Model
             'is_featured' => 'boolean',
             'is_claimed' => 'boolean',
             'is_broker_managed' => 'boolean',
+            'allows_visit_service' => 'boolean',
             'vacant_beds_male' => 'integer',
             'vacant_beds_female' => 'integer',
             'vacant_beds_updated_at' => 'datetime',
@@ -102,6 +104,11 @@ class Facility extends Model
     public function programTypes()
     {
         return $this->hasMany(FacilityProgramType::class)->orderBy('sort_order');
+    }
+
+    public function visitServiceRequests()
+    {
+        return $this->hasMany(VisitServiceRequest::class);
     }
 
     public function brokerReferrals()
