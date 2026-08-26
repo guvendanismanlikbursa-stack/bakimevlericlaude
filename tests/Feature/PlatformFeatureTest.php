@@ -3955,6 +3955,18 @@ class PlatformFeatureTest extends TestCase
 
     public function test_health_check_ignores_never_run_jobs_but_fails_on_truly_overdue_ones(): void
     {
+        // 26 Agustos 2026: bu test arada bir (deploy.py'nin kendi test
+        // calistirmasinda gozlemlendi, ayni suitin izole/tekrarlanan
+        // calistirmalarinda tekrarlanamadi) ilk assertOk() adiminda 503
+        // aliyordu - baska bir testten (ör. gercekten gecikmis bir
+        // ScheduledJobRun olusturan komsu test) kalma bir satirin, RefreshDatabase
+        // transaction rollback'i beklenmedik sekilde atlanip sizmasindan
+        // supheleniliyor ama kesin mekanizma tekrar uretilemedi. Bu testin
+        // "tablo bastan bos" varsaymasi zaten yanlis bir bagimlilikti - hangi
+        // sebeple olursa olsun kalinti satir gelirse artik testi degil, bu
+        // acik temizlik onler.
+        \App\Models\ScheduledJobRun::query()->delete();
+
         \App\Models\ScheduledJobRun::create([
             'job_name' => 'henuz-hic-calismamis',
             'expected_frequency_minutes' => 60,

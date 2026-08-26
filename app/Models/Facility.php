@@ -94,6 +94,16 @@ class Facility extends Model
         return $this->hasMany(FacilityRoomType::class)->orderBy('sort_order');
     }
 
+    public function ageGroups()
+    {
+        return $this->hasMany(FacilityAgeGroup::class)->orderBy('sort_order');
+    }
+
+    public function programTypes()
+    {
+        return $this->hasMany(FacilityProgramType::class)->orderBy('sort_order');
+    }
+
     public function brokerReferrals()
     {
         return $this->hasMany(BrokerReferral::class);

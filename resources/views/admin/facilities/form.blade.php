@@ -201,23 +201,29 @@
     <a href="{{ route('admin.settings.edit') }}" class="text-xs text-primary underline ml-2">Eşikleri düzenle</a>
   </div>
 
-  <div class="md:col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-4">
-    <label class="text-sm font-semibold block mb-1">Oda Tipine Göre Fiyat Aralığı</label>
-    <p class="text-xs text-gray-500 mb-3">Sadece doldurduğunuz oda tipleri kurum sayfasında ayrı bir tablo olarak gösterilir. Boş bırakılırsa (daha önce girilmişse) o tipin kaydı silinir.</p>
-    @php $existingRoomTypes = $facility->exists ? $facility->roomTypes->keyBy('room_type') : collect(); @endphp
-    <div class="grid sm:grid-cols-2 gap-3">
-      @foreach(\App\Models\FacilityRoomType::TYPES as $key => $label)
-        @php $rt = $existingRoomTypes->get($key); @endphp
-        <div class="bg-white border rounded-lg p-3">
-          <div class="font-semibold text-sm mb-2">{{ $label }}</div>
-          <div class="grid grid-cols-2 gap-2">
-            <input type="number" step="0.01" min="0" name="room_types[{{ $key }}][price_min]" value="{{ old('room_types.'.$key.'.price_min', $rt->price_min ?? '') }}" placeholder="Min TL" class="border rounded-lg px-2 py-1.5 text-sm w-full">
-            <input type="number" step="0.01" min="0" name="room_types[{{ $key }}][price_max]" value="{{ old('room_types.'.$key.'.price_max', $rt->price_max ?? '') }}" placeholder="Maks TL" class="border rounded-lg px-2 py-1.5 text-sm w-full">
-          </div>
-        </div>
-      @endforeach
-    </div>
-  </div>
+  @include('admin.facilities._price-options', [
+    'optionsTitle' => 'Oda Tipine Göre Fiyat Aralığı',
+    'optionsDescription' => 'Yaşlı bakım/huzurevi kurumları için. Sadece doldurduğunuz oda tipleri kurum sayfasında ayrı bir tablo olarak gösterilir. Boş bırakılırsa (daha önce girilmişse) o tipin kaydı silinir.',
+    'optionsTypes' => \App\Models\FacilityRoomType::TYPES,
+    'optionsInputKey' => 'room_types',
+    'optionsExisting' => $facility->exists ? $facility->roomTypes->keyBy('room_type') : collect(),
+  ])
+
+  @include('admin.facilities._price-options', [
+    'optionsTitle' => 'Yaş Grubuna Göre Fiyat Aralığı',
+    'optionsDescription' => 'Çocuk bakım/kreş-anaokulu kurumları için. Sadece doldurduğunuz yaş grupları kurum sayfasında ayrı bir tablo olarak gösterilir. Boş bırakılırsa (daha önce girilmişse) o grubun kaydı silinir.',
+    'optionsTypes' => \App\Models\FacilityAgeGroup::TYPES,
+    'optionsInputKey' => 'age_groups',
+    'optionsExisting' => $facility->exists ? $facility->ageGroups->keyBy('age_group') : collect(),
+  ])
+
+  @include('admin.facilities._price-options', [
+    'optionsTitle' => 'Program Süresine Göre Fiyat Aralığı',
+    'optionsDescription' => 'Çocuk bakım/kreş-anaokulu kurumları için. Sadece doldurduğunuz program süreleri kurum sayfasında ayrı bir tablo olarak gösterilir. Boş bırakılırsa (daha önce girilmişse) o sürenin kaydı silinir.',
+    'optionsTypes' => \App\Models\FacilityProgramType::TYPES,
+    'optionsInputKey' => 'program_types',
+    'optionsExisting' => $facility->exists ? $facility->programTypes->keyBy('program_type') : collect(),
+  ])
 
   <div class="md:col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-4">
     <label class="text-sm font-semibold block mb-3">Bölüme göre özellik önerileri</label>

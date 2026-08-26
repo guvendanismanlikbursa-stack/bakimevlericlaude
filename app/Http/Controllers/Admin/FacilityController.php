@@ -8,7 +8,9 @@ use App\Models\City;
 use App\Models\District;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
+use App\Models\FacilityAgeGroup;
 use App\Models\FacilityImage;
+use App\Models\FacilityProgramType;
 use App\Models\FacilityRoomType;
 use App\Services\FacilityArchiveService;
 use App\Services\GeocodingService;
@@ -173,7 +175,9 @@ class FacilityController extends Controller
         $facility = Facility::create($data);
 
         $this->storeUploadedImages($request, $facility);
-        $this->syncRoomTypes($request, $facility);
+        $this->syncPriceOptions($request, 'room_types', $facility, 'roomTypes', FacilityRoomType::TYPES, 'room_type');
+        $this->syncPriceOptions($request, 'age_groups', $facility, 'ageGroups', FacilityAgeGroup::TYPES, 'age_group');
+        $this->syncPriceOptions($request, 'program_types', $facility, 'programTypes', FacilityProgramType::TYPES, 'program_type');
 
         return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum ön kayıt olarak eklendi. Şimdi demo görseller ekleyebilirsiniz.');
     }
@@ -183,7 +187,7 @@ class FacilityController extends Controller
         $cities = City::orderBy('name')->get();
         $categories = FacilityCategory::orderBy('name')->get();
         $serviceSections = service_sections();
-        $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category', 'roomTypes']);
+        $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category', 'roomTypes', 'ageGroups', 'programTypes']);
         // 18 Agustos 2026: kullanicinin talebi - filtrelenmis listeden gelip
         // ayni kurumda birden fazla gorsel ekleyip/silen admin artik HER
         // kayittan sonra listeye geri atilmiyor (bkz. update() ayni tarihli
@@ -249,7 +253,9 @@ class FacilityController extends Controller
         $facility->update($data);
 
         $this->storeUploadedImages($request, $facility);
-        $this->syncRoomTypes($request, $facility);
+        $this->syncPriceOptions($request, 'room_types', $facility, 'roomTypes', FacilityRoomType::TYPES, 'room_type');
+        $this->syncPriceOptions($request, 'age_groups', $facility, 'ageGroups', FacilityAgeGroup::TYPES, 'age_group');
+        $this->syncPriceOptions($request, 'program_types', $facility, 'programTypes', FacilityProgramType::TYPES, 'program_type');
 
         // 14 Agustos 2026: kullanicinin talebi - "kaydet'e basinca 2 defa
         // geri tusuna basmam gerekiyor" -> ilk cozum: her zaman dogrudan
@@ -613,17 +619,18 @@ class FacilityController extends Controller
 
     /**
      * 26 Agustos 2026: kullanicinin talebi - yasli bakim/huzurevi kurumlarinda
-     * oda tipine gore (tek/2/3 kisilik, paylasimli) ayri fiyat araligi.
-     * Sabit 4 tip disinda deger kabul edilmez (bkz. FacilityRoomType::TYPES).
-     * Bos birakilan bir tip varsa (admin daha once girmis, simdi temizlemis
-     * olabilir) o tipin kaydi silinir - sessizce eski veri kalmaz.
+     * oda tipine (FacilityRoomType), cocuk bakim/kres-anaokulu kurumlarinda
+     * yas grubuna (FacilityAgeGroup) ve program suresine (FacilityProgramType)
+     * gore ayri fiyat araligi. Ucu de AYNI desen oldugu icin tek bir metotla
+     * calisir - sabit tipler disinda deger kabul edilmez, bos birakilan bir
+     * tip (admin daha once girmis, simdi temizlemis olabilir) sessizce silinir.
      */
-    private function syncRoomTypes(Request $request, Facility $facility): void
+    private function syncPriceOptions(Request $request, string $inputKey, Facility $facility, string $relationMethod, array $types, string $column): void
     {
-        $input = $request->input('room_types', []);
+        $input = $request->input($inputKey, []);
         $order = 0;
 
-        foreach (FacilityRoomType::TYPES as $key => $label) {
+        foreach ($types as $key => $label) {
             $order++;
             $min = $input[$key]['price_min'] ?? null;
             $max = $input[$key]['price_max'] ?? null;
@@ -631,7 +638,7 @@ class FacilityController extends Controller
             $max = is_numeric($max) ? (float) $max : null;
 
             if ($min === null && $max === null) {
-                $facility->roomTypes()->where('room_type', $key)->delete();
+                $facility->$relationMethod()->where($column, $key)->delete();
                 continue;
             }
 
@@ -639,8 +646,8 @@ class FacilityController extends Controller
                 [$min, $max] = [$max, $min];
             }
 
-            $facility->roomTypes()->updateOrCreate(
-                ['room_type' => $key],
+            $facility->$relationMethod()->updateOrCreate(
+                [$column => $key],
                 ['price_min' => $min, 'price_max' => $max, 'sort_order' => $order]
             );
         }
