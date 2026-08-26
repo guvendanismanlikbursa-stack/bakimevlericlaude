@@ -68,9 +68,15 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
     // bolumunun UZERINDE, sonuclar ekranin cok asagisinda sessizce
     // guncelleniyordu) sayfa hic kaymadigi icin kullaniciya "hicbir sey
     // olmadi/filtre calismiyor" gibi gorunuyordu - 0 sonuc donen bir arama
-    // fark edilmeden kayboluyordu. Sadece "Ara"ya basildiginda/Enter'a
-    // basildiginda (her tus vurusunda DEGIL - o rahatsiz edici olurdu)
-    // sonuc alanina yumusak kaydirma yapilir.
+    // fark edilmeden kayboluyordu.
+    // 26 Agustos 2026: kullanicinin bildirdigi ikinci hata - bir onceki
+    // duzeltme select degisince de kaydiriyordu, ama kullanici henuz TUM
+    // filtre alanlarini doldurmadan (ör. sadece il secip kategori/hizmet
+    // secmeden) sayfa erkenden sonuclara atlıyordu. Kaydirma artik SADECE
+    // "Ara/Filtrele/Bul" butonuna basildiginda (veya Enter'a basildiginda -
+    // formun submit event'i) calisir; tek tek alan degistirmede (select
+    // change, metin kutusunda yazarken) sonuc arka planda guncellenir ama
+    // sayfa kaymaz - kullanici tum filtreleri kendi hizinda doldurabilir.
     const runFilter = (scrollToResults) => {
       if (!resultsEl) return;
       if (controller) controller.abort();
@@ -113,10 +119,8 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
     form.querySelectorAll('input[type="search"], input[type="text"]').forEach((input) => {
       input.addEventListener('input', () => runFilter(false));
     });
-    // select (ör. il/ilce/kurum turu) degistirmek acik bir eylem - yazarken
-    // her tus vurusunda kaymanin aksine, burada sonuca kaydirmak faydali.
     form.querySelectorAll('select').forEach((select) => {
-      select.addEventListener('change', () => runFilter(true));
+      select.addEventListener('change', () => runFilter(false));
     });
     form.addEventListener('submit', (event) => { event.preventDefault(); runFilter(true); });
   }
