@@ -27,6 +27,22 @@ class OfferRequestNotificationService
                 'offer_request_id' => $offerRequest->id,
             ])
         );
+
+        // 26 Agustos 2026: kullanicinin talebi - anlasmali (aracilik)
+        // kurumlarin panelini kurumun kendisi degil ADMIN takip ediyor -
+        // dogrudan-talep + broker-managed kombinasyonunda TUM admin'lere
+        // de ayrica bildirim gider, tiklaninca dogrudan o kurumun
+        // paneline atlar (bkz. Admin\BrokerController::quickJump(),
+        // notification_action_url() 'broker_offer_request' case'i).
+        if ($offerRequest->facility_id && $offerRequest->facility?->is_broker_managed) {
+            \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+                $admin,
+                'broker_offer_request',
+                'Anlaşmalı kurum: yeni talep',
+                "\"{$offerRequest->facility->name}\" için yeni bir ücret/teklif talebi geldi.",
+                ['facility_id' => $offerRequest->facility_id, 'offer_request_id' => $offerRequest->id],
+            ));
+        }
     }
 
     /**

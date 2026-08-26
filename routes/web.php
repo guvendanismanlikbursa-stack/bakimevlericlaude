@@ -172,6 +172,12 @@ $siteRoutes = function () {
     Route::get('/kurumlar/{slug}/sahiplen', [FacilityClaimController::class, 'create'])->name('facility-claim.create');
     Route::post('/kurumlar/{slug}/sahiplen', [FacilityClaimController::class, 'store'])->middleware('throttle:public-sensitive')->name('facility-claim.store');
 
+    // Kurumda calisma (is) basvurusu - herkese acik form, giris gerekmez.
+    // Sadece sahiplenilmis/aracilik kurumlarda (bkz. JobApplicationController::
+    // abortUnlessEligible) - kurum yoksa/rehabilitasyon ise 404.
+    Route::get('/kurumlar/{slug}/is-basvurusu', [\App\Http\Controllers\Public\JobApplicationController::class, 'create'])->name('job-application.create');
+    Route::post('/kurumlar/{slug}/is-basvurusu', [\App\Http\Controllers\Public\JobApplicationController::class, 'store'])->middleware('throttle:public-sensitive')->name('job-application.store');
+
     // Kurum kendi kendine kayit basvurusu (herkese acik form, giris gerekmez)
     Route::get('/kurum-kaydi', [FacilityRegistrationController::class, 'create'])->name('facility-registration.create');
     Route::post('/kurum-kaydi', [FacilityRegistrationController::class, 'store'])->middleware('throttle:public-sensitive')->name('facility-registration.store');
@@ -399,6 +405,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/aracilik/kurumlar', [AdminBrokerController::class, 'facilities'])->name('broker.facilities');
         Route::post('/aracilik/kurumlar/{facility}/degistir', [AdminBrokerController::class, 'toggleFacility'])->name('broker.facilities.toggle');
+        Route::get('/aracilik/kurumlar/{facility}/panele-atla', [AdminBrokerController::class, 'quickJump'])->name('broker.facilities.quick-jump');
         Route::get('/aracilik/yonlendirmeler', [AdminBrokerController::class, 'referrals'])->name('broker.referrals');
         Route::post('/aracilik/yonlendirmeler', [AdminBrokerController::class, 'storeReferral'])->name('broker.referrals.store');
         Route::post('/aracilik/yonlendirmeler/{referral}', [AdminBrokerController::class, 'updateReferral'])->name('broker.referrals.update');
@@ -406,6 +413,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/doluluk-durumu', [AdminOccupancyController::class, 'index'])->name('occupancy.index');
         Route::post('/doluluk-durumu/{facility}', [AdminOccupancyController::class, 'update'])->name('occupancy.update');
+
+        Route::get('/is-basvurulari', [\App\Http\Controllers\Admin\JobApplicationController::class, 'index'])->name('job-applications.index');
+        Route::post('/is-basvurulari/{jobApplication}/iletildi', [\App\Http\Controllers\Admin\JobApplicationController::class, 'markForwarded'])->name('job-applications.mark-forwarded');
+        Route::delete('/is-basvurulari/{jobApplication}', [\App\Http\Controllers\Admin\JobApplicationController::class, 'destroy'])->name('job-applications.destroy');
 
         Route::get('/sahiplenme-basvurulari', [AdminFacilityClaimController::class, 'index'])->name('claims.index');
         Route::get('/sahiplenme-basvurulari/{claim}', [AdminFacilityClaimController::class, 'show'])->name('claims.show');

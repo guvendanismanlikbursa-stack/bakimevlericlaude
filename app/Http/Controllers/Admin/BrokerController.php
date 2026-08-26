@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\BrokerReferral;
 use App\Models\Facility;
+use App\Models\FacilityUser;
+use App\Models\OfferRequest;
 use Illuminate\Http\Request;
 
 // 25 Agustos 2026: kullanicinin talebi - kendi kisisel "aracilik" isini
@@ -166,5 +168,43 @@ class BrokerController extends Controller
         $referral->delete();
 
         return back()->with('success', 'Yönlendirme silindi.');
+    }
+
+    /**
+     * 26 Agustos 2026: kullanicinin talebi - anlasmali (aracilik) bir
+     * kuruma yeni bir talep geldiginde admin'e giden bildirime tiklaninca
+     * "Kullanicilar -> Kurum Yetkilileri -> ara -> Kullanici olarak gör"
+     * ZAHMETLI akisi yerine DOGRUDAN o kurumun paneline atlar - bkz.
+     * UserController::impersonateFacilityUser() ile AYNI oturum mantigi,
+     * sadece giris noktasi bir Facility (kurum yetkilisi degil).
+     */
+    public function quickJump(Request $request, Facility $facility)
+    {
+        abort_unless($facility->is_broker_managed, 404);
+
+        $facilityUser = FacilityUser::where('facility_id', $facility->id)->where('status', 'active')->first();
+
+        if (! $facilityUser) {
+            return redirect()->route('admin.facilities.edit', $facility)
+                ->with('error', 'Bu kurumun aktif bir yetkili hesabı yok - önce "Yerinde Sahiplendirme" ile bir hesap oluşturmanız gerekiyor.');
+        }
+
+        log_admin_event('broker_facility_quick_jump', $facility);
+
+        session([
+            'impersonator_admin_id' => session('admin_id'),
+            'impersonator_admin_name' => session('admin_name'),
+        ]);
+        session()->forget(['admin_id', 'admin_name']);
+        session()->regenerate();
+        session()->regenerateToken();
+        session(['facility_user_id' => $facilityUser->id, 'facility_user_name' => $facilityUser->name]);
+
+        $offerRequestId = $request->query('offer_request');
+        if ($offerRequestId && OfferRequest::where('id', $offerRequestId)->where('facility_id', $facility->id)->exists()) {
+            return redirect(brand_route('facility.thread', $offerRequestId));
+        }
+
+        return redirect(brand_route('facility.dashboard'));
     }
 }

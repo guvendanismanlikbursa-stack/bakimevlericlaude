@@ -484,6 +484,15 @@ if (! function_exists('notification_action_url')) {
                 'claim_approved', 'registration_approved' => brand_route('facility.login'),
                 'topup_approved', 'topup_rejected' => brand_route('facility.wallet.index'),
                 'claim_submitted' => route('admin.claims.index'),
+                'job_application_submitted' => route('admin.job-applications.index'),
+                // 26 Agustos 2026: kullanicinin talebi - anlasmali (aracilik)
+                // kurumlara gelen talepler icin admin'e giden bildirim,
+                // tiklaninca "Kullanicilar -> ara -> Kullanici olarak gör"
+                // zahmetli akisi yerine DOGRUDAN o kurumun paneline atlar
+                // (bkz. Admin\BrokerController::quickJump()).
+                'broker_offer_request' => isset($data['facility_id'])
+                    ? route('admin.broker.facilities.quick-jump', array_filter(['facility' => $data['facility_id'], 'offer_request' => $data['offer_request_id'] ?? null]))
+                    : route('admin.broker.facilities'),
                 'registration_submitted' => route('admin.registrations.index'),
                 'contact_message_submitted' => route('admin.contact-messages.index'),
                 'topup_requested' => route('admin.topups.index'),
