@@ -2408,9 +2408,13 @@ class OpsController extends Controller
             return $out."SONUC: BASARISIZ - video kaydedilmedi\n";
         }
 
-        $publicResponse = $this->renderPublicFacilityPage($facility);
+        [$publicStatus, $publicResponse] = $this->renderPublicFacilityPage($facility);
+        $out .= 'genel sayfa HTTP durumu: '.$publicStatus."\n";
         $out .= 'genel sayfa "Tanitim Videosu" iceriyor mu: '.(str_contains($publicResponse, 'Tanıtım Videosu') ? 'EVET' : 'HAYIR')."\n";
         $out .= 'genel sayfa video yolunu iceriyor mu: '.(str_contains($publicResponse, $facility->video_path) ? 'EVET' : 'HAYIR')."\n";
+        if ($publicStatus !== 200) {
+            $out .= 'yanit ilk 300 karakter: '.substr($publicResponse, 0, 300)."\n";
+        }
 
         $storedPath = $facility->video_path;
         $deleteMethod = new \ReflectionMethod($controller, 'deleteVideo');
@@ -2427,7 +2431,7 @@ class OpsController extends Controller
         return $out;
     }
 
-    private function renderPublicFacilityPage(Facility $facility): string
+    private function renderPublicFacilityPage(Facility $facility): array
     {
         $brand = array_key_first(config('brands.brands', []));
         $kernel = app(\Illuminate\Contracts\Http\Kernel::class);
@@ -2435,7 +2439,7 @@ class OpsController extends Controller
         $response = $kernel->handle($showRequest);
         $kernel->terminate($showRequest, $response);
 
-        return $response->getContent();
+        return [$response->getStatusCode(), $response->getContent()];
     }
 
     // 26 Agustos 2026: 25 Agustos'ta canliya alinan 4 duzeltmeyi (bonus
