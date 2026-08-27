@@ -10,6 +10,7 @@ use App\Models\FacilityRegistration;
 use App\Models\OfferRequest;
 use App\Models\PlatformError;
 use App\Models\SiteVisit;
+use App\Models\VisitServiceRequest;
 use App\Models\WalletTopup;
 use Illuminate\Support\Facades\Config;
 
@@ -37,6 +38,11 @@ class DashboardController extends Controller
         $pendingTopups = WalletTopup::where('status', 'pending')->count();
         $pendingTopupsAmount = (float) WalletTopup::where('status', 'pending')->sum('amount');
         $pendingRegistrations = FacilityRegistration::where('status', 'pending')->count();
+        // 27 Agustos 2026: kullanicinin bildirdigi gercek eksiklik - "Yakınımı
+        // Ziyaret Et" talebi gelince admin'e mail/push gidiyordu ama panele
+        // girince diger bekleyen islemler (sahiplenme/kayit/bakiye) gibi
+        // GORUNMUYORDU, admin fark etmiyordu. Ayni "bekleyen islemler" kutusuna eklendi.
+        $newVisitServiceRequests = VisitServiceRequest::where('status', 'yeni')->count();
 
         $latestOffers = OfferRequest::with('facility')->latest()->limit(8)->get();
         $latestClaims = FacilityClaim::with('facility')->where('status', 'pending')->latest()->limit(5)->get();
@@ -45,7 +51,7 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', compact(
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
-            'pendingTopupsAmount', 'pendingRegistrations', 'latestClaims', 'health'
+            'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health'
         ));
     }
 

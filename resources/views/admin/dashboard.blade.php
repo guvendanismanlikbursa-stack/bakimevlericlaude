@@ -8,7 +8,7 @@
 @endphp
 <h1 class="text-2xl font-bold mb-6">Genel Bakış</h1>
 
-@if($pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0)
+@if($pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0 || $newVisitServiceRequests > 0)
 <div class="grid md:grid-cols-3 gap-4 mb-6">
   @if($pendingClaims > 0)
     <a href="{{ route('admin.claims.index') }}" class="block bg-orange-50 border border-orange-200 text-orange-800 px-5 py-4 rounded-xl">
@@ -27,6 +27,13 @@
   @if($pendingRegistrations > 0)
     <a href="{{ route('admin.registrations.index') }}" class="block bg-purple-50 border border-purple-200 text-purple-800 px-5 py-4 rounded-xl">
       <strong>{{ $pendingRegistrations }}</strong> yeni kurum kaydı onay bekliyor →
+    </a>
+  @endif
+  {{-- 27 Agustos 2026: kullanicinin bildirdigi gercek eksiklik - bkz.
+       DashboardController ayni tarihli yorum. --}}
+  @if($newVisitServiceRequests > 0)
+    <a href="{{ route('admin.visit-service.index', ['status' => 'yeni']) }}" class="block bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl">
+      <strong>{{ $newVisitServiceRequests }}</strong> yeni "Yakınımı Ziyaret Et" talebi var →
     </a>
   @endif
 </div>

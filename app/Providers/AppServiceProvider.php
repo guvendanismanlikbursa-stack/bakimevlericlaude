@@ -7,6 +7,7 @@ use App\Models\FacilityClaim;
 use App\Models\FacilityRegistration;
 use App\Models\FacilityUser;
 use App\Models\FamilyUser;
+use App\Models\VisitServiceRequest;
 use App\Models\WalletTopup;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
@@ -49,6 +50,12 @@ class AppServiceProvider extends ServiceProvider
             $view->with('pendingTopupsCount', WalletTopup::where('status', 'pending')->count());
             $view->with('pendingRegistrationsCount', FacilityRegistration::where('status', 'pending')->count());
             $view->with('unreadChatThreadsCount', ChatThread::where('unread_by_admin', true)->count());
+            // 27 Agustos 2026: kullanicinin bildirdigi gercek eksiklik - "Yakınımı
+            // Ziyaret Et" talepleri icin mail/push bildirimi gidiyordu ama panelin
+            // KENDISINDE (sidebar linkinde) diger bolumlerdeki (Sahiplenme, Kayit,
+            // Sohbet) gibi bir rozet/sayac YOKTU - admin panele girince yeni bir
+            // talep oldugunu FARK ETMIYORDU. Ayni desen uygulandi.
+            $view->with('newVisitServiceRequestsCount', VisitServiceRequest::where('status', 'yeni')->count());
         });
     }
 
