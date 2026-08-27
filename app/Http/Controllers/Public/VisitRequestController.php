@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
-use App\Models\FacilityUser;
 use App\Models\VisitRequest;
 use Illuminate\Http\Request;
 
@@ -81,9 +80,18 @@ class VisitRequestController extends Controller
         return back()->with('success', 'Sorunuz kuruma iletildi, en kısa sürede sizinle iletişime geçecekler.');
     }
 
+    // 27 Agustos 2026: kullanicinin "anlaşmalı kurumlardan aile randevu
+    // istediğinde admine geliyor değil mi" sorusuyla bulunan gercek eksiklik -
+    // bu bildirim eskiden HER ZAMAN kurumun kendi hesabina gidiyordu, anlasmali
+    // (is_broker_managed) kurumlar icin de. Artik OfferRequestNotificationService
+    // ile AYNI kurali kullanir (bkz. notify_facility_or_broker_admins()
+    // helpers.php) - anlasmali kurumun kendi hesabina hicbir bildirim gitmez.
     private function notifyFacility(Facility $facility, string $title, string $body): void
     {
-        FacilityUser::where('facility_id', $facility->id)->get()
-            ->each(fn (FacilityUser $user) => notify_user($user, 'visit_request', $title, $body));
+        notify_facility_or_broker_admins(
+            $facility,
+            'visit_request', $title, $body,
+            'broker_visit_request', "Anlaşmalı kurum: {$title}", "\"{$facility->name}\" kurumu için: {$body}"
+        );
     }
 }

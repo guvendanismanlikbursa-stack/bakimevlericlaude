@@ -391,6 +391,41 @@ if (! function_exists('notify_user')) {
     }
 }
 
+if (! function_exists('notify_facility_or_broker_admins')) {
+    /**
+     * 27 Agustos 2026: kullanicinin "anlaşmalı kurumlardan aile randevu
+     * istediğinde admine geliyor değil mi" sorusuyla bulundu - bu ortak
+     * yonlendirme onceden SADECE OfferRequestNotificationService (teklif/
+     * mesaj/rapor akislari) icindeydi, VisitRequestController (ziyaret/
+     * randevu talebi + kontenjan sor) bundan HABERSIZDI, anlasmali bir
+     * kuruma gelen randevu talebi hala kurumun KENDI hesabina gidiyordu.
+     * Ortak bir helper'a tasindi ki her iki akis da (ve ilerideki benzer
+     * akislar) AYNI kurali uygulasin: kurum anlasmali (is_broker_managed)
+     * DEGILSE kendi yetkililerine, ANLASMALI ise kendisi yerine TUM
+     * admin'lere gider - anlasmali kurumun kendi hesabina HICBIR bildirim
+     * gitmemeli (kullanicinin acik talebi).
+     */
+    function notify_facility_or_broker_admins(
+        \App\Models\Facility $facility,
+        string $facilityType, string $facilityTitle, string $facilityBody,
+        string $brokerType, string $brokerTitle, string $brokerBody,
+        array $extraData = []
+    ): void {
+        if ($facility->is_broker_managed) {
+            \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+                $admin, $brokerType, $brokerTitle, $brokerBody,
+                array_filter(array_merge(['facility_id' => $facility->id], $extraData))
+            ));
+
+            return;
+        }
+
+        \App\Models\FacilityUser::where('facility_id', $facility->id)->get()->each(
+            fn ($user) => notify_user($user, $facilityType, $facilityTitle, $facilityBody, array_filter($extraData))
+        );
+    }
+}
+
 if (! function_exists('notification_channel_enabled')) {
     /**
      * 12 Agustos 2026: kullanicinin talebi - "hangi olaylar icin e-posta/push
@@ -494,7 +529,7 @@ if (! function_exists('notification_action_url')) {
                 // tiklaninca "Kullanicilar -> ara -> Kullanici olarak gör"
                 // zahmetli akisi yerine DOGRUDAN o kurumun paneline atlar
                 // (bkz. Admin\BrokerController::quickJump()).
-                'broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined' => isset($data['facility_id'])
+                'broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined', 'broker_visit_request' => isset($data['facility_id'])
                     ? route('admin.broker.facilities.quick-jump', array_filter(['facility' => $data['facility_id'], 'offer_request' => $data['offer_request_id'] ?? null]))
                     : route('admin.broker.facilities'),
                 'registration_submitted' => route('admin.registrations.index'),

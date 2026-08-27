@@ -116,7 +116,9 @@ class OfferRequestNotificationService
     /**
      * Tek bir kurumu hedefleyen bildirimler icin ortak yonlendirme: kurum
      * anlasmali (is_broker_managed) DEGILSE kendi yetkililerine, ANLASMALI
-     * ise kendisi yerine TUM admin'lere gider (bkz. sinif basi yorumu).
+     * ise kendisi yerine TUM admin'lere gider. 27 Agustos 2026: bu mantik
+     * artik notify_facility_or_broker_admins() (bkz. helpers.php) ortak
+     * fonksiyonuna tasindi - VisitRequestController da AYNI kurali kullanir.
      */
     private function notifyFacilityOrBrokerAdmins(
         Facility $facility,
@@ -124,17 +126,11 @@ class OfferRequestNotificationService
         string $brokerType, string $brokerTitle, string $brokerBody,
         ?int $offerRequestId = null
     ): void {
-        if ($facility->is_broker_managed) {
-            Admin::all()->each(fn (Admin $admin) => notify_user(
-                $admin, $brokerType, $brokerTitle, $brokerBody,
-                array_filter(['facility_id' => $facility->id, 'offer_request_id' => $offerRequestId])
-            ));
-
-            return;
-        }
-
-        FacilityUser::where('facility_id', $facility->id)->get()->each(
-            fn (FacilityUser $user) => notify_user($user, $facilityUserType, $facilityTitle, $facilityBody, array_filter(['offer_request_id' => $offerRequestId]))
+        notify_facility_or_broker_admins(
+            $facility,
+            $facilityUserType, $facilityTitle, $facilityBody,
+            $brokerType, $brokerTitle, $brokerBody,
+            ['offer_request_id' => $offerRequestId]
         );
     }
 
