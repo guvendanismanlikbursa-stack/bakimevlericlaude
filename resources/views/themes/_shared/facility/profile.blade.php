@@ -207,6 +207,54 @@
     </form>
     @error('menu_image')<p class="text-xs text-red-600 mt-2">{{ $message }}</p>@enderror
   </div>
+
+  {{-- 27 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
+       kurum sahibi, admin'e ek olarak kendi panelinden de tanitim videosu
+       yukleyip yonetebilsin. 27 Agustos (ikinci talep): alan anlasmasiz
+       kurumlara da GORUNSUN (komisyonlu calismaya tesvik icin) ama pasif
+       kalsin - yuklemeye calisinca sunucu tarafi (controller) ayni tesvik
+       mesajini gosterir, form burada bilerek DEVRE DISI birakilmiyor (kilit
+       ikonuyla "pasif" hissi veriliyor ama tiklanip denenebilir kalıyor). --}}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="mb-4">
+      <h2 class="font-bold">
+        Tanıtım Videosu
+        @if(! $facility->is_broker_managed)
+          <span class="text-xs font-normal text-amber-600">🔒 anlaşmalı kurumlara özel</span>
+        @else
+          <span class="text-xs font-normal text-gray-400">(anlaşmalı kurumlara özel)</span>
+        @endif
+      </h2>
+      <p class="text-sm text-gray-500">En fazla 60 saniyelik bir video yükleyin, ziyaretçiler kurum sayfanızda görüntüleyebilir. Yüklenince otomatik sıkıştırılır, biraz zaman alabilir.</p>
+    </div>
+
+    @if(! $facility->is_broker_managed)
+      <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 mb-4">
+        🔒 Bu alan şu anda <strong>pasif</strong>. Kurumunuz <strong>anlaşmalı (komisyon usulü)</strong> statüye geçtiğinde otomatik olarak aktif hale gelecek ve video yükleyebileceksiniz. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.
+      </div>
+    @endif
+
+    <div @if(! $facility->is_broker_managed) class="opacity-50 grayscale pointer-events-none select-none" @endif>
+      @if($facility->video_path)
+        <video src="{{ facility_asset($facility->video_path) }}" controls class="w-full max-w-sm rounded-lg mb-3"></video>
+        <p class="text-xs text-gray-400 mb-3">Son güncelleme: {{ $facility->video_updated_at?->diffForHumans() }}</p>
+        <form method="POST" action="{{ brand_route('facility.profile.video.destroy') }}" onsubmit="return confirm('Tanıtım videosunu kaldırmak istediğinize emin misiniz?');" class="inline mb-3">
+          @csrf @method('DELETE')
+          <button class="text-red-600 text-xs font-semibold">Kaldır</button>
+        </form>
+        <p class="text-xs text-gray-500 mb-2">Yeni bir video yüklerseniz, bu videonun yerine geçer:</p>
+      @else
+        <div class="rounded-lg bg-gray-50 border border-dashed border-gray-300 p-4 text-sm text-gray-400 mb-4">Henüz tanıtım videosu eklenmedi.</div>
+      @endif
+
+      <form method="POST" action="{{ brand_route('facility.profile.video.store') }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row mt-3">
+        @csrf
+        <input type="file" name="video" accept="video/*" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+        <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">{{ $facility->video_path ? 'Videoyu Güncelle' : 'Video Ekle' }}</button>
+      </form>
+    </div>
+    @error('video')<p class="text-xs text-red-600 mt-2">{{ $message }}</p>@enderror
+  </div>
 </div>
 
 @include('themes._shared.partials.notification-preferences-form', [

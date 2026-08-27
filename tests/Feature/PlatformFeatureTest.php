@@ -5082,4 +5082,61 @@ class PlatformFeatureTest extends TestCase
         $this->assertNull($facility->video_path);
         $this->assertFalse(Storage::disk('public')->exists($storedPath));
     }
+
+    public function test_facility_panel_shows_locked_video_area_and_rejects_upload_when_not_broker_managed(): void
+    {
+        // 27 Agustos 2026: kullanicinin talebi - anlasmasiz kurumlarda video
+        // alani PASIF ama GORUNUR olsun (komisyonlu calismaya tesvik), sunucu
+        // tarafi da gercek bir yukleme denemesini teşvik mesajiyla reddeder.
+        $this->assertFalse((bool) $this->childFacility->is_broker_managed);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimevibul/kurum-panel/profil')
+            ->assertOk()
+            ->assertSee('Tanıtım Videosu')
+            ->assertSee('Bu alan şu anda', false)
+            ->assertSee('otomatik olarak aktif hale gelecek', false);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimevibul/kurum-panel/profil/video', ['video' => $this->fakeMp4Upload()])
+            ->assertRedirect();
+
+        $this->assertNull($this->childFacility->fresh()->video_path);
+        $this->assertSame(
+            'Video yalnızca komisyon usulü anlaşmalı kurumlar tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.',
+            session('errors')->first('video')
+        );
+    }
+
+    public function test_facility_panel_video_upload_works_for_broker_managed_facility(): void
+    {
+        if (! \App\Services\FfmpegLocator::resolve()) {
+            $this->markTestSkipped('Bu ortamda ffmpeg bulunamadi, video sikistirma testi atlandi.');
+        }
+
+        $this->childFacility->update(['is_broker_managed' => true]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimevibul/kurum-panel/profil')
+            ->assertOk()
+            ->assertSee('Tanıtım Videosu')
+            ->assertDontSee('Bu alan şu anda', false);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimevibul/kurum-panel/profil/video', ['video' => $this->fakeMp4Upload()])
+            ->assertRedirect();
+
+        $this->childFacility->refresh();
+        $this->assertNotNull($this->childFacility->video_path);
+        $this->assertTrue(Storage::disk('public')->exists($this->childFacility->video_path));
+
+        $storedPath = $this->childFacility->video_path;
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->delete('/site/bakimevibul/kurum-panel/profil/video')
+            ->assertRedirect();
+
+        $this->childFacility->refresh();
+        $this->assertNull($this->childFacility->video_path);
+        $this->assertFalse(Storage::disk('public')->exists($storedPath));
+    }
 }

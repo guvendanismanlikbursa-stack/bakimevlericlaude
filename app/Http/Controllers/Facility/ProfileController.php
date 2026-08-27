@@ -356,6 +356,75 @@ class ProfileController extends Controller
         return back()->with('success', 'Yemek listesi kaldırıldı.');
     }
 
+    // 27 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
+    // kurum sahibi, admin'e ek olarak KENDI panelinden de tanitim videosu
+    // yukleyip yonetebilsin. Admin\FacilityController::storeUploadedVideo
+    // ile AYNI kurallar (60sn, ffmpeg sikistirma, sunucu tarafi is_broker_managed
+    // kontrolu) - iki taraf da ayni kurumu yonetebildigi icin mantik
+    // tekrarlaniyor ama controller'lar farkli katmanlarda (admin oturumu
+    // vs facility_user oturumu) oldugu icin ortak bir trait/service'e
+    // cikarmak bu asamada gereksiz karmasiklik olurdu.
+    public function uploadVideo(Request $request)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+        $facility = $user->facility;
+
+        if (! $facility->is_broker_managed) {
+            // 27 Agustos 2026: kullanicinin talebi - alan anlasmasiz kurumlara
+            // da GORUNSUN (komisyonlu calismaya tesvik) ama pasif kalsin,
+            // yuklemeye calisinca bu tesvik mesaji cikssin.
+            return back()->withErrors(['video' => 'Video yalnızca komisyon usulü anlaşmalı kurumlar tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.']);
+        }
+
+        $request->validate(['video' => 'required|file']);
+
+        if ($request->file('video')->getSize() > 200 * 1024 * 1024) {
+            return back()->withErrors(['video' => 'Video 200MB sınırını aşıyor, eklenemedi.']);
+        }
+
+        set_time_limit(180);
+
+        try {
+            $path = app(\App\Services\VideoCompressionService::class)->store($request->file('video'), 'facilities/videos');
+        } catch (\RuntimeException $e) {
+            $message = match ($e->getMessage()) {
+                'ffmpeg_unavailable' => 'Video işleme aracı şu an kullanılamıyor, lütfen daha sonra tekrar deneyin.',
+                'video_too_long' => 'Video 60 saniyeden uzun olamaz.',
+                default => 'Desteklenmeyen veya bozuk bir video dosyası.',
+            };
+
+            return back()->withErrors(['video' => $message]);
+        }
+
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            \Illuminate\Support\Facades\Log::error('Kurum videosu (kurum paneli) kaydedilemedi.', ['facility_id' => $facility->id]);
+
+            return back()->withErrors(['video' => 'Video yüklenirken bir sorun oluştu, lütfen tekrar deneyin.']);
+        }
+
+        $oldPath = $facility->video_path;
+        $facility->update(['video_path' => $path, 'video_updated_at' => now()]);
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return back()->with('success', 'Tanıtım videosu güncellendi.');
+    }
+
+    public function deleteVideo(Request $request)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+        $facility = $user->facility;
+
+        if ($facility->video_path) {
+            Storage::disk('public')->delete($facility->video_path);
+            $facility->update(['video_path' => null, 'video_updated_at' => null]);
+        }
+
+        return back()->with('success', 'Tanıtım videosu kaldırıldı.');
+    }
+
     private function sectionDetailFields(?array $serviceSection): array
     {
         return collect($serviceSection['profile_fields'] ?? [])
