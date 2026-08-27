@@ -1386,8 +1386,42 @@ class OpsController extends Controller
             $extract = new Process(['tar', '-xf', $tmpArchive, '-C', $extractDir]);
             $extract->setTimeout(90);
             $extract->run();
+
             if (! $extract->isSuccessful()) {
-                return $out . "HATA: arsiv acilamadi - " . trim($extract->getErrorOutput()) . "\n";
+                // 27 Agustos 2026: kullanicinin bildirdigi gercek durum -
+                // canli sunucuda 'tar' var ama '.xz' katmanini acacak 'xz'
+                // ikili dosyasi yok ("xz: Cannot exec: No such file or
+                // directory"). Python'un standart kutuphanesindeki lzma
+                // modulu (3.3+, sunucuda dogrulanan TUM surumlerde var) ile
+                // once .xz katmanini duz .tar'a cevirip, SONRA xz'siz tar
+                // ile acmayi dener - ikinci bir sistem paketine ihtiyac
+                // duymadan ayni sonuca ulasir.
+                $tarPath = sys_get_temp_dir().'/ffconv_'.uniqid().'.tar';
+                $decompressed = false;
+                foreach (['python3', '/opt/alt/python312/bin/python3', '/opt/alt/python311/bin/python3', '/opt/alt/python310/bin/python3', '/opt/alt/python39/bin/python3', '/opt/alt/python38/bin/python3', 'python'] as $py) {
+                    $script = 'import lzma,shutil,sys; shutil.copyfileobj(lzma.open(sys.argv[1],"rb"), open(sys.argv[2],"wb"))';
+                    $lzma = new Process([$py, '-c', $script, $tmpArchive, $tarPath]);
+                    $lzma->setTimeout(60);
+                    $lzma->run();
+                    if ($lzma->isSuccessful() && is_file($tarPath) && filesize($tarPath) > 1000) {
+                        $out .= "'xz' ikili dosyasi yoktu, '{$py}' (lzma modulu) ile acildi.\n";
+                        $decompressed = true;
+                        break;
+                    }
+                }
+
+                if (! $decompressed) {
+                    return $out . "HATA: arsiv acilamadi (tar: " . trim($extract->getErrorOutput()) . ") ve Python lzma ile de acilamadi.\n";
+                }
+
+                $extract = new Process(['tar', '-xf', $tarPath, '-C', $extractDir]);
+                $extract->setTimeout(90);
+                $extract->run();
+                @unlink($tarPath);
+
+                if (! $extract->isSuccessful()) {
+                    return $out . "HATA: Python ile acilan .tar dosyasi da tar ile cikartilamadi - " . trim($extract->getErrorOutput()) . "\n";
+                }
             }
 
             $matches = glob($extractDir.'/*/ffmpeg');
