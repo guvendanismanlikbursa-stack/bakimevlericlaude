@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -64,6 +64,7 @@ class OpsController extends Controller
             'ffmpeg-check' => $this->ffmpegCheck(),
             'ffmpeg-install' => $this->ffmpegInstall(),
             'qa-video-upload-test' => $this->qaVideoUploadTest($request),
+            'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
             'category-audit' => $this->categoryAudit(),
             'category-audit-city' => $this->categoryAuditCity($request),
             'invitation-status-audit' => $this->invitationStatusAudit(),
@@ -2453,6 +2454,104 @@ class OpsController extends Controller
         $kernel->terminate($showRequest, $response);
 
         return [$response->getStatusCode(), $response->getContent()];
+    }
+
+    // 27 Agustos 2026: kurum panelindeki (Facility\ProfileController::
+    // uploadVideo/deleteVideo) yeni "anlasmali kurum kendi videosunu
+    // yonetebilsin, anlasmasiz kurum pasif/tesvik gorunumu gorsun" ozelligini
+    // production'da GERCEK kodla dogrulayan tek seferlik QA araci -
+    // qaVideoUploadTest (admin tarafi) ile ayni desen, kontrolculer DOGRUDAN
+    // cagrilir (Kernel::handle degil) - facility_user_id oturumu session()
+    // helper'i ile ayni PHP surecinde paylasilir, ekstra karmasiklik gerekmez.
+    private function qaFacilityPanelVideoTest(): string
+    {
+        $out = '';
+
+        $city = \App\Models\City::first();
+        $category = \App\Models\FacilityCategory::where('brand_scope', 'yasli-bakim')->first();
+        if (! $city || ! $category) {
+            return 'HATA: yasli-bakim kategorisi veya sehir bulunamadi';
+        }
+
+        $facility = Facility::create([
+            'name' => 'QATEST Facility Panel Video',
+            'slug' => 'qatest-facility-panel-video-'.time(),
+            'city_id' => $city->id,
+            'facility_category_id' => $category->id,
+            'district' => 'Merkez',
+            'address' => 'Adres',
+            'phone' => '02120000000',
+            'description' => 'Aciklama',
+            'capacity' => 20,
+            'price_min' => 1000,
+            'price_max' => 2000,
+            'services' => ['bakim'],
+            'is_published' => true,
+            'is_claimed' => true,
+            'claimed_at' => now(),
+            'is_broker_managed' => false,
+        ]);
+
+        $facilityUser = \App\Models\FacilityUser::create([
+            'facility_id' => $facility->id,
+            'name' => 'QA Video Test',
+            'email' => 'qa-facility-panel-video-test-'.time().'@example.com',
+            'phone' => '05320000000',
+            'password' => bcrypt('QaTest12345!'),
+            'must_change_password' => false,
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        session(['facility_user_id' => $facilityUser->id]);
+        // 'errors' view degiskeni normalde ShareErrorsFromSession middleware'i
+        // tarafindan enjekte edilir - kontrolcuyu dogrudan cagirdigimiz icin
+        // (route/middleware zincirinden gecmeden) Blade'deki @error direktifi
+        // bu olmadan patlar, elle saglanmasi gerekiyor.
+        app('view')->share('errors', session()->get('errors') ?? new \Illuminate\Support\ViewErrorBag);
+        $controller = app(\App\Http\Controllers\Facility\ProfileController::class);
+
+        $editView = (string) $controller->edit();
+        $out .= '1) Anlasmasiz profilde pasif uyarisi var mi: '.(str_contains($editView, 'Bu alan şu anda') ? 'EVET (dogru)' : 'HAYIR (HATA)')."\n";
+
+        $dir = storage_path('framework/testing/files');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        $videoPath = $dir.'/'.uniqid('qa_fp_video_', true).'.mp4';
+        file_put_contents($videoPath, base64_decode('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'));
+
+        $rejectRequest = Request::create('/kurum-panel/profil/video', 'POST');
+        $rejectRequest->files->set('video', new \Illuminate\Http\UploadedFile($videoPath, 'qa.mp4', 'video/mp4', null, true));
+        $controller->uploadVideo($rejectRequest);
+        $rejectError = session('errors')?->first('video');
+        $out .= '2) Anlasmasiz durumda yukleme reddi mesaji: '.($rejectError ?? '(HATA: mesaj yok)')."\n";
+        $out .= '   Kurum video_path hala bos mu: '.($facility->fresh()->video_path === null ? 'EVET (dogru)' : 'HAYIR (HATA)')."\n";
+
+        $facility->update(['is_broker_managed' => true]);
+        $editView2 = (string) $controller->edit();
+        $out .= '3) Anlasmali profilde pasif uyarisi kalkti mi: '.(! str_contains($editView2, 'Bu alan şu anda') ? 'EVET (dogru)' : 'HAYIR (HATA)')."\n";
+
+        session()->forget('errors');
+        $acceptRequest = Request::create('/kurum-panel/profil/video', 'POST');
+        $acceptRequest->files->set('video', new \Illuminate\Http\UploadedFile($videoPath, 'qa.mp4', 'video/mp4', null, true));
+        $controller->uploadVideo($acceptRequest);
+        $facility->refresh();
+        $out .= '4) Anlasmali durumda video_path: '.($facility->video_path ?? 'NULL (HATA)')."\n";
+        $out .= '   Dosya diskte var mi: '.($facility->video_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($facility->video_path) ? 'EVET (dogru)' : 'HAYIR (HATA)')."\n";
+
+        $storedPath = $facility->video_path;
+        $controller->deleteVideo(Request::create('/kurum-panel/profil/video', 'DELETE'));
+        $facility->refresh();
+        $out .= '5) Silme sonrasi video_path: '.($facility->video_path ?? 'NULL (dogru)')."\n";
+        $out .= '   Silme sonrasi dosya diskte mi: '.($storedPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($storedPath) ? 'EVET (HATA)' : 'HAYIR (dogru)')."\n";
+
+        $facilityUser->delete();
+        $facility->forceDelete();
+
+        $out .= "\nSONUC: BASARILI\n";
+
+        return $out;
     }
 
     // 26 Agustos 2026: 25 Agustos'ta canliya alinan 4 duzeltmeyi (bonus
