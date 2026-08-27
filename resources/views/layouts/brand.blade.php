@@ -254,8 +254,16 @@
       <a href="{{ brand_route('contact.create') }}" class="hover:text-white">İletişim</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Aile Girişi</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Girişi</a>@endif
+      {{-- 27 Agustos 2026: kullanicinin bildirdigi gercek karisiklik - aile
+           panelindeyken "Kurum Girişi" (ve tersi) gorunmesi anlamsizdi.
+           Herkese acik sayfalarda (hicbir oturum yokken) ikisi de gorunur,
+           ama biri oturum acinca DIGERI TAMAMEN gizlenir. --}}
+      @unless(session('facility_user_id'))
+        @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Aile Girişi</a>@endif
+      @endunless
+      @unless(session('family_user_id'))
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold text-white/80 hover:text-white hidden sm:inline">Kurum Girişi</a>@endif
+      @endunless
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold text-white/80 hover:text-white hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
         <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-semibold text-white/80 hover:text-white">Çıkış Yap</button></form>
@@ -280,8 +288,12 @@
       <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-white">Kurumları Bul</a>
       <a href="{{ brand_route('contact.create') }}" class="py-2 hover:text-white">İletişim</a>
       <hr class="border-white/10 my-1">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-white">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-white">Aile Girişi</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-white">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-white">Kurum Girişi</a>@endif
+      @unless(session('facility_user_id'))
+        @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-white">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-white">Aile Girişi</a>@endif
+      @endunless
+      @unless(session('family_user_id'))
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-white">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-white">Kurum Girişi</a>@endif
+      @endunless
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-white">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
         @if(session('facility_user_id'))<a href="{{ brand_route('facility.profile.edit') }}" class="py-2 hover:text-white">Profili Düzenle</a>@else<a href="{{ brand_route('family.profile.edit') }}" class="py-2 hover:text-white">Hesap Bilgilerim</a>@endif
@@ -305,8 +317,12 @@
       <a href="{{ brand_route('facilities.index') }}" class="px-3 py-2 rounded-full hover:bg-white">Kurumlar</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-bold hover:text-primary hidden sm:inline">Aile Girişi</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
+      @unless(session('facility_user_id'))
+        @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-bold hover:text-primary hidden sm:inline">Aile Girişi</a>@endif
+      @endunless
+      @unless(session('family_user_id'))
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-bold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
+      @endunless
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-bold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
         <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-bold hover:text-primary">Çıkış Yap</button></form>
@@ -323,8 +339,12 @@
       @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="py-2 hover:text-primary">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-primary">Kurumlar</a>
       <hr class="border-gray-100 my-1">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-primary">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-primary">Aile Girişi</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
+      @unless(session('facility_user_id'))
+        @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-primary">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-primary">Aile Girişi</a>@endif
+      @endunless
+      @unless(session('family_user_id'))
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
+      @endunless
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-primary">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
         @if(session('facility_user_id'))<a href="{{ brand_route('facility.profile.edit') }}" class="py-2 hover:text-primary">Profili Düzenle</a>@else<a href="{{ brand_route('family.profile.edit') }}" class="py-2 hover:text-primary">Hesap Bilgilerim</a>@endif
@@ -349,8 +369,12 @@
       <a href="{{ brand_route('contact.create') }}" class="hover:text-primary">İletişim</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-semibold hover:text-primary hidden sm:inline">Aile Girişi</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
+      @unless(session('facility_user_id'))
+        @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="font-semibold hover:text-primary hidden sm:inline">Aile Girişi</a>@endif
+      @endunless
+      @unless(session('family_user_id'))
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="font-semibold hover:text-primary hidden sm:inline">Kurum Girişi</a>@endif
+      @endunless
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="relative font-semibold hover:text-primary hidden sm:inline">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
         <form method="POST" action="{{ session('facility_user_id') ? brand_route('facility.logout') : brand_route('family.logout') }}" class="hidden sm:inline">@csrf<button class="font-semibold hover:text-primary">Çıkış Yap</button></form>
@@ -368,8 +392,12 @@
       <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-primary">Kurumları Bul</a>
       <a href="{{ brand_route('contact.create') }}" class="py-2 hover:text-primary">İletişim</a>
       <hr class="border-gray-100 my-1">
-      @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-primary">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-primary">Aile Girişi</a>@endif
-      @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
+      @unless(session('facility_user_id'))
+        @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-primary">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-primary">Aile Girişi</a>@endif
+      @endunless
+      @unless(session('family_user_id'))
+        @if(session('facility_user_id'))<a href="{{ brand_route('facility.dashboard') }}" class="py-2 hover:text-primary">Kurum Panelim</a>@else<a href="{{ brand_route('facility.login') }}" class="py-2 hover:text-primary">Kurum Girişi</a>@endif
+      @endunless
       @if(session('facility_user_id') || session('family_user_id'))
         <a href="{{ session('facility_user_id') ? brand_route('facility.notifications.index') : brand_route('family.notifications.index') }}" class="py-2 hover:text-primary">Bildirimler @if($unreadNotificationsCount > 0)<span class="ml-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{{ $unreadNotificationsCount }}</span>@endif</a>
         @if(session('facility_user_id'))<a href="{{ brand_route('facility.profile.edit') }}" class="py-2 hover:text-primary">Profili Düzenle</a>@else<a href="{{ brand_route('family.profile.edit') }}" class="py-2 hover:text-primary">Hesap Bilgilerim</a>@endif
