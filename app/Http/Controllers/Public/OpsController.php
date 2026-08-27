@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -61,6 +61,7 @@ class OpsController extends Controller
             'legal-page-set' => $this->legalPageSet($request),
             'geo-fill-city-centroid' => $this->geoFillCityCentroid(),
             'python-check' => $this->pythonCheck(),
+            'ffmpeg-check' => $this->ffmpegCheck(),
             'category-audit' => $this->categoryAudit(),
             'category-audit-city' => $this->categoryAuditCity($request),
             'invitation-status-audit' => $this->invitationStatusAudit(),
@@ -1240,6 +1241,75 @@ class OpsController extends Controller
     // gercekten neyin mumkun oldugunu tespit eder - proc_open kapaliysa
     // Python kurulu olsa bile GoogleMapsDataExtractorService hicbir zaman
     // calisamaz, bu yuzden once bunu ayirt etmek gerekiyor.
+    // 27 Agustos 2026: kullanicinin talebi - anlasmali kurumlara video
+    // yukleme ozelligi eklemeden once sunucuda FFmpeg olup olmadigini
+    // (goruntu sikistirmada kullanilan Imagick/GD'nin video karsiligi)
+    // dogrulamak icin - bkz. OpsController::pythonCheck() ayni desen.
+    // Sadece surum raporuyla yetinmez, KUCUK bir test videosunu GERCEKTEN
+    // sikistirmayi dener (diagnostics-image'in gercek sikistirma testi
+    // ile ayni titizlik).
+    private function ffmpegCheck(): string
+    {
+        $out = '';
+        $out .= "proc_open mevcut mu: " . (function_exists('proc_open') ? 'EVET' : 'HAYIR') . "\n\n";
+
+        $candidates = [
+            'ffmpeg', '/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/alt/ffmpeg/bin/ffmpeg',
+        ];
+
+        $found = null;
+        foreach ($candidates as $binary) {
+            try {
+                $probe = new Process([$binary, '-version']);
+                $probe->run();
+                if ($probe->isSuccessful()) {
+                    $out .= "{$binary}: BULUNDU - " . trim(strtok($probe->getOutput(), "\n")) . "\n";
+                    $found ??= $binary;
+                }
+            } catch (\Throwable $e) {
+                // sessizce atla, sadece bulunanlari raporla
+            }
+        }
+
+        if (! $found) {
+            $out .= "(hicbir ffmpeg ikili dosyasi bulunamadi)\n";
+
+            return $out;
+        }
+
+        // Gercek bir sikistirma denemesi: kucuk bir test videosu (renkli
+        // hareketli desen) uretip 480p/webm'e cevirmeyi dener.
+        $tmpIn = tempnam(sys_get_temp_dir(), 'ffin_').'.mp4';
+        $tmpOut = tempnam(sys_get_temp_dir(), 'ffout_').'.webm';
+        @unlink($tmpOut);
+
+        try {
+            $gen = new Process([$found, '-y', '-f', 'lavfi', '-i', 'testsrc=duration=1:size=320x240:rate=15', $tmpIn]);
+            $gen->setTimeout(30);
+            $gen->run();
+            if (! $gen->isSuccessful() || ! is_file($tmpIn)) {
+                $out .= "\nTest videosu uretilemedi: " . trim($gen->getErrorOutput()) . "\n";
+
+                return $out;
+            }
+
+            $convert = new Process([$found, '-y', '-i', $tmpIn, '-vf', 'scale=320:240', '-b:v', '300k', $tmpOut]);
+            $convert->setTimeout(30);
+            $convert->run();
+
+            if ($convert->isSuccessful() && is_file($tmpOut)) {
+                $out .= "\nGercek sikistirma testi: BASARILI (" . filesize($tmpIn) . " bayt -> " . filesize($tmpOut) . " bayt, webm)\n";
+            } else {
+                $out .= "\nGercek sikistirma testi: BASARISIZ - " . trim($convert->getErrorOutput()) . "\n";
+            }
+        } finally {
+            @unlink($tmpIn);
+            @unlink($tmpOut);
+        }
+
+        return $out;
+    }
+
     private function pythonCheck(): string
     {
         $out = '';
