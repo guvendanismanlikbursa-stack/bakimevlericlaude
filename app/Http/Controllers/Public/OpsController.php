@@ -2408,7 +2408,7 @@ class OpsController extends Controller
             return $out."SONUC: BASARISIZ - video kaydedilmedi\n";
         }
 
-        [$publicStatus, $publicResponse] = $this->renderPublicFacilityPage($facility);
+        [$publicStatus, $publicResponse] = $this->renderPublicFacilityPage($facility, $request);
         $out .= 'genel sayfa HTTP durumu: '.$publicStatus."\n";
         $out .= 'genel sayfa "Tanitim Videosu" iceriyor mu: '.(str_contains($publicResponse, 'Tanıtım Videosu') ? 'EVET' : 'HAYIR')."\n";
         $out .= 'genel sayfa video yolunu iceriyor mu: '.(str_contains($publicResponse, $facility->video_path) ? 'EVET' : 'HAYIR')."\n";
@@ -2431,11 +2431,24 @@ class OpsController extends Controller
         return $out;
     }
 
-    private function renderPublicFacilityPage(Facility $facility): array
+    private function renderPublicFacilityPage(Facility $facility, Request $incomingRequest): array
     {
-        $brand = array_key_first(config('brands.brands', []));
+        // 27 Agustos 2026: kok neden - once array_key_first(config('brands.brands'))
+        // kullanilmisti, bu production'da HER ZAMAN 'bakimevibul'e denk geliyordu
+        // (config dizisindeki ilk anahtar) ve /site/{brand}/... yolu production'da
+        // KASITLI bir SEO 301 yonlendirmesi (bkz. routes/web.php 352-373 satirlari,
+        // 25 Agustos'ta eklendi) - bu yuzden gercek sayfa hic render edilmiyordu,
+        // sadece yonlendirme govdesi donuyordu. Dogru path: mevcut /_ops istegini
+        // alan GERCEK domain'in kok (prefix'siz) kurum adresi.
         $kernel = app(\Illuminate\Contracts\Http\Kernel::class);
-        $showRequest = Request::create('/site/'.$brand.'/kurumlar/'.$facility->slug, 'GET');
+
+        if (app()->environment(['local', 'testing'])) {
+            $brand = array_key_first(config('brands.brands', []));
+            $showRequest = Request::create('/site/'.$brand.'/kurumlar/'.$facility->slug, 'GET');
+        } else {
+            $showRequest = Request::create('https://'.$incomingRequest->getHttpHost().'/kurumlar/'.$facility->slug, 'GET');
+        }
+
         $response = $kernel->handle($showRequest);
         $kernel->terminate($showRequest, $response);
 
