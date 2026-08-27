@@ -284,6 +284,28 @@
     @endif
   </div>
 
+  {{-- 27 Agustos 2026: kullanicinin talebi - tanitim videosu SADECE
+       anlasmali (is_broker_managed) kurumlar icin. Bu anahtar ayri bir
+       ekrandan ("Anlaşmalı Kurumlar" -> admin.broker.facilities.toggle)
+       yonetildigi icin, burada sadece MEVCUT durumuna gore gosterilir/
+       gizlenir - JS gerekmez. --}}
+  @if($facility->exists && $facility->is_broker_managed)
+    <div class="md:col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-4">
+      <label class="text-sm font-semibold block mb-1">Tanıtım Videosu <span class="text-xs font-normal text-gray-400">(sadece anlaşmalı kurumlar)</span></label>
+      <p class="text-xs text-gray-500 mb-3">En fazla 60 saniye. Yüklenince otomatik olarak sıkıştırılır, biraz zaman alabilir.</p>
+      @if($facility->video_path)
+        <video src="{{ facility_asset($facility->video_path) }}" controls class="w-full max-w-sm rounded-lg mb-3"></video>
+        <form method="POST" action="{{ route('admin.facilities.video.destroy', $facility) }}" onsubmit="return confirm('Video silinsin mi?');" class="mb-3">
+          @csrf
+          @method('DELETE')
+          <button type="submit" class="text-red-600 text-xs font-bold hover:underline">Videoyu Sil</button>
+        </form>
+        <p class="text-xs text-gray-500 mb-2">Yeni bir video yüklerseniz, bu videonun yerine geçer:</p>
+      @endif
+      <input type="file" name="video" accept="video/*" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+    </div>
+  @endif
+
   <div class="md:col-span-2">
     <button class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold">Kaydet</button>
   </div>

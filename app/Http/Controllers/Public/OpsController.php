@@ -1256,14 +1256,16 @@ class OpsController extends Controller
     // uygulamanin KENDI (web'den erisilemeyen) depolama klasorune
     // kurulabilir - bu root gerektirmez. Bu yol hem ffmpegCheck() hem
     // ffmpegInstall() tarafindan aday olarak taranir.
+    // 27 Agustos 2026: aday listesi VideoCompressionService ile de
+    // paylasilan tek kaynaga (FfmpegLocator) tasindi.
     private function ffmpegLocalInstallPath(): string
     {
-        return storage_path('app/private/bin/ffmpeg');
+        return \App\Services\FfmpegLocator::localInstallPath();
     }
 
     private function ffmpegCandidates(): array
     {
-        return ['ffmpeg', '/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/alt/ffmpeg/bin/ffmpeg', $this->ffmpegLocalInstallPath()];
+        return \App\Services\FfmpegLocator::candidates();
     }
 
     /**

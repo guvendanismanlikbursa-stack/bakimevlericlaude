@@ -16,7 +16,7 @@ class Facility extends Model
         'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'favorites_count',
         'invitation_status', 'invitation_status_at', 'menu_image_path', 'menu_image_updated_at',
         'is_broker_managed', 'vacant_beds_male', 'vacant_beds_female', 'vacant_beds_updated_at',
-        'allows_visit_service',
+        'allows_visit_service', 'video_path', 'video_updated_at',
     ];
 
     protected function casts(): array
@@ -39,6 +39,7 @@ class Facility extends Model
             'is_claimed' => 'boolean',
             'is_broker_managed' => 'boolean',
             'allows_visit_service' => 'boolean',
+            'video_updated_at' => 'datetime',
             'vacant_beds_male' => 'integer',
             'vacant_beds_female' => 'integer',
             'vacant_beds_updated_at' => 'datetime',

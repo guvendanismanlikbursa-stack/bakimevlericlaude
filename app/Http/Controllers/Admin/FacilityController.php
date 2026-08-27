@@ -176,6 +176,7 @@ class FacilityController extends Controller
         $facility = Facility::create($data);
 
         $this->storeUploadedImages($request, $facility);
+        $this->storeUploadedVideo($request, $facility);
         $this->syncPriceOptions($request, 'room_types', $facility, 'roomTypes', FacilityRoomType::TYPES, 'room_type');
         $this->syncPriceOptions($request, 'age_groups', $facility, 'ageGroups', FacilityAgeGroup::TYPES, 'age_group');
         $this->syncPriceOptions($request, 'program_types', $facility, 'programTypes', FacilityProgramType::TYPES, 'program_type');
@@ -255,6 +256,7 @@ class FacilityController extends Controller
         $facility->update($data);
 
         $this->storeUploadedImages($request, $facility);
+        $this->storeUploadedVideo($request, $facility);
         $this->syncPriceOptions($request, 'room_types', $facility, 'roomTypes', FacilityRoomType::TYPES, 'room_type');
         $this->syncPriceOptions($request, 'age_groups', $facility, 'ageGroups', FacilityAgeGroup::TYPES, 'age_group');
         $this->syncPriceOptions($request, 'program_types', $facility, 'programTypes', FacilityProgramType::TYPES, 'program_type');
@@ -549,6 +551,22 @@ class FacilityController extends Controller
         return back()->with('success', 'Görsel silindi.');
     }
 
+    // 27 Agustos 2026: kullanicinin talebi - video SADECE anlasmali
+    // (is_broker_managed) kurumlar icin. Gorsellerin aksine (facility_images,
+    // coklu, CrossDomainImageSync ile 3 domain'e kopyalanir) video BILEREK
+    // TEK depolama alaninda tutulur, kopyalanmaz - facility_asset() zaten
+    // her zaman bakimevleri.com uzerinden sunar (bkz. VideoCompressionService
+    // sinif basi yorumu).
+    public function deleteVideo(Facility $facility)
+    {
+        if ($facility->video_path) {
+            Storage::disk('public')->delete($facility->video_path);
+            $facility->update(['video_path' => null, 'video_updated_at' => null]);
+        }
+
+        return back()->with('success', 'Video silindi.');
+    }
+
     private function storeUploadedImages(Request $request, Facility $facility): void
     {
         if (! $request->hasFile('images')) {
@@ -616,6 +634,67 @@ class FacilityController extends Controller
 
         if ($skipped) {
             session()->flash('image_warning', 'Şu görsel(ler) eklenemedi: '.implode(', ', $skipped));
+        }
+    }
+
+    /**
+     * 27 Agustos 2026: kullanicinin talebi - tanitim videosu SADECE
+     * anlasmali (is_broker_managed) kurumlar icin. Kurumun onayi olmadan
+     * (kurumun kendi kararı olmayan bir maliyet/depolama farki yaratan)
+     * bu ozelligin normal kurumlara sizmasi istenmiyor - sunucu tarafinda
+     * da zorlanir (form gizlense bile elle gonderme denemesi sessizce yok sayilir).
+     */
+    private function storeUploadedVideo(Request $request, Facility $facility): void
+    {
+        if (! $request->hasFile('video')) {
+            return;
+        }
+
+        if (! $facility->is_broker_managed) {
+            session()->flash('image_warning', 'Video yalnızca anlaşmalı kurumlarda eklenebilir - önce "Anlaşmalı Kurumlar" ekranından bu kurumu anlaşmalı işaretleyin, sonra videoyu ekleyin.');
+
+            return;
+        }
+
+        $file = $request->file('video');
+
+        if ($file->getSize() > 200 * 1024 * 1024) {
+            session()->flash('image_warning', 'Video 200MB sınırını aşıyor, eklenemedi.');
+
+            return;
+        }
+
+        // 27 Agustos 2026: video sikistirma (60sn'lik bir klip icin bile)
+        // PHP'nin varsayilan kisa max_execution_time'ini (paylasimli
+        // hosting'te genelde 30sn) rahatlikla asabilir - bu istek ozelinde genisletilir.
+        set_time_limit(180);
+
+        try {
+            $path = app(\App\Services\VideoCompressionService::class)->store($file, 'facilities/videos');
+        } catch (\RuntimeException $e) {
+            $message = match ($e->getMessage()) {
+                'ffmpeg_unavailable' => 'Video işleme aracı şu an kullanılamıyor, lütfen daha sonra tekrar deneyin.',
+                'video_too_long' => 'Video 60 saniyeden uzun olamaz.',
+                default => 'Desteklenmeyen veya bozuk bir video dosyası.',
+            };
+            session()->flash('image_warning', $message);
+
+            return;
+        }
+
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            \Illuminate\Support\Facades\Log::error('Kurum videosu (admin) kaydedilemedi.', ['facility_id' => $facility->id]);
+            \Sentry\captureException(new \RuntimeException('Video diske yazildiktan sonra dogrulanamadi.'));
+            session()->flash('image_warning', 'Video yüklenirken bir sorun oluştu, lütfen tekrar deneyin.');
+
+            return;
+        }
+
+        $oldPath = $facility->video_path;
+        $facility->update(['video_path' => $path, 'video_updated_at' => now()]);
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
         }
     }
 

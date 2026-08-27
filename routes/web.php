@@ -396,6 +396,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->except(['show']);
         Route::delete('/kurumlar/gorsel/{image}', [AdminFacilityController::class, 'deleteImage'])->name('facilities.image.destroy');
         Route::post('/kurumlar/gorsel/{image}/ana-gorsel-yap', [AdminFacilityController::class, 'setPrimaryImage'])->name('facilities.image.set-primary');
+        Route::delete('/kurumlar/{facility}/video', [AdminFacilityController::class, 'deleteVideo'])->name('facilities.video.destroy');
         Route::post('/kurumlar/{facility}/bakiye-duzenle', [AdminBalanceController::class, 'adjust'])->name('facilities.balance.adjust');
         Route::put('/kurumlar/{facility}/bakiye-gecmisi/{balanceLog}', [AdminBalanceController::class, 'updateLog'])->name('facilities.balance-log.update');
         Route::delete('/kurumlar/{facility}/bakiye-gecmisi/{balanceLog}', [AdminBalanceController::class, 'destroyLog'])->name('facilities.balance-log.destroy');

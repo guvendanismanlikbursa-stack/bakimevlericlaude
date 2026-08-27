@@ -5021,4 +5021,65 @@ class PlatformFeatureTest extends TestCase
             ->get('/site/bakimevleri/aile/ziyaret-servisi')
             ->assertOk()->assertSee('Ziyaret edildi, her şey yolunda.');
     }
+
+    public function test_video_upload_is_rejected_for_non_broker_managed_facility(): void
+    {
+        // 27 Agustos 2026: video yukleme SADECE anlasmali (is_broker_managed)
+        // kurumlar icin - normal/on kayitli bir kurum icin ffmpeg'e hic
+        // dokunulmadan, acik bir uyariyla reddedilmeli.
+        $facility = $this->facility('Normal Kurum Video', $this->elderlyCategory, true);
+        $this->assertFalse((bool) $facility->is_broker_managed);
+
+        $payload = array_merge($facility->only([
+            'name', 'city_id', 'facility_category_id', 'district', 'address', 'phone', 'description', 'capacity', 'price_min', 'price_max',
+        ]), ['is_published' => '1', 'video' => $this->fakeMp4Upload()]);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$facility->id, $payload);
+        $response->assertRedirect();
+
+        $this->assertNull($facility->fresh()->video_path);
+        $this->assertSame(
+            'Video yalnızca anlaşmalı kurumlarda eklenebilir - önce "Anlaşmalı Kurumlar" ekranından bu kurumu anlaşmalı işaretleyin, sonra videoyu ekleyin.',
+            session('image_warning')
+        );
+    }
+
+    public function test_video_upload_is_accepted_compressed_and_deletable_for_broker_managed_facility(): void
+    {
+        if (! \App\Services\FfmpegLocator::resolve()) {
+            $this->markTestSkipped('Bu ortamda ffmpeg bulunamadi, video sikistirma testi atlandi.');
+        }
+
+        $facility = $this->facility('Anlasmali Kurum Video', $this->elderlyCategory, true);
+        $facility->update(['is_broker_managed' => true]);
+
+        $payload = array_merge($facility->only([
+            'name', 'city_id', 'facility_category_id', 'district', 'address', 'phone', 'description', 'capacity', 'price_min', 'price_max',
+        ]), ['is_published' => '1', 'video' => $this->fakeMp4Upload()]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$facility->id, $payload)
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertNotNull($facility->video_path);
+        $this->assertTrue(Storage::disk('public')->exists($facility->video_path));
+
+        // herkese acik kurum sayfasinda video gorunmeli
+        $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)
+            ->assertOk()
+            ->assertSee('Tanıtım Videosu')
+            ->assertSee($facility->video_path);
+
+        // video silme
+        $storedPath = $facility->video_path;
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->delete('/admin/kurumlar/'.$facility->id.'/video')
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertNull($facility->video_path);
+        $this->assertFalse(Storage::disk('public')->exists($storedPath));
+    }
 }

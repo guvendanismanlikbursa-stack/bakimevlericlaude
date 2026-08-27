@@ -166,6 +166,17 @@
         }
       }
     @endphp
+    {{-- 27 Agustos 2026: kullanicinin talebi - SADECE anlasmali kurumlar
+         icin tanitim videosu (bkz. Admin\FacilityController::storeUploadedVideo()
+         ayni tarihli yorum). Galeriden ONCE, cunku video fotografdan
+         daha ikna edici bir arac - aile once onu gormeli. --}}
+    @if($facility->video_path)
+      <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div class="text-sm font-black mb-3" style="color: {{ $colors['primary'] }};">Tanıtım Videosu</div>
+        <video src="{{ facility_asset($facility->video_path) }}" controls playsinline preload="metadata" class="w-full rounded-xl bg-black max-h-[480px]"></video>
+      </section>
+    @endif
+
     <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
       <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-4">
         <div>
