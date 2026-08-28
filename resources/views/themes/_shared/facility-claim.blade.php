@@ -164,7 +164,7 @@
       {{-- 14 Agustos 2026: kullanicinin talebi - "uzun surer" tereddudunu
            kirmak icin somut bir zaman tahmini; onay suresi zaten vardi,
            formu DOLDURMA suresi eksikti. --}}
-      <p class="text-xs font-semibold mb-1" style="color: {{ $colors['primary'] }};">⏱️ Formu doldurmak yaklaşık 3 dakika sürer, onay genellikle 24 saat içinde tamamlanır.</p>
+      <p class="text-xs font-semibold mb-1" style="color: {{ $colors['primary'] }};">⏱️ Formu doldurmak yaklaşık 1 dakika sürer, onay genellikle 24 saat içinde tamamlanır.</p>
 
       <form method="POST" action="{{ brand_route('facility-claim.store', ['slug' => $facility->slug]) }}" enctype="multipart/form-data" class="space-y-4">
         @csrf
