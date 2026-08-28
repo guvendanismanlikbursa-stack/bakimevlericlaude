@@ -62,7 +62,20 @@
         <a href="{{ brand_route('home', ['bolum' => $section['slug']]) }}" class="md:col-span-7 text-center text-xs font-bold text-gray-400 underline">Filtreleri temizle</a>
       @endif
     </form>
+  </div>
+</section>
 
+{{-- 28 Agustos 2026: kullanicinin talebi - "Öne çıkanlar"/"Ön Kayıtlı
+     Kurumlar"/filtreleme sonucu bolumu artik filtrenin HEMEN ALTINDA;
+     daha once burada duran "atmosfer" (baslik+gorsel+hizli aksiyon
+     kartlari) bolumu ve istatistik seridi bununla YER DEGISTIRDI, simdi
+     sonuclarin altina tasindi. --}}
+<div id="js-home-results">
+  @include('themes.bakimevibul.home._results')
+</div>
+
+<section class="bg-white border-b border-emerald-100">
+  <div class="max-w-6xl mx-auto px-4 py-10 lg:py-14">
     <div class="grid lg:grid-cols-[1.04fr_0.96fr] gap-8 items-center">
       <div>
         <div class="inline-flex items-center gap-2 text-sm font-bold rounded-lg px-3 py-2 mb-5" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">
@@ -106,10 +119,6 @@
 
 
 @include('themes._shared.partials.trust-stats')
-
-<div id="js-home-results">
-  @include('themes.bakimevibul.home._results')
-</div>
 
 @include('themes._shared.partials.discover-links')
 @include('themes._shared.partials.location-filter-script')

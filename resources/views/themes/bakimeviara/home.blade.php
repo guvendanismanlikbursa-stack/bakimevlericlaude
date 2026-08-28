@@ -63,7 +63,22 @@
         @endif
       </form>
     </div>
+  </div>
+</section>
 
+{{-- 28 Agustos 2026: kullanicinin talebi - "Öne çıkanlar"/"Ön Kayıtlı
+     Kurumlar"/filtreleme sonucu bolumu artik filtrenin HEMEN ALTINDA;
+     daha once burada duran "atmosfer" (baslik+gorsel+hizli aksiyon
+     kartlari) bolumu ve istatistik seridi bununla YER DEGISTIRDI, simdi
+     sonuclarin altina tasindi. --}}
+<div id="js-home-results">
+  @include('themes.bakimeviara.home._results')
+</div>
+
+@include('themes._shared.partials.pre-registered-facilities')
+
+<section class="relative overflow-hidden bg-white">
+  <div class="relative max-w-6xl mx-auto px-4 pt-10 pb-12">
     <div class="text-center max-w-3xl mx-auto mb-6">
       <div class="inline-flex items-center gap-2 rounded-full bg-white shadow-sm border border-gray-100 px-4 py-2 text-sm font-bold mb-5" style="color: {{ $colors['primary'] }};">
         @include('themes._shared.partials.section-icon', ['section' => $section, 'class' => 'w-4 h-4'])
@@ -100,12 +115,6 @@
 
 
 @include('themes._shared.partials.trust-stats')
-
-<div id="js-home-results">
-  @include('themes.bakimeviara.home._results')
-</div>
-
-@include('themes._shared.partials.pre-registered-facilities')
 
 @include('themes._shared.partials.discover-links')
 @include('themes._shared.partials.location-filter-script')

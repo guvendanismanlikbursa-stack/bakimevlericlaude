@@ -87,12 +87,15 @@
   </div>
 </section>
 
-{{-- 12 Agustos 2026: kullanicinin acik talebi - bu "atmosfer" bolumu
-     (baslik + gorsel + hizli aksiyon kartlari) FILTRENIN ALTINDA olmali;
-     ayrica arka plandaki gorsel (bolume gore degisir) once cok koyu bir
-     overlay altinda bogulmustu - opakligi yukseltip overlay'i hafiflettik
-     ki gorsel net gorunsun, metin okunurlugu icin sadece alt/sol tarafta
-     hafif bir gradient birakildi. --}}
+{{-- 28 Agustos 2026: kullanicinin talebi - "Öne çıkanlar"/"Ön Kayıtlı
+     Kurumlar"/filtreleme sonucu bolumu artik filtrenin HEMEN ALTINDA;
+     daha once burada duran "atmosfer" (baslik+gorsel+hizli aksiyon
+     kartlari) bolumu ve istatistik seridi bununla YER DEGISTIRDI, simdi
+     sonuclarin altina tasindi. --}}
+<div id="js-home-results">
+  @include('themes.bakimevleri.home._results')
+</div>
+
 <section class="relative bg-gray-950 text-white overflow-hidden">
   <img src="{{ $section['hero_image'] }}" alt="{{ $section['title'] }}" class="absolute inset-0 w-full h-full object-cover opacity-90">
   <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/5"></div>
@@ -118,10 +121,6 @@
 
 
 @include('themes._shared.partials.trust-stats')
-
-<div id="js-home-results">
-  @include('themes.bakimevleri.home._results')
-</div>
 
 @include('themes._shared.partials.discover-links')
 @include('themes._shared.partials.location-filter-script')
