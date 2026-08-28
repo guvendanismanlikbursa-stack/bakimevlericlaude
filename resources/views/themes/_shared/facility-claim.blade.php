@@ -20,32 +20,18 @@
   $section = service_section_for_scope($facility->category->brand_scope);
   $colors = $section['theme'] ?? ['primary' => $brand['primary_color'], 'secondary' => $brand['secondary_color'], 'soft' => '#f8fafc'];
 
-  // 14 Agustos 2026: kullanicinin talebi - "yil sonuna kadar" belirsiz/uzak
-  // bir vaatti, yakin ve GERCEK bir son tarih ("ay sonuna kadar
-  // sahiplenirseniz") aciliyet hissi yaratir. Tarih TEK bir yerden
-  // (facility_featured_campaign_deadline()) geliyor - kampanya uzatilirsa
-  // sadece orasi degisir, bu sayfa otomatik guncel kalir.
-  $campaignDeadline = facility_featured_campaign_deadline();
-  $campaignActive = facility_featured_campaign_active();
-  $campaignDeadlineLabel = $campaignDeadline->copy()->subDay()->translatedFormat('d F Y');
-  // 17 Agustos 2026: kullanicinin bildirdigi hata - diffInDays(..., false)
-  // TAM SAYI degil, kesirli gun (ör. 14.478215201586) donduruyordu, sayfada
-  // ham haliyle basiliyordu. ceil() ile yukari yuvarlanir (gunun kalan
-  // kismi da "hala 1 gun var" sayilsin diye) ve int'e cevrilir.
-  $campaignDaysLeft = max(0, (int) ceil(now()->diffInDays($campaignDeadline, false)));
-
+  // 28 Agustos 2026: kullanicinin talebi - "31 Agustos'a kadar sahiplenen
+  // kurumlar Öne Çıkanlar listesinde yayinlanacak" kampanya bildirimi
+  // (sure dolmak uzereyken) beklenen etkiyi yaratmadigi icin bu sayfadan
+  // kaldirildi. Admin onay akisindaki GERCEK is kurali (facility_featured_
+  // campaign_active(), Admin\FacilityClaimController/FacilityController)
+  // BILEREK dokunulmadan birakildi - sadece bu sayfadaki tanitim metni
+  // silindi.
   $benefits = [
     ['title' => 'Profilinizi siz yönetin', 'text' => 'Görsel, açıklama, hizmet ve fiyat bilgilerini istediğiniz zaman güncelleyin — yanlış bilgi varsa da düzeltme yetkisi sadece sahiplenince size geçer.'],
     ['title' => 'Ailelerden doğrudan talep alın, aramanıza gerek kalmaz', 'text' => 'Google Haritalar\'da sadece görünürsünüz; burada aileler fiyat/ziyaret talebini doğrudan panelinize bırakır, siz de doğrudan panelden yanıtlarsınız.'],
     ['title' => 'Doğrulanmış rozeti kazanın', 'text' => 'Sahiplenilen kurumlar ziyaretçilere "Onaylı" rozetiyle gösterilir, güven artar.'],
   ];
-
-  if ($campaignActive) {
-    $benefits[] = [
-      'title' => "🌟 Ücretsiz \"Öne Çıkan\" listelemesi — sadece {$campaignDeadlineLabel}'e kadar",
-      'text' => "{$campaignDeadlineLabel} tarihine kadar sahiplenirseniz, kurumunuz yıl başına kadar ücretsiz olarak \"Öne Çıkan\" kurumlar arasında, diğerlerinin ÖNÜNDE listelenir — daha çok görüntülenme, daha çok teklif talebi demek. Bu tarihten sonra başvuranlar bu fırsattan yararlanamaz.",
-    ];
-  }
 
   $benefits[] = ['title' => 'Tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır. Sizinle önceden konuşulmadan hiçbir ücret kesilmez, sürpriz fatura çıkmaz.'];
   $benefits[] = ['title' => 'Telefonunuzdan da rahatça yönetin', 'text' => 'Panelinizi bilgisayardan olduğu kadar telefonunuzdan da kullanabilirsiniz — sahada olsanız bile talepleri kaçırmazsınız.'];
@@ -77,9 +63,6 @@
       <div class="flex flex-wrap items-center gap-2 mb-3">
         <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">Kurumunuzu Sahiplenin</div>
         <div class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-black">🎉 Tamamen ücretsiz</div>
-        @if($campaignActive)
-          <div class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-black">🌟 Son {{ $campaignDaysLeft }} gün: Ücretsiz Öne Çıkan Rozeti</div>
-        @endif
       </div>
       <h1 class="text-2xl md:text-3xl font-black text-gray-950 mb-4">"{{ $facility->name }}" kurumunu sahiplenerek profilin kontrolünü alın</h1>
 
@@ -142,6 +125,36 @@
             <span class="text-[10px] font-black text-white px-2 py-0.5 rounded-full" style="background: {{ $colors['primary'] }};">Yanıtla</span>
           </div>
         </div>
+      </div>
+
+      {{-- 28 Agustos 2026: kullanicinin talebi - kurum yetkilisinin aklinda
+           "sahiplendikten sonra nasil daha fazla aileye ulasirim" konusunda
+           hic soru isareti kalmamali. is_broker_managed durumunun GERCEKTEN
+           ne sagladigi (bkz. OfferRequestNotificationService, VideoCompressionService)
+           uzerinden, "komisyon" kelimesi HIC KULLANILMADAN anlatildi - ucret/
+           sart detaylari kasitli olarak sayfada YOK, hepsi iletisime
+           yonlendiriliyor (kullanicinin acik talebi: "sadece ucret olayini
+           bana atman gerekiyor"). --}}
+      <div class="mt-6 rounded-2xl border-2 p-5" style="border-color: {{ $colors['primary'] }}33; background: {{ $colors['soft'] }};">
+        <p class="text-xs font-black uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">İsteyen kurumlar için: Aile Bulma ve Tanıtımı Biz Üstlenelim</p>
+        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+          Sahiplenme her zaman <strong>tamamen ücretsizdir</strong> ve size profil yönetimiyle doğrudan teklif talebi akışını sağlar. Bunun ötesinde, isteyen kurumlarımıza sunduğumuz daha kapsamlı bir işbirliği seçeneğimiz de var: sizin için uygun aileleri <strong>biz buluyor</strong>, kurumunuzun sunduğu imkanları ve öne çıkan özelliklerini bu ailelere <strong>biz anlatıyoruz</strong> — siz bu süreçte yorulmazsınız. Kurumunuza <strong>tanıtım videosu</strong> ekleme gibi ek görünürlük imkanlarıyla desteklenen bu özenli tanıtımın ardından, <strong>size sadece uygun bulduğumuz aileyi kurumunuza kayıt etmek kalır.</strong>
+        </p>
+        <div class="grid sm:grid-cols-3 gap-2 mb-3">
+          <div class="bg-white rounded-lg p-3 border border-gray-100">
+            <div class="text-xs font-black text-gray-950 mb-0.5">💰 Maddi</div>
+            <p class="text-xs text-gray-500">Sizin için bulunan, sizin için tanıtılan aile talepleri, daha çok dolu kontenjan demektir.</p>
+          </div>
+          <div class="bg-white rounded-lg p-3 border border-gray-100">
+            <div class="text-xs font-black text-gray-950 mb-0.5">🤝 Manevi</div>
+            <p class="text-xs text-gray-500">Aile bulma ve tanıtım emeğini siz harcamazsınız, bu özenli süreci sizin için biz yürütürüz.</p>
+          </div>
+          <div class="bg-white rounded-lg p-3 border border-gray-100">
+            <div class="text-xs font-black text-gray-950 mb-0.5">⭐ Statü</div>
+            <p class="text-xs text-gray-500">Özenli tanıtımla bölgenizde öne çıkan, tercih edilen bir kurum olun.</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500">Bu seçenek tamamen isteğe bağlıdır, temel sahiplenme her koşulda ücretsiz kalmaya devam eder. Şartlar ve detaylı bilgi için lütfen sağ alttaki 💬 sohbet ikonundan bizimle iletişime geçin.</p>
       </div>
     </div>
 

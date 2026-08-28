@@ -588,7 +588,12 @@
       @unless($facility->is_claimed)
         <div class="mt-6 pt-6 border-t">
           <p class="text-sm text-gray-600 mb-2">Bu kurumun yetkilisi misiniz?</p>
-          <a href="{{ brand_route('facility-claim.create', ['slug' => $facility->slug]) }}" class="block text-center border border-primary text-primary font-black py-2 rounded-lg">Kurumu Sahiplen</a>
+          {{-- 28 Agustos 2026: kullanicinin talebi - buton adi daha dogrudan
+               bir soru haline getirildi ve WhatsApp butonuyle (yesil)
+               karismamasi icin amber tonu secildi - dikkat cekmeli ama
+               abartili olmamali diye duz beyaz-yazili degil, yumusak
+               amber zeminli/koyu amber yazili bir stil kullanildi. --}}
+          <a href="{{ brand_route('facility-claim.create', ['slug' => $facility->slug]) }}" class="block text-center bg-amber-50 border-2 border-amber-400 text-amber-800 font-black py-2 rounded-lg hover:bg-amber-100 transition">Kurum Size mi Ait?</a>
         </div>
       @endunless
 
