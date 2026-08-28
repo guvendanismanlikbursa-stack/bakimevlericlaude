@@ -744,10 +744,35 @@ class CheckUserFlows extends Command
     // helpers.php notify_facility_or_broker_admins()).
     private function checkOfferRequestBrokerRouting(string $brandSlug, string $baseUrl, string $brokerSlug, string $brokerFacilityUserEmail): void
     {
+        // 28 Agustos 2026: kullanicinin canli olarak bulunan gercek hata -
+        // OfferRequestController::store() giris yapmamis bir aileyi HEMEN
+        // family/kayit sayfasina yonlendirir, talebi ANCAK giris yapmis bir
+        // aile icin olusturur (bkz. checkOfferRequest ayni desen) - bu ilk
+        // surumde eksikti, "talep hic olusmadi" yanlis pozitifine yol acti.
         $email = "qatest.daily.{$brandSlug}.broker.offer.".now()->format('Ymd').'@example.com';
+        DB::table('family_users')->insert([
+            'name' => 'QATEST Daily Anlaşmalı Teklif Ailesi',
+            'email' => $email,
+            'phone' => '05320000007',
+            'password' => Hash::make('QaTest12345!'),
+            'status' => 'active',
+            'email_verified_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $facilityId = DB::table('facilities')->where('slug', $brokerSlug)->value('id');
 
         [$client] = $this->newClient();
+        $loginPage = $client->get("{$baseUrl}/aile/giris");
+        $loginToken = $this->csrfToken($loginPage);
+        if (! $loginToken) {
+            $this->recordFailure($brandSlug, 'Ücret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', 'Test için gerekli aile girişi yapılamadı (güvenlik anahtarı bulunamadı).');
+
+            return;
+        }
+        $client->asForm()->post("{$baseUrl}/aile/giris", ['_token' => $loginToken, 'email' => $email, 'password' => 'QaTest12345!']);
+
         $formPage = $client->get("{$baseUrl}/kurumlar/{$brokerSlug}");
         $formToken = $this->csrfToken($formPage);
         if (! $formToken) {
