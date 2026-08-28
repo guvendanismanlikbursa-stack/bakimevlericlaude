@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -64,6 +64,7 @@ class OpsController extends Controller
             'ffmpeg-check' => $this->ffmpegCheck(),
             'ffmpeg-install' => $this->ffmpegInstall(),
             'qa-video-upload-test' => $this->qaVideoUploadTest($request),
+            'disk-usage' => $this->diskUsage(),
             'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
             'category-audit' => $this->categoryAudit(),
             'category-audit-city' => $this->categoryAuditCity($request),
@@ -1446,6 +1447,68 @@ class OpsController extends Controller
                 (new Process(['rm', '-rf', $extractDir]))->run();
             }
         }
+    }
+
+    // 28 Agustos 2026: kullanicinin canli aldigi "No space left on device"
+    // MySQL kritik hata maili uzerine acilen eklendi. tmp_table diskini
+    // dolduran seyin MySQL'in kendi sunucusu mu yoksa BU hesabin paylasimli
+    // diski mi oldugunu ayirt eder, ayrica bu oturumda eklenen video
+    // ozelliginin (VideoCompressionService, qa-video-upload-test vb.) temp
+    // dosya biriktirip biriktirmedigini GERCEK boyutlarla gosterir.
+    private function diskUsage(): string
+    {
+        $out = '';
+
+        $paths = [
+            'storage_path() (uygulama yazma alani)' => storage_path(),
+            'sys_get_temp_dir() (PHP/OS gecici alan)' => sys_get_temp_dir(),
+            '/tmp (MySQL tmpdir ile ayni mi kontrolu)' => '/tmp',
+        ];
+
+        foreach ($paths as $label => $dir) {
+            if (! is_dir($dir)) {
+                $out .= "{$label} [{$dir}]: dizin yok/erisilemiyor\n";
+
+                continue;
+            }
+            $free = disk_free_space($dir);
+            $total = disk_total_space($dir);
+            $usedPct = ($free !== false && $total !== false && $total > 0) ? round((1 - $free / $total) * 100, 1) : null;
+            $out .= "{$label} [{$dir}]:\n";
+            $out .= '  bos: '.($free !== false ? number_format($free / 1024 / 1024 / 1024, 2).' GB' : 'okunamadi');
+            $out .= ' / toplam: '.($total !== false ? number_format($total / 1024 / 1024 / 1024, 2).' GB' : 'okunamadi');
+            $out .= $usedPct !== null ? " (%{$usedPct} dolu)\n" : "\n";
+        }
+
+        $out .= "\n--- Bu oturumda eklenen video ozelliginin biriktirdigi dosyalar ---\n";
+        $scanDirs = [
+            'storage/framework/testing/files (test video/gorsel dosyalari)' => storage_path('framework/testing/files'),
+            'storage/app/private/bin (ffmpeg statik binary)' => storage_path('app/private/bin'),
+            'storage/app/public/facilities/videos (sikistirilmis kurum videolari)' => storage_path('app/public/facilities/videos'),
+        ];
+
+        foreach ($scanDirs as $label => $dir) {
+            if (! is_dir($dir)) {
+                $out .= "{$label}: yok\n";
+
+                continue;
+            }
+            $files = glob(rtrim($dir, '/').'/*') ?: [];
+            $totalSize = 0;
+            foreach ($files as $f) {
+                if (is_file($f)) {
+                    $totalSize += filesize($f);
+                }
+            }
+            $out .= "{$label}: ".count($files)." dosya, toplam ".number_format($totalSize / 1024 / 1024, 2)." MB\n";
+        }
+
+        $logPath = storage_path('logs/laravel.log');
+        if (File::exists($logPath)) {
+            $out .= "\nstorage/logs/laravel.log boyutu: ".number_format(File::size($logPath) / 1024 / 1024, 2)." MB\n";
+        }
+
+        return $out;
     }
 
     private function pythonCheck(): string
