@@ -75,7 +75,15 @@
   @include('themes.bakimeviara.home._results')
 </div>
 
-@include('themes._shared.partials.pre-registered-facilities')
+{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
+     Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ; ucu de kendi
+     verisi varsa gorunur. Bu diger 2 temadan farkli olarak filtreleme
+     SIRASINDA da (isFiltering) hep gorunuyordu - bu kisim gercek bir
+     tutarsizlik oldugu icin ayri tutuldu (filtre sonucu sayfasinda
+     anasayfaya ozel bu bolum gorunmemeli). --}}
+@if(! $isFiltering)
+  @include('themes._shared.partials.pre-registered-facilities')
+@endif
 
 <section class="relative overflow-hidden bg-white">
   <div class="relative max-w-6xl mx-auto px-4 pt-10 pb-12">

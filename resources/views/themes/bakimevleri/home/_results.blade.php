@@ -109,5 +109,9 @@
   </div>
 </section>
 
+{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
+     Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ; ucu de kendi
+     verisi varsa gorunur, digerlerinin doluluk durumundan bagimsiz. --}}
+@include('themes._shared.partials.claimed-facilities')
 @include('themes._shared.partials.pre-registered-facilities')
 @endif

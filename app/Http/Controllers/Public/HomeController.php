@@ -34,6 +34,23 @@ class HomeController extends Controller
             ->paginate(6, ['*'], 'featured_page')
             ->withQueryString();
 
+        // 28 Agustos 2026: kullanicinin talebi - "sahiplenilmis kurumlar"
+        // (is_claimed=true ama Öne Çıkanlar'da zaten gosterilenler haric)
+        // Öne Çıkanlar ile Ön Kayıtlı Kurumlar arasinda ayri bir bolum.
+        $claimedFacilities = Facility::discoverable()
+            ->forBrand($sectionScopes)
+            ->where('is_claimed', true)
+            ->where('is_featured', false)
+            ->with(['city', 'category', 'images'])
+            ->latest('claimed_at')
+            ->limit(6)
+            ->get();
+
+        // 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
+        // Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ - hangisinin
+        // kendi verisi varsa o gorunur, digerlerinin doluluk durumundan
+        // BAGIMSIZ (once denenen "sadece digerleri boşsa goster" yedek
+        // mantigi kaldirildi).
         $preRegistered = Facility::discoverable()
             ->forBrand($sectionScopes)
             ->where('is_claimed', false)
@@ -99,6 +116,8 @@ class HomeController extends Controller
                     'filteredFacilities',
                     'filteredFeatured',
                     'featured',
+                    'claimedFacilities',
+                    'preRegistered',
                     'sectionBreakdown'
                 ))->render(),
             ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -106,6 +125,7 @@ class HomeController extends Controller
 
         return view("themes.{$brand['theme']}.home", compact(
             'featured',
+            'claimedFacilities',
             'preRegistered',
             'categories',
             'cities',

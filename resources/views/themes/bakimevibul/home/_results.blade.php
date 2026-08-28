@@ -72,7 +72,10 @@
     </div>
   </div>
 </section>
-@include('themes._shared.partials.pre-registered-facilities')
+{{-- 28 Agustos 2026: kullanicinin talebi - "Öne çıkanlar" digerlerinden
+     (Ön Kayıtlı Kurumlar dahil) her zaman ONCE gelmeli; bu temada sira
+     ters cevrilmisti (Ön Kayıtlı Kurumlar Öne çıkanlar'dan ONCE
+     geliyordu), digerleri (bakimevleri/bakimeviara) zaten dogru sirada. --}}
 <section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
   <div class="flex items-end justify-between mb-6">
     <div><div class="text-sm font-bold mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div><h2 class="text-2xl font-extrabold text-gray-950">Öne çıkan kurumlar</h2></div>
@@ -92,4 +95,9 @@
   </div>
   @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
 </section>
+{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
+     Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ; ucu de kendi
+     verisi varsa gorunur, digerlerinin doluluk durumundan bagimsiz. --}}
+@include('themes._shared.partials.claimed-facilities')
+@include('themes._shared.partials.pre-registered-facilities')
 @endif

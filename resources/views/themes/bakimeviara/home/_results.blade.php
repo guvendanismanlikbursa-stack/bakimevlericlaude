@@ -88,4 +88,5 @@
   </div>
   @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
 </section>
+@include('themes._shared.partials.claimed-facilities')
 @endif
