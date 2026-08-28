@@ -292,15 +292,22 @@
          olarak gorunur ama rakami kilitlidir - bu veriyi sadece sahiplenmis
          kurumun yetkilisi kendi panelinden gorebilir (bkz. facility/
          dashboard.blade.php Performans Trendi). Amac: somut talep kanitini
-         gostermek ama detayi sahiplenme icin bir tesvik olarak saklamak. --}}
-    @php $perf = $facility->performanceSummary(); $stats30d = $facility->engagementStats30d(); @endphp
+         gostermek ama detayi sahiplenme icin bir tesvik olarak saklamak.
+         28 Agustos 2026: kullanicinin talebi - bu karttaki goruntulenme
+         sayisi eskiden SON 30 GUN (engagementStats30d) idi, sahiplenme
+         sayfasindaki TUM ZAMANLAR sayisiyla (views_count) FARKLI
+         gorunuyordu ("111 vs 9" gibi) ve kafa karistiriyordu. Artik HER
+         YERDE (bu kart, sahiplenme sayfasi, kurum panelinin kendi
+         gosterge paneli) AYNI TEK sayi (views_count, hic kucuk gorunmez,
+         sadece buyur) kullaniliyor - iki farkli sayi asla gorunmez. --}}
+    @php $perf = $facility->performanceSummary(); @endphp
     <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
       <h3 class="font-black text-gray-950 mb-1">Kurum Performansı</h3>
-      <p class="text-xs text-gray-400 mb-3">Son 30 gün</p>
+      <p class="text-xs text-gray-400 mb-3">Yayına başladığından bu yana</p>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
         <div>
           <div class="text-gray-500 text-xs">👁️ Profil görüntüleme</div>
-          <div class="font-black">{{ number_format($stats30d['views'], 0, ',', '.') }}</div>
+          <div class="font-black">{{ number_format($perf['views_count'], 0, ',', '.') }}</div>
         </div>
         <div>
           <div class="text-gray-500 text-xs">📞 Telefon tıklaması</div>
