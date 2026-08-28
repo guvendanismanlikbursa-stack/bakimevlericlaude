@@ -49,6 +49,34 @@
     @endif
   </section>
 @else
+{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar (ve ardindan
+     Sahiplenilmiş Kurumlar/Ön Kayıtlı Kurumlar) filtrenin HEMEN ALTINDA,
+     arada bilgilendirme blogu OLMADAN gorunmeli - o blog asagiya, bu 3
+     bolumden SONRA tasindi. Ayrica "Öne çıkanlar" sirasi (Ön Kayıtlı'dan
+     ONCE) burada duzeltildi - bu temada ters cevrilmisti. --}}
+<section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
+  <div class="flex items-end justify-between mb-6">
+    <div><div class="text-sm font-bold mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div><h2 class="text-2xl font-extrabold text-gray-950">Öne çıkan kurumlar</h2></div>
+    <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-bold" style="color: {{ $colors['primary'] }};">Tümünü gör →</a>
+  </div>
+  <div class="grid md:grid-cols-3 gap-5">
+    @forelse($featured as $facility)
+      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="bg-white rounded-lg overflow-hidden transition group relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
+        <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
+        @php $cardImage = facility_card_image($facility, $section); @endphp
+        <div class="h-40 flex items-center justify-center overflow-hidden" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+        <div class="p-4"><h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p><div class="flex justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-bold">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div></div>
+      </a>
+    @empty
+      <div class="md:col-span-3 border border-dashed rounded-lg p-8 text-center text-gray-500 bg-white">Bu bölüm için öne çıkan kurum eklenmedi.</div>
+    @endforelse
+  </div>
+  @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
+</section>
+
+@include('themes._shared.partials.claimed-facilities')
+@include('themes._shared.partials.pre-registered-facilities')
+
 <section class="max-w-6xl mx-auto px-4 py-12">
   <div class="grid lg:grid-cols-[0.95fr_1.05fr] gap-6 items-start">
     <div class="bg-white border border-gray-100 rounded-lg p-6 shadow-sm">
@@ -72,32 +100,4 @@
     </div>
   </div>
 </section>
-{{-- 28 Agustos 2026: kullanicinin talebi - "Öne çıkanlar" digerlerinden
-     (Ön Kayıtlı Kurumlar dahil) her zaman ONCE gelmeli; bu temada sira
-     ters cevrilmisti (Ön Kayıtlı Kurumlar Öne çıkanlar'dan ONCE
-     geliyordu), digerleri (bakimevleri/bakimeviara) zaten dogru sirada. --}}
-<section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
-  <div class="flex items-end justify-between mb-6">
-    <div><div class="text-sm font-bold mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div><h2 class="text-2xl font-extrabold text-gray-950">Öne çıkan kurumlar</h2></div>
-    <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-bold" style="color: {{ $colors['primary'] }};">Tümünü gör →</a>
-  </div>
-  <div class="grid md:grid-cols-3 gap-5">
-    @forelse($featured as $facility)
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="bg-white rounded-lg overflow-hidden transition group relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
-        <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
-        @php $cardImage = facility_card_image($facility, $section); @endphp
-        <div class="h-40 flex items-center justify-center overflow-hidden" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
-        <div class="p-4"><h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p><div class="flex justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-bold">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div></div>
-      </a>
-    @empty
-      <div class="md:col-span-3 border border-dashed rounded-lg p-8 text-center text-gray-500 bg-white">Bu bölüm için öne çıkan kurum eklenmedi.</div>
-    @endforelse
-  </div>
-  @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
-</section>
-{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
-     Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ; ucu de kendi
-     verisi varsa gorunur, digerlerinin doluluk durumundan bagimsiz. --}}
-@include('themes._shared.partials.claimed-facilities')
-@include('themes._shared.partials.pre-registered-facilities')
 @endif

@@ -49,6 +49,29 @@
     @endif
   </section>
 @else
+<section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
+  <div class="text-center max-w-2xl mx-auto mb-8">
+    <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div>
+    <h2 class="text-3xl font-black text-gray-950">Ailelerin incelediği kurumlar</h2>
+  </div>
+  <div class="grid md:grid-cols-3 gap-6">
+    @forelse($featured as $facility)
+      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="group bg-white rounded-2xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
+        <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
+        @php $cardImage = facility_card_image($facility, $section); @endphp
+        <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+        <div class="p-5"><div class="text-xs font-bold mb-2" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div><h3 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-4">{{ $facility->city->name }}</p><div class="flex items-center justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-black text-gray-800">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Teklif al' }}</span></div></div>
+      </a>
+    @empty
+      <div class="md:col-span-3 bg-white border border-dashed rounded-2xl p-8 text-center text-gray-500">Bu bölüm için öne çıkan kurum eklenmedi.</div>
+    @endforelse
+  </div>
+  @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
+</section>
+
+@include('themes._shared.partials.claimed-facilities')
+@include('themes._shared.partials.pre-registered-facilities')
+
 <section class="max-w-6xl mx-auto px-4 py-12">
   <div class="text-center max-w-3xl mx-auto mb-8">
     <div class="text-sm font-black mb-2" style="color: {{ $colors['primary'] }};">{{ $content['audience'] ?? '' }}</div>
@@ -69,24 +92,4 @@
     @endforeach
   </div>
 </section>
-<section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
-  <div class="text-center max-w-2xl mx-auto mb-8">
-    <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div>
-    <h2 class="text-3xl font-black text-gray-950">Ailelerin incelediği kurumlar</h2>
-  </div>
-  <div class="grid md:grid-cols-3 gap-6">
-    @forelse($featured as $facility)
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="group bg-white rounded-2xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
-        <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
-        @php $cardImage = facility_card_image($facility, $section); @endphp
-        <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
-        <div class="p-5"><div class="text-xs font-bold mb-2" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div><h3 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-4">{{ $facility->city->name }}</p><div class="flex items-center justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-black text-gray-800">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Teklif al' }}</span></div></div>
-      </a>
-    @empty
-      <div class="md:col-span-3 bg-white border border-dashed rounded-2xl p-8 text-center text-gray-500">Bu bölüm için öne çıkan kurum eklenmedi.</div>
-    @endforelse
-  </div>
-  @if($featured->hasPages())<div class="mt-6">{{ $featured->onEachSide(1)->fragment('one-cikanlar')->links() }}</div>@endif
-</section>
-@include('themes._shared.partials.claimed-facilities')
 @endif

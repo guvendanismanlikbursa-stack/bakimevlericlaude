@@ -66,24 +66,16 @@
   </div>
 </section>
 
-{{-- 28 Agustos 2026: kullanicinin talebi - "Öne çıkanlar"/"Ön Kayıtlı
-     Kurumlar"/filtreleme sonucu bolumu artik filtrenin HEMEN ALTINDA;
-     daha once burada duran "atmosfer" (baslik+gorsel+hizli aksiyon
-     kartlari) bolumu ve istatistik seridi bununla YER DEGISTIRDI, simdi
-     sonuclarin altina tasindi. --}}
+{{-- 28 Agustos 2026: kullanicinin talebi - filtre -> Öne Çıkanlar ->
+     Sahiplenilmiş Kurumlar -> Ön Kayıtlı Kurumlar sirasi (hepsi kendi
+     verisi varsa, birbirinin yerine gecmeden); "Bilgi merkezi" tanitim
+     blogu ve "atmosfer" (baslik+gorsel+hizli aksiyon kartlari) bolumu bu
+     3 bolumden SONRAYA tasindi. pre-registered-facilities artik BURADAN
+     degil, digerleriyle tutarli olarak _results.blade.php icinden
+     (isFiltering'e gore dogru sekilde) cagriliyor. --}}
 <div id="js-home-results">
   @include('themes.bakimeviara.home._results')
 </div>
-
-{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
-     Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ; ucu de kendi
-     verisi varsa gorunur. Bu diger 2 temadan farkli olarak filtreleme
-     SIRASINDA da (isFiltering) hep gorunuyordu - bu kisim gercek bir
-     tutarsizlik oldugu icin ayri tutuldu (filtre sonucu sayfasinda
-     anasayfaya ozel bu bolum gorunmemeli). --}}
-@if(! $isFiltering)
-  @include('themes._shared.partials.pre-registered-facilities')
-@endif
 
 <section class="relative overflow-hidden bg-white">
   <div class="relative max-w-6xl mx-auto px-4 pt-10 pb-12">

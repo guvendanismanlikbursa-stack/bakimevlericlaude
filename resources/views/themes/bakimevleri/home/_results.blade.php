@@ -54,32 +54,10 @@
     @endif
   </section>
 @else
-<section class="max-w-6xl mx-auto px-4 py-12">
-  <div class="grid lg:grid-cols-[320px_1fr] gap-6">
-    <div class="bg-gray-950 text-white rounded-xl p-6 h-fit">
-      <div class="text-sm font-black text-white/70 mb-2">Bilgi merkezi</div>
-      <h2 class="text-2xl font-black mb-3">{{ $content['headline'] ?? 'Kapsamlı rehber' }}</h2>
-      <p class="text-sm text-white/72 leading-relaxed">{{ $content['intro'] ?? '' }}</p>
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      @foreach(($content['articles'] ?? []) as $article)
-        <a href="{{ brand_route('pages.show', ['slug' => $article['slug']]) }}" class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-xl transition">
-          <div class="text-xs font-black uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">Makale ve SSS</div>
-          <h3 class="font-black text-gray-950 mb-2">{{ $article['title'] }}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">{{ $article['summary'] }}</p>
-        </a>
-      @endforeach
-      <div class="md:col-span-2 bg-white border border-gray-100 rounded-xl p-5">
-        <div class="font-black text-gray-950 mb-3">Hızlı soru cevap</div>
-        <div class="grid md:grid-cols-3 gap-3">
-          @foreach(($content['faq_preview'] ?? []) as $qa)
-            <div class="rounded-lg bg-gray-50 p-3"><div class="text-sm font-black text-gray-900">{{ $qa[0] }}</div><p class="text-xs text-gray-500 mt-1">{{ $qa[1] }}</p></div>
-          @endforeach
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar (ve ardindan
+     Sahiplenilmiş Kurumlar/Ön Kayıtlı Kurumlar) filtrenin HEMEN ALTINDA,
+     arada "Bilgi merkezi" tanitim blogu OLMADAN gorunmeli - o blog asagiya,
+     bu 3 bolumden SONRA tasindi. --}}
 <section class="max-w-6xl mx-auto px-4 py-12">
   <div class="grid lg:grid-cols-[280px_1fr] gap-8">
     <aside class="bg-white border border-gray-100 rounded-xl p-5 h-fit shadow-sm">
@@ -109,9 +87,33 @@
   </div>
 </section>
 
-{{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
-     Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ; ucu de kendi
-     verisi varsa gorunur, digerlerinin doluluk durumundan bagimsiz. --}}
 @include('themes._shared.partials.claimed-facilities')
 @include('themes._shared.partials.pre-registered-facilities')
+
+<section class="max-w-6xl mx-auto px-4 py-12">
+  <div class="grid lg:grid-cols-[320px_1fr] gap-6">
+    <div class="bg-gray-950 text-white rounded-xl p-6 h-fit">
+      <div class="text-sm font-black text-white/70 mb-2">Bilgi merkezi</div>
+      <h2 class="text-2xl font-black mb-3">{{ $content['headline'] ?? 'Kapsamlı rehber' }}</h2>
+      <p class="text-sm text-white/72 leading-relaxed">{{ $content['intro'] ?? '' }}</p>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      @foreach(($content['articles'] ?? []) as $article)
+        <a href="{{ brand_route('pages.show', ['slug' => $article['slug']]) }}" class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-xl transition">
+          <div class="text-xs font-black uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">Makale ve SSS</div>
+          <h3 class="font-black text-gray-950 mb-2">{{ $article['title'] }}</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">{{ $article['summary'] }}</p>
+        </a>
+      @endforeach
+      <div class="md:col-span-2 bg-white border border-gray-100 rounded-xl p-5">
+        <div class="font-black text-gray-950 mb-3">Hızlı soru cevap</div>
+        <div class="grid md:grid-cols-3 gap-3">
+          @foreach(($content['faq_preview'] ?? []) as $qa)
+            <div class="rounded-lg bg-gray-50 p-3"><div class="text-sm font-black text-gray-900">{{ $qa[0] }}</div><p class="text-xs text-gray-500 mt-1">{{ $qa[1] }}</p></div>
+          @endforeach
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 @endif
