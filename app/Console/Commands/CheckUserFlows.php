@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\PlatformNotification;
 use GuzzleHttp\Cookie\CookieJar;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\PendingRequest;
@@ -109,6 +110,19 @@ class CheckUserFlows extends Command
             $claimedFacilitySlug = $this->ensureClaimedFacility($brandSlug);
             $unclaimedFacilitySlug = $this->ensureUnclaimedFacility($brandSlug);
             $facilityUserEmail = $this->ensureFacilityUser($brandSlug, $claimedFacilitySlug);
+            // 28 Agustos 2026: kullanicinin talebi - "aileler sahiplenen
+            // kurumlardan ucret bilgisi isteyebiliyor mu, bildirim gidiyor
+            // mu, anlasmali kurumlarda surec eksiksiz calisiyor mu" sorusu
+            // uzerine yapilan denetimde bulunan GERCEK bosluk: bu komut
+            // teklif/ziyaret taleplerinin veritabanina KAYDEDILDIGINI
+            // dogruluyordu ama hicbir zaman BILDIRIMIN GERCEKTEN dogru
+            // alicoya (sahiplenilmis kurumda kurumun kendisine, anlasmali
+            // kurumda TUM admin'lere) gittigini kontrol etmiyordu - ayrica
+            // anlasmali kurum yonlendirmesi (is_broker_managed) hic test
+            // edilmiyordu. Asagidaki 2 yeni kontrol + $brokerFacilitySlug
+            // fixture'i bu boslugu kapatir.
+            $brokerFacilitySlug = $this->ensureBrokerManagedFacility($brandSlug);
+            $brokerFacilityUserEmail = $this->ensureBrokerFacilityUser($brandSlug, $brokerFacilitySlug);
 
             $failuresBeforeBrand = count($this->failures);
 
@@ -117,6 +131,8 @@ class CheckUserFlows extends Command
             $this->safeRun($brandSlug, 'Kurum Kaydı (Sıfırdan Başvuru)', fn () => $this->checkFacilityRegistration($brandSlug, $baseUrl));
             $this->safeRun($brandSlug, 'Ücret / Teklif Talebi', fn () => $this->checkOfferRequest($brandSlug, $baseUrl, $claimedFacilitySlug));
             $this->safeRun($brandSlug, 'Ziyaret Talebi', fn () => $this->checkVisitRequest($brandSlug, $baseUrl, $claimedFacilitySlug));
+            $this->safeRun($brandSlug, 'Ücret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', fn () => $this->checkOfferRequestBrokerRouting($brandSlug, $baseUrl, $brokerFacilitySlug, $brokerFacilityUserEmail));
+            $this->safeRun($brandSlug, 'Ziyaret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', fn () => $this->checkVisitRequestBrokerRouting($brandSlug, $baseUrl, $brokerFacilitySlug, $brokerFacilityUserEmail));
             $this->safeRun($brandSlug, 'Kurum Sorusu', fn () => $this->checkQuestion($brandSlug, $baseUrl, $claimedFacilitySlug));
             $this->safeRun($brandSlug, 'İletişim Formu', fn () => $this->checkContact($brandSlug, $baseUrl));
             $this->safeRun($brandSlug, 'Kurum Girişi', fn () => $this->checkFacilityLogin($brandSlug, $baseUrl, $facilityUserEmail));
@@ -132,7 +148,7 @@ class CheckUserFlows extends Command
             // yeniden olusturur - bu yuzden kalici degil, GECICI olmalari
             // sagliklarini etkilemez.
             if (count($this->failures) === $failuresBeforeBrand) {
-                $this->cleanupDailyFixtures($claimedFacilitySlug, $unclaimedFacilitySlug);
+                $this->cleanupDailyFixtures($claimedFacilitySlug, $unclaimedFacilitySlug, $brokerFacilitySlug);
             }
         }
 
@@ -373,14 +389,96 @@ class CheckUserFlows extends Command
         return $email;
     }
 
+    // 28 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
+    // kurum yonlendirmesini gercekten dogrulayabilmek icin, hem SAHIPLENILMIS
+    // (kendi FacilityUser hesabi olan) HEM DE anlasmali bir kurum lazim -
+    // boylece "bu kurumun kendi hesabi olsa bile bildirim ona DEGIL admin'e
+    // gitmeli" senaryosu gercekci sekilde test edilebilir.
+    private function ensureBrokerManagedFacility(string $brandSlug): string
+    {
+        $slug = "qatest-daily-{$brandSlug}-broker";
+        $existing = DB::table('facilities')->where('slug', $slug)->first();
+        if ($existing) {
+            DB::table('facilities')->where('id', $existing->id)->update([
+                'is_claimed' => true, 'is_broker_managed' => true, 'is_published' => true, 'deleted_at' => null, 'updated_at' => now(),
+            ]);
+
+            return $slug;
+        }
+
+        try {
+            DB::table('facilities')->insert([
+                'name' => 'QATEST Daily '.ucfirst($brandSlug).' Broker',
+                'slug' => $slug,
+                'city_id' => $this->qaCityId,
+                'facility_category_id' => $this->qaCategoryId,
+                'ownership_type' => 'ozel',
+                'address' => 'Test adresi',
+                'phone' => '05320000002',
+                'phone_type' => 'mobile',
+                'is_published' => true,
+                'is_claimed' => true,
+                'is_broker_managed' => true,
+                'claimed_at' => now(),
+                'invitation_status' => 'approved',
+                'free_quote_credits' => 100,
+                'balance' => 0,
+                'source' => 'qa_test',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            DB::table('facilities')->where('slug', $slug)->update([
+                'is_claimed' => true, 'is_broker_managed' => true, 'is_published' => true, 'deleted_at' => null, 'updated_at' => now(),
+            ]);
+        }
+
+        return $slug;
+    }
+
+    private function ensureBrokerFacilityUser(string $brandSlug, string $brokerFacilitySlug): string
+    {
+        $email = "qatest.daily.{$brandSlug}.broker@example.com";
+        $facilityId = DB::table('facilities')->where('slug', $brokerFacilitySlug)->value('id');
+
+        $existing = DB::table('facility_users')->where('email', $email)->first();
+        if ($existing) {
+            DB::table('facility_users')->where('id', $existing->id)->update([
+                'status' => 'active', 'facility_id' => $facilityId, 'updated_at' => now(),
+            ]);
+
+            return $email;
+        }
+
+        try {
+            DB::table('facility_users')->insert([
+                'facility_id' => $facilityId,
+                'name' => 'QATEST Daily Anlaşmalı Yetkili',
+                'email' => $email,
+                'password' => Hash::make('QaTest12345!'),
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'must_change_password' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            DB::table('facility_users')->where('email', $email)->update([
+                'status' => 'active', 'facility_id' => $facilityId, 'updated_at' => now(),
+            ]);
+        }
+
+        return $email;
+    }
+
     /**
      * 17 Agustos 2026: kullanicinin kesin talebi - bkz. runChecks() ayni
      * tarihli yorum. Sadece o gunun sabit fixture'larini (claimed/unclaimed
      * kurum + yetkili hesabi) siler - gercek kullanici verisine dokunmaz.
      */
-    private function cleanupDailyFixtures(string $claimedSlug, string $unclaimedSlug): void
+    private function cleanupDailyFixtures(string $claimedSlug, string $unclaimedSlug, string $brokerSlug): void
     {
-        foreach ([$claimedSlug, $unclaimedSlug] as $slug) {
+        foreach ([$claimedSlug, $unclaimedSlug, $brokerSlug] as $slug) {
             $facility = DB::table('facilities')->where('slug', $slug)->first();
             if (! $facility) {
                 continue;
@@ -617,11 +715,92 @@ class CheckUserFlows extends Command
         if (! $offerRequestId) {
             $this->recordFailure($brandSlug, 'Ücret / Teklif Talebi', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir talep oluşmadı.");
         } else {
+            // 28 Agustos 2026: kullanicinin talebi - talebin sadece
+            // veritabanina yazilmasi yetmez, kurumun kendi hesabina GERCEKTEN
+            // bir bildirim (bell/rozet) dustugu de dogrulanmali.
+            $facilityUserId = DB::table('facility_users')->where('facility_id', $facilityId)->value('id');
+            $notified = $facilityUserId && PlatformNotification::where('notifiable_type', \App\Models\FacilityUser::class)
+                ->where('notifiable_id', $facilityUserId)
+                ->where('type', 'offer_request')
+                ->whereJsonContains('data->offer_request_id', $offerRequestId)
+                ->exists();
+            if (! $notified) {
+                $this->recordFailure($brandSlug, 'Ücret / Teklif Talebi', 'Talep oluştu ama kurumun kendi hesabına bildirim düşmedi.');
+            }
+
+            DB::table('platform_notifications')->where('notifiable_type', \App\Models\FacilityUser::class)
+                ->whereJsonContains('data->offer_request_id', $offerRequestId)->delete();
             DB::table('messages')->where('offer_request_id', $offerRequestId)->delete();
             DB::table('quotes')->where('offer_request_id', $offerRequestId)->delete();
             DB::table('offer_requests')->where('id', $offerRequestId)->delete();
             DB::table('family_users')->where('email', $email)->delete();
         }
+    }
+
+    // 28 Agustos 2026: kullanicinin talebi - "anlasmali kurumlarda surec
+    // eksiksiz calisiyor mu": bu kurumun KENDI hesabi olsa bile (broker
+    // fixture'i is_claimed=true) bildirim ORAYA DEGIL, TUM admin'lere
+    // gitmeli (bkz. OfferRequestNotificationService::notify(),
+    // helpers.php notify_facility_or_broker_admins()).
+    private function checkOfferRequestBrokerRouting(string $brandSlug, string $baseUrl, string $brokerSlug, string $brokerFacilityUserEmail): void
+    {
+        $email = "qatest.daily.{$brandSlug}.broker.offer.".now()->format('Ymd').'@example.com';
+        $facilityId = DB::table('facilities')->where('slug', $brokerSlug)->value('id');
+
+        [$client] = $this->newClient();
+        $formPage = $client->get("{$baseUrl}/kurumlar/{$brokerSlug}");
+        $formToken = $this->csrfToken($formPage);
+        if (! $formToken) {
+            $this->recordFailure($brandSlug, 'Ücret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', 'Anlaşmalı kurum detay sayfasından güvenlik anahtarı alınamadı.');
+
+            return;
+        }
+
+        $resp = $client->asForm()->post("{$baseUrl}/teklif-talebi", [
+            '_token' => $formToken,
+            'facility_id' => $facilityId,
+            'full_name' => 'QATEST Daily Anlaşmalı Teklif Ailesi',
+            'phone' => '05320000007',
+            'email' => $email,
+            'message' => 'Otomatik gunluk kontrol - anlasmali kurum yonlendirmesi',
+        ]);
+
+        if ($resp->status() >= 500) {
+            $this->recordFailure($brandSlug, 'Ücret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', "Form gönderilince sunucu hatası döndü (HTTP {$resp->status()}).");
+
+            return;
+        }
+
+        $offerRequestId = DB::table('offer_requests')->where('facility_id', $facilityId)->where('email', $email)->value('id');
+        if (! $offerRequestId) {
+            $this->recordFailure($brandSlug, 'Ücret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir talep oluşmadı.");
+
+            return;
+        }
+
+        $brokerFacilityUserId = DB::table('facility_users')->where('email', $brokerFacilityUserEmail)->value('id');
+        $wronglyNotifiedFacility = $brokerFacilityUserId && PlatformNotification::where('notifiable_type', \App\Models\FacilityUser::class)
+            ->where('notifiable_id', $brokerFacilityUserId)
+            ->where('type', 'offer_request')
+            ->whereJsonContains('data->offer_request_id', $offerRequestId)
+            ->exists();
+        if ($wronglyNotifiedFacility) {
+            $this->recordFailure($brandSlug, 'Ücret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', 'Anlaşmalı kurumun KENDİ hesabına bildirim gitmiş, bu yanlış - sadece admin\'lere gitmeli.');
+        }
+
+        $adminNotified = PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->where('type', 'broker_offer_request')
+            ->whereJsonContains('data->offer_request_id', $offerRequestId)
+            ->exists();
+        if (! $adminNotified) {
+            $this->recordFailure($brandSlug, 'Ücret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', 'Talep oluştu ama hiçbir admin\'e "anlaşmalı kurum" bildirimi gitmedi.');
+        }
+
+        DB::table('platform_notifications')->whereJsonContains('data->offer_request_id', $offerRequestId)->delete();
+        DB::table('messages')->where('offer_request_id', $offerRequestId)->delete();
+        DB::table('quotes')->where('offer_request_id', $offerRequestId)->delete();
+        DB::table('offer_requests')->where('id', $offerRequestId)->delete();
+        DB::table('family_users')->where('email', $email)->delete();
     }
 
     private function checkVisitRequest(string $brandSlug, string $baseUrl, string $claimedSlug): void
@@ -655,8 +834,85 @@ class CheckUserFlows extends Command
         if (! $exists) {
             $this->recordFailure($brandSlug, 'Ziyaret Talebi', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir kayıt oluşmadı.");
         } else {
+            // 28 Agustos 2026: kullanicinin talebi - kaydin olusmasi yetmez,
+            // kurumun kendi hesabina bildirim de gitmeli. visit_request
+            // bildirimi 'data' alanina hicbir ID koymaz (bkz.
+            // VisitRequestController::notifyFacility()), bu yuzden eslesme
+            // govde metnindeki BENZERSIZ ad ile yapilir.
+            $facilityUserId = DB::table('facility_users')->where('facility_id', $facilityId)->value('id');
+            $notified = $facilityUserId && PlatformNotification::where('notifiable_type', \App\Models\FacilityUser::class)
+                ->where('notifiable_id', $facilityUserId)
+                ->where('type', 'visit_request')
+                ->where('body', 'like', '%QATEST Daily Ziyaretçi%')
+                ->exists();
+            if (! $notified) {
+                $this->recordFailure($brandSlug, 'Ziyaret Talebi', 'Talep oluştu ama kurumun kendi hesabına bildirim düşmedi.');
+            }
+
+            DB::table('platform_notifications')->where('type', 'visit_request')->where('body', 'like', '%QATEST Daily Ziyaretçi%')->delete();
             DB::table('visit_requests')->where('facility_id', $facilityId)->where('phone', $phone)->delete();
         }
+    }
+
+    // 28 Agustos 2026: kullanicinin talebi - "anlasmali kurumlarda surec
+    // eksiksiz calisiyor mu": ziyaret talebi icin de teklif talebiyle AYNI
+    // yonlendirme kurali (bkz. checkOfferRequestBrokerRouting ayni tarihli
+    // yorum) - bu kurumun kendi hesabina DEGIL, TUM admin'lere gitmeli.
+    private function checkVisitRequestBrokerRouting(string $brandSlug, string $baseUrl, string $brokerSlug, string $brokerFacilityUserEmail): void
+    {
+        $marker = 'QATEST Daily Anlaşmalı Ziyaretçi '.now()->timestamp;
+        $phone = '0532000001'.random_int(0, 9);
+
+        [$client] = $this->newClient();
+        $page = $client->get("{$baseUrl}/kurumlar/{$brokerSlug}");
+        $token = $this->csrfToken($page);
+        if (! $token) {
+            $this->recordFailure($brandSlug, 'Ziyaret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', 'Anlaşmalı kurum detay sayfasından güvenlik anahtarı alınamadı.');
+
+            return;
+        }
+
+        $resp = $client->asForm()->post("{$baseUrl}/kurumlar/{$brokerSlug}/ziyaret-talebi", [
+            '_token' => $token,
+            'full_name' => $marker,
+            'phone' => $phone,
+            'message' => 'Otomatik gunluk kontrol - anlasmali kurum yonlendirmesi',
+        ]);
+
+        if ($resp->status() >= 500) {
+            $this->recordFailure($brandSlug, 'Ziyaret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', "Form gönderilince sunucu hatası döndü (HTTP {$resp->status()}).");
+
+            return;
+        }
+
+        $facilityId = DB::table('facilities')->where('slug', $brokerSlug)->value('id');
+        $exists = DB::table('visit_requests')->where('facility_id', $facilityId)->where('phone', $phone)->exists();
+        if (! $exists) {
+            $this->recordFailure($brandSlug, 'Ziyaret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', "Form HTTP {$resp->status()} ile yanıtlandı ama veritabanında yeni bir kayıt oluşmadı.");
+
+            return;
+        }
+
+        $brokerFacilityUserId = DB::table('facility_users')->where('email', $brokerFacilityUserEmail)->value('id');
+        $wronglyNotifiedFacility = $brokerFacilityUserId && PlatformNotification::where('notifiable_type', \App\Models\FacilityUser::class)
+            ->where('notifiable_id', $brokerFacilityUserId)
+            ->where('type', 'visit_request')
+            ->where('body', 'like', "%{$marker}%")
+            ->exists();
+        if ($wronglyNotifiedFacility) {
+            $this->recordFailure($brandSlug, 'Ziyaret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', 'Anlaşmalı kurumun KENDİ hesabına bildirim gitmiş, bu yanlış - sadece admin\'lere gitmeli.');
+        }
+
+        $adminNotified = PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->where('type', 'broker_visit_request')
+            ->where('body', 'like', "%{$marker}%")
+            ->exists();
+        if (! $adminNotified) {
+            $this->recordFailure($brandSlug, 'Ziyaret Talebi Bildirimi (Anlaşmalı Kurum Yönlendirmesi)', 'Talep oluştu ama hiçbir admin\'e "anlaşmalı kurum" bildirimi gitmedi.');
+        }
+
+        DB::table('platform_notifications')->where('body', 'like', "%{$marker}%")->delete();
+        DB::table('visit_requests')->where('facility_id', $facilityId)->where('phone', $phone)->delete();
     }
 
     private function checkQuestion(string $brandSlug, string $baseUrl, string $claimedSlug): void

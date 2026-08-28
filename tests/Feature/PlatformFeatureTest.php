@@ -2876,6 +2876,46 @@ class PlatformFeatureTest extends TestCase
         $this->assertNotNull(\App\Models\Facility::where('slug', $slug)->first(), 'Eloquent (soft-delete farkinda) sorgusu artik kaydi gormeli.');
     }
 
+    // 28 Agustos 2026: kullanicinin talebi - "anlasmali kurumlarda surec
+    // eksiksiz calisiyor mu" denetimi sirasinda CheckUserFlows'a eklenen
+    // anlasmali kurum fixture yardimcilarinin (ensureBrokerManagedFacility/
+    // ensureBrokerFacilityUser) dogru is_broker_managed=true+is_claimed=true
+    // ile olusturdugunu ve idempotent oldugunu dogrular - ayni desen
+    // ensureClaimedFacility testleriyle (yukarida).
+    public function test_check_user_flows_ensure_broker_managed_facility_and_user(): void
+    {
+        $command = new \App\Console\Commands\CheckUserFlows();
+        $reflection = new \ReflectionClass($command);
+        $reflection->getProperty('qaCityId')->setAccessible(true);
+        $reflection->getProperty('qaCityId')->setValue($command, $this->city->id);
+        $reflection->getProperty('qaCategoryId')->setAccessible(true);
+        $reflection->getProperty('qaCategoryId')->setValue($command, $this->elderlyCategory->id);
+
+        $facilityMethod = $reflection->getMethod('ensureBrokerManagedFacility');
+        $facilityMethod->setAccessible(true);
+        $slug = $facilityMethod->invoke($command, 'brokertest');
+
+        $this->assertSame('qatest-daily-brokertest-broker', $slug);
+        $facility = DB::table('facilities')->where('slug', $slug)->first();
+        $this->assertTrue((bool) $facility->is_broker_managed);
+        $this->assertTrue((bool) $facility->is_claimed);
+        $this->assertTrue((bool) $facility->is_published);
+
+        $userMethod = $reflection->getMethod('ensureBrokerFacilityUser');
+        $userMethod->setAccessible(true);
+        $email = $userMethod->invoke($command, 'brokertest', $slug);
+
+        $this->assertSame('qatest.daily.brokertest.broker@example.com', $email);
+        $user = DB::table('facility_users')->where('email', $email)->first();
+        $this->assertSame($facility->id, $user->facility_id);
+        $this->assertSame('active', $user->status);
+
+        // idempotent olmali - ikinci cagri hata firlatmadan AYNI kaydi gunceller
+        $slugAgain = $facilityMethod->invoke($command, 'brokertest');
+        $this->assertSame($slug, $slugAgain);
+        $this->assertSame(1, DB::table('facilities')->where('slug', $slug)->count());
+    }
+
     // 15 Agustos 2026: kullanicinin talebi - "testler hata bulunca otomatik
     // duzeltebilecek script" icin CheckUserFlows'un basarisiz akislarda
     // biraktigi eski test-veri kalintilarini (qatest.daily.*@example.com)
