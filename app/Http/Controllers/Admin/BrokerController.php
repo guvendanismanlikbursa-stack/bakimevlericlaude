@@ -74,10 +74,24 @@ class BrokerController extends Controller
 
     public function toggleFacility(Facility $facility)
     {
-        $facility->update(['is_broker_managed' => ! $facility->is_broker_managed]);
+        $nowBrokerManaged = ! $facility->is_broker_managed;
+
+        // 28 Agustos 2026: kullanicinin talebi - kurum tanitim broşüründe
+        // "anlaşmalı kurumların kartlarını Öne Çıkan Kurumlar alaninda
+        // sergiliyoruz" diye acikca vaat ediliyor; bu VAAD onceden elle
+        // ayrica is_featured isaretlemeyi GEREKTIRIYORDU (unutulmaya acikti).
+        // Artik anlasmali isaretlenince Öne Çıkan da OTOMATIK verilir.
+        // BILEREK TEK YONLU: anlasmalidan CIKARILINCA is_featured'i geri
+        // KAPATMIYORUZ - cunku Öne Çıkan ayrica BASKA bir yoldan da
+        // (sahiplenme kampanyasi, facility_featured_campaign_active())
+        // kazanilmis olabilir, o hakki yanlislikla geri almamak icin.
+        $facility->update([
+            'is_broker_managed' => $nowBrokerManaged,
+            'is_featured' => $nowBrokerManaged ? true : $facility->is_featured,
+        ]);
 
         return back()->with('success', $facility->is_broker_managed
-            ? "\"{$facility->name}\" anlaşmalı kurumlar listesine eklendi."
+            ? "\"{$facility->name}\" anlaşmalı kurumlar listesine eklendi ve Öne Çıkan Kurumlar'da gösterilecek."
             : "\"{$facility->name}\" anlaşmalı kurumlar listesinden çıkarıldı.");
     }
 

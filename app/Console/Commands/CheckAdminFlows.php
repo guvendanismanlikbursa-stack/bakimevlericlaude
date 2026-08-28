@@ -1107,11 +1107,21 @@ class CheckAdminFlows extends Command
         if (! $facility->is_broker_managed) {
             $this->recordFailure($flow, 'İlk işaretlemede is_broker_managed true olmadı.');
         }
+        // 28 Agustos 2026: kullanicinin talebi - kurum tanitim broşüründe
+        // vaat edilen "anlaşmalı kurumlar otomatik Öne Çıkan'da gösterilir"
+        // sozunun GERCEKTEN tutuldugunu dogrular (bkz. BrokerController::
+        // toggleFacility ayni tarihli yorum).
+        if (! $facility->is_featured) {
+            $this->recordFailure($flow, 'Anlaşmalı işaretlenince kurum otomatik Öne Çıkan yapılmadı.');
+        }
 
         $controller->toggleFacility($facility);
         $facility->refresh();
         if ($facility->is_broker_managed) {
             $this->recordFailure($flow, 'İkinci işaretlemede (geri alma) is_broker_managed false olmadı.');
+        }
+        if (! $facility->is_featured) {
+            $this->recordFailure($flow, 'Anlaşmalı statüsü geri alınınca Öne Çıkan durumu (yanlışlıkla) kaldırılmış - bu durum korunmalıydı.');
         }
 
         if (count($this->failures) === $failuresBefore) {

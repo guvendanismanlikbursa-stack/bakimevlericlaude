@@ -5179,4 +5179,33 @@ class PlatformFeatureTest extends TestCase
         $this->assertNull($this->childFacility->video_path);
         $this->assertFalse(Storage::disk('public')->exists($storedPath));
     }
+
+    // 28 Agustos 2026: kullanicinin talebi - kurum tanitim broşüründe
+    // "anlaşmalı kurumların kartlarını Öne Çıkan Kurumlar alanında
+    // sergiliyoruz" diye acikca vaat ediliyor; bu vaadin GERCEKTEN
+    // tutuldugunu (elle ayrica isaretlemeye gerek kalmadan) dogrular -
+    // bkz. Admin\BrokerController::toggleFacility() ayni tarihli yorum.
+    public function test_marking_facility_broker_managed_automatically_features_it(): void
+    {
+        $facility = $this->facility('Anlaşmalı Öne Çıkan Testi', $this->elderlyCategory, false);
+        $this->assertFalse((bool) $facility->is_featured);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/aracilik/kurumlar/'.$facility->id.'/degistir')
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertTrue((bool) $facility->is_broker_managed);
+        $this->assertTrue((bool) $facility->is_featured, 'Anlaşmalı işaretlenince kurum otomatik Öne Çıkan olmalı.');
+
+        // anlasmalidan CIKARILINCA Öne Çıkan durumu GERI ALINMAMALI -
+        // baska bir yoldan (ör. sahiplenme kampanyasi) kazanilmis olabilir.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/aracilik/kurumlar/'.$facility->id.'/degistir')
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertFalse((bool) $facility->is_broker_managed);
+        $this->assertTrue((bool) $facility->is_featured, 'Anlaşmalı statüsü geri alınınca Öne Çıkan durumu korunmalı.');
+    }
 }
