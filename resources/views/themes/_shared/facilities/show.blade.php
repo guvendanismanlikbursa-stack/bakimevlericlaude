@@ -406,6 +406,30 @@
       </div>
     </div>
 
+    @if($facility->usesGenderSplitVacancy() ? ($facility->vacancy_male !== null || $facility->vacancy_female !== null) : $facility->vacancy_general !== null)
+      <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+        @if($facility->usesGenderSplitVacancy())
+          @if($facility->vacancy_male !== null)
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div class="text-gray-500">Bay için Yer</div>
+              <div class="font-black {{ $facility->vacancy_male ? 'text-green-700' : 'text-red-600' }}">{{ $facility->vacancy_male ? 'Var' : 'Yok' }}</div>
+            </div>
+          @endif
+          @if($facility->vacancy_female !== null)
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div class="text-gray-500">Bayan için Yer</div>
+              <div class="font-black {{ $facility->vacancy_female ? 'text-green-700' : 'text-red-600' }}">{{ $facility->vacancy_female ? 'Var' : 'Yok' }}</div>
+            </div>
+          @endif
+        @else
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div class="text-gray-500">Boş Yer</div>
+            <div class="font-black {{ $facility->vacancy_general ? 'text-green-700' : 'text-red-600' }}">{{ $facility->vacancy_general ? 'Var' : 'Yok' }}</div>
+          </div>
+        @endif
+      </div>
+    @endif
+
     @include('themes._shared.partials.price-options-table', ['optionsTitle' => 'Oda Tipine Göre Fiyat Aralığı', 'optionsItems' => $facility->roomTypes])
     @include('themes._shared.partials.price-options-table', ['optionsTitle' => 'Yaş Grubuna Göre Fiyat Aralığı', 'optionsItems' => $facility->ageGroups])
     @include('themes._shared.partials.price-options-table', ['optionsTitle' => 'Program Süresine Göre Fiyat Aralığı', 'optionsItems' => $facility->programTypes])

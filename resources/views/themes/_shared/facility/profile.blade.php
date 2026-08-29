@@ -257,6 +257,47 @@
   </div>
 </div>
 
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+    <h2 class="text-lg font-black text-gray-950">Boş Yer Durumu</h2>
+    <p class="text-sm text-gray-500 mt-1 mb-4">Ailelere kurum sayfanızda gösterilir, dilediğiniz zaman güncelleyebilirsiniz.</p>
+    <form method="POST" action="{{ brand_route('facility.profile.vacancy.update') }}" class="grid sm:grid-cols-2 gap-4 max-w-lg">
+      @csrf @method('PUT')
+      @if($facility->usesGenderSplitVacancy())
+        <div>
+          <label for="vacancy-male" class="text-sm font-medium">Bay</label>
+          <select id="vacancy-male" name="vacancy_male" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+            <option value="" @selected($facility->vacancy_male === null)>Belirtilmedi</option>
+            <option value="1" @selected($facility->vacancy_male === true)>Var</option>
+            <option value="0" @selected($facility->vacancy_male === false)>Yok</option>
+          </select>
+        </div>
+        <div>
+          <label for="vacancy-female" class="text-sm font-medium">Bayan</label>
+          <select id="vacancy-female" name="vacancy_female" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+            <option value="" @selected($facility->vacancy_female === null)>Belirtilmedi</option>
+            <option value="1" @selected($facility->vacancy_female === true)>Var</option>
+            <option value="0" @selected($facility->vacancy_female === false)>Yok</option>
+          </select>
+        </div>
+      @else
+        <div>
+          <label for="vacancy-general" class="text-sm font-medium">Boş Yer</label>
+          <select id="vacancy-general" name="vacancy_general" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+            <option value="" @selected($facility->vacancy_general === null)>Belirtilmedi</option>
+            <option value="1" @selected($facility->vacancy_general === true)>Var</option>
+            <option value="0" @selected($facility->vacancy_general === false)>Yok</option>
+          </select>
+        </div>
+      @endif
+      <div class="sm:col-span-2 flex items-center gap-3">
+        <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Kaydet</button>
+        @if($facility->vacancy_updated_at)
+          <span class="text-xs text-gray-400">Son güncelleme: {{ $facility->vacancy_updated_at->diffForHumans() }}</span>
+        @endif
+      </div>
+    </form>
+  </div>
+
 @include('themes._shared.partials.notification-preferences-form', [
     'notificationGroups' => $notificationGroups,
     'preferences' => $user->notification_preferences ?? [],

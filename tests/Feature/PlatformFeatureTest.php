@@ -950,6 +950,61 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('Montessori destekli karma program', $details['egitim-programi']);
     }
 
+    public function test_facility_can_update_general_vacancy_status_and_it_shows_publicly(): void
+    {
+        // childFacility -> ozel-egitim brand_scope, gender-split DEGIL.
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->put('/site/bakimeviara/kurum-panel/profil/bos-yer', ['vacancy_general' => '1'])
+            ->assertRedirect();
+
+        $this->childFacility->refresh();
+        $this->assertTrue($this->childFacility->vacancy_general);
+        $this->assertNotNull($this->childFacility->vacancy_updated_at);
+        $this->assertNull($this->childFacility->vacancy_male);
+
+        $response = $this->get('/site/bakimeviara/kurumlar/'.$this->childFacility->slug)->assertOk();
+        $response->assertSee('Boş Yer');
+        $this->assertStringContainsString('text-green-700">Var</div>', $response->getContent());
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->put('/site/bakimeviara/kurum-panel/profil/bos-yer', ['vacancy_general' => '0'])
+            ->assertRedirect();
+
+        $response = $this->get('/site/bakimeviara/kurumlar/'.$this->childFacility->slug)->assertOk();
+        $this->assertStringContainsString('text-red-600">Yok</div>', $response->getContent());
+    }
+
+    public function test_facility_can_update_gender_split_vacancy_status_and_it_shows_publicly(): void
+    {
+        // elderlyFacility -> yasli-bakim brand_scope, Bay/Bayan ayri gosterilmeli.
+        $elderlyUser = FacilityUser::create([
+            'facility_id' => $this->elderlyFacility->id,
+            'name' => 'Yasli Kurum Yetkilisi',
+            'email' => 'yasli-kurum@test.local',
+            'phone' => '05552222222',
+            'password' => Hash::make('Kurum12345!'),
+            'must_change_password' => false,
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->withSession(['facility_user_id' => $elderlyUser->id])
+            ->put('/site/bakimevibul/kurum-panel/profil/bos-yer', [
+                'vacancy_male' => '0',
+                'vacancy_female' => '1',
+            ])->assertRedirect();
+
+        $this->elderlyFacility->refresh();
+        $this->assertFalse($this->elderlyFacility->vacancy_male);
+        $this->assertTrue($this->elderlyFacility->vacancy_female);
+        $this->assertNull($this->elderlyFacility->vacancy_general);
+
+        $this->get('/site/bakimevibul/kurumlar/'.$this->elderlyFacility->slug)
+            ->assertOk()
+            ->assertSee('Bay için Yer')
+            ->assertSee('Bayan için Yer');
+    }
+
     public function test_facility_gallery_accepts_max_ten_images(): void
     {
         Storage::fake('public');

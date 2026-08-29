@@ -74,6 +74,38 @@ class ProfileController extends Controller
     }
 
     /**
+     * 29 Agustos 2026: kullanicinin talebi - aileler kurum detay sayfasinda
+     * "bos yer var mi" diye soruyor, kurum yetkilisi bunu kendi panelinden
+     * duzenleyebilsin (KAMUYA ACIK - bkz. Facility::usesGenderSplitVacancy(),
+     * gizli vacant_beds_male/female'den FARKLI bir alan). bkz.
+     * updateNotifications() ayni yorum - bilerek ANA profil formundan
+     * (update()) AYRI, sik degisecek bu kucuk alan icin buyuk formun
+     * validasyonuna dokunma riski yok.
+     */
+    public function updateVacancy(Request $request)
+    {
+        $user = FacilityUser::with('facility.category')->findOrFail(session('facility_user_id'));
+        $facility = $user->facility;
+
+        $data = $request->validate([
+            'vacancy_male' => 'nullable|in:0,1',
+            'vacancy_female' => 'nullable|in:0,1',
+            'vacancy_general' => 'nullable|in:0,1',
+        ]);
+
+        foreach (['vacancy_male', 'vacancy_female', 'vacancy_general'] as $field) {
+            $data[$field] = array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== ''
+                ? (bool) $data[$field]
+                : null;
+        }
+        $data['vacancy_updated_at'] = now();
+
+        $facility->update($data);
+
+        return back()->with('success', 'Boş yer bilgisi güncellendi.');
+    }
+
+    /**
      * 19 Agustos 2026: kullanicinin talebi - bkz. Family\ProfileController::
      * destroy() ayni tarihli yorum, ayni desen. DIKKAT: bu SADECE bu kurum
      * yetkilisinin KENDI hesabini (ad/e-posta/telefon) hedefler - kurumun

@@ -17,6 +17,7 @@ class Facility extends Model
         'invitation_status', 'invitation_status_at', 'menu_image_path', 'menu_image_updated_at',
         'is_broker_managed', 'vacant_beds_male', 'vacant_beds_female', 'vacant_beds_updated_at',
         'allows_visit_service', 'video_path', 'video_updated_at',
+        'vacancy_male', 'vacancy_female', 'vacancy_general', 'vacancy_updated_at',
     ];
 
     protected function casts(): array
@@ -43,6 +44,10 @@ class Facility extends Model
             'vacant_beds_male' => 'integer',
             'vacant_beds_female' => 'integer',
             'vacant_beds_updated_at' => 'datetime',
+            'vacancy_male' => 'boolean',
+            'vacancy_female' => 'boolean',
+            'vacancy_general' => 'boolean',
+            'vacancy_updated_at' => 'datetime',
             'claimed_at' => 'datetime',
             'price_min' => 'float',
             'price_max' => 'float',
@@ -70,6 +75,17 @@ class Facility extends Model
     public function category()
     {
         return $this->belongsTo(FacilityCategory::class, 'facility_category_id');
+    }
+
+    /**
+     * 29 Agustos 2026: kullanicinin talebi - koguslari cinsiyete gore
+     * ayrilan yasli bakim kategorilerinde (huzurevi/yasli bakim evi)
+     * bay/bayan icin ayri "yer var mi" gosterilir, diger kategorilerde
+     * (cocuk, rehabilitasyon vb.) tek bir genel alan yeterli.
+     */
+    public function usesGenderSplitVacancy(): bool
+    {
+        return $this->category?->brand_scope === 'yasli-bakim';
     }
 
     public function offerRequests()

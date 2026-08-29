@@ -290,6 +290,7 @@ $siteRoutes = function () {
             Route::post('/profil/video', [FacilityProfileController::class, 'uploadVideo'])->middleware('throttle:public-sensitive')->name('profile.video.store');
             Route::delete('/profil/video', [FacilityProfileController::class, 'deleteVideo'])->name('profile.video.destroy');
             Route::put('/profil/bildirim-tercihleri', [FacilityProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
+            Route::put('/profil/bos-yer', [FacilityProfileController::class, 'updateVacancy'])->name('profile.vacancy.update');
 
             Route::get('/bakiyem', [FacilityWalletController::class, 'index'])->name('wallet.index');
             Route::post('/bakiyem', [FacilityWalletController::class, 'store'])->middleware('throttle:public-sensitive')->name('wallet.store');
