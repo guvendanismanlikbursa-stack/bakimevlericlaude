@@ -18,6 +18,7 @@ class Facility extends Model
         'is_broker_managed', 'vacant_beds_male', 'vacant_beds_female', 'vacant_beds_updated_at',
         'allows_visit_service', 'video_path', 'video_updated_at',
         'vacancy_male', 'vacancy_female', 'vacancy_general', 'vacancy_updated_at',
+        'site_visited_at',
     ];
 
     protected function casts(): array
@@ -48,6 +49,7 @@ class Facility extends Model
             'vacancy_female' => 'boolean',
             'vacancy_general' => 'boolean',
             'vacancy_updated_at' => 'datetime',
+            'site_visited_at' => 'datetime',
             'claimed_at' => 'datetime',
             'price_min' => 'float',
             'price_max' => 'float',

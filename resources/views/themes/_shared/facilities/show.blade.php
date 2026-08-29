@@ -59,6 +59,13 @@
       @if($facility->is_featured)
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
+      {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumlarin
+           ekip tarafindan YERINDE ziyaret edildigini durust bir sekilde
+           gostermek. SADECE gercekten isaretlenmisse (bkz. Facility::
+           site_visited_at, Admin\FacilityController) - bos bir vaat degil. --}}
+      @if($facility->is_broker_managed && $facility->site_visited_at)
+        <span class="bg-emerald-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">🤝 Yerinde Ziyaret Edildi</span>
+      @endif
       @if($facility->hasFastResponseBadge())
         <span class="bg-blue-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
       @endif
@@ -84,6 +91,9 @@
       @if($facility->is_featured)
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
+      @if($facility->is_broker_managed && $facility->site_visited_at)
+        <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded-full">🤝 Yerinde Ziyaret Edildi</span>
+      @endif
       @if($facility->hasFastResponseBadge())
         <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
       @endif
@@ -96,6 +106,37 @@
     <p class="text-gray-500 mt-1">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
     @endunless
     <p class="text-sm text-gray-600 {{ $heroImage ? 'mt-5' : 'mt-3' }} italic">{{ facility_brand_framing($facility, $brand)['intro'] }}</p>
+
+    {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumlarda boş yer
+         bilgisinin guncel tutulma ihtimali daha yuksek (biz yonetiyoruz),
+         bu yuzden POZITIF (Var) durumda sayfanin EN USTUNDE, kacirilamaz
+         bir seride vurgulanir. Rakam YOK, sadece Var/Yok - bkz. onceki
+         Facility::usesGenderSplitVacancy() yorumu, kurumlar birbirine
+         tam doluluk sayisini gostermek istemiyor. Sadece "Yok" durumunda
+         hic gosterilmez (asagidaki detay tabloda zaten var), cesaret
+         kirici bir sey one cikarilmaz. --}}
+    @if($facility->is_broker_managed)
+      @php
+        $vacancyHighlight = null;
+        if ($facility->usesGenderSplitVacancy()) {
+          if ($facility->vacancy_male === true && $facility->vacancy_female === true) {
+            $vacancyHighlight = 'Bay ve Bayan için boş yer mevcut';
+          } elseif ($facility->vacancy_male === true) {
+            $vacancyHighlight = 'Bay için boş yer mevcut';
+          } elseif ($facility->vacancy_female === true) {
+            $vacancyHighlight = 'Bayan için boş yer mevcut';
+          }
+        } elseif ($facility->vacancy_general === true) {
+          $vacancyHighlight = 'Boş yer mevcut';
+        }
+      @endphp
+      @if($vacancyHighlight)
+        <div class="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+          <span class="text-emerald-600 font-black">✓</span>
+          <span class="text-sm font-black text-emerald-800">{{ $vacancyHighlight }}</span>
+        </div>
+      @endif
+    @endif
 
     {{-- 12 Agustos 2026: kullanicinin talebi - "ucret bilgisi al" formu
          sayfada VAR ama sag sutunda (mobilde galeri/yorum/soru/benzer
@@ -142,7 +183,11 @@
       </div>
       <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
         <div class="text-sm font-black text-gray-500">Güven sinyali</div>
-        <div class="text-lg font-black text-gray-950 mt-2">{{ $facility->is_claimed ? 'Onaylı kurum' : 'Profil doğrulama bekliyor' }}</div>
+        @if($facility->is_broker_managed && $facility->site_visited_at)
+          <div class="text-lg font-black text-emerald-700 mt-2">Ekibimizce ziyaret edildi</div>
+        @else
+          <div class="text-lg font-black text-gray-950 mt-2">{{ $facility->is_claimed ? 'Onaylı kurum' : 'Profil doğrulama bekliyor' }}</div>
+        @endif
       </div>
     </div>
     @php
@@ -515,7 +560,17 @@
   <div>
     <div id="teklif-talebi" class="bg-white p-6 rounded-xl shadow-sm sticky top-24 border border-gray-100">
       @if($facility->is_claimed)
-        <h3 class="font-black mb-4 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
+        <h3 class="font-black mb-1 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
+        {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumlarda daha
+             kisisel bir dokunus, ama abartisiz/durust: SADECE gercekten
+             ziyaret edilmisse (site_visited_at) gorunur, "biz her kurumu
+             taniyoruz" gibi genel/asilsiz bir vaat degil. Satis dili degil,
+             sakin ve bilgilendirici - unlem/vurgu/aciliyet kelimesi yok. --}}
+        @if($facility->is_broker_managed && $facility->site_visited_at)
+          <p class="text-xs text-gray-500 mb-4">Bu kurumu ekibimiz yerinde ziyaret etti ve yakından tanıyor. Sorularınızı gerçek bilgiyle yanıtlarız.</p>
+        @else
+          <div class="mb-4"></div>
+        @endif
         <form method="POST" action="{{ brand_route('offer-requests.store') }}" class="space-y-3">
           @csrf
           @include('themes._shared.partials.honeypot')

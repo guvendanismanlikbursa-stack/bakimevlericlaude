@@ -275,6 +275,22 @@
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="allows_visit_service" value="1" @checked(old('allows_visit_service', $facility->allows_visit_service))> Ziyaret hizmetine açık</label>
   </div>
 
+  {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumun ekip
+       tarafindan yerinde ziyaret edildigini kurum detay sayfasinda durust
+       bir rozetle gostermek icin. Checkbox ISARETLENIRSE ve daha once BOS
+       ise sunucu tarafinda o AN'in tarihi yazilir (bkz. FacilityController
+       ayni tarihli yorum) - boylece "ne zaman ziyaret edildi" bilgisi de
+       kaydedilmis olur, sadece evet/hayir degil. --}}
+  <div class="md:col-span-2">
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" name="site_visited" value="1" @checked(old('site_visited', (bool) $facility->site_visited_at))>
+      Bu kurum ekibimiz tarafından yerinde ziyaret edildi
+    </label>
+    @if($facility->site_visited_at)
+      <p class="text-xs text-gray-400 mt-1 ml-6">Ziyaret tarihi: {{ $facility->site_visited_at->format('d.m.Y') }} — işareti kaldırıp tekrar kaydederseniz bu bilgi silinir.</p>
+    @endif
+  </div>
+
   <div>
     <label class="text-sm font-medium">Bakanlık/Resmi Onay Rozeti</label>
     <select name="ministry_verification" class="border rounded-lg px-3 py-2 w-full mt-1">
@@ -327,8 +343,43 @@
   </div>
 </form>
 
+{{-- 29 Agustos 2026: kullanicinin talebi - "gorsel ekle" alani ile "mevcut
+     galeri" ust uste/bitisik olsun istiyor, aralarinda "Bakiye / Hak"
+     karti vardi. Mevcut Galeri karti buraya (formun hemen alti) tasindi,
+     Bakiye/Hak karti asagida kaldi - sadece siralama degisti, mantik ayni. --}}
 @if($facility->exists)
   <div class="max-w-4xl mt-8 space-y-8">
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h2 class="font-bold">Mevcut Görseller</h2>
+        <span class="text-xs font-semibold rounded-full bg-gray-100 text-gray-600 px-3 py-1">{{ $imageCount }}/10</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {{-- 19 Agustos 2026: kullanicinin talebi - hangi gorselin ANA (kapak)
+             gorsel oldugu buradan secilebilir (bkz. Facility::primaryImage()). --}}
+        @foreach($facility->images->take(10) as $img)
+          <div class="relative">
+            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-24 w-full object-cover border-2 {{ $img->is_primary ? 'border-amber-400' : 'border-gray-100' }}">
+            @if($img->is_primary)
+              <span class="absolute bottom-1 left-1 bg-amber-400 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded">★ Ana Görsel</span>
+            @else
+              <form method="POST" action="{{ route('admin.facilities.image.set-primary', $img) }}" class="absolute bottom-1 left-1">
+                @csrf
+                <button class="bg-white/90 text-gray-700 text-[10px] font-semibold px-1.5 py-0.5 rounded hover:bg-white">Ana Görsel Yap</button>
+              </form>
+            @endif
+            <form method="POST" action="{{ route('admin.facilities.image.destroy', $img) }}" class="absolute top-1 right-1">
+              @csrf @method('DELETE')
+              <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>
+            </form>
+          </div>
+        @endforeach
+        @for($i = $imageCount; $i < 10; $i++)
+          <div class="h-24 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-xs text-gray-400 text-center px-2">Görsel alanı<br>{{ $i + 1 }}/10</div>
+        @endfor
+      </div>
+    </div>
+
     <div class="bg-white rounded-xl shadow-sm p-6">
       <h2 class="font-bold mb-3">Bakiye / Hak (Manuel Düzenleme)</h2>
       <p class="text-sm text-gray-600 mb-3">Ücretsiz Hak: <strong>{{ $facility->free_quote_credits }}</strong> &middot; Bakiye: <strong>{{ number_format($facility->balance,2,',','.') }} TL</strong></p>
@@ -432,36 +483,6 @@
       </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <div class="flex items-center justify-between gap-3 mb-3">
-        <h2 class="font-bold">Mevcut Görseller</h2>
-        <span class="text-xs font-semibold rounded-full bg-gray-100 text-gray-600 px-3 py-1">{{ $imageCount }}/10</span>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {{-- 19 Agustos 2026: kullanicinin talebi - hangi gorselin ANA (kapak)
-             gorsel oldugu buradan secilebilir (bkz. Facility::primaryImage()). --}}
-        @foreach($facility->images->take(10) as $img)
-          <div class="relative">
-            <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-24 w-full object-cover border-2 {{ $img->is_primary ? 'border-amber-400' : 'border-gray-100' }}">
-            @if($img->is_primary)
-              <span class="absolute bottom-1 left-1 bg-amber-400 text-amber-950 text-[10px] font-black px-1.5 py-0.5 rounded">★ Ana Görsel</span>
-            @else
-              <form method="POST" action="{{ route('admin.facilities.image.set-primary', $img) }}" class="absolute bottom-1 left-1">
-                @csrf
-                <button class="bg-white/90 text-gray-700 text-[10px] font-semibold px-1.5 py-0.5 rounded hover:bg-white">Ana Görsel Yap</button>
-              </form>
-            @endif
-            <form method="POST" action="{{ route('admin.facilities.image.destroy', $img) }}" class="absolute top-1 right-1">
-              @csrf @method('DELETE')
-              <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>
-            </form>
-          </div>
-        @endforeach
-        @for($i = $imageCount; $i < 10; $i++)
-          <div class="h-24 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-xs text-gray-400 text-center px-2">Görsel alanı<br>{{ $i + 1 }}/10</div>
-        @endfor
-      </div>
-    </div>
   </div>
 @endif
 

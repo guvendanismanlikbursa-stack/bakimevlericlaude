@@ -3292,6 +3292,35 @@ class PlatformFeatureTest extends TestCase
         ], $overrides);
     }
 
+    public function test_admin_marking_site_visited_sets_timestamp_once_and_shows_public_badge(): void
+    {
+        $this->rehabFacility->update(['is_broker_managed' => true]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['site_visited' => '1', 'is_published' => '1']))
+            ->assertRedirect();
+
+        $first = $this->rehabFacility->fresh()->site_visited_at;
+        $this->assertNotNull($first);
+
+        // 29 Agustos 2026: tekrar kaydedince (checkbox hala isaretliyken)
+        // tarih SIFIRLANMAMALI - bkz. Admin\FacilityController::update() yorumu.
+        $this->travel(1)->hours();
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['site_visited' => '1', 'is_published' => '1']))
+            ->assertRedirect();
+        $this->assertTrue($first->equalTo($this->rehabFacility->fresh()->site_visited_at));
+
+        $response = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)->assertOk();
+        $this->assertStringContainsString('Yerinde Ziyaret Edildi', $response->getContent());
+
+        // Isaret kaldirilip kaydedilirse silinmeli.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility))
+            ->assertRedirect();
+        $this->assertNull($this->rehabFacility->fresh()->site_visited_at);
+    }
+
     // 14 Agustos 2026: kullanicinin talebi - admin bir kuruma telefon
     // numarasi ekleyip kaydettiginde, kurum otomatik olarak dogru gruba
     // (cep/sabit hat) siniflandirilsin - bu alan (phone_type) WhatsApp

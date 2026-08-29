@@ -157,6 +157,7 @@ class FacilityController extends Controller
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
         $data['allows_visit_service'] = $request->boolean('allows_visit_service');
+        $data['site_visited_at'] = $request->boolean('site_visited') ? now() : null;
         $data['is_claimed'] = false;
         $data['district_id'] = $this->resolveDistrictId($data['district'] ?? null, $data['city_id']);
 
@@ -238,6 +239,14 @@ class FacilityController extends Controller
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
         $data['allows_visit_service'] = $request->boolean('allows_visit_service');
+        // 29 Agustos 2026: kullanicinin talebi - ziyaret tarihi sadece
+        // ISARETSIZ -> ISARETLI GECISTE simdiki zamana yazilir, zaten
+        // isaretliyken her kayitta tarihin "sifirlanmamasi" icin mevcut
+        // deger korunur - checkbox'i her form kaydinda yeniden isaretlemek
+        // gercek ziyaret tarihini surekli "bugune" tasimamali.
+        $data['site_visited_at'] = $request->boolean('site_visited')
+            ? ($facility->site_visited_at ?? now())
+            : null;
         // 14 Agustos 2026: kullanicinin talebi - "ilce senkronizasyonu"
         // (bkz. DataQualityService::districtAudit() - metin/FK uyumsuzlugu
         // sorunu). Eslesme bulunamazsa MEVCUT district_id'ye DOKUNULMAZ -
