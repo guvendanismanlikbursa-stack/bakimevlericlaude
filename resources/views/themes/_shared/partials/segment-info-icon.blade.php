@@ -33,21 +33,25 @@
        gibi class'lar sessizce hicbir sey yapmiyordu. Inline style, CSS
        paketinden bagimsiz calisir, her zaman garanti gorunur. --}}
   <span class="relative inline-block align-middle" style="margin-left:10px;" data-segment-select-name="{{ $categorySelectName ?? '' }}">
-    <button type="button" onclick="toggleSegmentInfo('{{ $segmentIconId }}')" aria-label="Fiyat segmentleri hakkında bilgi"
+    <button type="button" onclick="toggleSegmentInfo(this, '{{ $segmentIconId }}')" aria-label="Fiyat segmentleri hakkında bilgi"
       style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:#facc15;color:#1f2937;font-size:13px;font-weight:900;box-shadow:0 1px 3px rgba(0,0,0,.3);border:2px solid #fde047;cursor:pointer;vertical-align:middle;">?</button>
 
-    {{-- 18 Agustos 2026: kullanicinin bildirdigi gercek hata - bu ikon filtre
-         formlarinda genelde satirin EN SAGINDAKI alan, "sm:left-0" (tablet/
-         masaustunde kutuyu SAGA dogru genisletme) ikonun sagindaki bosluk
-         yetersiz kalinca kutunun yarisini ekran/pencere disina tasiriyordu.
-         Kutu artik HER ekran boyutunda ikonun SOLUNA dogru acilir (right-0) -
-         icon genelde satirin sonunda oldugu icin bu yon her zaman guvenli;
-         ayrica cok dar ekranlarda da tasmayi kesin onlemek icin max-genislik
-         viewport'a gore sinirlandi. --}}
-    <div id="{{ $segmentIconId }}" class="hidden absolute z-50 right-0 top-7 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-left">
+    {{-- 29 Agustos 2026: kullanicinin bildirdigi gercek hata - kutu bazi
+         durumlarda (ör. admin "Panelde Gör" ile baska bir kullanici adina
+         goruntulerken) ikonun yaninda degil, sayfanin sol ust kosesinde
+         yarim kirpilmis halde cikiyordu. Kok neden: kutu, CSS ile en yakin
+         "relative" ataya (bu span'a) gore konumlaniyordu (position:absolute)
+         - ama bu zincir cok katmanli (label > span > span) ve bazi gercek
+         tarayici/DOM durumlarinda (ör. impersonasyon banner'inin sticky+z-50
+         olmasi gibi baska bir "positioned"/stacking-context etkisiyle)
+         guvenilmez cikti. Artik JS ile ACILDIGI ANDA butonun gercek ekran
+         konumuna (getBoundingClientRect) gore position:fixed olarak
+         KONUMLANDIRILIYOR - hangi atanin ne CSS'e sahip oldugundan tamamen
+         bagimsiz, garanti dogru yerde acilir. --}}
+    <div id="{{ $segmentIconId }}" class="hidden fixed z-50 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-left">
       <div class="flex items-center justify-between mb-2">
         <div class="text-sm font-black text-gray-900">Fiyat segmentleri</div>
-        <button type="button" onclick="toggleSegmentInfo('{{ $segmentIconId }}')" class="text-gray-400 hover:text-gray-700 text-lg leading-none">&times;</button>
+        <button type="button" onclick="document.getElementById('{{ $segmentIconId }}').classList.add('hidden')" class="text-gray-400 hover:text-gray-700 text-lg leading-none">&times;</button>
       </div>
 
       @if($categorySelectName)
@@ -73,7 +77,7 @@
 
   <script>
     if (!window.toggleSegmentInfo) {
-      window.toggleSegmentInfo = function (id) {
+      window.toggleSegmentInfo = function (trigger, id) {
         document.querySelectorAll('[id^="segment-info-"]').forEach(function (el) {
           if (el.id !== id) el.classList.add('hidden');
         });
@@ -83,6 +87,17 @@
         el.classList.toggle('hidden');
 
         if (opening) {
+          var margin = 16;
+          var rect = trigger.getBoundingClientRect();
+          var width = el.offsetWidth || 288;
+          var left = Math.min(rect.right - width, window.innerWidth - width - margin);
+          left = Math.max(left, margin);
+          var top = rect.bottom + 6;
+          var maxTop = window.innerHeight - (el.offsetHeight || 0) - margin;
+          if (maxTop > margin) top = Math.min(top, maxTop);
+          el.style.left = left + 'px';
+          el.style.top = top + 'px';
+
           var wrapper = el.closest('[data-segment-select-name]');
           var selectName = wrapper ? wrapper.getAttribute('data-segment-select-name') : '';
           if (selectName) {
@@ -100,11 +115,21 @@
           }
         }
       };
+      var closeAllSegmentInfo = function () {
+        document.querySelectorAll('[id^="segment-info-"]').forEach(function (el) { el.classList.add('hidden'); });
+      };
       document.addEventListener('click', function (e) {
         if (!e.target.closest('[onclick^="toggleSegmentInfo"]') && !e.target.closest('[id^="segment-info-"]')) {
-          document.querySelectorAll('[id^="segment-info-"]').forEach(function (el) { el.classList.add('hidden'); });
+          closeAllSegmentInfo();
         }
       });
+      // 29 Agustos 2026: bkz. yukaridaki yorum - kutu artik position:fixed
+      // (butona gore JS ile hesaplanan sabit koordinat), yani sayfa
+      // kaydirilirsa butonla birlikte hareket ETMEZ. Kaydirma/pencere
+      // boyutu degisince acik kutuyu kapatmak, yanlis yerde asili kalmasindan
+      // daha güvenli ve basit.
+      window.addEventListener('scroll', closeAllSegmentInfo, true);
+      window.addEventListener('resize', closeAllSegmentInfo);
     }
   </script>
 @endif

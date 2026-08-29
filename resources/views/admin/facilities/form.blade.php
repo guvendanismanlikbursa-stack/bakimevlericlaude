@@ -122,7 +122,7 @@
 
   <div>
     <label class="text-sm font-medium">Şehir</label>
-    <select name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1">
+    <select id="facility-form-city" name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1">
       @foreach($cities as $city)
         <option value="{{ $city->id }}" @selected(old('city_id', $facility->city_id) == $city->id)>{{ $city->name }}</option>
       @endforeach
@@ -141,7 +141,7 @@
 
   <div>
     <label class="text-sm font-medium">İlçe</label>
-    <input type="text" name="district" value="{{ old('district', $facility->district) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+    <input type="text" id="facility-form-district" name="district" value="{{ old('district', $facility->district) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
   </div>
 
   <div>
@@ -151,18 +151,34 @@
 
   <div class="md:col-span-2">
     <label class="text-sm font-medium">Adres</label>
-    <input type="text" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+    <input type="text" id="facility-form-address" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
   </div>
 
-  <div>
-    <label class="text-sm font-medium">Enlem (lat) <span class="text-xs text-gray-400">opsiyonel</span></label>
-    <input type="text" name="lat" value="{{ old('lat', $facility->lat) }}" placeholder="Örn: 40.1826" class="border rounded-lg px-3 py-2 w-full mt-1">
-    <p class="text-xs text-gray-400 mt-1">Dolu ise &quot;Yakınımdaki Kurumlar&quot; gerçek mesafeyle çalışır. Google Maps&#39;te kurumun konumuna sağ tıklayıp koordinatları kopyalayabilirsiniz.</p>
-  </div>
+  {{-- 29 Agustos 2026: kullanicinin talebi - kimse elle koordinat bilmiyor,
+       eskiden "Google Maps'te sag tiklayip kopyalayin" diye anlatiliyordu.
+       Artik adres/ilce/sehir'e gore ucretsiz Nominatim (OpenStreetMap)
+       servisiyle otomatik konum buluyor ve Leaflet/OSM haritasinda
+       surukleyerek duzeltilebilen bir pin gosteriyor - lat/lng alanlari
+       pin'in konumuna gore otomatik dolar, elle de duzenlenebilir kalir. --}}
+  <div class="md:col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-4">
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+      <label class="text-sm font-black text-gray-900">Haritadaki Konum</label>
+      <button type="button" id="facility-geocode-btn" class="bg-primary text-white text-xs font-bold px-3 py-2 rounded-lg">📍 Adresten konum bul</button>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Adres/ilçe/şehir dolduktan sonra yukarıdaki butona basın, harita otomatik açılır. Pin yanlış yerdeyse üzerine tıklayıp sürükleyerek düzeltebilirsiniz.</p>
+    <div id="facility-geocode-status" class="text-xs font-semibold mb-2"></div>
+    <div id="facility-location-map" class="hidden rounded-lg border border-gray-200" style="height:280px;"></div>
 
-  <div>
-    <label class="text-sm font-medium">Boylam (lng) <span class="text-xs text-gray-400">opsiyonel</span></label>
-    <input type="text" name="lng" value="{{ old('lng', $facility->lng) }}" placeholder="Örn: 29.0670" class="border rounded-lg px-3 py-2 w-full mt-1">
+    <div class="grid grid-cols-2 gap-3 mt-3">
+      <div>
+        <label class="text-xs text-gray-500">Enlem (lat)</label>
+        <input type="text" id="facility-form-lat" name="lat" value="{{ old('lat', $facility->lat) }}" placeholder="Örn: 40.1826" class="border rounded-lg px-3 py-2 w-full mt-1 text-sm">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500">Boylam (lng)</label>
+        <input type="text" id="facility-form-lng" name="lng" value="{{ old('lng', $facility->lng) }}" placeholder="Örn: 29.0670" class="border rounded-lg px-3 py-2 w-full mt-1 text-sm">
+      </div>
+    </div>
   </div>
 
   <div class="md:col-span-2">
@@ -448,4 +464,108 @@
     </div>
   </div>
 @endif
+
+{{-- 29 Agustos 2026: kullanicinin talebi - bkz. yukaridaki "Haritadaki Konum"
+     kutusu yorumu. Leaflet (OSM tabanli, API anahtari gerektirmeyen, ucretsiz)
+     harita kutuphanesi + Nominatim (ucretsiz OSM geocoding) ile adres/ilce/
+     sehir metninden otomatik lat/lng bulunur, surukle-birak pin ile
+     duzeltilebilir. --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var addressEl = document.getElementById('facility-form-address');
+  var districtEl = document.getElementById('facility-form-district');
+  var cityEl = document.getElementById('facility-form-city');
+  var latEl = document.getElementById('facility-form-lat');
+  var lngEl = document.getElementById('facility-form-lng');
+  var btn = document.getElementById('facility-geocode-btn');
+  var statusEl = document.getElementById('facility-geocode-status');
+  var mapEl = document.getElementById('facility-location-map');
+  if (!btn || !mapEl || typeof L === 'undefined') return;
+
+  var map = null;
+  var marker = null;
+
+  function setStatus(text, colorClass) {
+    statusEl.textContent = text;
+    statusEl.className = 'text-xs font-semibold mb-2 ' + colorClass;
+  }
+
+  function showMap(lat, lng, zoom) {
+    mapEl.classList.remove('hidden');
+    if (!map) {
+      map = L.map(mapEl).setView([lat, lng], zoom || 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap katkıda bulunanlar',
+        maxZoom: 19,
+      }).addTo(map);
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      marker.on('dragend', function () {
+        var pos = marker.getLatLng();
+        latEl.value = pos.lat.toFixed(6);
+        lngEl.value = pos.lng.toFixed(6);
+      });
+    } else {
+      map.setView([lat, lng], zoom || 15);
+      marker.setLatLng([lat, lng]);
+      setTimeout(function () { map.invalidateSize(); }, 50);
+    }
+    latEl.value = lat.toFixed(6);
+    lngEl.value = lng.toFixed(6);
+  }
+
+  function geocode(query, onFound, onNotFound) {
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=tr&q=' + encodeURIComponent(query))
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        if (results && results.length) {
+          onFound(parseFloat(results[0].lat), parseFloat(results[0].lon));
+        } else if (onNotFound) {
+          onNotFound();
+        }
+      })
+      .catch(function () {
+        setStatus('Konum servisi şu an yanıt vermedi, lütfen birazdan tekrar deneyin.', 'text-red-600');
+      });
+  }
+
+  btn.addEventListener('click', function () {
+    var address = addressEl.value.trim();
+    var district = districtEl.value.trim();
+    var city = cityEl.options[cityEl.selectedIndex] ? cityEl.options[cityEl.selectedIndex].text : '';
+
+    if (!address && !district && !city) {
+      setStatus('Önce şehir/ilçe/adres bilgisini girin.', 'text-amber-600');
+      return;
+    }
+
+    setStatus('Konum aranıyor...', 'text-gray-500');
+
+    var fullQuery = [address, district, city, 'Türkiye'].filter(Boolean).join(', ');
+
+    geocode(fullQuery, function (lat, lng) {
+      setStatus('✓ Konum bulundu - pin yanlış yerdeyse sürükleyerek düzeltebilirsiniz.', 'text-green-700');
+      showMap(lat, lng, 16);
+    }, function () {
+      var fallbackQuery = [district, city, 'Türkiye'].filter(Boolean).join(', ');
+      geocode(fallbackQuery, function (lat, lng) {
+        setStatus('Tam adres bulunamadı, haritayı ' + (district || city) + ' bölgesine ortaladık - pini elle doğru yere sürükleyin.', 'text-amber-600');
+        showMap(lat, lng, 13);
+      }, function () {
+        setStatus('Konum bulunamadı, lütfen adresi kontrol edin veya haritayı açıp pini elle yerleştirin.', 'text-red-600');
+        showMap(39.9, 32.85, 6);
+      });
+    });
+  });
+
+  var existingLat = parseFloat(latEl.value);
+  var existingLng = parseFloat(lngEl.value);
+  if (!isNaN(existingLat) && !isNaN(existingLng)) {
+    showMap(existingLat, existingLng, 15);
+  }
+});
+</script>
 @endsection
