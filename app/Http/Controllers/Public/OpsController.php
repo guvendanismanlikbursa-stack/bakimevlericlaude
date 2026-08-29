@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -143,6 +143,7 @@ class OpsController extends Controller
             'bursa-visit-export' => $this->bursaVisitExport($request),
             'mysql-tmp-diagnostics' => $this->mysqlTmpDiagnostics(),
             'vacancy-set-default-available' => $this->vacancySetDefaultAvailable(),
+            'category-demand-stats' => $this->categoryDemandStats(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -3473,6 +3474,51 @@ class OpsController extends Controller
             ->update(['vacancy_general' => true]);
 
         return "OK: bay/bayan alani 'Var' yapilan yasli bakim kurumu sayisi = {$genderSplitCount}, genel 'Var' yapilan diger kurum sayisi = {$generalCount}";
+    }
+
+    /**
+     * 29 Agustos 2026: kullanicinin talebi - "kullanicilar hangi kurum
+     * turunu en cok ariyor" sorusuna Google Trends gibi harici bir kaynak
+     * yerine, PLATFORMUN KENDI gercek kullanici verisiyle (goruntulenme +
+     * teklif/ziyaret talebi) cevap verir - tahminden cok daha guvenilir,
+     * cunku gercekten bu siteye gelen ziyaretcilerin davranisi.
+     */
+    private function categoryDemandStats(): string
+    {
+        $views = DB::table('facilities')
+            ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+            ->whereNull('facilities.deleted_at')
+            ->where('facilities.is_published', true)
+            ->selectRaw('facility_categories.brand_scope, count(*) as kurum_sayisi, sum(facilities.views_count) as toplam_goruntulenme, avg(facilities.views_count) as ortalama_goruntulenme')
+            ->groupBy('facility_categories.brand_scope')
+            ->orderByDesc('toplam_goruntulenme')
+            ->get();
+
+        $offerCounts = DB::table('offer_requests')
+            ->join('facilities', 'facilities.id', '=', 'offer_requests.facility_id')
+            ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+            ->selectRaw('facility_categories.brand_scope, count(*) as adet')
+            ->groupBy('facility_categories.brand_scope')
+            ->pluck('adet', 'brand_scope');
+
+        $visitCounts = DB::table('visit_requests')
+            ->join('facilities', 'facilities.id', '=', 'visit_requests.facility_id')
+            ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+            ->selectRaw('facility_categories.brand_scope, count(*) as adet')
+            ->groupBy('facility_categories.brand_scope')
+            ->pluck('adet', 'brand_scope');
+
+        $out = "Kategoriye gore GERCEK kullanici verisi (yayinda, silinmemis kurumlar - toplam goruntulenmeye gore siralandi):\n\n";
+        foreach ($views as $row) {
+            $out .= "{$row->brand_scope}:\n";
+            $out .= "  Kurum sayisi: {$row->kurum_sayisi}\n";
+            $out .= "  Toplam goruntulenme: ".number_format((float) $row->toplam_goruntulenme)."\n";
+            $out .= "  Kurum basina ortalama goruntulenme: ".number_format((float) $row->ortalama_goruntulenme, 1)."\n";
+            $out .= "  Toplam teklif talebi: ".($offerCounts[$row->brand_scope] ?? 0)."\n";
+            $out .= "  Toplam ziyaret talebi: ".($visitCounts[$row->brand_scope] ?? 0)."\n\n";
+        }
+
+        return $out;
     }
 
     // 3 Agustos 2026: "her rol panelindeki butun fonksiyonlar eksiksiz
