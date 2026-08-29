@@ -81,6 +81,28 @@
   </div>
 </div>
 
+{{-- 29 Agustos 2026: kullanicinin talebi - "kullanicilar hangi kurum
+     turunu en cok ariyor" sorusuna panelde dogrudan cevap (bkz.
+     Admin\DashboardController::categoryDemandSummary()) - tahmin degil,
+     kurumlarin gercek toplam goruntulenme sayisina gore dagilim. --}}
+<div class="bg-white rounded-xl shadow-sm p-5 mb-10">
+  <h2 class="font-bold text-lg mb-1">Kurum Türüne Göre İlgi</h2>
+  <p class="text-xs text-gray-500 mb-4">Yayındaki kurumların toplam görüntülenme sayısına göre — tahmin değil, gerçek kullanıcı verisi.</p>
+  <div class="space-y-3">
+    @foreach($categoryDemand as $row)
+      <div>
+        <div class="flex items-center justify-between text-sm mb-1">
+          <span class="font-semibold text-gray-800">{{ $row['title'] }}</span>
+          <span class="font-black text-gray-950">%{{ number_format($row['percent'], 1, ',', '.') }} <span class="font-normal text-gray-400">({{ number_format($row['count'], 0, ',', '.') }} görüntülenme)</span></span>
+        </div>
+        <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden">
+          <div class="h-full rounded-full bg-primary" style="width: {{ $row['percent'] }}%"></div>
+        </div>
+      </div>
+    @endforeach
+  </div>
+</div>
+
 <div class="grid md:grid-cols-3 gap-6 mb-10">
   @foreach($stats as $slug => $s)
     <div class="bg-white rounded-xl shadow-sm p-5">

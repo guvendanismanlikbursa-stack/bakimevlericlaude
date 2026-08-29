@@ -48,11 +48,45 @@ class DashboardController extends Controller
         $latestClaims = FacilityClaim::with('facility')->where('status', 'pending')->latest()->limit(5)->get();
 
         $health = $this->healthSummary();
+        $categoryDemand = $this->categoryDemandSummary();
 
         return view('admin.dashboard', compact(
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
-            'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health'
+            'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health',
+            'categoryDemand'
         ));
+    }
+
+    /**
+     * 29 Agustos 2026: kullanicinin talebi - "kullanicilar hangi kurum
+     * turunu en cok ariyor" sorusuna panelde dogrudan cevap: kurum
+     * turune (bolume) gore GERCEK goruntulenme dagilimi ve yuzdesi.
+     * Harici tahmin degil, platformun kendi verisi.
+     */
+    private function categoryDemandSummary(): array
+    {
+        $rows = Facility::query()
+            ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+            ->whereNull('facilities.deleted_at')
+            ->where('facilities.is_published', true)
+            ->selectRaw('facility_categories.brand_scope, sum(facilities.views_count) as toplam')
+            ->groupBy('facility_categories.brand_scope')
+            ->pluck('toplam', 'brand_scope');
+
+        $bySection = [];
+        foreach ($rows as $scope => $count) {
+            $title = service_section_for_scope($scope)['title'] ?? $scope;
+            $bySection[$title] = ($bySection[$title] ?? 0) + (int) $count;
+        }
+        arsort($bySection);
+
+        $total = array_sum($bySection) ?: 1;
+
+        return collect($bySection)->map(fn ($count, $title) => [
+            'title' => $title,
+            'count' => $count,
+            'percent' => round($count / $total * 100, 1),
+        ])->values()->all();
     }
 
     /**

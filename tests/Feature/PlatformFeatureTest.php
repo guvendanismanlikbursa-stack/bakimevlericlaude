@@ -3199,6 +3199,27 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('yeni kurum kaydı onay bekliyor');
     }
 
+    public function test_admin_dashboard_shows_category_demand_by_real_views(): void
+    {
+        $this->elderlyFacility->update(['views_count' => 300]);
+        $this->childFacility->update(['views_count' => 100]);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin');
+
+        $response->assertOk()->assertSee('Kurum Türüne Göre İlgi');
+        $content = $response->getContent();
+        $this->assertStringContainsString('300 görüntülenme', $content);
+        $this->assertStringContainsString('100 görüntülenme', $content);
+
+        // Yasli bakim (300 goruntulenme) daha fazla ilgi gordugu icin
+        // listede once gelmeli (siralama toplam goruntulenmeye gore).
+        $yasliPos = strpos($content, 'Yaşlı Bakım');
+        $ozelEgitimPos = strpos($content, service_section_for_scope($this->childCategory->brand_scope)['title']);
+        $this->assertNotFalse($yasliPos);
+        $this->assertNotFalse($ozelEgitimPos);
+        $this->assertLessThan($ozelEgitimPos, $yasliPos);
+    }
+
     // 14 Agustos 2026: kullanicinin bildirdigi hata - "kurum ismi yaparak
     // yapilan filtrelemelerde yazilan kelimeler ters yaziliyor, bosluk
     // vermek isteyince satirin basina gidiyor". Kok neden: bu 3 admin
