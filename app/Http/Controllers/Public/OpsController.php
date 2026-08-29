@@ -142,6 +142,7 @@ class OpsController extends Controller
             'menu-image-repair' => $this->menuImageRepair($request),
             'bursa-visit-export' => $this->bursaVisitExport($request),
             'mysql-tmp-diagnostics' => $this->mysqlTmpDiagnostics(),
+            'vacancy-set-default-available' => $this->vacancySetDefaultAvailable(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -3441,6 +3442,37 @@ class OpsController extends Controller
         $out .= "\nOrnek: Created_tmp_disk_tables / Created_tmp_tables orani yuksekse, tmp_table_size/max_heap_table_size kucuk demektir - hosting firmasindan bu ikisini (ör. 64M'ye) artirmasini isteyin, bu /tmp'yi buyutmekten farkli, daha kolay bir taleptir.";
 
         return $out;
+    }
+
+    /**
+     * 29 Agustos 2026: kullanicinin talebi - yeni eklenen kamuya acik
+     * "bos yer" alani (bkz. Facility::usesGenderSplitVacancy()) TUM mevcut
+     * kurumlar icin varsayilan olarak "Var" ile baslasin (bos/belirtilmedi
+     * degil). Yasli bakim kategorilerinde (kogus cinsiyete gore ayrildigi
+     * icin) bay+bayan ikisi de, diger kategorilerde tek genel alan true
+     * yapilir. Soft-delete'li kurumlara dokunulmaz. Idempotent - tekrar
+     * calistirilirsa zaten "Var" olanlari yine "Var" yapar, zarar vermez.
+     */
+    private function vacancySetDefaultAvailable(): string
+    {
+        $genderSplitCategoryIds = DB::table('facility_categories')
+            ->where('brand_scope', 'yasli-bakim')
+            ->pluck('id');
+
+        $genderSplitCount = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->whereIn('facility_category_id', $genderSplitCategoryIds)
+            ->update(['vacancy_male' => true, 'vacancy_female' => true]);
+
+        $generalCount = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($genderSplitCategoryIds) {
+                $q->whereNotIn('facility_category_id', $genderSplitCategoryIds)
+                    ->orWhereNull('facility_category_id');
+            })
+            ->update(['vacancy_general' => true]);
+
+        return "OK: bay/bayan alani 'Var' yapilan yasli bakim kurumu sayisi = {$genderSplitCount}, genel 'Var' yapilan diger kurum sayisi = {$generalCount}";
     }
 
     // 3 Agustos 2026: "her rol panelindeki butun fonksiyonlar eksiksiz
