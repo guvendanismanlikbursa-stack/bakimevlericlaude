@@ -731,7 +731,21 @@
         </script>
       @endif
 
-      @unless($facility->is_claimed)
+      {{-- 31 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
+           bir kurum, sahiplenilmemis olsa bile ZATEN yonetiliyor - "bu
+           kurumun yetkilisi misiniz" sorusu artik anlamsiz/kafa karistirici.
+           Bunun yerine aileye somut bir deger anlatan bir ibare gosterilir:
+           Guven Bakim Hizmetleri'nin bu kurumu secen aileler icin ucretsiz
+           periyodik ziyaret+bilgilendirme taahhudu - claim durumundan
+           BAGIMSIZ (sahiplenilmis olsa bile bu bilgi degerli). --}}
+      @if($facility->is_broker_managed)
+        <div class="mt-6 pt-6 border-t">
+          <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
+            <p class="text-sm font-black text-emerald-800 mb-1">🤝 Bu kurumu seçerseniz</p>
+            <p class="text-sm text-emerald-700">Güven Bakım Hizmetleri, ayda 2 defa sizin adınıza ücretsiz yerinde ziyaret gerçekleştirir ve sizi bilgilendirir.</p>
+          </div>
+        </div>
+      @elseif(! $facility->is_claimed)
         <div class="mt-6 pt-6 border-t">
           <p class="text-sm text-gray-600 mb-2">Bu kurumun yetkilisi misiniz?</p>
           {{-- 28 Agustos 2026: kullanicinin talebi - buton adi daha dogrudan
@@ -741,7 +755,7 @@
                amber zeminli/koyu amber yazili bir stil kullanildi. --}}
           <a href="{{ brand_route('facility-claim.create', ['slug' => $facility->slug]) }}" class="block text-center bg-amber-50 border-2 border-amber-400 text-amber-800 font-black py-2 rounded-lg hover:bg-amber-100 transition">Kurum Size mi Ait?</a>
         </div>
-      @endunless
+      @endif
 
       {{-- 26 Agustos 2026: kullanicinin talebi - is basvurusu butonu SADECE
            sahiplenilmis veya aracilik (is_broker_managed) kurumlarda, VE

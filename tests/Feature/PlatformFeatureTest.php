@@ -2876,6 +2876,30 @@ class PlatformFeatureTest extends TestCase
         $response2->assertOk()->assertDontSee('Öne Çıkan');
     }
 
+    public function test_broker_managed_facility_shows_family_value_message_instead_of_claim_prompt(): void
+    {
+        // 31 Agustos 2026: kullanicinin bildirdigi gercek olay - anlasmali
+        // (is_broker_managed) ama henuz sahiplenilmemis bir kurumda "Bu
+        // kurumun yetkilisi misiniz?" sahiplenme butonu hala gorunuyordu,
+        // anlamsizdi (kurum zaten yonetiliyor). Sahiplenilmemis, anlasmasiz
+        // bir kurumda ESKI davranis (claim butonu) korunmali.
+        $this->assertFalse($this->rehabFacility->is_claimed);
+        $this->assertFalse((bool) $this->rehabFacility->is_broker_managed);
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
+            ->assertOk()
+            ->assertSee('Kurum Size mi Ait?')
+            ->assertDontSee('Bu kurumu seçerseniz');
+
+        // Ayni kurum anlasmali (ama hala sahiplenilmemis) yapilinca claim
+        // butonu KAYBOLMALI, yerine aileye yonelik deger ibaresi cikmali.
+        $this->rehabFacility->update(['is_broker_managed' => true]);
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
+            ->assertOk()
+            ->assertDontSee('Kurum Size mi Ait?')
+            ->assertSee('Bu kurumu seçerseniz')
+            ->assertSee('ayda 2 defa');
+    }
+
     public function test_featured_facility_card_on_homepage_shows_visited_badge_on_all_3_brands(): void
     {
         // 31 Agustos 2026: kullanicinin bildirdigi gercek eksiklik -
