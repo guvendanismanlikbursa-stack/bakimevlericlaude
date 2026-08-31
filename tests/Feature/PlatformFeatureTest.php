@@ -2876,6 +2876,28 @@ class PlatformFeatureTest extends TestCase
         $response2->assertOk()->assertDontSee('Öne Çıkan');
     }
 
+    public function test_featured_facility_card_on_homepage_shows_visited_badge_on_all_3_brands(): void
+    {
+        // 31 Agustos 2026: kullanicinin bildirdigi gercek eksiklik -
+        // "yerinde ziyaret edildi" bilgisi sadece kurum detay sayfasinda
+        // vardi, asil trafigin oldugu ana sayfa "Öne Çıkanlar" kartinda
+        // hic gorunmuyordu. Ayrica bakimevleri temasi digerlerinden daha
+        // kucuk bir kart kullaniyordu (grid-cols-2 + yatay 150px gorsel) -
+        // artik 3 marka da ayni buyuklukte (grid-cols-3, dikey gorsel).
+        $this->rehabFacilityClaimed->update([
+            'is_featured' => true,
+            'is_broker_managed' => true,
+            'site_visited_at' => now(),
+        ]);
+
+        foreach (['bakimevleri', 'bakimeviara', 'bakimevibul'] as $brand) {
+            $response = $this->get("/site/{$brand}/?bolum=rehabilitasyon");
+            $response->assertOk()->assertSee('Yerinde Ziyaret Edildi');
+        }
+
+        $this->assertStringContainsString('md:grid-cols-3', file_get_contents(resource_path('views/themes/bakimevleri/home/_results.blade.php')));
+    }
+
     public function test_featured_facility_own_detail_page_shows_badge(): void
     {
         // 14 Agustos 2026: kullanicinin talebi - "kurum inceleme alaninda
