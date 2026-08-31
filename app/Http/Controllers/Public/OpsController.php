@@ -3647,7 +3647,7 @@ HTML;
 <p>Diyet/beslenme kısıtlaması olan (şekersiz, tuzsuz vb.) sakinler için özel program uygulanıp uygulanmadığını, Alzheimer/demans hastalarına yönelik özel bir yaklaşım olup olmadığını sorun.</p>
 
 <h2>Bursa'da Bakımevi Fiyatları Ne Kadar?</h2>
-<p>Bursa'da özel bakımevi/huzurevi ücretleri oda tipine ve bakım yoğunluğuna göre değişmekle birlikte, genel olarak <strong>tek kişilik odalarda aylık 20.000 TL ile 45.000 TL</strong>, <strong>çift kişilik odalarda kişi başı aylık 15.000 TL ile 35.000 TL</strong> arasında seyrediyor. Yoğun sağlık bakımı gerektiren veya suit/lüks oda seçeneklerinde bu rakam 50.000-100.000 TL bandına kadar çıkabiliyor. Belediyeye bağlı kurumlarda ücretler genellikle özel kurumlara göre daha uygun oluyor.</p>
+<p>Bursa'da özel bakımevi/huzurevi ücretleri oda tipine göre değişiyor. Genel olarak <strong>paylaşımlı (3-4 kişilik) odalarda aylık 40.000 TL ile 50.000 TL</strong>, <strong>iki kişilik odalarda aylık 55.000 TL ile 60.000 TL</strong>, <strong>tek kişilik odalarda ise aylık 70.000 TL ve üzeri</strong> bir aralıkta seyrediyor. Yoğun sağlık bakımı gerektiren veya suit/lüks oda seçeneklerinde ücret daha da yükselebiliyor. Belediyeye bağlı kurumlarda ücretler genellikle özel kurumlara göre daha uygun oluyor.</p>
 <p>Bu rakamlar genel bir fikir vermesi içindir, KDV ve hizmet kapsamına göre değişebilir — kesin ve güncel rakam için kurumla doğrudan iletişime geçmenizi ya da platformumuz üzerinden ücretsiz teklif talep etmenizi öneririz.</p>
 
 <h2>Devlet mi, Özel mi?</h2>
