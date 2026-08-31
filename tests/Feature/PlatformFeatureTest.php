@@ -2884,9 +2884,16 @@ class PlatformFeatureTest extends TestCase
         // hic gorunmuyordu. Ayrica bakimevleri temasi digerlerinden daha
         // kucuk bir kart kullaniyordu (grid-cols-2 + yatay 150px gorsel) -
         // artik 3 marka da ayni buyuklukte (grid-cols-3, dikey gorsel).
+        // 31 Agustos 2026: kullanicinin bildirdigi gercek olay - "HepBahar
+        // Huzurevi" henuz anlasmali (is_broker_managed) isaretlenmemis,
+        // ON KAYITLI/sahiplenilmemis bir kurumdu ama yerinde ziyaret
+        // edilip isaretlenmisti - rozet YANLISLIKLA is_broker_managed
+        // sartina da bagliydi, bu yuzden hic gorunmuyordu. Bilerek
+        // is_broker_managed=false, is_claimed=false birakiliyor.
         $this->rehabFacilityClaimed->update([
             'is_featured' => true,
-            'is_broker_managed' => true,
+            'is_broker_managed' => false,
+            'is_claimed' => false,
             'site_visited_at' => now(),
         ]);
 

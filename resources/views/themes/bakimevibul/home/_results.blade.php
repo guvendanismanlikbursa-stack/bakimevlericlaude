@@ -67,7 +67,7 @@
         <div class="h-40 flex items-center justify-center overflow-hidden" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
         <div class="p-4">
           {{-- 31 Agustos 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum. --}}
-          @if($facility->is_broker_managed && $facility->site_visited_at)
+          @if($facility->site_visited_at)
             <span class="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 mb-1.5">🤝 Yerinde Ziyaret Edildi</span>
           @endif
           <h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p><div class="flex justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-bold">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div></div>

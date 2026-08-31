@@ -64,7 +64,7 @@
           <div class="flex items-center justify-between gap-2 mb-2">
             <div class="text-xs font-bold" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div>
             {{-- 31 Agustos 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum. --}}
-            @if($facility->is_broker_managed && $facility->site_visited_at)
+            @if($facility->site_visited_at)
               <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 whitespace-nowrap">🤝 Yerinde Ziyaret Edildi</span>
             @endif
           </div>

@@ -63,7 +63,7 @@
            ekip tarafindan YERINDE ziyaret edildigini durust bir sekilde
            gostermek. SADECE gercekten isaretlenmisse (bkz. Facility::
            site_visited_at, Admin\FacilityController) - bos bir vaat degil. --}}
-      @if($facility->is_broker_managed && $facility->site_visited_at)
+      @if($facility->site_visited_at)
         <span class="bg-emerald-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">🤝 Yerinde Ziyaret Edildi</span>
       @endif
       @if($facility->hasFastResponseBadge())
@@ -91,7 +91,7 @@
       @if($facility->is_featured)
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
-      @if($facility->is_broker_managed && $facility->site_visited_at)
+      @if($facility->site_visited_at)
         <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded-full">🤝 Yerinde Ziyaret Edildi</span>
       @endif
       @if($facility->hasFastResponseBadge())
@@ -183,7 +183,7 @@
       </div>
       <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
         <div class="text-sm font-black text-gray-500">Güven sinyali</div>
-        @if($facility->is_broker_managed && $facility->site_visited_at)
+        @if($facility->site_visited_at)
           <div class="text-lg font-black text-emerald-700 mt-2">Ekibimizce ziyaret edildi</div>
         @else
           <div class="text-lg font-black text-gray-950 mt-2">{{ $facility->is_claimed ? 'Onaylı kurum' : 'Profil doğrulama bekliyor' }}</div>
@@ -626,7 +626,7 @@
              ziyaret edilmisse (site_visited_at) gorunur, "biz her kurumu
              taniyoruz" gibi genel/asilsiz bir vaat degil. Satis dili degil,
              sakin ve bilgilendirici - unlem/vurgu/aciliyet kelimesi yok. --}}
-        @if($facility->is_broker_managed && $facility->site_visited_at)
+        @if($facility->site_visited_at)
           <p class="text-xs text-gray-500 mb-4">Bu kurumu ekibimiz yerinde ziyaret etti ve yakından tanıyor. Sorularınızı gerçek bilgiyle yanıtlarız.</p>
         @else
           <div class="mb-4"></div>
