@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -144,6 +144,7 @@ class OpsController extends Controller
             'mysql-tmp-diagnostics' => $this->mysqlTmpDiagnostics(),
             'vacancy-set-default-available' => $this->vacancySetDefaultAvailable(),
             'category-demand-stats' => $this->categoryDemandStats(),
+            'seed-bursa-kres-rehberi' => $this->seedBursaKresRehberi(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -3519,6 +3520,86 @@ class OpsController extends Controller
         }
 
         return $out;
+    }
+
+    /**
+     * 31 Agustos 2026: kullanicinin talebi - "bursa anaokulu/kres" icin
+     * SEO degeri yuksek bir rehber makalesi. Bir rakip sitenin (bursaanaokullari.com.tr)
+     * icerik YAPISINDAN (baslik sirasi, konu basliklari) ilham alindi ama
+     * metin BIREBIR KOPYALANMADI - kendi cumlelerimizle, kendi ic
+     * linklerimizle (kurumlar/rehber sayfalarina) yeniden yazildi. Idempotent -
+     * ayni brand+slug'a tekrar cagrilirsa GuideController zaten ContentPage'i
+     * gunceller (updateOrCreate benzeri), yeni satir olusturmaz.
+     */
+    private function seedBursaKresRehberi(): string
+    {
+        $body = <<<'HTML'
+<p>Bursa'da çocuğunuz için kreş veya anaokulu ararken karşınıza onlarca seçenek çıkabilir — hangi ilçede, ne tür bir programda, hangi bütçeyle karar vereceğinizi netleştirmek zaman alabilir. Bu rehberde Bursa'da kreş/anaokulu seçerken dikkat etmeniz gereken noktaları ve ilçe ilçe nasıl arama yapabileceğinizi anlatıyoruz.</p>
+
+<h2>Bursa'da Kreş ve Anaokulu Seçenekleri</h2>
+<p>Bursa; Nilüfer, Osmangazi, Yıldırım gibi büyük ilçelerden Gemlik, İnegöl, Mudanya, Gürsu ve Kestel gibi ilçelere kadar geniş bir alanda yüzlerce kreş, gündüz bakımevi ve anaokulu barındırıyor. Genel olarak üç ana seçenekle karşılaşırsınız:</p>
+<ul>
+  <li><strong>Kreş / gündüz bakımevi:</strong> Genellikle 0-3 yaş arası çocuklara, çalışan ebeveynlerin tam gün ihtiyacına yönelik hizmet verir.</li>
+  <li><strong>Anaokulu:</strong> Genellikle 3-6 yaş arası, okul öncesi eğitime daha çok ağırlık veren kurumlar.</li>
+  <li><strong>Özel eğitim ve gelişim destekli kurumlar:</strong> Gelişimsel destek ihtiyacı olan çocuklar için ek programlar sunan merkezler.</li>
+</ul>
+
+<h2>Tam Gün mü, Yarım Gün mü?</h2>
+<p>Bu tercih büyük ölçüde ailenin çalışma düzenine bağlıdır.</p>
+<h3>Tam gün kimler için uygun?</h3>
+<p>Her iki ebeveyn de tam zamanlı çalışıyorsa, ya da çocuğun düzenli bir günlük rutine (yemek, uyku, oyun, eğitim) ihtiyacı varsa tam gün program genelde daha pratik bir çözüm olur.</p>
+<h3>Yarım gün kimler için uygun?</h3>
+<p>Evde bakım desteği olan, ya da çocuğunu sadece belirli saatlerde sosyalleşme/eğitim amacıyla göndermek isteyen aileler için yarım gün programlar hem bütçe hem uyum açısından daha esnek olabilir.</p>
+
+<h2>Bursa'da İlçe İlçe Kreş ve Anaokulu Arama</h2>
+<p>Bursa'nın büyük ilçelerinde kayıtlı kreş ve anaokullarını, güncel iletişim bilgileri ve hizmet detaylarıyla birlikte aşağıdaki sayfalardan inceleyebilirsiniz:</p>
+<ul>
+  <li><a href="/rehber/cocuk/bursa/nilufer">Nilüfer kreş ve anaokulları</a></li>
+  <li><a href="/rehber/cocuk/bursa/osmangazi">Osmangazi kreş ve anaokulları</a></li>
+  <li><a href="/rehber/cocuk/bursa/yildirim">Yıldırım kreş ve anaokulları</a></li>
+  <li><a href="/rehber/cocuk/bursa/gemlik">Gemlik kreş ve anaokulları</a></li>
+  <li><a href="/rehber/cocuk/bursa/inegol">İnegöl kreş ve anaokulları</a></li>
+  <li><a href="/rehber/cocuk/bursa/mudanya">Mudanya kreş ve anaokulları</a></li>
+  <li><a href="/rehber/cocuk/bursa/gursu">Gürsu kreş ve anaokulları</a></li>
+  <li><a href="/rehber/cocuk/bursa/kestel">Kestel kreş ve anaokulları</a></li>
+</ul>
+<p>Bu sayfalarda kurumları filtreleyebilir, karşılaştırabilir ve doğrudan ücret/kontenjan bilgisi talep edebilirsiniz.</p>
+
+<h2>Kreş Seçerken Nelere Dikkat Edilmeli?</h2>
+<h3>Eğitim ve gelişim programı</h3>
+<p>Kurumun hangi eğitim yaklaşımını (Montessori, MEB müfredatı destekli, karma program vb.) uyguladığını, sınıf başına düşen çocuk sayısını ve rehberlik/psikolog desteği olup olmadığını sorun.</p>
+<h3>Fiziki imkanlar ve güvenlik</h3>
+<p>Oyun alanı, güvenlik önlemleri (giriş-çıkış kontrolü, kamera sistemi), hijyen koşulları ve bina/oda düzeni yerinde görülmeden karar vermemekte fayda var.</p>
+<h3>Ulaşım ve servis</h3>
+<p>Servis hizmeti olup olmadığını, hangi güzergahları kapsadığını mutlaka önceden netleştirin — özellikle iş yerine uzak bir kreş tercih ediyorsanız bu kritik bir kriter.</p>
+<h3>Yemek ve uyku düzeni</h3>
+<p>Günlük beslenme programını, özel diyet ihtiyaçlarına (alerji vb.) uyum sağlanıp sağlanmadığını ve uyku/dinlenme düzenini sorun.</p>
+<h3>Fiyat ve ek ücretler</h3>
+<p>Bursa'da kreş/anaokulu aylık ücretleri kuruma, ilçeye ve programa (tam gün/yarım gün) göre değişmekle birlikte, genel olarak aylık <strong>15.000 TL ile 38.000 TL</strong> arasında bir aralıkta seyrediyor. Yaş grubuna göre de fark oluşabiliyor — daha küçük yaş grupları (bebek/kreş dönemi) genellikle daha yüksek bakım oranı gerektirdiği için üst sınıra daha yakın fiyatlanabiliyor.</p>
+<p>Aylık ücrete ek olarak servis, yemek, materyal gibi kalemlerin ayrı faturalandırılıp faturalandırılmadığını baştan netleştirmek, ileride sürpriz yaşamamak için önemlidir. Bu rakamlar genel bir fikir vermesi içindir — kesin ve güncel rakam için kurumla doğrudan iletişime geçmenizi ya da platformumuz üzerinden ücretsiz teklif talep etmenizi öneririz.</p>
+
+<h2>Devlet mi, Özel mi?</h2>
+<p>Devlet/belediye bünyesindeki anaokulları genellikle daha uygun maliyetlidir ancak kontenjanları sınırlıdır ve bekleme listesi olabilir. Özel kreş/anaokullarda ise kontenjan bulma ihtimali daha yüksek, program çeşitliliği (yabancı dil, sanat atölyeleri, yüzme vb.) daha geniş olabilir; karşılığında ücretler de değişkenlik gösterir. Hangisinin ailenize uygun olduğu; bütçe, konum ve çocuğunuzun ihtiyaçlarına göre değişir.</p>
+
+<h2>Sıkça Sorulan Sorular</h2>
+<p><strong>Kaç aylık/yaşındaki çocuklar kreşe başlayabilir?</strong><br>Çoğu kreş 0-1 yaş arası bebekleri de kabul edebiliyor, anaokulları genelde 3 yaş ve üzeri çocuklara yönelik. Kesin yaş aralığı kurumdan kuruma değişir.</p>
+<p><strong>Kayıt için hangi belgeler istenir?</strong><br>Genellikle kimlik fotokopisi, sağlık raporu/aşı kartı ve fotoğraf istenir; kuruma göre ek belgeler de talep edilebilir.</p>
+<p><strong>Deneme günü/ziyaret imkanı var mı?</strong><br>Çoğu kurum kayıt öncesi yerinde ziyarete ve bazen bir deneme gününe açıktır — karar vermeden önce mutlaka sormanızı öneririz.</p>
+
+<p>Bursa'daki kreş ve anaokullarını ilçe, hizmet türü ve bütçenize göre karşılaştırmak, doğru ücret bilgisini almak için <a href="/kurumlar">kurumlar sayfamızdan</a> arama yapabilir veya ilgilendiğiniz kurumdan doğrudan ücretsiz teklif isteyebilirsiniz.</p>
+HTML;
+
+        $page = \App\Models\ContentPage::updateOrCreate(
+            ['brand' => 'bakimevibul', 'slug' => 'cocuk-bursa-kres-anaokulu-rehberi'],
+            [
+                'type' => 'guide',
+                'title' => 'Bursa Kreş ve Anaokulu Rehberi',
+                'summary' => 'Bursa\'da kreş ve anaokulu seçerken dikkat edilmesi gerekenler, ilçe ilçe arama ve genel fiyat bilgisi.',
+                'body' => $body,
+            ]
+        );
+
+        return "OK: sayfa kaydedildi/guncellendi -> id={$page->id}, brand=bakimevibul, slug=cocuk-bursa-kres-anaokulu-rehberi";
     }
 
     // 3 Agustos 2026: "her rol panelindeki butun fonksiyonlar eksiksiz
