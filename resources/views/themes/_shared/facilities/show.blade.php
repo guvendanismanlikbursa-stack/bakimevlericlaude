@@ -619,6 +619,20 @@
 
   <div>
     <div id="teklif-talebi" class="bg-white p-6 rounded-xl shadow-sm sticky top-24 border border-gray-100">
+      {{-- 31 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
+           bir kurum, sahiplenilmemis olsa bile ZATEN yonetiliyor - "bu
+           kurumun yetkilisi misiniz" sorusu artik anlamsiz/kafa karistirici.
+           Bunun yerine aileye somut bir deger anlatan bir ibare gosterilir.
+           Claim durumundan BAGIMSIZ (sahiplenilmis olsa bile bu bilgi
+           degerli), ve kullanicinin ikinci talebi uzerine kutunun ustune,
+           en dikkat cekici konuma tasindi + daha belirgin (sari) renk
+           verildi - once soluk yesil zeminde secilmiyordu. --}}
+      @if($facility->is_broker_managed)
+        <div class="rounded-lg bg-amber-100 border-2 border-amber-300 p-4 mb-6">
+          <p class="text-sm font-black text-amber-900 mb-1">🤝 Bu kurumu seçerseniz</p>
+          <p class="text-sm text-amber-800">Güven Bakım Hizmetleri, ayda 2 defa sizin adınıza ücretsiz yerinde ziyaret gerçekleştirir ve sizi bilgilendirir.</p>
+        </div>
+      @endif
       @if($facility->is_claimed)
         <h3 class="font-black mb-1 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
         {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumlarda daha
@@ -731,21 +745,7 @@
         </script>
       @endif
 
-      {{-- 31 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
-           bir kurum, sahiplenilmemis olsa bile ZATEN yonetiliyor - "bu
-           kurumun yetkilisi misiniz" sorusu artik anlamsiz/kafa karistirici.
-           Bunun yerine aileye somut bir deger anlatan bir ibare gosterilir:
-           Guven Bakim Hizmetleri'nin bu kurumu secen aileler icin ucretsiz
-           periyodik ziyaret+bilgilendirme taahhudu - claim durumundan
-           BAGIMSIZ (sahiplenilmis olsa bile bu bilgi degerli). --}}
-      @if($facility->is_broker_managed)
-        <div class="mt-6 pt-6 border-t">
-          <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
-            <p class="text-sm font-black text-emerald-800 mb-1">🤝 Bu kurumu seçerseniz</p>
-            <p class="text-sm text-emerald-700">Güven Bakım Hizmetleri, ayda 2 defa sizin adınıza ücretsiz yerinde ziyaret gerçekleştirir ve sizi bilgilendirir.</p>
-          </div>
-        </div>
-      @elseif(! $facility->is_claimed)
+      @if(! $facility->is_claimed && ! $facility->is_broker_managed)
         <div class="mt-6 pt-6 border-t">
           <p class="text-sm text-gray-600 mb-2">Bu kurumun yetkilisi misiniz?</p>
           {{-- 28 Agustos 2026: kullanicinin talebi - buton adi daha dogrudan
