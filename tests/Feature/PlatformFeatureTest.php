@@ -262,6 +262,40 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('/site/bakimeviara/kurum-panel/sifre-degistir', false);
     }
 
+    public function test_facility_panel_shows_all_missing_fields_without_truncation(): void
+    {
+        // 31 Agustos 2026: kullanicinin talebi - "butun eksik alanlari
+        // gostermelisin butun kurum panellerinde". Eskiden profil sayfasi
+        // ilk 6, dashboard ilk 3 eksik alani gosterip gerisini "ve N eksik
+        // daha" diye kirpiyordu. Kasitli olarak COK eksik birakilmis bir
+        // kurumla (7'den fazla eksik alan) hicbirinin kirpilmadigini dogrular.
+        $minimalFacility = Facility::create([
+            'name' => 'Minimal Rehab Kurum', 'slug' => 'minimal-rehab-kurum',
+            'city_id' => $this->city->id, 'facility_category_id' => $this->rehabCategory->id,
+            'is_published' => true, 'is_claimed' => false, 'balance' => 0,
+        ]);
+        $minimalUser = FacilityUser::create([
+            'facility_id' => $minimalFacility->id, 'name' => 'Minimal Yetkili',
+            'email' => 'minimal-yetkili@test.local', 'phone' => '05550001122',
+            'password' => Hash::make('Kurum12345!'), 'must_change_password' => false,
+            'status' => 'active', 'email_verified_at' => now(),
+        ]);
+
+        $expectedMissing = ['Ilce bilgisi', 'Acik adres', 'Telefon', 'Detayli aciklama', 'Kapasite', 'Fiyat araligi', 'Hizmet/ozellik secimi', 'Galeri gorselleri', 'Yetkili dogrulamasi'];
+        $this->assertGreaterThan(6, count($expectedMissing), 'Bu test icin en az 7 eksik alan gerekiyor.');
+
+        $dashboard = $this->withSession(['facility_user_id' => $minimalUser->id])
+            ->get('/site/bakimevleri/kurum-panel/panel')->assertOk()->getContent();
+        $profile = $this->withSession(['facility_user_id' => $minimalUser->id])
+            ->get('/site/bakimevleri/kurum-panel/profil')->assertOk()->getContent();
+
+        foreach ($expectedMissing as $label) {
+            $this->assertStringContainsString($label, $dashboard, "\"{$label}\" dashboard'da gorunmuyor (kirpilmis olabilir).");
+            $this->assertStringContainsString($label, $profile, "\"{$label}\" profil sayfasinda gorunmuyor (kirpilmis olabilir).");
+        }
+        $this->assertStringNotContainsString('eksik daha', $dashboard);
+    }
+
     public function test_each_site_accepts_all_three_main_service_sections(): void
     {
         $this->get('/site/bakimevibul/?bolum=yasli-bakim')
@@ -948,6 +982,21 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('3-6 yaş', $details['yas-araligi']);
         $this->assertSame('12 öğrenci', $details['sinif-mevcudu']);
         $this->assertSame('Montessori destekli karma program', $details['egitim-programi']);
+
+        // 31 Agustos 2026: kullanicinin talebi - "bos dahi olsa BUTUN
+        // ozellik ve alanlari kullanicilar gorsun". Kurum 8 ozellikten
+        // sadece 3'unu, 6 detay alanindan sadece 3'unu doldurdu - genel
+        // sayfada YINE DE hepsinin ETIKETI gorunmeli (doldurulmayanlar
+        // "Belirtilmedi"/soluk isaretle), gizlenmemeli.
+        $response = $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)->assertOk();
+        $content = $response->getContent();
+        foreach (['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı'] as $feature) {
+            $this->assertStringContainsString($feature, $content, "\"{$feature}\" ozelligi (isaretlenmemis olsa da) sayfada gorunmuyor.");
+        }
+        foreach (['Yaş aralığı', 'Sınıf mevcudu', 'Eğitim programı', 'Rehberlik/psikolog', 'Servis güzergahı', 'Yemek/uyku düzeni'] as $label) {
+            $this->assertStringContainsString($label, $content, "\"{$label}\" detay alani sayfada gorunmuyor.");
+        }
+        $this->assertStringContainsString('Belirtilmedi', $content);
     }
 
     public function test_facility_can_update_general_vacancy_status_and_it_shows_publicly(): void

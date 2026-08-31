@@ -191,7 +191,7 @@ class FacilityController extends Controller
 
         $facility = (clone $baseQuery)
             ->where('slug', $slug)
-            ->with(['city', 'category', 'images', 'approvedReviews', 'answeredQuestions', 'roomTypes', 'ageGroups', 'programTypes'])
+            ->with(['city', 'category', 'images', 'approvedReviews', 'answeredQuestions', 'roomTypes', 'ageGroups', 'programTypes', 'elderlyDetail', 'childDetail', 'rehabDetail'])
             ->withAvg('approvedReviews', 'rating')
             ->first();
 

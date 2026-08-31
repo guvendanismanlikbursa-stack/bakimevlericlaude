@@ -32,7 +32,7 @@
     </div>
     @if($profileQuality['missing'])
       <div class="mt-4 flex flex-wrap gap-2">
-        @foreach(array_slice($profileQuality['missing'], 0, 6) as $missing)
+        @foreach($profileQuality['missing'] as $missing)
           <span class="rounded-full bg-amber-50 text-amber-700 px-3 py-1 text-xs font-semibold">{{ $missing }}</span>
         @endforeach
       </div>

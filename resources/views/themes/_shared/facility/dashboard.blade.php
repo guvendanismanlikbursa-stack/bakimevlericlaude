@@ -8,7 +8,6 @@
     'declined' => 'Reddedildi',
   ];
   $profileQuality = $facility->profileQuality();
-  $missingExtraCount = max(0, count($profileQuality['missing']) - 3);
 @endphp
 
 @php $primary = current_brand()['primary_color']; @endphp
@@ -44,7 +43,7 @@
           <div class="text-sm font-black text-amber-800">Profiliniz %{{ $profileQuality['score'] }} tamamlandı</div>
           <p class="text-sm text-amber-700 mt-1">
             Tam profil daha fazla ziyaretçi güveni ve daha çok teklif talebi demektir. Eksik:
-            <strong>{{ implode(', ', array_slice($profileQuality['missing'], 0, 3)) }}</strong>{{ $missingExtraCount > 0 ? ' ve '.$missingExtraCount.' eksik daha' : '' }}.
+            <strong>{{ implode(', ', $profileQuality['missing']) }}</strong>.
           </p>
         </div>
         <div class="w-full sm:w-48 shrink-0">

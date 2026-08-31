@@ -424,11 +424,38 @@
     </div>
     @endif
 
-    <div class="flex gap-2 flex-wrap mt-5">
-      @foreach($facility->services ?? [] as $service)
-        <span class="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full">{{ $service }}</span>
-      @endforeach
-    </div>
+    {{-- 31 Agustos 2026: kullanicinin talebi - "kurum kartlarinda bazi
+         ozellikler yazmadan kullanicilar goremiyor, bos dahi olsa BUTUN
+         ozellik ve alanlari kullanicilar gorsun". Eskiden SADECE kurumun
+         isaretledigi ozellikler (varsa) rozet olarak goruluyordu, hicbiri
+         isaretlenmemisse bolum tamamen kayboluyordu. Artik bolumun TUM
+         olasi ozellikleri (config/brands.php service_sections.*.features)
+         her zaman listelenir, kurumda VARSA vurgulu/isaretli, YOKSA soluk
+         gorunur - "hicbir sey girilmemis" ile "hicbir ozelligi yok" farki
+         artik gorunur, bilgi eksikligi gizlenmiyor. --}}
+    @if(!empty($section['features']))
+      <div class="mt-5">
+        <div class="text-sm font-black text-gray-950 mb-2">{{ $section['title'] ?? 'Kurum' }} Özellikleri</div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          @foreach($section['features'] as $feature)
+            @php $hasFeature = in_array($feature, $facility->services ?? [], true); @endphp
+            <div class="flex items-center gap-2 text-xs px-3 py-2 rounded-lg border {{ $hasFeature ? 'bg-green-50 border-green-200 text-green-800 font-semibold' : 'bg-gray-50 border-gray-100 text-gray-400' }}">
+              <span>{{ $hasFeature ? '✓' : '—' }}</span>
+              <span>{{ $feature }}</span>
+            </div>
+          @endforeach
+        </div>
+      </div>
+    @endif
+
+    @php $extraServices = collect($facility->services ?? [])->diff($section['features'] ?? []); @endphp
+    @if($extraServices->isNotEmpty())
+      <div class="flex gap-2 flex-wrap mt-3">
+        @foreach($extraServices as $service)
+          <span class="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full">{{ $service }}</span>
+        @endforeach
+      </div>
+    @endif
 
     <p class="mt-6 text-gray-700 leading-relaxed">{{ $facility->description }}</p>
 
@@ -472,6 +499,39 @@
             <div class="font-black {{ $facility->vacancy_general ? 'text-green-700' : 'text-red-600' }}">{{ $facility->vacancy_general ? 'Var' : 'Yok' }}</div>
           </div>
         @endif
+      </div>
+    @endif
+
+    {{-- 31 Agustos 2026: kullanicinin talebi - bkz. yukaridaki "Ozellikleri"
+         blogundaki ayni tarihli yorum. Kuruma-ozel detay alanlari (Oda
+         tipleri, Hemsire destegi, Yas araligi vb. - config/brands.php
+         service_sections.*.profile_fields) daha once ADMIN/kurum panelinde
+         doldurulsa bile genel kurum sayfasinda HIC GORUNMUYORDU. Artik
+         hepsi listelenir, doldurulmamissa "Belirtilmedi" yazar. --}}
+    @php
+      $sectionDetailRecord = match($sectionSlug) {
+        'yasli-bakim' => $facility->elderlyDetail,
+        'cocuk' => $facility->childDetail,
+        'rehabilitasyon' => $facility->rehabDetail,
+        default => null,
+      };
+      $sectionDetailValues = $sectionDetailRecord->details ?? [];
+      $sectionDetailFieldList = collect($section['profile_fields'] ?? [])->map(fn ($label) => [
+        'key' => \Illuminate\Support\Str::slug($label),
+        'label' => $label,
+      ]);
+    @endphp
+    @if($sectionDetailFieldList->isNotEmpty())
+      <div class="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div class="text-sm font-black mb-3" style="color: {{ $colors['primary'] }};">{{ $section['title'] ?? 'Kurum' }} Detayları</div>
+        <div class="grid sm:grid-cols-2 gap-3 text-sm">
+          @foreach($sectionDetailFieldList as $field)
+            <div>
+              <div class="text-gray-500">{{ $field['label'] }}</div>
+              <div class="font-semibold text-gray-950">{{ $sectionDetailValues[$field['key']] ?? 'Belirtilmedi' }}</div>
+            </div>
+          @endforeach
+        </div>
       </div>
     @endif
 
