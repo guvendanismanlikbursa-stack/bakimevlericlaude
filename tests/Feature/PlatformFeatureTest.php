@@ -2900,6 +2900,40 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('ayda 2 defa');
     }
 
+    public function test_broker_managed_facility_contact_buttons_go_to_platform_number_not_facility(): void
+    {
+        // 31 Agustos 2026: kullanicinin bildirdigi gercek hata - anlasmali
+        // (is_broker_managed) bir kurumun genel sayfasindaki "Kurumu Ara"/
+        // "WhatsApp'tan Yaz" butonlari HALA kurumun kendi numarasina,
+        // WhatsApp'ta ise kuruma hitap eden sahiplenme davet metniyle
+        // gidiyordu (bir aile o metni goruyordu). Anlasmali kurumlarda
+        // artik Guven Bakim Hizmetleri'nin numarasina (Setting
+        // 'whatsapp_number', varsayilan 908503087991) ve aile-hitapli
+        // normal bir mesajla gitmeli.
+        $this->rehabFacility->update([
+            'is_broker_managed' => true,
+            'is_claimed' => false,
+            'phone' => '05551112233',
+        ]);
+
+        $response = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)->assertOk();
+
+        $response->assertDontSee('tel:05551112233', false);
+        $response->assertDontSee('wa.me/905551112233', false);
+        $response->assertSee('tel:+908503087991', false);
+        $response->assertSee('wa.me/908503087991', false);
+        $response->assertDontSee('şu ana kadar');
+
+        // Anlasmasiz (normal) sahiplenilmemis bir kurumda ESKI davranis
+        // (kurumun kendi numarasi) korunmali, sadece davet metni yerine
+        // aileye uygun bir mesaj gelmeli.
+        $this->rehabFacility->update(['is_broker_managed' => false]);
+        $response = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)->assertOk();
+        $response->assertSee('tel:05551112233', false);
+        $response->assertSee('wa.me/905551112233', false);
+        $response->assertDontSee('şu ana kadar');
+    }
+
     public function test_featured_facility_card_on_homepage_shows_visited_badge_on_all_3_brands(): void
     {
         // 31 Agustos 2026: kullanicinin bildirdigi gercek eksiklik -

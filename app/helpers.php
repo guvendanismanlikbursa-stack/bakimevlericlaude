@@ -755,6 +755,63 @@ if (! function_exists('facility_whatsapp_url')) {
     }
 }
 
+if (! function_exists('facility_public_contact_phone')) {
+    /**
+     * 31 Agustos 2026: kullanicinin bildirdigi gercek hata - anlasmali
+     * (is_broker_managed) bir kurumun genel sayfasindaki "Kurumu Ara" /
+     * "WhatsApp'tan Yaz" butonlari HALA kurumun KENDI numarasina
+     * gidiyordu. Oysa notify_facility_or_broker_admins()'te (bkz. o
+     * fonksiyonun yorumu, 27 Agustos 2026) zaten kurulu kural aynen
+     * gecerli: anlasmali kurumlarda TUM aile temaslari kurumun kendisine
+     * degil Guven Bakim Hizmetleri'ne gitmeli. Numaranin tek kaynagi,
+     * platform genelinde zaten yuzen WhatsApp widget'i icin admin
+     * ayarlarindan yonetilen Setting('whatsapp_number') - ikinci bir
+     * numara alani acmaya gerek yok.
+     */
+    function facility_public_contact_phone(\App\Models\Facility $facility): ?string
+    {
+        if (! $facility->is_broker_managed) {
+            return $facility->phone;
+        }
+
+        $digits = \App\Models\Setting::get('whatsapp_number', config('platform.default_whatsapp.number'));
+
+        return $digits ? '+'.$digits : null;
+    }
+}
+
+if (! function_exists('facility_public_whatsapp_url')) {
+    /**
+     * 31 Agustos 2026: kullanicinin bildirdigi gercek hata - bu buton
+     * AILEYE gosterildigi halde facility_whatsapp_url() kullaniliyordu,
+     * o ise ADMIN'in kuruma "profilinizi sahiplenin" davet mesaji
+     * gondermesi icin yazilmis (bkz. Admin\FacilityInvitationController).
+     * Sonuc: bir aile butona tiklayinca -kuruma hitap eden- sahiplenme
+     * davet metni aciliyordu, hem de (anlasmali kurumlarda) yanlis
+     * numaraya. Aileye ait normal bir bilgi-talebi metniyle ayrildi, ve
+     * anlasmali kurumlarda facility_public_contact_phone() ile ayni
+     * kurala (Guven Bakim numarasi) uyuyor.
+     */
+    function facility_public_whatsapp_url(\App\Models\Facility $facility): ?string
+    {
+        $message = 'Merhaba, '.$facility->name.' hakkında bilgi almak istiyorum.';
+
+        if ($facility->is_broker_managed) {
+            $digits = \App\Models\Setting::get('whatsapp_number', config('platform.default_whatsapp.number'));
+
+            return $digits ? 'https://wa.me/'.$digits.'?text='.rawurlencode($message) : null;
+        }
+
+        if (classify_phone_type($facility->phone) !== 'mobile') {
+            return null;
+        }
+
+        $digits = normalize_whatsapp_number($facility->phone);
+
+        return 'https://wa.me/'.$digits.'?text='.rawurlencode($message);
+    }
+}
+
 if (! function_exists('facility_login_brand_slug')) {
     /**
      * 25 Agustos 2026: kullanicinin bildirdigi gercek hata - sifre

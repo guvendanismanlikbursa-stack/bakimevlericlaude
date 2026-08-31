@@ -670,7 +670,11 @@
           <button class="btn-primary w-full py-2 rounded-lg font-black">Ücret Bilgisi İste</button>
           <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
         </form>
-        @if($facility->phone)<div class="mt-4 text-sm text-gray-600">Telefon: {{ $facility->phone }}</div>@endif
+        {{-- 31 Agustos 2026: kullanicinin bildirdigi gercek hata - burada
+             anlasmali kurumlarda bile HALA kurumun kendi ham numarasi
+             yaziyordu, facility_public_contact_phone() ayni kurali
+             (anlasmaliysa Guven Bakim numarasi) burada da uygular. --}}
+        @if($contactPhoneClaimed = facility_public_contact_phone($facility))<div class="mt-4 text-sm text-gray-600">Telefon: {{ $contactPhoneClaimed }}</div>@endif
 
 
         <div class="mt-6 pt-6 border-t">
@@ -725,10 +729,16 @@
              Tiklamalar Facility::engagementStats30d() icin kaydedilir -
              kurum sahiplenmeye tesvik edilirken gercek talep kanitina
              donusur (bkz. yukaridaki Kurum Performansi karti). --}}
-        @if($facility->phone)
-          <a href="tel:{{ $facility->phone }}" data-contact-track="phone_click" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mb-2" style="background: {{ $colors['primary'] }};">📞 Kurumu Ara</a>
+        {{-- 31 Agustos 2026: kullanicinin bildirdigi gercek hata - bu 2 buton
+             ailelere gosterildigi halde kurumun KENDI numarasina ve
+             (WhatsApp'ta) kuruma hitap eden sahiplenme davet metnine
+             gidiyordu. facility_public_contact_phone()/facility_public_whatsapp_url()
+             anlasmali (is_broker_managed) kurumlarda Guven Bakim
+             numarasina yonlendirir, aile-hitapli normal bir mesaj kullanir. --}}
+        @if($contactPhoneUnclaimed = facility_public_contact_phone($facility))
+          <a href="tel:{{ $contactPhoneUnclaimed }}" data-contact-track="phone_click" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mb-2" style="background: {{ $colors['primary'] }};">📞 Kurumu Ara</a>
         @endif
-        @if($facilityWhatsappUrl = facility_whatsapp_url($facility))
+        @if($facilityWhatsappUrl = facility_public_whatsapp_url($facility))
           <a href="{{ $facilityWhatsappUrl }}" target="_blank" rel="noopener" data-contact-track="whatsapp_click" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-center border-2" style="border-color:#25D366; color:#128C4A;">💬 WhatsApp'tan Yaz</a>
         @endif
         <script>
