@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -145,6 +145,8 @@ class OpsController extends Controller
             'vacancy-set-default-available' => $this->vacancySetDefaultAvailable(),
             'category-demand-stats' => $this->categoryDemandStats(),
             'seed-bursa-kres-rehberi' => $this->seedBursaKresRehberi(),
+            'seed-bursa-bakimevi-rehberi' => $this->seedBursaBakimeviRehberi(),
+            'seed-bursa-rehabilitasyon-rehberi' => $this->seedBursaRehabilitasyonRehberi(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -3600,6 +3602,147 @@ HTML;
         );
 
         return "OK: sayfa kaydedildi/guncellendi -> id={$page->id}, brand=bakimevibul, slug=cocuk-bursa-kres-anaokulu-rehberi";
+    }
+
+    /**
+     * 31 Agustos 2026: kullanicinin talebi - seedBursaKresRehberi() ile
+     * AYNI desen, yasli bakim bolumu icin. Fiyat bilgisi Bursa'ya OZEL
+     * kaynaklardan alindi (resmi il muduru ucret tablosu Manisa cikti,
+     * KULLANILMADI - sadece gercekten Bursa'ya ait rakamlar kullanildi).
+     */
+    private function seedBursaBakimeviRehberi(): string
+    {
+        $body = <<<'HTML'
+<p>Bir aile üyesi için Bursa'da bakımevi veya huzurevi ararken; oda tipi, hizmet kapsamı, konum ve fiyat gibi pek çok kriteri aynı anda değerlendirmeniz gerekir. Bu rehberde Bursa'da bakımevi/huzurevi seçenekleri, ilçe ilçe nasıl arama yapabileceğiniz ve dikkat edilmesi gereken noktaları anlatıyoruz.</p>
+
+<h2>Bursa'da Bakımevi ve Huzurevi Seçenekleri</h2>
+<p>Bursa'da Nilüfer, Osmangazi, Yıldırım gibi merkez ilçelerden Gemlik, İnegöl, Mudanya, Gürsu ve Kestel'e kadar geniş bir alanda huzurevi ve yaşlı bakım merkezi hizmeti veren kurumlar bulunuyor. Genel olarak iki ana kategoriyle karşılaşırsınız:</p>
+<ul>
+  <li><strong>Huzurevi:</strong> Günlük yaşam desteğine ihtiyaç duyan, kendi ihtiyaçlarının büyük kısmını karşılayabilen yaşlılara yönelik konaklama ve bakım hizmeti.</li>
+  <li><strong>Yaşlı bakım merkezi:</strong> Sağlık takibi, hemşire/doktor desteği ve günlük bakıma daha yoğun ihtiyaç duyan yaşlılar için ek sağlık hizmetleri içeren kurumlar.</li>
+</ul>
+
+<h2>Bursa'da İlçe İlçe Bakımevi Arama</h2>
+<p>Bursa'nın ilçelerinde kayıtlı bakımevi ve huzurevlerini, güncel iletişim bilgileri ve hizmet detaylarıyla birlikte aşağıdaki sayfalardan inceleyebilirsiniz:</p>
+<ul>
+  <li><a href="/rehber/yasli-bakim/bursa/nilufer">Nilüfer bakımevi ve huzurevleri</a></li>
+  <li><a href="/rehber/yasli-bakim/bursa/osmangazi">Osmangazi bakımevi ve huzurevleri</a></li>
+  <li><a href="/rehber/yasli-bakim/bursa/yildirim">Yıldırım bakımevi ve huzurevleri</a></li>
+  <li><a href="/rehber/yasli-bakim/bursa/gemlik">Gemlik bakımevi ve huzurevleri</a></li>
+  <li><a href="/rehber/yasli-bakim/bursa/inegol">İnegöl bakımevi ve huzurevleri</a></li>
+  <li><a href="/rehber/yasli-bakim/bursa/mudanya">Mudanya bakımevi ve huzurevleri</a></li>
+  <li><a href="/rehber/yasli-bakim/bursa/gursu">Gürsu bakımevi ve huzurevleri</a></li>
+  <li><a href="/rehber/yasli-bakim/bursa/kestel">Kestel bakımevi ve huzurevleri</a></li>
+</ul>
+<p>Bu sayfalarda kurumları filtreleyebilir, karşılaştırabilir ve doğrudan ücret/boş yer bilgisi talep edebilirsiniz.</p>
+
+<h2>Bakımevi Seçerken Nelere Dikkat Edilmeli?</h2>
+<h3>Sağlık personeli ve tıbbi destek</h3>
+<p>7/24 hemşire desteği olup olmadığını, doktor kontrolünün sıklığını ve acil bir durumda izlenecek süreci mutlaka sorun.</p>
+<h3>Güvenlik ve hijyen</h3>
+<p>Bina erişilebilirliği (asansör, rampa), yangın/acil çıkış düzeni ve genel hijyen koşulları yerinde görülmeden karar vermemekte fayda var.</p>
+<h3>Ziyaret saatleri ve iletişim</h3>
+<p>Aile ziyaret saatlerinin ne kadar esnek olduğunu, görüntülü görüşme imkânı olup olmadığını önceden netleştirin.</p>
+<h3>Beslenme ve özel bakım programları</h3>
+<p>Diyet/beslenme kısıtlaması olan (şekersiz, tuzsuz vb.) sakinler için özel program uygulanıp uygulanmadığını, Alzheimer/demans hastalarına yönelik özel bir yaklaşım olup olmadığını sorun.</p>
+
+<h2>Bursa'da Bakımevi Fiyatları Ne Kadar?</h2>
+<p>Bursa'da özel bakımevi/huzurevi ücretleri oda tipine ve bakım yoğunluğuna göre değişmekle birlikte, genel olarak <strong>tek kişilik odalarda aylık 20.000 TL ile 45.000 TL</strong>, <strong>çift kişilik odalarda kişi başı aylık 15.000 TL ile 35.000 TL</strong> arasında seyrediyor. Yoğun sağlık bakımı gerektiren veya suit/lüks oda seçeneklerinde bu rakam 50.000-100.000 TL bandına kadar çıkabiliyor. Belediyeye bağlı kurumlarda ücretler genellikle özel kurumlara göre daha uygun oluyor.</p>
+<p>Bu rakamlar genel bir fikir vermesi içindir, KDV ve hizmet kapsamına göre değişebilir — kesin ve güncel rakam için kurumla doğrudan iletişime geçmenizi ya da platformumuz üzerinden ücretsiz teklif talep etmenizi öneririz.</p>
+
+<h2>Devlet mi, Özel mi?</h2>
+<p>Devlet/belediye huzurevlerinde ücretler daha uygundur ancak kontenjan ve bekleme listesi süreci olabilir; başvuru genellikle belirli sosyal/ekonomik kriterlere tabidir. Özel kurumlarda kontenjan bulma ihtimali daha yüksektir, oda ve hizmet seçenekleri daha geniştir; karşılığında ücretler de değişkenlik gösterir.</p>
+
+<h2>Sıkça Sorulan Sorular</h2>
+<p><strong>Bakımevine yerleşim için hangi belgeler gerekir?</strong><br>Genellikle kimlik fotokopisi, sağlık raporu ve yakın onayı istenir; kuruma göre ek belgeler talep edilebilir.</p>
+<p><strong>Aile ziyarete istediği zaman gelebilir mi?</strong><br>Çoğu kurumun belirli ziyaret saatleri vardır, bazı kurumlar önceden haber verilmesini ister. Kurumla netleştirmenizi öneririz.</p>
+<p><strong>Kurumu yerinde görmek mümkün mü?</strong><br>Karar vermeden önce kurumu yerinde ziyaret etmenizi, oda ve ortak alanları görmenizi öneririz.</p>
+
+<p>Bursa'daki bakımevi ve huzurevlerini ilçe, hizmet türü ve bütçenize göre karşılaştırmak, doğru ücret bilgisini almak için <a href="/kurumlar">kurumlar sayfamızdan</a> arama yapabilir veya ilgilendiğiniz kurumdan doğrudan ücretsiz teklif isteyebilirsiniz.</p>
+HTML;
+
+        $page = \App\Models\ContentPage::updateOrCreate(
+            ['brand' => 'bakimevleri', 'slug' => 'yasli-bakim-bursa-bakimevi-huzurevi-rehberi'],
+            [
+                'type' => 'guide',
+                'title' => 'Bursa Bakımevi ve Huzurevi Rehberi',
+                'summary' => 'Bursa\'da bakımevi/huzurevi seçerken dikkat edilmesi gerekenler, ilçe ilçe arama ve genel fiyat bilgisi.',
+                'body' => $body,
+            ]
+        );
+
+        return "OK: sayfa kaydedildi/guncellendi -> id={$page->id}, brand=bakimevleri, slug=yasli-bakim-bursa-bakimevi-huzurevi-rehberi";
+    }
+
+    /**
+     * 31 Agustos 2026: kullanicinin talebi - seedBursaKresRehberi() ile
+     * AYNI desen, rehabilitasyon bolumu icin. Fiyat bilgisi icin Bursa'ya
+     * ozel guvenilir bir kaynak bulunamadi - bu yuzden BILEREK "Bursa'ya
+     * ozel degil, ulusal ortalama" diye acikca belirtildi, yanlis sehre
+     * ait veri Bursa'ya aitmis gibi sunulmadi.
+     */
+    private function seedBursaRehabilitasyonRehberi(): string
+    {
+        $body = <<<'HTML'
+<p>Bursa'da fizik tedavi veya rehabilitasyon hizmeti ararken; uzmanlık alanı, cihaz/ekipman imkânları, konum ve fiyat gibi birçok kriteri bir arada değerlendirmeniz gerekir. Bu rehberde Bursa'da rehabilitasyon merkezi seçenekleri, ilçe ilçe nasıl arama yapabileceğiniz ve dikkat edilmesi gereken noktaları anlatıyoruz.</p>
+
+<h2>Bursa'da Rehabilitasyon Hizmeti Seçenekleri</h2>
+<p>Bursa'da Nilüfer, Osmangazi, Yıldırım gibi merkez ilçelerden Gemlik, İnegöl, Mudanya, Gürsu ve Kestel'e kadar geniş bir alanda rehabilitasyon hizmeti veren kurumlar bulunuyor. Genel olarak şu alanlarla karşılaşırsınız:</p>
+<ul>
+  <li><strong>Fizik tedavi ve rehabilitasyon:</strong> Ortopedik rahatsızlıklar, ameliyat sonrası iyileşme ve genel hareket kabiliyetini artırmaya yönelik hizmetler.</li>
+  <li><strong>Nörolojik rehabilitasyon:</strong> İnme, felç sonrası veya nörolojik rahatsızlıklara bağlı fonksiyon kaybının giderilmesine yönelik özel programlar.</li>
+  <li><strong>Özel eğitim ve gelişim merkezleri:</strong> Gelişimsel destek ihtiyacı olan çocuklar ve bireyler için ek terapi programları.</li>
+</ul>
+
+<h2>Bursa'da İlçe İlçe Rehabilitasyon Merkezi Arama</h2>
+<p>Bursa'nın ilçelerinde kayıtlı rehabilitasyon merkezlerini, güncel iletişim bilgileri ve hizmet detaylarıyla birlikte aşağıdaki sayfalardan inceleyebilirsiniz:</p>
+<ul>
+  <li><a href="/rehber/rehabilitasyon/bursa/nilufer">Nilüfer rehabilitasyon merkezleri</a></li>
+  <li><a href="/rehber/rehabilitasyon/bursa/osmangazi">Osmangazi rehabilitasyon merkezleri</a></li>
+  <li><a href="/rehber/rehabilitasyon/bursa/yildirim">Yıldırım rehabilitasyon merkezleri</a></li>
+  <li><a href="/rehber/rehabilitasyon/bursa/gemlik">Gemlik rehabilitasyon merkezleri</a></li>
+  <li><a href="/rehber/rehabilitasyon/bursa/inegol">İnegöl rehabilitasyon merkezleri</a></li>
+  <li><a href="/rehber/rehabilitasyon/bursa/mudanya">Mudanya rehabilitasyon merkezleri</a></li>
+  <li><a href="/rehber/rehabilitasyon/bursa/gursu">Gürsu rehabilitasyon merkezleri</a></li>
+  <li><a href="/rehber/rehabilitasyon/bursa/kestel">Kestel rehabilitasyon merkezleri</a></li>
+</ul>
+<p>Bu sayfalarda kurumları filtreleyebilir, karşılaştırabilir ve doğrudan ücret/randevu bilgisi talep edebilirsiniz.</p>
+
+<h2>Rehabilitasyon Merkezi Seçerken Nelere Dikkat Edilmeli?</h2>
+<h3>Uzman kadro</h3>
+<p>Kadroda hangi uzmanların (fizyoterapist, doktor, ergoterapist vb.) bulunduğunu ve deneyim düzeylerini sorun.</p>
+<h3>Cihaz ve ekipman</h3>
+<p>İhtiyacınıza uygun cihaz/ekipmanın (hidroterapi, robotik rehabilitasyon vb.) kurumda bulunup bulunmadığını kontrol edin.</p>
+<h3>Seans süresi ve programı</h3>
+<p>Bir seansın ortalama süresini, haftalık önerilen seans sayısını ve tedavi sürecinin nasıl planlandığını netleştirin.</p>
+<h3>Raporlama ve ev programı</h3>
+<p>İlerlemenin aile/hekimle düzenli paylaşılıp paylaşılmadığını ve evde uygulanabilecek bir egzersiz programı verilip verilmediğini sorun.</p>
+
+<h2>SGK mi, Özel mi?</h2>
+<p>Fizik tedavi ve rehabilitasyon hizmetlerinin önemli bir kısmı, doktor sevkiyle SGK kapsamında devlet hastaneleri veya SGK anlaşmalı özel merkezlerde ücretsiz veya düşük katkı payıyla alınabiliyor. Özel (SGK dışı) merkezler ise genellikle daha hızlı randevu, daha esnek seans saatleri ve bazı özel terapi yöntemleri sunar; karşılığında ücret cepten ödenir.</p>
+
+<h2>Rehabilitasyon Ücretleri Ne Kadar?</h2>
+<p>Özel rehabilitasyon merkezlerinde tek seans ücreti genel olarak <strong>2.000 TL ile 2.500 TL</strong> aralığında, 10 seanslık paketler ise <strong>6.000 TL ile 18.000 TL</strong> arasında değişebiliyor. Bu rakamlar Bursa'ya özel değil, genel bir ulusal ortalamayı yansıtıyor — kurum, kullanılan yöntem ve uzmanlık düzeyine göre fiyatlar değişebilir. Kesin ve güncel rakam için kurumla doğrudan iletişime geçmenizi ya da platformumuz üzerinden ücretsiz teklif talep etmenizi öneririz.</p>
+
+<h2>Sıkça Sorulan Sorular</h2>
+<p><strong>Rehabilitasyona başlamak için doktor sevki gerekli mi?</strong><br>SGK kapsamında yararlanmak için genellikle doktor sevki/reçetesi istenir; özel ödemeli hizmetlerde bu şart aranmayabilir, kurumla teyit etmenizi öneririz.</p>
+<p><strong>Evde rehabilitasyon hizmeti alınabilir mi?</strong><br>Bazı merkezler evde takip/tedavi hizmeti de sunuyor, bu hizmetin olup olmadığını doğrudan kurumdan sorabilirsiniz.</p>
+<p><strong>İlk seans öncesi değerlendirme yapılıyor mu?</strong><br>Çoğu kurum tedaviye başlamadan önce uzman tarafından bir ilk değerlendirme yapar, bu görüşmede program kişiye özel planlanır.</p>
+
+<p>Bursa'daki rehabilitasyon merkezlerini ilçe, uzmanlık alanı ve bütçenize göre karşılaştırmak, doğru bilgi almak için <a href="/kurumlar">kurumlar sayfamızdan</a> arama yapabilir veya ilgilendiğiniz kurumdan doğrudan ücretsiz teklif isteyebilirsiniz.</p>
+HTML;
+
+        $page = \App\Models\ContentPage::updateOrCreate(
+            ['brand' => 'bakimeviara', 'slug' => 'rehabilitasyon-bursa-fizik-tedavi-rehberi'],
+            [
+                'type' => 'guide',
+                'title' => 'Bursa Rehabilitasyon ve Fizik Tedavi Merkezi Rehberi',
+                'summary' => 'Bursa\'da rehabilitasyon merkezi seçerken dikkat edilmesi gerekenler, ilçe ilçe arama ve genel fiyat bilgisi.',
+                'body' => $body,
+            ]
+        );
+
+        return "OK: sayfa kaydedildi/guncellendi -> id={$page->id}, brand=bakimeviara, slug=rehabilitasyon-bursa-fizik-tedavi-rehberi";
     }
 
     // 3 Agustos 2026: "her rol panelindeki butun fonksiyonlar eksiksiz
