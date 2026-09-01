@@ -3938,6 +3938,51 @@ class PlatformFeatureTest extends TestCase
         ], $overrides);
     }
 
+    public function test_admin_can_set_vacancy_for_facility_with_no_facility_user_account(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+        // hata - "Boş Yer Durumu" SADECE kurumun kendi panelinden
+        // (oturum acmis bir FacilityUser gerektirir) guncellenebiliyordu.
+        // Anlasmali-ama-sahiplenilmemis (hic FacilityUser hesabi olmayan)
+        // kurumlarda bu bilgiyi guncelleyecek HICBIR yol yoktu. rehabFacility
+        // (fizik-tedavi -> genel/tek alan doluluk) icin admin'in artik bu
+        // alani dogrudan duzenleyebildigini dogruluyoruz.
+        $this->rehabFacility->update(['is_broker_managed' => true, 'is_claimed' => false]);
+        $this->assertNull($this->rehabFacility->facilityUsers()->first());
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->rehabFacility->id, $this->adminFacilityUpdatePayload($this->rehabFacility, ['vacancy_general' => '1']))
+            ->assertRedirect();
+
+        $this->rehabFacility->refresh();
+        $this->assertTrue($this->rehabFacility->vacancy_general);
+        $this->assertNotNull($this->rehabFacility->vacancy_updated_at);
+
+        // Genel alan icin cinsiyet-ayrimli (yasli-bakim) kurumda "Bay/Bayan"
+        // kullanilmali - elderlyFacility ile ayni akisi dogrular.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->elderlyFacility->id, $this->adminFacilityUpdatePayload($this->elderlyFacility, ['vacancy_male' => '1', 'vacancy_female' => '0']))
+            ->assertRedirect();
+
+        $this->elderlyFacility->refresh();
+        $this->assertTrue($this->elderlyFacility->vacancy_male);
+        $this->assertFalse($this->elderlyFacility->vacancy_female);
+    }
+
+    public function test_admin_adding_duplicate_category_name_shows_error_not_500(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+        // hata - kardes controller CityController::store() 'unique:cities,name'
+        // kullanirken bu form hic benzersizlik kontrolu yapmiyordu, ayni
+        // isimle ikinci kez kategori eklenince ham bir QueryException
+        // (500 hata sayfasi) firliyordu.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kategoriler', ['name' => $this->rehabCategory->name, 'brand_scope' => 'fizik-tedavi'])
+            ->assertSessionHasErrors('name');
+
+        $this->assertSame(1, \App\Models\FacilityCategory::where('name', $this->rehabCategory->name)->count());
+    }
+
     public function test_admin_marking_site_visited_sets_timestamp_once_and_shows_public_badge(): void
     {
         $this->rehabFacility->update(['is_broker_managed' => true]);

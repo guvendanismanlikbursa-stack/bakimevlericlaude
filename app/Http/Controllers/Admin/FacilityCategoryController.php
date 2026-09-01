@@ -19,8 +19,14 @@ class FacilityCategoryController extends Controller
 
     public function store(Request $request)
     {
+        // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+        // hata - kardes controller Admin\CityController::store() ayni
+        // senaryo icin 'unique:cities,name' kullanirken bu form hic
+        // benzersizlik kontrolu yapmiyordu. Ayni/cakisan isimle (facilities.
+        // slug UNIQUE) ikinci kez kategori eklenince ham bir QueryException
+        // (500 hata sayfasi) firliyordu.
         $data = $request->validate([
-            'name' => 'required|string|max:120',
+            'name' => 'required|string|max:120|unique:facility_categories,name',
             'brand_scope' => 'required|string|max:60',
         ]);
         $data['slug'] = Str::slug($data['name']);

@@ -46,7 +46,7 @@
             <textarea name="reject_note" placeholder="Red sebebi (opsiyonel)" rows="2" class="border rounded-lg px-3 py-2 text-sm"></textarea>
             <button class="bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-sm">Reddet</button>
           </form>
-          <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Bu basvuru kalici olarak silinecek ve basvuru sahibine HICBIR bildirim gitmeyecek - spam/hatali kayitlar disinda \'Reddet\' kullanin. Silinsin mi?');">
+          <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Bu başvuru kalıcı olarak silinecek ve başvuru sahibine HİÇBİR bildirim gitmeyecek - spam/hatalı kayıtlar dışında \'Reddet\' kullanın. Silinsin mi?');">
             @csrf @method('DELETE')
             <button class="text-gray-400 text-xs underline self-center">Kalıcı Sil (bildirim gitmez)</button>
           </form>

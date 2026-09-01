@@ -291,6 +291,63 @@
     @endif
   </div>
 
+  {{-- 1 Eylul 2026: kullanicinin bildirdigi gercek hata - "Boş Yer Durumu"
+       SADECE kurumun KENDI panelinden (Facility\ProfileController::
+       updateVacancy(), oturum acmis bir FacilityUser gerektirir)
+       guncellenebiliyordu. Sahiplenilmemis (ozellikle anlasmali-ama-
+       sahiplenilmemis, hic FacilityUser hesabi olmayan) kurumlarda bu
+       bilgiyi guncelleyecek HICBIR yol yoktu - kurum sayfasindaki "boş yer"
+       banner'i bu kurumlar icin asla gorunemiyordu. Admin panelinden de
+       ayni alanlar duzenlenebilsin diye, kurum panelindeki AYNI form
+       deseni buraya tasindi. --}}
+  <div class="md:col-span-2 border-t pt-4">
+    <label class="text-sm font-medium block mb-2">Boş Yer Durumu</label>
+    @php
+      // old() bir form hatasi sonrasi '0'/'1' string'i olarak gelir, ilk
+      // yuklemede $facility->vacancy_* gercek bir bool|null'dur - ikisini
+      // TEK bir uc-durumlu ('1'/'0'/null) degere indirger, asagidaki
+      // secenekler bunu karsilastirir.
+      $vacancyValue = function (string $field) use ($facility) {
+        $default = $facility->{$field} === null ? '' : ($facility->{$field} ? '1' : '0');
+        $value = old($field, $default);
+
+        return $value === '' ? null : $value;
+      };
+    @endphp
+    <div class="grid sm:grid-cols-2 gap-3 max-w-lg">
+      @if($facility->usesGenderSplitVacancy())
+        <div>
+          <label for="admin-vacancy-male" class="text-xs text-gray-500">Bay</label>
+          <select id="admin-vacancy-male" name="vacancy_male" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+            <option value="" @selected($vacancyValue('vacancy_male') === null)>Belirtilmedi</option>
+            <option value="1" @selected($vacancyValue('vacancy_male') === '1')>Var</option>
+            <option value="0" @selected($vacancyValue('vacancy_male') === '0')>Yok</option>
+          </select>
+        </div>
+        <div>
+          <label for="admin-vacancy-female" class="text-xs text-gray-500">Bayan</label>
+          <select id="admin-vacancy-female" name="vacancy_female" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+            <option value="" @selected($vacancyValue('vacancy_female') === null)>Belirtilmedi</option>
+            <option value="1" @selected($vacancyValue('vacancy_female') === '1')>Var</option>
+            <option value="0" @selected($vacancyValue('vacancy_female') === '0')>Yok</option>
+          </select>
+        </div>
+      @else
+        <div>
+          <label for="admin-vacancy-general" class="text-xs text-gray-500">Boş Yer</label>
+          <select id="admin-vacancy-general" name="vacancy_general" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+            <option value="" @selected($vacancyValue('vacancy_general') === null)>Belirtilmedi</option>
+            <option value="1" @selected($vacancyValue('vacancy_general') === '1')>Var</option>
+            <option value="0" @selected($vacancyValue('vacancy_general') === '0')>Yok</option>
+          </select>
+        </div>
+      @endif
+    </div>
+    @if($facility->vacancy_updated_at)
+      <p class="text-xs text-gray-400 mt-1">Son güncelleme: {{ $facility->vacancy_updated_at->diffForHumans() }}</p>
+    @endif
+  </div>
+
   <div>
     <label class="text-sm font-medium">Bakanlık/Resmi Onay Rozeti</label>
     <select name="ministry_verification" class="border rounded-lg px-3 py-2 w-full mt-1">

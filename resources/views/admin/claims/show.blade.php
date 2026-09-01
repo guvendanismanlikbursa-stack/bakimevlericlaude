@@ -41,7 +41,7 @@
       <div class="flex gap-3 mt-6">
         <form method="POST" action="{{ route('admin.claims.approve', $claim) }}" onsubmit="return confirm('{{ $claim->status === 'rejected' ? 'Bu başvuru daha önce reddedilmişti. Şimdi onaylanırsa kurum hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' : 'Onaylanırsa kurum hesabı otomatik oluşturulup e-posta gönderilecek. Emin misiniz?' }}');">
           @csrf
-          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm" @if(! $claim->document_path) disabled title="Once evrak eklenmeli" @endif>{{ $claim->status === 'rejected' ? 'Yeniden Onayla' : 'Onayla' }}</button>
+          <button class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm" @if(! $claim->document_path) disabled title="Önce evrak eklenmeli" @endif>{{ $claim->status === 'rejected' ? 'Yeniden Onayla' : 'Onayla' }}</button>
         </form>
         @if($claim->status === 'pending')
           <form method="POST" action="{{ route('admin.claims.reject', $claim) }}">

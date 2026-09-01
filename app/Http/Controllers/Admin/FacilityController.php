@@ -275,6 +275,20 @@ class FacilityController extends Controller
         // once sadece toplu "Veri Denetimi" taramasiyla duzeltiliyordu.
         $data['phone_type'] = classify_phone_type($data['phone'] ?? null);
 
+        // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+        // hata - "Boş Yer Durumu" SADECE kurumun kendi panelinden
+        // (oturum acmis bir FacilityUser gerektirir) guncellenebiliyordu.
+        // Sahiplenilmemis (ozellikle hic FacilityUser hesabi olmayan
+        // anlasmali-ama-sahiplenilmemis) kurumlarda bu bilgiyi
+        // guncelleyecek HICBIR yol yoktu. Sadece formda GERCEKTEN bu
+        // alanlardan biri gonderilmisse islenir (boylece bu alanlarin hic
+        // olmadigi eski/farkli formlar yanlislikla vacancy'yi sifirlamaz).
+        if ($request->hasAny(['vacancy_male', 'vacancy_female', 'vacancy_general'])) {
+            $vacancyData = $this->vacancyFieldsFromRequest($request);
+            $vacancyData['vacancy_updated_at'] = now();
+            $data = array_merge($data, $vacancyData);
+        }
+
         $facility->update($data);
 
         $this->storeUploadedImages($request, $facility);
@@ -780,7 +794,29 @@ class FacilityController extends Controller
             'services' => 'nullable|array',
             'services.*' => 'nullable|string|max:120',
             'ministry_verification' => 'nullable|in:verified,kamu_vakif,review,unverified',
+            // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz. bu
+            // metodun cagrildigi update() icindeki ayni tarihli yorum.
+            'vacancy_male' => 'nullable|in:0,1',
+            'vacancy_female' => 'nullable|in:0,1',
+            'vacancy_general' => 'nullable|in:0,1',
         ]);
+    }
+
+    /**
+     * Facility\ProfileController::updateVacancy() ile AYNI uc-durumlu
+     * (Var/Yok/Belirtilmedi) donusum - kurumun kendi paneli veya admin
+     * panelinden, hangi yoldan gelirse gelsin ayni sekilde islenir.
+     */
+    private function vacancyFieldsFromRequest(Request $request): array
+    {
+        $data = $request->only(['vacancy_male', 'vacancy_female', 'vacancy_general']);
+        foreach (['vacancy_male', 'vacancy_female', 'vacancy_general'] as $field) {
+            $data[$field] = array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== ''
+                ? (bool) $data[$field]
+                : null;
+        }
+
+        return $data;
     }
 
     private function parseServices(?string $raw, array $selected = []): array
