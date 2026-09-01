@@ -1405,6 +1405,102 @@ class PlatformFeatureTest extends TestCase
             ->assertSee($click->city_name);
     }
 
+    public function test_facility_registration_revision_form_can_actually_be_resubmitted(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek hata - facility-register-edit.blade.php'de KVKK
+        // onay kutusu hic yoktu ama sunucu tarafi validateData() 'consent'
+        // alanini ZORUNLU tutuyordu - admin "duzeltme iste" dedigi HER
+        // basvuru, kullanici ne yaparsa yapsin KALICI olarak takili
+        // kaliyordu. Bu test, checkbox eklendikten sonra formun GERCEKTEN
+        // basariyla tekrar gonderilebildigini dogrular.
+        $registration = \App\Models\FacilityRegistration::create([
+            'brand' => 'bakimevleri',
+            'name' => 'Duzeltme Testi Kurumu',
+            'facility_category_id' => $this->elderlyCategory->id,
+            'city_id' => $this->city->id,
+            'district' => 'Merkez',
+            'applicant_name' => 'Basvuru Sahibi',
+            'applicant_email' => 'duzeltmetest@test.local',
+            'applicant_phone' => '05551112200',
+            'status' => 'revision_requested',
+            'admin_note' => 'Adres eksik, lütfen tamamlayın.',
+        ]);
+
+        $editUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'facility-registration.edit',
+            now()->addDay(),
+            ['registration' => $registration->id, 'hash' => sha1($registration->applicant_email)]
+        );
+
+        $this->get($editUrl)->assertOk()->assertSee('name="consent"', false);
+
+        $this->post($editUrl, [
+            'name' => 'Duzeltme Testi Kurumu',
+            'facility_category_id' => $this->elderlyCategory->id,
+            'city_id' => $this->city->id,
+            'district' => 'Merkez',
+            'address' => 'Tamamlanmis adres',
+            'applicant_name' => 'Basvuru Sahibi',
+            'applicant_email' => 'duzeltmetest@test.local',
+            'applicant_phone' => '05551112200',
+            'consent' => '1',
+        ])->assertRedirect();
+
+        $registration->refresh();
+        $this->assertSame('pending', $registration->status);
+        $this->assertSame('Tamamlanmis adres', $registration->address);
+        $this->assertNotNull($registration->consent_accepted_at);
+    }
+
+    public function test_facility_google_login_with_temporary_password_still_forces_password_change(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - normal
+        // (e-posta/sifre) giriste must_change_password kontrol ediliyordu,
+        // Google ile giris yolunda hic yoktu - admin onayiyla acilan,
+        // duz metin gecici sifre gonderilen bir hesap, sahibi Google ile
+        // giris yaparsa bu sifreyi asla degistirmiyordu.
+        $this->facilityUser->update(['must_change_password' => true]);
+
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-facility-temp-pass',
+            'name' => 'Demo Kurum',
+            'email' => $this->facilityUser->email,
+        ]));
+
+        $this->get('/site/bakimevibul/kurum-panel/google-callback')
+            ->assertRedirect('/site/bakimevibul/kurum-panel/sifre-degistir');
+
+        $this->assertSame($this->facilityUser->id, session('facility_user_id'));
+    }
+
+    public function test_price_tier_filter_uses_facilitys_own_category_thresholds(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - Facility::
+        // priceTier() (kurum kartindaki rozet) kategori bazinda ozel esik
+        // kullanirken, arama filtresi hala TEK global esik kullaniyordu -
+        // rozet ile filtre sonucu celisebiliyordu. Burada elderlyCategory'ye
+        // ozel, DUSUK bir "standart_min" esigi (5000) tanimlanip, global
+        // varsayilanla (15000) "Ekonomik" sayilacak bir fiyatin (10000),
+        // bu kategoriye ozel esikle artik "Standart" sayildigini ve filtre
+        // sonucunun buna GORE degistigini dogruluyoruz.
+        $this->elderlyCategory->update(['price_tier_standart_min' => 5000, 'price_tier_premium_min' => 20000, 'price_tier_ultra_min' => 40000]);
+        $this->elderlyFacility->update(['price_min' => 10000]);
+
+        $this->assertSame('standart', $this->elderlyFacility->fresh()->priceTier()['key']);
+
+        // Global esikle "ekonomik" filtresi bu kurumu YAKALAMAMALI (kendi
+        // kategori esigine gore artik standart).
+        $this->get('/site/bakimevleri/kurumlar?bolum=yasli-bakim&price_tier=ekonomik')
+            ->assertOk()
+            ->assertDontSee($this->elderlyFacility->name);
+
+        // "standart" filtresi ONU YAKALAMALI.
+        $this->get('/site/bakimevleri/kurumlar?bolum=yasli-bakim&price_tier=standart')
+            ->assertOk()
+            ->assertSee($this->elderlyFacility->name);
+    }
+
     public function test_admin_can_update_whatsapp_settings_and_button_reflects_them(): void
     {
         $bankFields = [];

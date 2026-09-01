@@ -127,13 +127,22 @@ class FacilityImportImageService
 
         for ($i = 0; $i < $missing && $i < count($pool); $i++) {
             $filename = (string) ($existing->count() + $i + 1);
-            $created[] = $this->imageCompressor->storeFromLocalFile(
+            $newPath = $this->imageCompressor->storeFromLocalFile(
                 $pool[$i]->getPathname(),
                 $directory,
                 $disk,
                 self::WATERMARK_TEXT,
                 $filename
             );
+            // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bu havuz
+            // bir kategori icin ILK cagrida hangi domain'de olusturulduysa
+            // SADECE o domain'in diskinde var oluyordu (bkz. CrossDomainImageSync
+            // ayni kokten sorun icin ayni tarihli aciklama, attachDefaultMenuImage()
+            // ayni desen). Ayni kategorideki TUM on-kayitli kurumlar 3
+            // markada da gorundugu icin, diger 2 markada bu galeri
+            // gorselleri kirik cikiyordu.
+            $this->imageSync->syncStore($newPath);
+            $created[] = $newPath;
         }
 
         return $existing->concat($created)->all();

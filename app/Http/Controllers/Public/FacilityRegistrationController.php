@@ -119,7 +119,7 @@ class FacilityRegistrationController extends Controller
 
         $applicantLat = $data['lat'] ?? null;
         $applicantLng = $data['lng'] ?? null;
-        unset($data['lat'], $data['lng']);
+        unset($data['lat'], $data['lng'], $data['consent']);
         $cityName = ($applicantLat !== null && $applicantLng !== null)
             ? ($geo->nearestCity($applicantLat, $applicantLng)['city'] ?? null)
             : null;
@@ -138,6 +138,12 @@ class FacilityRegistrationController extends Controller
                 'applicant_lng' => $applicantLng,
                 'applicant_city_name' => $cityName,
                 'applicant_ip' => $request->ip(),
+                // 1 Eylul 2026: kullanicinin bildirdigi gercek eksik -
+                // store()'da set edilen consent_accepted_at/consent_ip,
+                // duzeltme sonrasi YENIDEN onaylanan riza icin burada hic
+                // guncellenmiyordu.
+                'consent_accepted_at' => now(),
+                'consent_ip' => $request->ip(),
             ]);
 
             log_admin_event('facility_registration_resubmitted', $registration);

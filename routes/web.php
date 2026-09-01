@@ -331,6 +331,10 @@ Route::post('/_ops/{action}', [OpsController::class, 'run'])->middleware('thrott
 // silmek icin cagrilir - token korumali, /_ops/{action} ile ayni desen.
 Route::post('/_internal/kurum-gorseli-sync', [\App\Http\Controllers\Internal\FacilityImageSyncController::class, 'store'])->name('internal.facility-image-sync.store');
 Route::post('/_internal/kurum-gorseli-sil', [\App\Http\Controllers\Internal\FacilityImageSyncController::class, 'destroy'])->name('internal.facility-image-sync.destroy');
+// 1 Eylul 2026: kullanicinin bildirdigi gercek hata - Setting::set() SADECE
+// kendi yerel (dosya tabanli, domain'e ozel) cache'ini temizliyordu, diger
+// 2 domain eski degeri suresiz gosteriyordu (bkz. SettingCacheSyncController).
+Route::post('/_internal/ayar-onbellek-temizle', [\App\Http\Controllers\Internal\SettingCacheSyncController::class, 'forget'])->name('internal.setting-cache.forget');
 // Admin'in kurum/aile panelini "onlarin gozuyle" goruntulemesinden (impersonation)
 // cikip kendi paneline donmesi icin - bkz. Admin\UserController::impersonateFacilityUser/
 // -FamilyUser ve ImpersonationController. Bilerek facility.auth/family.auth

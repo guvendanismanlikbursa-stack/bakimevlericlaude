@@ -17,7 +17,7 @@
       <form method="POST" action="{{ brand_route('family.verify-email.resend') }}" class="flex flex-col sm:flex-row gap-3">
         @csrf
         <button type="submit" class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90">Doğrulama E-postasını Tekrar Gönder</button>
-        <a href="{{ brand_route('home') }}" class="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Anasayfaya Dön</a>
+        <a href="{{ brand_route('home') }}" class="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">Ana Sayfaya Dön</a>
       </form>
 
       @if($errors->any())

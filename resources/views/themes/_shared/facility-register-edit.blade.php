@@ -51,6 +51,21 @@
     <input type="email" name="applicant_email" value="{{ old('applicant_email', $registration->applicant_email) }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
     <input type="text" name="applicant_phone" value="{{ old('applicant_phone', $registration->applicant_phone) }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
 
+    {{-- 1 Eylul 2026: kullanicinin bildirdigi gercek hata - facility-register.blade.php'deki
+         (19 Agustos 2026) KVKK onay kutusu bu duzeltme formuna hic
+         eklenmemisti, ama sunucu tarafi validateData() ikisinde de AYNI
+         ('consent' => 'required|accepted') kuralini kullaniyor - bu form
+         hic gonderilemiyor, admin "duzeltme iste" dedigi HER basvuru
+         kullanici ne yaparsa yapsin kalici olarak takili kaliyordu. --}}
+    <label class="flex items-start gap-2 text-xs text-gray-600 leading-relaxed">
+      <input type="checkbox" name="consent" required value="1" class="mt-0.5">
+      <span>
+        <a href="{{ brand_route('pages.show', ['slug' => 'kvkk']) }}" target="_blank" class="text-primary underline font-semibold">Açık Rıza Metni ve Kişisel Verilerin Korunması Aydınlatma Metni</a>'ni
+        okudum, kişisel verilerimin belirtilen amaçlarla işlenmesine açıkça rıza gösteriyorum.
+        <span class="font-semibold">Bu kutuyu işaretlemek zorunludur.</span>
+      </span>
+    </label>
+
     <button class="btn-primary w-full py-2 rounded-lg font-semibold">Güncelleyip Tekrar Gönder</button>
   </form>
 </div>

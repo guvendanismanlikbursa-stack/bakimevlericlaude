@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public\Concerns;
 
 use App\Models\Facility;
+use App\Models\FacilityCategory;
 use Illuminate\Http\Request;
 
 // 12 Agustos 2026: FacilityController::index()'teki filtre mantigi
@@ -58,14 +59,37 @@ trait FiltersFacilities
                 ? $request->price_tier
                 : $this->tierForBudget((float) $request->budget, $standartMin, $premiumMin, $ultraMin);
 
-            $query->whereNotNull('price_min')->where(function ($qq) use ($tierKey, $standartMin, $premiumMin, $ultraMin) {
-                match ($tierKey) {
-                    'ekonomik' => $qq->where('price_min', '<', $standartMin),
-                    'standart' => $qq->where('price_min', '>=', $standartMin)->where('price_min', '<', $premiumMin),
-                    'premium' => $qq->where('price_min', '>=', $premiumMin)->where('price_min', '<', $ultraMin),
-                    'ultra_premium' => $qq->where('price_min', '>=', $ultraMin),
-                    default => null,
-                };
+            // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+            // hata - Facility::priceTier() (kurum kartindaki rozet) 16
+            // Temmuz'dan beri KATEGORI BAZINDA esik kullaniyor (bkz.
+            // FacilityCategory::priceTierThresholds()), ama bu arama filtresi
+            // hala TEK bir global esik (yukaridaki priceTierThresholds()
+            // metodu, Setting'ten okunan ve HICBIR admin ekranindan
+            // yazilmayan, hep sabit config varsayilanina dusen deger)
+            // kullaniyordu. Sonuc: bir kategori icin ozel esik girilmisse,
+            // kurumun KENDI sayfasindaki rozet ile arama filtresi sonucu
+            // celisebiliyordu. Kategori bazinda dogru karsilastirma icin,
+            // ilgili markanin TUM kategorilerinin esikleri once yuklenip
+            // her kategori icin AYRI bir alt kosul kurulur.
+            $categoryThresholds = FacilityCategory::whereIn('brand_scope', $scope)
+                ->get(['id', 'price_tier_standart_min', 'price_tier_premium_min', 'price_tier_ultra_min'])
+                ->mapWithKeys(fn (FacilityCategory $c) => [$c->id => $c->priceTierThresholds()]);
+
+            $query->whereNotNull('price_min')->where(function ($qq) use ($tierKey, $categoryThresholds) {
+                foreach ($categoryThresholds as $categoryId => $thresholds) {
+                    $qq->orWhere(function ($catQuery) use ($categoryId, $tierKey, $thresholds) {
+                        $catQuery->where('facility_category_id', $categoryId);
+                        match ($tierKey) {
+                            'ekonomik' => $catQuery->where('price_min', '<', $thresholds['standart_min']),
+                            'standart' => $catQuery->where('price_min', '>=', $thresholds['standart_min'])->where('price_min', '<', $thresholds['premium_min']),
+                            'premium' => $catQuery->where('price_min', '>=', $thresholds['premium_min'])->where('price_min', '<', $thresholds['ultra_min']),
+                            'ultra_premium' => $catQuery->where('price_min', '>=', $thresholds['ultra_min']),
+                            // Eski davranisla ayni: gecersiz/bos tier degeri
+                            // ek bir kisitlama eklemez (tum kurumlar gecer).
+                            default => null,
+                        };
+                    });
+                }
             });
         }
 

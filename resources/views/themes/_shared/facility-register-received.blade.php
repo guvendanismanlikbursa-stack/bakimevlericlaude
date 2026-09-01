@@ -28,6 +28,6 @@
     </div>
   </div>
 
-  <a href="{{ brand_route('home') }}" class="inline-flex items-center gap-2 rounded-xl text-white font-black px-6 py-3 mt-10" style="background: {{ $primary }};">Anasayfaya dön</a>
+  <a href="{{ brand_route('home') }}" class="inline-flex items-center gap-2 rounded-xl text-white font-black px-6 py-3 mt-10" style="background: {{ $primary }};">Ana Sayfaya Dön</a>
 </div>
 @endsection

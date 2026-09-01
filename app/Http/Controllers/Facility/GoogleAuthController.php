@@ -58,6 +58,18 @@ class GoogleAuthController extends AuthController
         $request->session()->forget(['admin_id', 'admin_name', 'family_user_id', 'family_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         session(['facility_user_id' => $user->id, 'facility_user_name' => $user->name]);
 
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // AuthController::login() ayni gerekce (gecici sifreyle acilan
+        // hesap once kendi sifresini belirlemeli) - bu kontrol SADECE
+        // normal (e-posta/sifre) giriste vardi, Google ile giris yolunda
+        // hic yoktu. Admin onayiyla acilan, e-posta/WhatsApp'ta DUZ METIN
+        // gecici sifre gonderilen bir hesap, sahibi Google ile giris
+        // yaparsa bu sifreyi asla degistirmiyordu - o gecici sifre
+        // suresiz gecerli kalmaya devam ediyordu.
+        if ($user->must_change_password) {
+            return redirect(brand_route('facility.password.change'));
+        }
+
         return redirect(brand_route('facility.dashboard'));
     }
 }
