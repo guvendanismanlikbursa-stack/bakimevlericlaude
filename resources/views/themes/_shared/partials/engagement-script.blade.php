@@ -47,7 +47,10 @@
     const id = Number(button.dataset.id);
     const slug = button.dataset.slug;
     if (mode === 'favorites' && !isFamilyLoggedIn) {
-      window.location.href = familyLoginUrl;
+      // 1 Eylul 2026: kullanicinin talebi - sessizce giris sayfasina
+      // atmak yerine, o sayfada "neden buradasin" diyen bir bilgilendirme
+      // gostersin (bkz. Family\AuthController::showLogin()).
+      window.location.href = familyLoginUrl + (familyLoginUrl.includes('?') ? '&' : '?') + 'favori=1';
       return;
     }
     const ids = read(mode);

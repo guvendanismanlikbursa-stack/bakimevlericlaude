@@ -24,12 +24,35 @@ class GeocodingService
 {
     public function geocodeAddress(?string $address, ?string $district, ?string $cityName): ?array
     {
-        $query = trim(implode(', ', array_filter([$address, $district, $cityName, 'Türkiye'])));
-
         if (! filled($address) || ! filled($cityName)) {
             return null;
         }
 
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bazi kurumlarin
+        // 'address' alani (ozellikle Google Maps'ten kopyalanmis olanlar)
+        // ZATEN ilce/il/posta kodu iceren TAM bir adres (ör. "...16285
+        // Görükle, Nilüfer/Nilüfer/Bursa"). Bu durumda ilce+il'i SONUNA
+        // TEKRAR eklemek ("...Nilüfer/Nilüfer/Bursa, Nilüfer, Bursa,
+        // Türkiye") sorguyu Nominatim'in cozemeyecegi kadar tekrarli/
+        // karmasik hale getirip basarisiz oluyordu (canli olayda dogrulandi:
+        // HepBahar Huzurevi). Once SADECE adresin kendisi (zaten yeterince
+        // tam olabilecegi varsayimiyla) denenir; basarisiz olursa eski
+        // davranisa (ilce+il+Türkiye eklenmis hali) geri dusulur.
+        foreach ([
+            trim($address.', Türkiye'),
+            trim(implode(', ', array_filter([$address, $district, $cityName, 'Türkiye']))),
+        ] as $query) {
+            $coords = $this->tryGeocode($query);
+            if ($coords) {
+                return $coords;
+            }
+        }
+
+        return null;
+    }
+
+    private function tryGeocode(string $query): ?array
+    {
         try {
             $response = Http::withHeaders([
                 'User-Agent' => config('app.name').' facility geocoder ('.config('app.url').', '.config('mail.from.address').')',

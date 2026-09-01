@@ -1075,19 +1075,33 @@ class OpsController extends Controller
     private function geocodeMissingNow(Request $request): string
     {
         $limit = (int) $request->query('limit', 20);
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - GeocodingService
+        // artik once adresin KENDISINI (ilce/il eklemeden) dener (bkz. o
+        // servisin ayni tarihli yorumu). retry_imprecise=1 ile, sadece
+        // eksik (NULL) degil, daha once SADECE il-merkezi yedegiyle
+        // doldurulmus (hasPreciseLocation()=false) kurumlar da yeniden
+        // denenir - HepBahar gibi kurumlarin gercek adresi bu yeni
+        // sorguyla cozulebilir.
+        $retryImprecise = $request->boolean('retry_imprecise');
         $geocodingService = app(\App\Services\GeocodingService::class);
 
-        $facilities = Facility::whereNull('deleted_at')
-            ->where(function ($q) {
+        $query = Facility::whereNull('deleted_at')->whereNotNull('address')->with('city');
+        if ($retryImprecise) {
+            // GUVENLIK/PERFORMANS: hasPreciseLocation() il-merkezi tablosuyla
+            // PHP tarafinda karsilastirma yaptigi icin SQL'e tasinamaz - bu
+            // yuzden filtre SONRA, tum satirlar cekildikten sonra uygulanir,
+            // limit ise SQL'de DEGIL, filtrelenmis sonuc uzerinde alinir
+            // (aksi halde ID sirasindaki ilk N kurum hic hedef kurumu
+            // icermeyebilirdi).
+            $facilities = $query->get()->filter(fn (Facility $f) => ! $f->hasPreciseLocation())->take($limit);
+        } else {
+            $facilities = $query->where(function ($q) {
                 $q->whereNull('lat')->orWhereNull('lng');
-            })
-            ->whereNotNull('address')
-            ->with('city')
-            ->limit($limit)
-            ->get();
+            })->limit($limit)->get();
+        }
 
         if ($facilities->isEmpty()) {
-            return 'Adresi dolu, konumu eksik kurum kalmadi.';
+            return 'Adresi dolu, konumu eksik/hassas-olmayan kurum kalmadi.';
         }
 
         $out = '';

@@ -1012,6 +1012,41 @@ class PlatformFeatureTest extends TestCase
         $response->assertSee('Tek Kişilik Oda, Paylaşımlı Oda');
     }
 
+    public function test_capacity_and_checked_features_fill_matching_detail_fields_when_not_separately_entered(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi devam eden gercek hata -
+        // "Kapasite" (facility.capacity, sayfada AYRICA gosteriliyor) ve
+        // "Hemşire/doktor desteği"/"Demans/Alzheimer bakımı" (yukaridaki
+        // "Özellikleri" onay kutusu listesinde ZATEN isaretli olabilen
+        // ozelliklerle ayni anlama geliyor) icin ayni celiski gecerliydi -
+        // baska yerde ZATEN girilmis/isaretlenmisken, ayri detay metni hic
+        // girilmediyse "Belirtilmedi" gosteriyordu.
+        $this->elderlyFacility->update([
+            'capacity' => 170,
+            'services' => ['7/24 hemşire', 'Alzheimer bakımı'],
+        ]);
+
+        $response = $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)->assertOk();
+        $html = $response->getContent();
+
+        // "Özellikleri" onay kutusu izgarasinda bu metinler zaten HER ZAMAN
+        // basiliyor (isaretli olsun olmasin), o yuzden assertSee tek basina
+        // kanit degil - burada spesifik olarak "Yaşlı Bakım Detayları"
+        // blogundaki her etiketten SONRAKI deger kismini kontrol ediyoruz.
+        $this->assertDetailFieldValue($html, 'Kapasite', '170 kişi');
+        $this->assertDetailFieldValue($html, 'Hemşire/doktor desteği', '7/24 hemşire');
+        $this->assertDetailFieldValue($html, 'Demans/Alzheimer bakımı', 'Alzheimer bakımı');
+    }
+
+    private function assertDetailFieldValue(string $html, string $label, string $expectedValue): void
+    {
+        $labelPos = strpos($html, '>'.$label.'<');
+        $this->assertNotFalse($labelPos, "'{$label}' etiketi sayfada bulunamadi.");
+        $after = substr($html, $labelPos, 400);
+        $this->assertStringNotContainsString('>Belirtilmedi<', substr($after, 0, strpos($after, '</div>', strlen($label)) ?: 400), "'{$label}' hala 'Belirtilmedi' gosteriyor.");
+        $this->assertStringContainsString($expectedValue, $after, "'{$label}' beklenen degeri ('{$expectedValue}') gostermiyor.");
+    }
+
     public function test_facility_profile_saves_filter_features_and_section_details(): void
     {
         $this->withSession(['facility_user_id' => $this->facilityUser->id])
@@ -1831,6 +1866,22 @@ class PlatformFeatureTest extends TestCase
             'email' => $this->family->email,
             'password' => 'Aile12345!',
         ])->assertRedirect();
+    }
+
+    public function test_family_login_shows_favorite_hint_when_redirected_from_heart_icon(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi - giris yapmamis bir kullanici
+        // favori (kalp) ikonuna basinca, hicbir aciklama olmadan sessizce
+        // giris sayfasina dusuyordu (bkz. engagement-script.blade.php'deki
+        // ayni tarihli yorum). ?favori=1 ile gelince, sayfanin zaten var
+        // olan genel bildirim kartinda kisa bir aciklama gorunmeli.
+        $this->get('/site/bakimeviara/aile/giris?favori=1')
+            ->assertOk()
+            ->assertSee('favorilere eklemek için önce giriş yapmalısınız');
+
+        $this->get('/site/bakimeviara/aile/giris')
+            ->assertOk()
+            ->assertDontSee('favorilere eklemek için önce giriş yapmalısınız');
     }
 
     public function test_admin_can_suspend_and_reactivate_facility_account_from_complaint_review(): void

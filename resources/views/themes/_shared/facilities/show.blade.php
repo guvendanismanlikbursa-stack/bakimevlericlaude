@@ -550,6 +550,32 @@
         };
         $sectionDetailValues[$derivedKey] = $sectionDetailValues[$derivedKey] ?? $derivedFromPriceTable;
       }
+
+      // 1 Eylul 2026: kullanicinin bildirdigi devam eden gercek hata - ayni
+      // celiski "Kapasite" (facility.capacity, sayfada AYRICA gosteriliyor,
+      // bkz. asagidaki "Kapasite/Fiyat Aralığı" kutulari) ve "Hemşire/doktor
+      // desteği"/"Demans/Alzheimer bakımı" (yukaridaki "Özellikleri" onay
+      // kutusu listesinde ZATEN isaretli olabilen 7/24 hemşire, Doktor
+      // kontrolü, Alzheimer bakımı, Demans bakımı ozellikleriyle birebir
+      // ayni anlama geliyor) icin de gecerliydi. Bu 3 alan da BASKA bir
+      // yerde ZATEN girilmis/isaretlenmis olabilirken, ayri detay metni hic
+      // girilmediyse "Belirtilmedi" gosteriyordu.
+      if ($sectionSlug === 'yasli-bakim') {
+        if ($facility->capacity) {
+          $key = \Illuminate\Support\Str::slug('Kapasite');
+          $sectionDetailValues[$key] = $sectionDetailValues[$key] ?? $facility->capacity.' kişi';
+        }
+        $matchedNurseFeatures = collect(['7/24 hemşire', 'Doktor kontrolü'])->filter(fn ($f) => in_array($f, $facility->services ?? [], true));
+        if ($matchedNurseFeatures->isNotEmpty()) {
+          $key = \Illuminate\Support\Str::slug('Hemşire/doktor desteği');
+          $sectionDetailValues[$key] = $sectionDetailValues[$key] ?? $matchedNurseFeatures->implode(', ');
+        }
+        $matchedDementiaFeatures = collect(['Alzheimer bakımı', 'Demans bakımı'])->filter(fn ($f) => in_array($f, $facility->services ?? [], true));
+        if ($matchedDementiaFeatures->isNotEmpty()) {
+          $key = \Illuminate\Support\Str::slug('Demans/Alzheimer bakımı');
+          $sectionDetailValues[$key] = $sectionDetailValues[$key] ?? $matchedDementiaFeatures->implode(', ');
+        }
+      }
       $sectionDetailFieldList = collect($section['profile_fields'] ?? [])->map(fn ($label) => [
         'key' => \Illuminate\Support\Str::slug($label),
         'label' => $label,
