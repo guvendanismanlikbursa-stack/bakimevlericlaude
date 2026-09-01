@@ -18,8 +18,13 @@ class FacilityReviewController extends Controller
     public function store(Request $request)
     {
         $brand = current_brand();
+        // 1 Eylul 2026: anlasmali (is_broker_managed) kurumlar icin de
+        // artik gercek bir OfferRequest olusabiliyor (bkz.
+        // Facility::scopeAcceptsFamilyRequests()) - bu kontrol eskisi
+        // gibi SADECE is_claimed kalirsa, o kurumdan gercekten teklif
+        // istemis bir aile yorum birakamaz, 404 alir.
         $facility = Facility::published()->forBrand($brand['category_scope'])
-            ->where('is_claimed', true)
+            ->acceptsFamilyRequests()
             ->where('slug', $request->route('slug'))
             ->firstOrFail();
 

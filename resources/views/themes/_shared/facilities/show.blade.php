@@ -37,6 +37,13 @@
   $heroImage = $primaryImage
     ? facility_asset($primaryImage->path)
     : ($section['hero_image'] ?? null);
+  // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali
+  // (is_broker_managed) ama henuz sahiplenilmemis bir kurumda "Ücret
+  // Bilgisi İste"/"Ziyaret Talebi"/"Kontenjan Sor"/"Soru Sor" formlari
+  // sadece is_claimed kontrol edildigi icin HIC gorunmuyordu, sayfa hala
+  // "Bu kurum henüz sahiplenilmedi" diyordu. Facility::scopeAcceptsFamilyRequests()
+  // ile AYNI kural (bkz. o scope'un yorumu) burada da uygulanir.
+  $acceptsFamilyRequests = $facility->is_claimed || $facility->is_broker_managed;
 @endphp
 
 {{-- 12 Agustos 2026: kullanicinin talebi - kurum detay sayfasi "yarim
@@ -53,6 +60,8 @@
     <div class="flex items-center gap-2 mb-3 flex-wrap">
       @if($facility->is_claimed)
         <span class="bg-white/15 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded-full">✓ Onaylı / sahiplenilmiş kurum</span>
+      @elseif($facility->is_broker_managed)
+        <span class="bg-white/15 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded-full">✓ Anlaşmalı kurum</span>
       @else
         <span class="bg-white/10 border border-white/15 text-white/80 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
       @endif
@@ -85,6 +94,8 @@
     <div class="flex items-center gap-2 mb-2 flex-wrap">
       @if($facility->is_claimed)
         <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Onaylı / sahiplenilmiş kurum</span>
+      @elseif($facility->is_broker_managed)
+        <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Anlaşmalı kurum</span>
       @else
         <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
       @endif
@@ -144,13 +155,13 @@
          hic gormeden vazgecebiliyordu. Bu buyuk, birincil renkli buton
          asagidaki forma dogrudan kaydiriyor, boylece en onemli aksiyon
          sayfanin en ustunde HER ZAMAN gorunur/erisilebilir. --}}
-    @if($facility->is_claimed)
+    @if($acceptsFamilyRequests)
       <a href="#teklif-talebi" class="mt-5 flex items-center justify-center gap-2 rounded-xl px-5 py-4 text-base font-black text-white text-center shadow-sm hover:shadow-md transition" style="background: {{ $colors['primary'] }};">
         💬 Ücret / Teklif Bilgisi Al
       </a>
     @endif
     <div class="mt-3 grid sm:grid-cols-3 gap-3">
-      @if($facility->is_claimed)
+      @if($acceptsFamilyRequests)
         <button type="button" class="js-engagement-toggle rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}">Favori</button>
         <button type="button" class="js-engagement-toggle rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-black text-gray-700" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
       @endif
@@ -186,7 +197,7 @@
         @if($facility->site_visited_at)
           <div class="text-lg font-black text-emerald-700 mt-2">Ekibimizce ziyaret edildi</div>
         @else
-          <div class="text-lg font-black text-gray-950 mt-2">{{ $facility->is_claimed ? 'Onaylı kurum' : 'Profil doğrulama bekliyor' }}</div>
+          <div class="text-lg font-black text-gray-950 mt-2">{{ $acceptsFamilyRequests ? 'Onaylı kurum' : 'Profil doğrulama bekliyor' }}</div>
         @endif
       </div>
     </div>
@@ -540,7 +551,11 @@
     @include('themes._shared.partials.price-options-table', ['optionsTitle' => 'Program Süresine Göre Fiyat Aralığı', 'optionsItems' => $facility->programTypes])
 
     @php
-      $canReview = $facility->is_claimed
+      // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali
+      // (is_broker_managed) bir kurumdan gercekten teklif istemis bir
+      // aile bile (bkz. FacilityReviewController, ayni tarihli fix) bu
+      // kontrol hala SADECE is_claimed oldugu icin yorum birakamiyordu.
+      $canReview = $acceptsFamilyRequests
         && session('family_user_id')
         && \App\Models\OfferRequest::where('family_user_id', session('family_user_id'))->where('facility_id', $facility->id)->exists();
     @endphp
@@ -577,7 +592,7 @@
             <button class="btn-primary w-full rounded-lg py-2 font-black">Yorumu Gönder</button>
             <p class="text-xs text-gray-400">Yorumlar admin onayından sonra yayınlanır.</p>
           </form>
-        @elseif(! $facility->is_claimed)
+        @elseif(! $acceptsFamilyRequests)
           <p class="text-sm text-gray-500">Bu kurum henüz sahiplenilmedi. Yorum yapabilmek için kurumun onaylanmış olması gerekir.</p>
         @else
           <p class="text-sm text-gray-500">Yorum yapabilmek için önce bu kurumdan <a href="#teklif-talebi" class="font-black text-primary underline">ücret/teklif bilgisi</a> istemelisiniz.</p>
@@ -596,11 +611,11 @@
         @empty
           <div class="rounded-lg p-5 text-sm text-gray-600 flex items-center gap-3" style="background: {{ $colors['soft'] }};">
             <span class="text-2xl">❓</span>
-            <span>Henüz yanıtlanmış soru yok.@if($facility->is_claimed) İlk soruyu siz sorabilirsiniz; kurum yetkilisi cevapladığında burada görünür.@endif</span>
+            <span>Henüz yanıtlanmış soru yok.@if($acceptsFamilyRequests) İlk soruyu siz sorabilirsiniz; kurum yetkilisi cevapladığında burada görünür.@endif</span>
           </div>
         @endforelse
       </div>
-      @if($facility->is_claimed)
+      @if($acceptsFamilyRequests)
         <form method="POST" action="{{ brand_route('questions.store', ['slug' => $facility->slug]) }}" class="flex flex-col sm:flex-row gap-2">
           @csrf
           @include('themes._shared.partials.honeypot')
@@ -633,7 +648,7 @@
           <p class="text-sm text-amber-800">Güven Bakım Hizmetleri, ayda 2 defa sizin adınıza ücretsiz yerinde ziyaret gerçekleştirir ve sizi bilgilendirir.</p>
         </div>
       @endif
-      @if($facility->is_claimed)
+      @if($acceptsFamilyRequests)
         <h3 class="font-black mb-1 text-gray-950">Ücret / Teklif Bilgisi Al</h3>
         {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumlarda daha
              kisisel bir dokunus, ama abartisiz/durust: SADECE gercekten
@@ -673,8 +688,18 @@
         {{-- 31 Agustos 2026: kullanicinin bildirdigi gercek hata - burada
              anlasmali kurumlarda bile HALA kurumun kendi ham numarasi
              yaziyordu, facility_public_contact_phone() ayni kurali
-             (anlasmaliysa Guven Bakim numarasi) burada da uygular. --}}
-        @if($contactPhoneClaimed = facility_public_contact_phone($facility))<div class="mt-4 text-sm text-gray-600">Telefon: {{ $contactPhoneClaimed }}</div>@endif
+             (anlasmaliysa Guven Bakim numarasi) burada da uygular.
+             1 Eylul 2026: bu numara sadece DUZ METIN olarak yaziyordu
+             (tel: linki degildi) ve WhatsApp butonu hic yoktu - anlasmali
+             ama sahiplenilmemis bir kurum artik BU dala dustugu icin
+             (bkz. $acceptsFamilyRequests), direkt arama/WhatsApp imkani
+             kaybolmus olurdu. --}}
+        @if($contactPhoneClaimed = facility_public_contact_phone($facility))
+          <a href="tel:{{ $contactPhoneClaimed }}" class="block mt-4 text-sm font-black text-center" style="color: {{ $colors['primary'] }};">📞 {{ $contactPhoneClaimed }}</a>
+        @endif
+        @if($claimedWhatsappUrl = facility_public_whatsapp_url($facility))
+          <a href="{{ $claimedWhatsappUrl }}" target="_blank" rel="noopener" class="block mt-2 text-sm font-black text-center" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
+        @endif
 
 
         <div class="mt-6 pt-6 border-t">
@@ -833,7 +858,7 @@
   </div>
 @endif
 
-@if($facility->is_claimed)
+@if($acceptsFamilyRequests)
   {{-- 12 Agustos 2026: kullanicinin talebi - "bu uygulamanin kalbi"
        (fiyat/teklif talebi) mobilde sayfa kaydirilirken GOZDEN
        KAYBOLMAMALI. Masaustunde sag sutundaki form zaten sticky; mobilde

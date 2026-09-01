@@ -251,6 +251,28 @@ class Facility extends Model
     }
 
     /**
+     * 1 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali
+     * (is_broker_managed) ama henuz sahiplenilmemis bir kurumda "Ücret
+     * Bilgisi İste"/"Ziyaret Talebi"/"Kontenjan Sor"/"Soru Sor" formlari
+     * HIC gorunmuyordu (her yerde sadece is_claimed kontrol ediliyordu) -
+     * aile o kurum icin platform uzerinden YAPILANDIRILMIS hicbir talep
+     * gonderemiyordu, sadece dogrudan arama/WhatsApp'a mahkumdu. Oysa bu
+     * talepler anlasmali kurumlarda zaten dogru sekilde admine yonleniyor
+     * (bkz. notify_facility_or_broker_admins()) - eksik olan SADECE bu
+     * formlarin GORUNMESI ve sunucu tarafinda KABUL EDILMESIYDI. Bu scope
+     * OfferRequestController/VisitRequestController/FacilityQuestionController'daki
+     * tum ->where('is_claimed', true) kontrollerinin yerini alir -
+     * scopeClaimed() ise (listeleme/filtreleme icin, gercekten kendi
+     * hesabiyla yoneten kurumlar anlamina geliyor) DEGISTIRILMEDEN kaldi.
+     */
+    public function scopeAcceptsFamilyRequests($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('is_claimed', true)->orWhere('is_broker_managed', true);
+        });
+    }
+
+    /**
      * Bir markanin kategori kapsamina giren kurumlari getirir.
      */
     public function scopeForBrand($query, array $categoryScope)

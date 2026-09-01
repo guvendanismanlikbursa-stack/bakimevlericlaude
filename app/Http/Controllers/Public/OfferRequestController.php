@@ -44,7 +44,7 @@ class OfferRequestController extends Controller
 
         if (! empty($validated['facility_id'])) {
             $facility = Facility::with('category')->published()->forBrand($brand['category_scope'])
-                ->where('is_claimed', true)
+                ->acceptsFamilyRequests()
                 ->findOrFail($validated['facility_id']);
             $validated['city_id'] = $facility->city_id;
             $validated['facility_category_id'] = $facility->facility_category_id;
@@ -98,7 +98,7 @@ class OfferRequestController extends Controller
 
         $brand = current_brand();
         $facilities = Facility::published()->forBrand($brand['category_scope'])
-            ->where('is_claimed', true)
+            ->acceptsFamilyRequests()
             ->whereIn('id', $validated['facility_ids'])
             ->get();
 
@@ -162,7 +162,7 @@ class OfferRequestController extends Controller
             // Form doldurma ile hesap olusturma arasinda kurum
             // sahiplenmeden cikmis/yayindan kaldirilmis olabilir; kayit
             // anindan once burada tekrar dogrulaniyor.
-            $facility = Facility::published()->where('is_claimed', true)->find($facilityId);
+            $facility = Facility::published()->acceptsFamilyRequests()->find($facilityId);
             if (! $facility || ! in_array($facility->category?->brand_scope, $categoryScope, true)) {
                 continue;
             }

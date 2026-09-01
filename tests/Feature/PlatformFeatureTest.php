@@ -547,6 +547,51 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Bu kurum henüz sahiplenilmedi');
     }
 
+    public function test_broker_managed_unclaimed_facility_accepts_offer_visit_and_question_requests(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali
+        // (is_broker_managed) ama henuz sahiplenilmemis bir kurumda sayfa
+        // hala "Bu kurum henüz sahiplenilmedi" diyordu ve "Ücret Bilgisi
+        // İste"/"Ziyaret Talebi"/"Kontenjan Sor"/"Soru Sor" formlari HIC
+        // gorunmuyordu - aile platform uzerinden yapilandirilmis hicbir
+        // talep gonderemiyordu. Facility::scopeAcceptsFamilyRequests()
+        // (is_claimed VEYA is_broker_managed) hem sayfa gorunumunu hem
+        // sunucu tarafi kabulu duzeltti.
+        $this->rehabFacility->update(['is_broker_managed' => true]);
+
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
+            ->assertOk()
+            ->assertDontSee('Bu kurum henüz sahiplenilmedi')
+            ->assertSee('Ücret / Teklif Bilgisi Al');
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/ziyaret-talebi', [
+            'full_name' => 'Ziyaret Talep',
+            'phone' => '05555555555',
+        ])->assertRedirect();
+        $this->assertSame(1, VisitRequest::where('type', 'ziyaret')->count());
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/kontenjan-sor', [
+            'full_name' => 'Soran',
+            'phone' => '05555555556',
+        ])->assertRedirect();
+        $this->assertSame(1, VisitRequest::where('type', 'kontenjan')->count());
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/soru-sor', [
+            'question' => 'Boş yer var mı?',
+        ])->assertRedirect();
+        $this->assertSame(1, \App\Models\FacilityQuestion::where('facility_id', $this->rehabFacility->id)->count());
+
+        $this->post('/site/bakimevleri/teklif-talebi', [
+            'facility_id' => $this->rehabFacility->id,
+            'full_name' => 'Talep Eden',
+            'phone' => '05555555557',
+        ])->assertRedirect();
+
+        $adminNotifCount = \App\Models\PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->whereIn('type', ['broker_visit_request', 'broker_new_question'])->count();
+        $this->assertSame(3, $adminNotifCount);
+    }
+
     public function test_review_requires_login_and_prior_offer_request_even_for_claimed_facility(): void
     {
         $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/yorum', [

@@ -7,10 +7,15 @@
   // yuklemesi olmayan kartlarda kucuk, durust bir "Ornek gorsel" etiketi
   // gosteriyoruz - gizlemek yerine seffaf olmak guveni artirir.
   $isSampleImage = ! $ownImagePath || str_starts_with($ownImagePath, 'facilities/demo/');
-  // Sahiplenilmemis (is_claimed=false) HER kurum on kayitli sayilir; kaynagi
-  // veri cekici olsun ya da olmasin, karsilastirma/fiyat talebi gibi
-  // aksiyonlar sadece sahiplenilmis kurumlarda anlamli.
-  $isPreRegisteredCard = ! $facility->is_claimed;
+  // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bu sart eskiden
+  // SADECE is_claimed'e bakiyordu, yani anlasmali (is_broker_managed) ama
+  // henuz sahiplenilmemis HER kurum, sitenin HER YERINDE (arama sonuclari,
+  // anasayfa, kategori listeleri, "Benzer Kurumlar", rehber sayfalari)
+  // aksiyon butonu olmayan kucuk "Ön Kayıtlı" mini-karta dusuyordu - tıpkı
+  // gercekten hicbir iliskimiz olmayan rastgele bir kurum gibi. Facility::
+  // scopeAcceptsFamilyRequests() ile AYNI kural: anlasmali kurumlar da
+  // artik buyuk, aksiyon butonlu karti kullanir.
+  $isPreRegisteredCard = ! $facility->is_claimed && ! $facility->is_broker_managed;
 @endphp
 @if($isPreRegisteredCard)
   {{-- 17 Agustos 2026: kullanicinin talebi - on kayitli kurumlar buyuk
@@ -63,7 +68,8 @@
     <div class="p-4">
       <div class="flex items-center gap-2 mb-2 flex-wrap">
         @if($section)<span class="bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $section['title'] }}</span>@endif
-        @if($facility->is_claimed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Onaylı</span>@endif
+        @if($facility->is_claimed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Onaylı</span>
+        @elseif($facility->is_broker_managed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Anlaşmalı</span>@endif
         @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
         @if($isPreRegisteredCard)<span class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">Ön Kayıtlı</span>@endif

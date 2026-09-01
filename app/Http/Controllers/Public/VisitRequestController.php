@@ -19,7 +19,7 @@ class VisitRequestController extends Controller
 
         $brand = current_brand();
         $facility = Facility::published()->forBrand($brand['category_scope'])
-            ->where('is_claimed', true)
+            ->acceptsFamilyRequests()
             ->where('slug', $request->route('slug'))
             ->firstOrFail();
 
@@ -56,7 +56,7 @@ class VisitRequestController extends Controller
 
         $brand = current_brand();
         $facility = Facility::published()->forBrand($brand['category_scope'])
-            ->where('is_claimed', true)
+            ->acceptsFamilyRequests()
             ->where('slug', $request->route('slug'))
             ->firstOrFail();
 
