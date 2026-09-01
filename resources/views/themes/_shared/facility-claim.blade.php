@@ -36,6 +36,53 @@
   $benefits[] = ['title' => 'Tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır. Sizinle önceden konuşulmadan hiçbir ücret kesilmez, sürpriz fatura çıkmaz.'];
   $benefits[] = ['title' => 'Telefonunuzdan da rahatça yönetin', 'text' => 'Panelinizi bilgisayardan olduğu kadar telefonunuzdan da kullanabilirsiniz — sahada olsanız bile talepleri kaçırmazsınız.'];
   $benefits[] = ['title' => 'Hiçbir taahhüt yok', 'text' => 'Sözleşme veya kilitlenme söz konusu değil, istediğiniz zaman kullanmayı bırakabilirsiniz.'];
+
+  // 1 Eylul 2026: kullanicinin talebi - "sahiplenme ve anlasmali calismalari
+  // icin cok tesvik edici, komisyon orani yazmayacak sekilde, kurum turune
+  // gore ayrilmis" metinler. Kampanya (ucretsiz Öne Cikan son tarihi) zaten
+  // sona erdigi icin ikna gucu artik SOYUT vaatten degil, o kurum turunun
+  // GERCEK gunluk derdine (bos yatak/kontenjan, kayit sezonu rekabeti, dogru
+  // terapi eslesmesi) dogrudan hitap eden metinden gelmeli. "komisyon"/
+  // "yuzde"/rakamsal ucret kelimesi kasitli olarak hicbir yerde yok - ayni
+  // asagidaki broker kutusu gibi her sey iletisime yonlendiriliyor.
+  $categoryPitch = match ($section['slug'] ?? null) {
+    'yasli-bakim' => [
+      'kicker' => 'Yaşlı bakım kurumları için',
+      'hook' => 'Boş kalan her yatak bir kayıptır — biz o yatakları dolduracak aileleri bulur, kurumunuzu onlara biz anlatırız.',
+      'points' => [
+        ['label' => '🛏️ Doluluk', 'text' => 'Sabit giderleriniz yatak boşken de devam eder. Amacımız kontenjanınızı sürekli dolu tutacak, düzenli bir aile akışı sağlamak.'],
+        ['label' => '💬 Güven', 'text' => 'Yaşlı bir yakını emanet etmek ailenin en zor kararlarından biridir; kurumunuzu bu güveni kazandıracak şekilde biz anlatırız.'],
+        ['label' => '⏱️ Zaman', 'text' => 'Telefonda aile ikna etmeye, soru cevaplamaya vaktiniz kalmasın — siz bakıma odaklanın, aile bulma emeğini biz üstlenelim.'],
+      ],
+    ],
+    'cocuk' => [
+      'kicker' => 'Kreş ve anaokulları için',
+      'hook' => 'Kayıt sezonu başlamadan kontenjanınızı doldurun, boş sıraların telaşını bu yıl yaşamayın.',
+      'points' => [
+        ['label' => '📅 Kayıt Sezonu', 'text' => 'Aileler kayıt döneminde birçok kreşi aynı anda karşılaştırır; sizi öne çıkaracak, fark yaratacak tanıtımı biz üstleniriz.'],
+        ['label' => '👨‍👩‍👧 Doğru Eşleşme', 'text' => 'Yaş grubunuza ve programınıza gerçekten uygun aileleri buluruz — rastgele değil, kurumunuza uygun talep.'],
+        ['label' => '⭐ İtibar', 'text' => 'Özenli tanıtımla bölgenizde konuşulan, aranan, tercih edilen bir kurum haline gelirsiniz.'],
+      ],
+    ],
+    'rehabilitasyon' => [
+      'kicker' => 'Rehabilitasyon merkezleri için',
+      'hook' => 'Hangi terapiye ihtiyacı olduğunu bilmeyen aileleri, doğru anlatımla kurumunuza biz yönlendiririz.',
+      'points' => [
+        ['label' => '🎯 Doğru Yönlendirme', 'text' => 'Aileler çoğu zaman hangi terapi branşına ihtiyaçları olduğunu bilmez; ihtiyaca uygun kurumu biz anlatarak yönlendiririz.'],
+        ['label' => '🧑‍⚕️ Dolu Program', 'text' => 'Boş seans saatleri yerine, uzmanlarınızın zamanını değerlendirecek düzenli bir danışan akışı sağlarız.'],
+        ['label' => '📈 Bilinirlik', 'text' => 'Özenli tanıtımla bölgenizde daha çok aile tarafından bilinen, ilk akla gelen bir merkez olun.'],
+      ],
+    ],
+    default => [
+      'kicker' => 'İsteyen kurumlar için',
+      'hook' => 'Aile bulma ve tanıtım emeğini biz üstlenelim, siz sadece kurumunuza odaklanın.',
+      'points' => [
+        ['label' => '💰 Maddi', 'text' => 'Sizin için bulunan, sizin için tanıtılan aile talepleri, daha çok dolu kontenjan demektir.'],
+        ['label' => '🤝 Manevi', 'text' => 'Aile bulma ve tanıtım emeğini siz harcamazsınız, bu özenli süreci sizin için biz yürütürüz.'],
+        ['label' => '⭐ Statü', 'text' => 'Özenli tanıtımla bölgenizde öne çıkan, tercih edilen bir kurum olun.'],
+      ],
+    ],
+  };
 @endphp
 <div class="max-w-5xl mx-auto px-4 py-12">
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="text-sm font-semibold text-gray-500">← {{ $facility->name }} sayfasına dön</a>
@@ -64,7 +111,8 @@
         <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">Kurumunuzu Sahiplenin</div>
         <div class="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-black">🎉 Tamamen ücretsiz</div>
       </div>
-      <h1 class="text-2xl md:text-3xl font-black text-gray-950 mb-4">"{{ $facility->name }}" kurumunu sahiplenerek profilin kontrolünü alın</h1>
+      <h1 class="text-2xl md:text-3xl font-black text-gray-950 mb-2">"{{ $facility->name }}" kurumunu sahiplenerek profilin kontrolünü alın</h1>
+      <p class="text-base font-bold leading-snug mb-4" style="color: {{ $colors['primary'] }};">{{ $categoryPitch['hook'] }}</p>
 
       {{-- 13 Agustos 2026: kullanicinin talebi - "kurumu goren mutlaka
            sahiplenmek istemeli" - soyut vaat yerine bu kurumun KENDI
@@ -136,23 +184,17 @@
            yonlendiriliyor (kullanicinin acik talebi: "sadece ucret olayini
            bana atman gerekiyor"). --}}
       <div class="mt-6 rounded-2xl border-2 p-5" style="border-color: {{ $colors['primary'] }}33; background: {{ $colors['soft'] }};">
-        <p class="text-xs font-black uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">İsteyen kurumlar için: Aile Bulma ve Tanıtımı Biz Üstlenelim</p>
+        <p class="text-xs font-black uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">{{ $categoryPitch['kicker'] }}: Aile Bulma ve Tanıtımı Biz Üstlenelim</p>
         <p class="text-sm text-gray-700 leading-relaxed mb-3">
           Sahiplenme her zaman <strong>tamamen ücretsizdir</strong> ve size profil yönetimiyle doğrudan teklif talebi akışını sağlar. Bunun ötesinde, isteyen kurumlarımıza sunduğumuz daha kapsamlı bir işbirliği seçeneğimiz de var: sizin için uygun aileleri <strong>biz buluyor</strong>, kurumunuzun sunduğu imkanları ve öne çıkan özelliklerini bu ailelere <strong>biz anlatıyoruz</strong> — siz bu süreçte yorulmazsınız. Kurumunuza <strong>tanıtım videosu</strong> ekleme gibi ek görünürlük imkanlarıyla desteklenen bu özenli tanıtımın ardından, <strong>size sadece uygun bulduğumuz aileyi kurumunuza kayıt etmek kalır.</strong>
         </p>
         <div class="grid sm:grid-cols-3 gap-2 mb-3">
-          <div class="bg-white rounded-lg p-3 border border-gray-100">
-            <div class="text-xs font-black text-gray-950 mb-0.5">💰 Maddi</div>
-            <p class="text-xs text-gray-500">Sizin için bulunan, sizin için tanıtılan aile talepleri, daha çok dolu kontenjan demektir.</p>
-          </div>
-          <div class="bg-white rounded-lg p-3 border border-gray-100">
-            <div class="text-xs font-black text-gray-950 mb-0.5">🤝 Manevi</div>
-            <p class="text-xs text-gray-500">Aile bulma ve tanıtım emeğini siz harcamazsınız, bu özenli süreci sizin için biz yürütürüz.</p>
-          </div>
-          <div class="bg-white rounded-lg p-3 border border-gray-100">
-            <div class="text-xs font-black text-gray-950 mb-0.5">⭐ Statü</div>
-            <p class="text-xs text-gray-500">Özenli tanıtımla bölgenizde öne çıkan, tercih edilen bir kurum olun.</p>
-          </div>
+          @foreach($categoryPitch['points'] as $p)
+            <div class="bg-white rounded-lg p-3 border border-gray-100">
+              <div class="text-xs font-black text-gray-950 mb-0.5">{{ $p['label'] }}</div>
+              <p class="text-xs text-gray-500">{{ $p['text'] }}</p>
+            </div>
+          @endforeach
         </div>
         <p class="text-xs text-gray-500">Bu seçenek tamamen isteğe bağlıdır, temel sahiplenme her koşulda ücretsiz kalmaya devam eder. Şartlar ve detaylı bilgi için lütfen sağ alttaki 💬 sohbet ikonundan bizimle iletişime geçin.</p>
       </div>

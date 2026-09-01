@@ -2806,6 +2806,16 @@ class PlatformFeatureTest extends TestCase
         Storage::fake('local');
         Mail::fake();
 
+        // 1 Eylul 2026: kampanya (facility_featured_campaign_deadline())
+        // TAM bugun 1 Eylul'de bitiyor - bu test artik gercek saatle
+        // "aktif kampanya" durumunu hic yakalayamiyordu (her gun biraz
+        // daha gecmiste kaliyordu). Kardes testteki (bkz. hemen alttaki
+        // test_claim_approved_after_campaign_deadline...) AYNI desen:
+        // Carbon::setTestNow() ile deadline'dan ONCESINE zaman yolculugu -
+        // boylece is kurali gercek takvimden BAGIMSIZ, kalici olarak
+        // dogrulanabilir kalir.
+        \Illuminate\Support\Carbon::setTestNow(facility_featured_campaign_deadline()->subDay());
+
         $this->assertFalse($this->rehabFacility->is_featured);
         $this->assertTrue(facility_featured_campaign_active(), 'Bu test yalnizca kampanya son tarihinden ONCE anlamlidir.');
 
@@ -2824,6 +2834,8 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect();
 
         $this->assertTrue($this->rehabFacility->fresh()->is_featured);
+
+        \Illuminate\Support\Carbon::setTestNow();
     }
 
     // 14 Agustos 2026: kullanicinin talebi - "one cikan" ucretsiz rozeti
