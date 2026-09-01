@@ -382,6 +382,8 @@
       <div class="mt-3 flex gap-2 flex-wrap">
         @if($perf['is_claimed'])
           <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Yetkilisi tarafından doğrulandı{{ $perf['claimed_at'] ? ' · '.$perf['claimed_at']->format('d.m.Y') : '' }}</span>
+        @elseif($facility->is_broker_managed)
+          <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Anlaşmalı kurum</span>
         @else
           <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">Henüz doğrulanmadı (ön kayıtlı profil)</span>
         @endif
@@ -527,6 +529,27 @@
         default => null,
       };
       $sectionDetailValues = $sectionDetailRecord->details ?? [];
+      // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - "Oda tipleri"
+      // (yasli-bakim) / "Yaş aralığı" (cocuk) detay alani, admin panelinde
+      // AYRI bir serbest metin/secim alani oldugu icin, hemen altindaki
+      // "Oda Tipine Göre Fiyat Aralığı"/"Yaş Grubuna Göre Fiyat Aralığı"
+      // tablosunda GERÇEK fiyatlar girilmis olsa bile bos ("Belirtilmedi")
+      // kalabiliyordu - aile icin celiskili gorunuyordu ("fiyati var ama
+      // hangi tipler oldugu belirtilmemis" diyordu). Admin ayri bir metin
+      // GIRMEDIYSE, fiyat tablosunda GIRILMIS tiplerin isimlerinden
+      // otomatik bir ozet uretilir - ikisi arasinda artik celiski olmaz.
+      $derivedFromPriceTable = match($sectionSlug) {
+        'yasli-bakim' => $facility->roomTypes->isNotEmpty() ? $facility->roomTypes->map->label()->implode(', ') : null,
+        'cocuk' => $facility->ageGroups->isNotEmpty() ? $facility->ageGroups->map->label()->implode(', ') : null,
+        default => null,
+      };
+      if ($derivedFromPriceTable) {
+        $derivedKey = match($sectionSlug) {
+          'yasli-bakim' => \Illuminate\Support\Str::slug('Oda tipleri'),
+          'cocuk' => \Illuminate\Support\Str::slug('Yaş aralığı'),
+        };
+        $sectionDetailValues[$derivedKey] = $sectionDetailValues[$derivedKey] ?? $derivedFromPriceTable;
+      }
       $sectionDetailFieldList = collect($section['profile_fields'] ?? [])->map(fn ($label) => [
         'key' => \Illuminate\Support\Str::slug($label),
         'label' => $label,

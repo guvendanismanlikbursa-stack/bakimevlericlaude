@@ -997,6 +997,21 @@ class PlatformFeatureTest extends TestCase
     }
 
 
+    public function test_room_type_prices_fill_room_types_detail_field_when_not_separately_entered(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - "Oda tipleri"
+        // detay alani (ayri bir metin/secim alani) bos birakilmisken, hemen
+        // altindaki "Oda Tipine Göre Fiyat Aralığı" tablosunda GERÇEK
+        // fiyatlar girilmis olabiliyordu - aile icin celiskili gorunuyordu.
+        // Admin ayrica metin GIRMEDIYSE, fiyati girilmis oda tiplerinin
+        // isimlerinden otomatik bir ozet uretilmeli.
+        $this->elderlyFacility->roomTypes()->create(['room_type' => 'tek_kisilik', 'price_min' => 70000, 'price_max' => 70000, 'sort_order' => 1]);
+        $this->elderlyFacility->roomTypes()->create(['room_type' => 'paylasimli', 'price_min' => 40000, 'price_max' => 50000, 'sort_order' => 2]);
+
+        $response = $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)->assertOk();
+        $response->assertSee('Tek Kişilik Oda, Paylaşımlı Oda');
+    }
+
     public function test_facility_profile_saves_filter_features_and_section_details(): void
     {
         $this->withSession(['facility_user_id' => $this->facilityUser->id])
@@ -1534,6 +1549,55 @@ class PlatformFeatureTest extends TestCase
             ->first();
 
         $this->assertNotNull($notification);
+    }
+
+    public function test_broker_managed_unclaimed_facility_offer_request_notifies_admin_not_nobody(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan detayli
+        // denetimde bulunan gercek hata - anlasmali-ama-sahiplenilmemis bir
+        // kurumun FacilityUser hesabi olmadigi icin, dogrudan teklif talebi
+        // eskiden HICBIR YERE (ne kurum hesabina ne admin'e) bildirilmiyordu.
+        $this->rehabFacility->update(['is_broker_managed' => true]);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/teklif-talebi', [
+                'facility_id' => $this->rehabFacility->id,
+                'full_name' => 'Anlasmali Kurum Talebi',
+                'phone' => '05551239999',
+            ])->assertRedirect();
+
+        $adminNotif = PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->where('type', 'broker_offer_request')->first();
+        $this->assertNotNull($adminNotif);
+    }
+
+    public function test_pending_offer_request_to_broker_managed_facility_is_created_after_registration(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan detayli
+        // denetimde bulunan gercek hata - giris yapmadan anlasmali-ama-
+        // sahiplenilmemis bir kuruma teklif isteyen aile kayit olunca,
+        // pendingOfferRequestIsStillValid() SADECE is_claimed kontrol
+        // ettigi icin talep sessizce OLUSMUYORDU.
+        $this->rehabFacility->update(['is_broker_managed' => true]);
+
+        $this->post('/site/bakimevleri/teklif-talebi', [
+            'facility_id' => $this->rehabFacility->id,
+            'full_name' => 'Kayitsiz Anlasmali Talep',
+            'phone' => '05551238888',
+        ])->assertRedirect();
+
+        $this->assertSame(0, OfferRequest::where('full_name', 'Kayitsiz Anlasmali Talep')->count());
+
+        $this->post('/site/bakimevleri/aile/kayit', [
+            'name' => 'Kayitsiz Anlasmali Talep',
+            'email' => 'anlasmalitalep@test.local',
+            'phone' => '05551238888',
+            'password' => 'Sifre12345!',
+            'password_confirmation' => 'Sifre12345!',
+            'consent' => '1',
+        ])->assertRedirect();
+
+        $this->assertSame(1, OfferRequest::where('full_name', 'Kayitsiz Anlasmali Talep')->count());
     }
 
     public function test_admin_sees_offer_request_form_details_and_quoted_price(): void
@@ -2912,6 +2976,32 @@ class PlatformFeatureTest extends TestCase
         $this->assertFalse($this->rehabFacility->fresh()->is_featured);
 
         \Illuminate\Support\Carbon::setTestNow();
+    }
+
+    public function test_related_facilities_prioritize_same_city_over_same_exact_category(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - "Benzer
+        // Kurumlar" eskiden SADECE ayni facility_category_id'yi (tam ayni
+        // alt kategori) filtreliyordu, sehir sadece siralama ipucuydu.
+        // Bursa'da bir kurumun sayfasinda, ayni bolumde (yasli-bakim) ama
+        // FARKLI alt kategorideki BASKA BIR BURSA kurumu hic gorunmuyordu -
+        // onun yerine baska sehirlerdeki (Tekirdag, Ankara, Osmaniye gibi)
+        // AYNI alt kategori kurumlari gosteriliyordu. Burada: elderlyFacility
+        // ile AYNI sehirde ama FARKLI alt kategoride bir kurum, elderlyFacility
+        // ile AYNI alt kategoride ama BASKA sehirlerde 3 kurum olusturulup,
+        // sonucta AYNI SEHIR kurumunun (eskiden hic gorunmeyen) artik
+        // goruldugu dogrulanir.
+        $otherCategorySameSection = FacilityCategory::create(['name' => 'Huzurevi Test', 'slug' => 'huzurevi-test', 'brand_scope' => 'yasli-bakim']);
+        $sameCityDifferentCategory = $this->facility('Ayni Sehir Farkli Kategori Kurumu', $otherCategorySameSection, true);
+
+        $otherCity = City::create(['name' => 'Baska Sehir Test', 'slug' => 'baska-sehir-test']);
+        for ($i = 1; $i <= 3; $i++) {
+            $f = $this->facility('Baska Sehir Ayni Kategori Kurumu '.$i, $this->elderlyCategory, true);
+            $f->update(['city_id' => $otherCity->id]);
+        }
+
+        $response = $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)->assertOk();
+        $response->assertSee('Ayni Sehir Farkli Kategori Kurumu');
     }
 
     public function test_featured_facility_card_shows_premium_ribbon(): void
@@ -4475,12 +4565,56 @@ class PlatformFeatureTest extends TestCase
         $this->assertEquals(28.97, $facility->lng);
     }
 
-    public function test_admin_editing_facility_without_address_change_does_not_call_geocoder(): void
+    public function test_admin_editing_facility_with_existing_coordinates_does_not_call_geocoder(): void
     {
+        // 1 Eylul 2026: bu test eskiden "adres degismedi -> geocoder hic
+        // cagrilmaz" davranisini dogruluyordu - ama tam da bu kural,
+        // kullanicinin bildirdigi gercek hataydi: ilk geocode denemesi
+        // basarisiz olan (lat/lng hala bos) bir kurum, adresi bir daha
+        // degistirilmezse SONSUZA KADAR konumsuz kaliyordu. Asil korunmasi
+        // gereken kural farkliydi: lat/lng zaten DOLUYSA (gercek bir
+        // koordinat varsa) tekrar cagirma - o kural burada test edilir.
+        $facility = $this->rehabFacility;
+        $facility->update(['lat' => 41.5, 'lng' => 29.5, 'address' => 'Degismeyen Adres']);
+
+        Http::fake();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$facility->id, [
+                'name' => $facility->name,
+                'city_id' => $facility->city_id,
+                'facility_category_id' => $facility->facility_category_id,
+                'district' => $facility->district,
+                'address' => 'Degismeyen Adres',
+                'lat' => 41.5,
+                'lng' => 29.5,
+            ])
+            ->assertRedirect();
+
+        Http::assertNothingSent();
+        $facility->refresh();
+        $this->assertEquals(41.5, $facility->lat);
+        $this->assertEquals(29.5, $facility->lng);
+    }
+
+    public function test_admin_editing_facility_without_address_change_still_retries_geocoding_if_still_missing(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali/
+        // sahiplenilmemis bir kurumun (HepBahar Huzurevi) adresi girilmisti
+        // ama Google Haritalar hic gorunmuyordu. Kok neden: ilk otomatik
+        // geocode denemesi (ne sebeple olursa olsun) basarisiz kalmissa,
+        // ve admin sonraki kayitlarda adres metnini DEGISTIRMEMISSE, eski
+        // kod bu durumu "adres ayni, tekrar denemeye gerek yok" sanip asla
+        // yeniden denemiyordu. Artik lat/lng bos oldugu surece HER kayitta
+        // yeniden denenir.
         $facility = $this->rehabFacility;
         $facility->update(['lat' => null, 'lng' => null, 'address' => 'Degismeyen Adres']);
 
-        Http::fake();
+        Http::fake([
+            'nominatim.openstreetmap.org/*' => Http::response([
+                ['lat' => '40.2000000', 'lon' => '29.1000000'],
+            ]),
+        ]);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->put('/admin/kurumlar/'.$facility->id, [
@@ -4492,7 +4626,9 @@ class PlatformFeatureTest extends TestCase
             ])
             ->assertRedirect();
 
-        Http::assertNothingSent();
+        $facility->refresh();
+        $this->assertEquals(40.2, $facility->lat);
+        $this->assertEquals(29.1, $facility->lng);
     }
 
     public function test_data_extractor_approval_auto_geocodes_when_scrape_missing_coordinates(): void
@@ -5097,6 +5233,32 @@ class PlatformFeatureTest extends TestCase
             ->assertForbidden();
 
         $this->assertFalse($foreignImage->fresh()->is_primary);
+    }
+
+    // 1 Eylul 2026: kullanicinin talebi - "yeni kurum eklendiginde otomatik
+    // ornek yemek listesi gorseli eklensin, Turkiye geneli icin uygula".
+    // Daha once bu SADECE Bursa'ya, tek seferlik bir OpsController ucuyla
+    // uygulanmisti - artik admin panelden elle eklenen HER yeni kurumda
+    // otomatik calisir (bkz. FacilityImportImageService::attachDefaultMenuImage()).
+    public function test_admin_manually_creating_facility_auto_assigns_sample_menu_image(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('facilities/demo/menu-sample-source.webp', 'ornek-yemek-listesi-icerik');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post('/admin/kurumlar', [
+                'name' => 'Yemek Listesi Test Kurumu',
+                'city_id' => $this->city->id,
+                'facility_category_id' => $this->rehabCategory->id,
+                'district' => 'Merkez',
+                'address' => 'Test Mahallesi Test Sokak No:1',
+            ])
+            ->assertRedirect();
+
+        $facility = Facility::where('name', 'Yemek Listesi Test Kurumu')->firstOrFail();
+        $this->assertNotNull($facility->menu_image_path);
+        $this->assertNotNull($facility->menu_image_updated_at);
+        Storage::disk('public')->assertExists($facility->menu_image_path);
     }
 
     // 19 Agustos 2026: kullanicinin talebi - "kurum panellerine yemek

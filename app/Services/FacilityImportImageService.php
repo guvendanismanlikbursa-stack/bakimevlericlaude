@@ -24,8 +24,44 @@ class FacilityImportImageService
     // storage/app/public/facilities/demo/{category_id}/).
     private const DEMO_DIRECTORY = 'facilities/demo';
 
-    public function __construct(private ImageCompressionService $imageCompressor)
+    // 19 Agustos 2026'da menuImageDemoApply() ile olusturulan, tum kurumlarin
+    // referans aldigi tek kaynak ornek yemek listesi gorseli.
+    private const MENU_SAMPLE_SOURCE = 'facilities/demo/menu-sample-source.webp';
+
+    public function __construct(private ImageCompressionService $imageCompressor, private CrossDomainImageSync $imageSync)
     {
+    }
+
+    /**
+     * 1 Eylul 2026: kullanicinin talebi - "yeni kurum eklendiginde otomatik
+     * ornek yemek listesi gorseli eklensin, Turkiye geneli icin uygula".
+     * Daha once bu SADECE Bursa'ya, tek seferlik bir OpsController ucuyla
+     * (menuImageDemoApply) uygulanmisti; artik HER yeni kurum olusturuldugunda
+     * (admin elle ekleme, veri cekici - dogrudan yayin veya onay bekleyen -,
+     * kurum kayit basvurusu onayi) otomatik calisir. Her kurum icin BAGIMSIZ
+     * bir kopya olusturulur (kullanicinin daha once acikca belirttigi kural:
+     * "paylasimli olmamali, her kurumun ayri olmali" - ayni menuImageDemoApply
+     * yorumu), CrossDomainImageSync ile aninda 3 domain'e yazilir.
+     */
+    public function attachDefaultMenuImage(Facility $facility): void
+    {
+        if ($facility->menu_image_path) {
+            return;
+        }
+
+        $disk = Storage::disk('public');
+        if (! $disk->exists(self::MENU_SAMPLE_SOURCE)) {
+            return;
+        }
+
+        $newPath = 'facilities/'.Str::random(32).'.webp';
+        $disk->put($newPath, $disk->get(self::MENU_SAMPLE_SOURCE));
+        $this->imageSync->syncStore($newPath);
+
+        $facility->update([
+            'menu_image_path' => $newPath,
+            'menu_image_updated_at' => now(),
+        ]);
     }
 
     private const SECTION_DIRECTORIES = [

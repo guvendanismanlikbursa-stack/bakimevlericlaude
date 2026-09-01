@@ -235,14 +235,40 @@ class FacilityController extends Controller
 
         $serviceSection = service_section_for_scope($facility->category?->brand_scope);
 
-        $related = Facility::discoverable()
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - eski sorgu
+        // SADECE ayni facility_category_id'yi (ör. tam "Huzurevi", "Yaşlı
+        // Bakım Merkezi" gibi ayri alt kategoriler) filtreliyordu, sehir
+        // eslesmesi ise sadece SIRALAMA icin kullanilan zayif bir ipucuydu.
+        // Bursa'da ayni EXACT alt kategoriden yeterince kurum yoksa, farkli
+        // sehirlerdeki ayni alt kategori kurumlari, ayni sehirdeki (ama
+        // farkli alt kategorideki) kurumlarin ONUNE geciyordu - aile Bursa
+        // kurumu bakarken Tekirdag/Ankara/Osmaniye kurumlari goruyordu.
+        // Artik once AYNI SEHIR (bolum genelinde, alt kategori farketmez,
+        // ilce/alt-kategori eslesmesi siralama icin kullanilir) denenir;
+        // yeterli kurum yoksa (o sehirde bu bolumde az kurum varsa) eski
+        // davranisla (ayni EXACT alt kategori, sehir farketmez) doldurulur.
+        $sameCity = Facility::discoverable()
             ->forBrand($serviceSection['scopes'] ?? $brand['category_scope'])
-            ->where('facility_category_id', $facility->facility_category_id)
+            ->where('city_id', $facility->city_id)
             ->where('id', '!=', $facility->id)
             ->with(['city', 'category', 'images'])
-            ->orderByRaw('CASE WHEN city_id = ? THEN 0 ELSE 1 END', [$facility->city_id])
+            ->orderByRaw('CASE WHEN district = ? THEN 0 ELSE 1 END', [$facility->district])
+            ->orderByRaw('CASE WHEN facility_category_id = ? THEN 0 ELSE 1 END', [$facility->facility_category_id])
             ->limit(3)
             ->get();
+
+        $related = $sameCity;
+        if ($related->count() < 3) {
+            $fallback = Facility::discoverable()
+                ->forBrand($serviceSection['scopes'] ?? $brand['category_scope'])
+                ->where('facility_category_id', $facility->facility_category_id)
+                ->where('id', '!=', $facility->id)
+                ->whereNotIn('id', $related->pluck('id'))
+                ->with(['city', 'category', 'images'])
+                ->limit(3 - $related->count())
+                ->get();
+            $related = $related->concat($fallback);
+        }
 
         // 17 Agustos 2026: kullanicinin "geri gelince hala eski sayi
         // yaziyor" bildirdigi sikayeti icin ek guvenlik - tarayicinin

@@ -125,6 +125,9 @@ class DataExtractorImportService
                 $this->syncServiceOption($facility, $category);
                 $this->createSectionDetail($facility, $category, $item);
                 $imageCount = $this->imageService->attachRandomImages($facility, $category);
+                // 1 Eylul 2026: kullanicinin talebi - bkz. FacilityImportImageService::
+                // attachDefaultMenuImage() yorumu, Turkiye geneli her yeni kurumda.
+                $this->imageService->attachDefaultMenuImage($facility);
 
                 $batch->rows()->create([
                     'facility_id' => $facility->id,

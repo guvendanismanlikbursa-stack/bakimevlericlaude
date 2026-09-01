@@ -187,7 +187,16 @@ class AuthController extends Controller
         $categoryScope = config('brands.brands')[$pending['brand']]['category_scope'] ?? [];
 
         if (! empty($pending['facility_id'])) {
-            $facility = Facility::published()->where('is_claimed', true)->find($pending['facility_id']);
+            // 1 Eylul 2026: kullanicinin bildirdigi ("her yerde mantik
+            // hatasi var, detayli incele") denetimde bulunan gercek hata -
+            // OfferRequestController::store()'daki diger TUM noktalar
+            // (satir 47, 101, 165) bugun ->acceptsFamilyRequests()'e
+            // tasindi, ama giris yapmamis bir ailenin talebini KAYIT
+            // SONRASI tekrar dogrulayan bu nokta unutulmustu. Sonuc:
+            // anlasmali-ama-sahiplenilmemis bir kuruma giris yapmadan
+            // teklif isteyen aile, kayit olunca talebi sessizce iptal
+            // ediliyordu ("kurum guncellenmis, tekrar gonderin" mesaji).
+            $facility = Facility::published()->acceptsFamilyRequests()->find($pending['facility_id']);
 
             return $facility && in_array($facility->category?->brand_scope, $categoryScope, true);
         }

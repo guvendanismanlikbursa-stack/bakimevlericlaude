@@ -10,6 +10,7 @@ use App\Models\BalanceLog;
 use App\Models\Facility;
 use App\Models\FacilityRegistration;
 use App\Models\FacilityUser;
+use App\Services\FacilityImportImageService;
 use App\Services\GeocodingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,14 +50,14 @@ class FacilityRegistrationController extends Controller
         return view('admin.registrations.show', compact('registration'));
     }
 
-    public function approve(Request $request, FacilityRegistration $registration, GeocodingService $geocodingService)
+    public function approve(Request $request, FacilityRegistration $registration, GeocodingService $geocodingService, FacilityImportImageService $importImageService)
     {
         // 25 Agustos 2026: bkz. Facility\TeamController::invite() ayni
         // tarihli yorum - sembolsuz sifre, mailde tam secilebilir/kopyalanabilir.
         $temporaryPassword = Str::password(14, symbols: false);
         $freeCredits = (int) config('platform.free_claim_credits', 5);
 
-        $mailPayload = DB::transaction(function () use ($registration, $temporaryPassword, $freeCredits, $geocodingService) {
+        $mailPayload = DB::transaction(function () use ($registration, $temporaryPassword, $freeCredits, $geocodingService, $importImageService) {
             $registration = FacilityRegistration::whereKey($registration->id)->lockForUpdate()->firstOrFail();
             // 12 Agustos 2026: kullanicinin talebi - admin daha once
             // reddettigi bir kayit basvurusunu gerekirse sonradan
@@ -104,6 +105,10 @@ class FacilityRegistrationController extends Controller
                 'invitation_status_at' => now(),
                 'source' => 'self_registered',
             ]);
+
+            // 1 Eylul 2026: kullanicinin talebi - bkz. FacilityImportImageService::
+            // attachDefaultMenuImage() yorumu, Turkiye geneli her yeni kurumda.
+            $importImageService->attachDefaultMenuImage($facility);
 
             $facilityUser = FacilityUser::create([
                 'facility_id' => $facility->id,

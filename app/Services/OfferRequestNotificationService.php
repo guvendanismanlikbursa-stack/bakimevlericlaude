@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Admin;
 use App\Models\Facility;
 use App\Models\FacilityUser;
 use App\Models\OfferRequest;
@@ -33,21 +32,33 @@ class OfferRequestNotificationService
         $title = 'Yeni ücret/teklif talebi';
         $body = $offerRequest->full_name.' bir ücret/teklif talebi gönderdi.';
 
-        $recipients = $this->recipients($offerRequest)->load('facility');
+        // 1 Eylul 2026: kullanicinin bildirdigi ("her yerde mantik hatasi
+        // var, detayli incele") denetimde bulunan gercek hata - dogrudan
+        // (facility_id'li) bir talep anlasmali-ama-sahiplenilmemis bir
+        // kuruma gelince, eski kod bu kurumun FacilityUser hesabi olmadigi
+        // icin (recipients() SADECE FacilityUser doner) HEM kendi hesabina
+        // HEM admin'e HICBIR bildirim gondermiyordu - talep sessizce
+        // kayboluyordu (sadece admin panelinden elle bakilirsa fark edilirdi).
+        // Dogrudan tek-kurum talebi icin artik ayni genel kural (bkz.
+        // notify_facility_or_broker_admins() helpers.php) kullanilir.
+        if ($offerRequest->facility_id && $offerRequest->facility) {
+            notify_facility_or_broker_admins(
+                $offerRequest->facility,
+                'offer_request', $title, $body,
+                'broker_offer_request', 'Anlaşmalı kurum: yeni talep', "\"{$offerRequest->facility->name}\" için yeni bir ücret/teklif talebi geldi.",
+                ['offer_request_id' => $offerRequest->id]
+            );
 
-        $recipients->reject(fn (FacilityUser $user) => $user->facility?->is_broker_managed)
-            ->each(fn (FacilityUser $user) => notify_user($user, 'offer_request', $title, $body, [
-                'offer_request_id' => $offerRequest->id,
-            ]));
+            return;
+        }
 
-        $recipients->pluck('facility')->filter(fn (?Facility $f) => $f?->is_broker_managed)->unique('id')
-            ->each(fn (Facility $facility) => Admin::all()->each(fn (Admin $admin) => notify_user(
-                $admin,
-                'broker_offer_request',
-                'Anlaşmalı kurum: yeni talep',
-                "\"{$facility->name}\" için yeni bir ücret/teklif talebi geldi.",
-                ['facility_id' => $facility->id, 'offer_request_id' => $offerRequest->id],
-            )));
+        // Yayin (broadcast) talebi: recipients() zaten SADECE is_claimed=true
+        // kurumlarin FacilityUser hesaplarini doner (bkz. asagidaki metodun
+        // yorumu) - anlasmali-ama-sahiplenilmemis kurumlar zaten yayin
+        // talebi alicisi degil, bu dal degismedi.
+        $this->recipients($offerRequest)->each(fn (FacilityUser $user) => notify_user($user, 'offer_request', $title, $body, [
+            'offer_request_id' => $offerRequest->id,
+        ]));
     }
 
     /**

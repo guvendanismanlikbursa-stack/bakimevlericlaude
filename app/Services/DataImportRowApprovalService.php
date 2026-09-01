@@ -126,6 +126,9 @@ class DataImportRowApprovalService
         $this->syncServiceOption($facility, $category);
         $this->createSectionDetail($facility, $category, $item);
         $imageCount = $this->imageService->attachRandomImages($facility, $category, 5);
+        // 1 Eylul 2026: kullanicinin talebi - bkz. FacilityImportImageService::
+        // attachDefaultMenuImage() yorumu, Turkiye geneli her yeni kurumda.
+        $this->imageService->attachDefaultMenuImage($facility);
 
         $row->update([
             'facility_id' => $facility->id,

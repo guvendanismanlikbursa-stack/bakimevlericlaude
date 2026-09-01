@@ -13,6 +13,7 @@ use App\Models\FacilityImage;
 use App\Models\FacilityProgramType;
 use App\Models\FacilityRoomType;
 use App\Services\FacilityArchiveService;
+use App\Services\FacilityImportImageService;
 use App\Services\GeocodingService;
 use App\Services\ImageCompressionService;
 use Illuminate\Http\Request;
@@ -149,7 +150,7 @@ class FacilityController extends Controller
         ]);
     }
 
-    public function store(Request $request, GeocodingService $geocodingService)
+    public function store(Request $request, GeocodingService $geocodingService, FacilityImportImageService $importImageService)
     {
         $data = $this->validateData($request);
         $data['slug'] = $this->uniqueSlug($data['name']);
@@ -181,6 +182,10 @@ class FacilityController extends Controller
         $this->syncPriceOptions($request, 'room_types', $facility, 'roomTypes', FacilityRoomType::TYPES, 'room_type');
         $this->syncPriceOptions($request, 'age_groups', $facility, 'ageGroups', FacilityAgeGroup::TYPES, 'age_group');
         $this->syncPriceOptions($request, 'program_types', $facility, 'programTypes', FacilityProgramType::TYPES, 'program_type');
+        // 1 Eylul 2026: kullanicinin talebi - "yeni kurum eklendiginde
+        // otomatik ornek yemek listesi gorseli eklensin, Turkiye geneli" -
+        // bkz. FacilityImportImageService::attachDefaultMenuImage() yorumu.
+        $importImageService->attachDefaultMenuImage($facility);
 
         return redirect()->route('admin.facilities.edit', $facility)->with('success', 'Kurum ön kayıt olarak eklendi. Şimdi demo görseller ekleyebilirsiniz.');
     }
@@ -223,10 +228,18 @@ class FacilityController extends Controller
         // yorum) - admin koordinati elle degistirmemis (lat/lng bos
         // birakilmis) ama adresi guncellemis/ilk kez girmisse, otomatik
         // yeniden konumlandir. Admin daha once elle veya otomatik dogru bir
-        // koordinat girmisse ve adresi degistirmemisse DOKUNULMAZ.
+        // koordinat girmisse DOKUNULMAZ (lat/lng doluysa bu blok hic calismaz).
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - "adres
+        // degismis olmali" sarti (eski: $data['address'] !== $facility->address)
+        // yuzunden, ilk geocode denemesi HERHANGI bir sebeple basarisiz olan
+        // (ör. Nominatim o an yanit vermedi) bir kurum, adres metni bir daha
+        // hic degistirilmezse SONSUZA KADAR yeniden denenmiyordu - lat/lng
+        // hala bos oldugu icin kurum haritada hic gorunmuyordu. Kosul
+        // basitlestirildi: lat/lng bos VE adres doluysa, her kayitta yeniden
+        // dener (zaten lat/lng doluysa bu blok hic calismiyor, gereksiz API
+        // cagrisi riski yok).
         if (! filled($data['lat'] ?? null) && ! filled($data['lng'] ?? null)
-            && filled($data['address'] ?? null)
-            && $data['address'] !== $facility->address) {
+            && filled($data['address'] ?? null)) {
             $cityName = City::find($data['city_id'])?->name;
             $coords = $geocodingService->geocodeAddress($data['address'], $data['district'] ?? null, $cityName);
             if ($coords) {
