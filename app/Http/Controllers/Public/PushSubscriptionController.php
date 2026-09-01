@@ -58,9 +58,25 @@ class PushSubscriptionController extends Controller
 
     public function destroy(Request $request)
     {
+        // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+        // hata - store() ile FARKLI olarak burada HICBIR sahiplik/oturum
+        // kontrolu yoktu. endpoint degerini bilen HERHANGI bir istemci
+        // (oturum acik olsun olmasin, kendi aboneligi olsun olmasin) o
+        // kaydi silebiliyordu. store() ile AYNI kural: once oturumdan
+        // gercek kullanici cozulur, silme SADECE o kullaniciya ait kayda
+        // uygulanir.
         $data = $request->validate(['endpoint' => 'required|string']);
 
-        PushSubscription::where('endpoint_hash', hash('sha256', $data['endpoint']))->delete();
+        $subscribable = $this->currentSubscribable();
+
+        if (! $subscribable) {
+            return response()->json(['ok' => false], 401);
+        }
+
+        PushSubscription::where('endpoint_hash', hash('sha256', $data['endpoint']))
+            ->where('subscribable_type', get_class($subscribable))
+            ->where('subscribable_id', $subscribable->getKey())
+            ->delete();
 
         return response()->json(['ok' => true]);
     }

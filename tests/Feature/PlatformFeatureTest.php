@@ -2887,6 +2887,37 @@ class PlatformFeatureTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_push_unsubscribe_requires_ownership_and_cannot_delete_others_subscription(): void
+    {
+        // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+        // hata - store() ile FARKLI olarak destroy() hicbir oturum/sahiplik
+        // kontrolu yapmiyordu. endpoint degerini bilen HERHANGI bir istemci
+        // (oturum acik olsun olmasin) baskasinin aboneligini silebiliyordu.
+        $subscription = \App\Models\PushSubscription::create([
+            'subscribable_type' => FamilyUser::class,
+            'subscribable_id' => $this->family->id,
+            'endpoint' => 'https://fcm.googleapis.com/fcm/send/test-endpoint-123',
+            'endpoint_hash' => hash('sha256', 'https://fcm.googleapis.com/fcm/send/test-endpoint-123'),
+            'public_key' => 'test-public-key',
+            'auth_token' => 'test-auth-token',
+            'content_encoding' => 'aes128gcm',
+        ]);
+
+        // Oturum acmadan (veya baska bir aile olarak) silme denemesi
+        // reddedilmeli, kayit YERINDE kalmali.
+        $this->post('/site/bakimeviara/push/abonelikten-cik', [
+            'endpoint' => 'https://fcm.googleapis.com/fcm/send/test-endpoint-123',
+        ])->assertStatus(401);
+        $this->assertDatabaseHas('push_subscriptions', ['id' => $subscription->id]);
+
+        // Gercek sahibi kendi aboneligini basariyla silebilmeli.
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimeviara/push/abonelikten-cik', [
+                'endpoint' => 'https://fcm.googleapis.com/fcm/send/test-endpoint-123',
+            ])->assertOk();
+        $this->assertDatabaseMissing('push_subscriptions', ['id' => $subscription->id]);
+    }
+
     public function test_family_can_disable_email_channel_for_a_notification_type(): void
     {
         Mail::fake();

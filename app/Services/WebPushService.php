@@ -57,6 +57,7 @@ class WebPushService
             'body' => $body,
             'url' => $actionUrl,
             'urgent' => $urgent,
+            'icon' => $this->iconForNotifiable($notifiable),
         ]);
 
         foreach ($subscriptions as $subscription) {
@@ -96,5 +97,27 @@ class WebPushService
                 Log::warning('Web push gonderilemedi: ' . $report->getReason(), ['endpoint' => $report->getEndpoint()]);
             }
         }
+    }
+
+    /**
+     * 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek hata -
+     * public/sw.js zaten data.icon'u okuyordu ama buradan HIC gonderilmiyordu,
+     * bu yuzden varsayilan olarak HER ZAMAN bakimevleri.com logosuna
+     * duseluyordu - bakimevibul.com/bakimeviara.com kullanicisina/adminine
+     * giden bildirimler de yanlis marka logosuyla gorunuyordu.
+     */
+    private function iconForNotifiable($notifiable): ?string
+    {
+        $brandSlug = match (true) {
+            $notifiable instanceof \App\Models\FamilyUser => $notifiable->registered_brand,
+            $notifiable instanceof \App\Models\FacilityUser => $notifiable->facility ? facility_login_brand_slug($notifiable->facility) : null,
+            default => null,
+        };
+
+        if (! $brandSlug || ! array_key_exists($brandSlug, config('brands.brands'))) {
+            return null;
+        }
+
+        return asset('images/logo-'.$brandSlug.'-192.png');
     }
 }
