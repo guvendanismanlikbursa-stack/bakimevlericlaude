@@ -529,7 +529,7 @@ if (! function_exists('notification_action_url')) {
                 // tiklaninca "Kullanicilar -> ara -> Kullanici olarak gör"
                 // zahmetli akisi yerine DOGRUDAN o kurumun paneline atlar
                 // (bkz. Admin\BrokerController::quickJump()).
-                'broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined', 'broker_visit_request' => isset($data['facility_id'])
+                'broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined', 'broker_visit_request', 'broker_new_question' => isset($data['facility_id'])
                     ? route('admin.broker.facilities.quick-jump', array_filter(['facility' => $data['facility_id'], 'offer_request' => $data['offer_request_id'] ?? null]))
                     : route('admin.broker.facilities'),
                 'registration_submitted' => route('admin.registrations.index'),

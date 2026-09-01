@@ -2934,6 +2934,51 @@ class PlatformFeatureTest extends TestCase
         $response->assertDontSee('şu ana kadar');
     }
 
+    public function test_broker_managed_facility_question_notification_goes_to_admin_not_facility_account(): void
+    {
+        // 31 Agustos 2026: kullanicinin talebi - "bütün anlaşmalı kurumlarda
+        // mantıklı yönlendirme ve cevaplama olmalı" - teklif/ziyaret/mesaj
+        // akislari zaten notify_facility_or_broker_admins() kuralina uyuyordu
+        // (anlasmali kurumda bildirim kurumun kendi hesabina degil admine
+        // gider), ama "Soru Sor" bu ortak kurala hic uymuyordu.
+        $this->rehabFacilityClaimed->update(['is_broker_managed' => true]);
+        \App\Models\FacilityUser::create([
+            'facility_id' => $this->rehabFacilityClaimed->id,
+            'name' => 'Rehab Kurum Yetkilisi',
+            'email' => 'rehab-yetkili@test.local',
+            'phone' => '05552223344',
+            'password' => Hash::make('Kurum12345!'),
+            'must_change_password' => false,
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/soru-sor', [
+            'asker_name' => 'Test Aile',
+            'question' => 'Boş yeriniz var mı?',
+        ])->assertRedirect();
+
+        $facilityUserNotifCount = \App\Models\PlatformNotification::where('notifiable_type', \App\Models\FacilityUser::class)
+            ->where('type', 'new_question')->count();
+        $this->assertSame(0, $facilityUserNotifCount);
+
+        $adminNotifCount = \App\Models\PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->where('type', 'broker_new_question')->count();
+        $this->assertSame(1, $adminNotifCount);
+
+        // Anlasmasiz (normal) sahiplenilmis bir kurumda ESKI davranis
+        // (kurumun kendi hesabina bildirim) korunmali.
+        $this->rehabFacilityClaimed->update(['is_broker_managed' => false]);
+        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/soru-sor', [
+            'asker_name' => 'Test Aile 2',
+            'question' => 'Fiyat bilgisi alabilir miyim?',
+        ])->assertRedirect();
+
+        $facilityUserNotifCount = \App\Models\PlatformNotification::where('notifiable_type', \App\Models\FacilityUser::class)
+            ->where('type', 'new_question')->count();
+        $this->assertSame(1, $facilityUserNotifCount);
+    }
+
     public function test_featured_facility_card_on_homepage_shows_visited_badge_on_all_3_brands(): void
     {
         // 31 Agustos 2026: kullanicinin bildirdigi gercek eksiklik -

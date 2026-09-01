@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Facility;
-use App\Models\FacilityUser;
 use App\Models\FamilyUser;
 use Illuminate\Http\Request;
 
@@ -40,8 +39,16 @@ class FacilityQuestionController extends Controller
             'status' => 'pending',
         ]);
 
-        FacilityUser::where('facility_id', $facility->id)->get()
-            ->each(fn (FacilityUser $user) => notify_user($user, 'new_question', 'Yeni bir soru aldınız', $question->question));
+        // 31 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
+        // kurumlarda TUM aile temaslari (teklif/ziyaret/mesaj) admine gidiyor
+        // (bkz. notify_facility_or_broker_admins()), ama "Soru Sor" bu ortak
+        // kurala HIC uymuyordu - dogrudan FacilityUser'a gidiyordu, yani
+        // anlasmali bir kurumun sorusu admine hic haber vermiyordu.
+        notify_facility_or_broker_admins(
+            $facility,
+            'new_question', 'Yeni bir soru aldınız', $question->question,
+            'broker_new_question', 'Anlaşmalı kurum: yeni soru', "\"{$facility->name}\" kurumuna yeni bir soru soruldu: {$question->question}",
+        );
 
         return back()->with('success', 'Sorunuz alındı, kurum yetkilisi yanıtladığında bu sayfada görünecek.');
     }
