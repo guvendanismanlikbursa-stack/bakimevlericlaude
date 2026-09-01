@@ -1635,6 +1635,137 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(1, OfferRequest::where('full_name', 'Kayitsiz Anlasmali Talep')->count());
     }
 
+    public function test_admin_offer_request_facility_suspend_does_not_bulk_reactivate_intentionally_banned_users(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek hata - bu ekran TUM yetkili hesaplarina AYNI
+        // status'u topluca yaziyordu; "aktiflestir" yonu ayrim yapmadan
+        // hepsini 'active' yapiyordu - kurumun BASKA bir yetkilisi
+        // gecmiste kotuye kullanim nedeniyle KASITLI banlanmis olsa bile.
+        // TrashController::restore() ile ayni kokten/ayni tarihli
+        // duzeltmeyle tutarli olarak, artik SADECE askiya alinabilir.
+        $bannedUser = FacilityUser::create([
+            'facility_id' => $this->childFacility->id,
+            'name' => 'Kasitli Banli Yetkili',
+            'email' => 'banli-yetkili@test.local',
+            'password' => Hash::make('Kurum12345!'),
+            'must_change_password' => false,
+            'status' => 'suspended',
+            'email_verified_at' => now(),
+        ]);
+
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Askiya alma testi') + ['facility_id' => $this->childFacility->id]);
+
+        // Kurumun HALA aktif bir yetkilisi (facilityUser fixture'i) var -
+        // "Askıya Al" butonuna basilinca hem o hem banli olan suspended olur.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.offer-requests.suspend-facility', $request))
+            ->assertRedirect();
+
+        $this->assertSame('suspended', $this->facilityUser->fresh()->status);
+        $this->assertSame('suspended', $bannedUser->fresh()->status);
+
+        // Artik hicbir aktif yetkili yok - "Aktiflestir" tiklanmaya
+        // calisilinca (ayni route, kosul artik 'active' donmuyor) ARTIK
+        // toplu aktiflestirme YAPILMAMALI, banli kullanici sessizce geri
+        // acilmamali.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.offer-requests.suspend-facility', $request))
+            ->assertRedirect();
+
+        $this->assertSame('suspended', $this->facilityUser->fresh()->status);
+        $this->assertSame('suspended', $bannedUser->fresh()->status, 'Kasitli banlanmis hesap yanlislikla geri acilmamali.');
+    }
+
+    public function test_broadcast_offer_request_to_broker_managed_claimed_facility_notifies_admin_not_facility(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan ikinci denetimde
+        // bulunan gercek hata - is_claimed ve is_broker_managed BIRBIRINDEN
+        // BAGIMSIZ (zaten sahiplenilmis bir kurum sonradan anlasmali
+        // isaretlenebilir, bkz. Admin\BrokerController::toggleFacility()).
+        // Yayin (broadcast) talebinde eslesen boyle bir kurumun KENDI
+        // hesabina degil, admin'e gitmesi gerekir.
+        $this->childFacility->update(['is_broker_managed' => true]);
+
+        OfferRequest::create([
+            'brand' => 'bakimeviara',
+            'city_id' => $this->city->id,
+            'facility_category_id' => $this->childCategory->id,
+            'full_name' => 'Yayin Talebi Anlasmali',
+            'phone' => '05551237777',
+            'message' => 'Test',
+        ]);
+        $notifier = app(\App\Services\OfferRequestNotificationService::class);
+        $notifier->notify(OfferRequest::where('full_name', 'Yayin Talebi Anlasmali')->firstOrFail());
+
+        $facilityNotif = PlatformNotification::where('notifiable_type', FacilityUser::class)
+            ->where('notifiable_id', $this->facilityUser->id)->where('type', 'offer_request')->first();
+        $this->assertNull($facilityNotif, 'Anlasmali kurumun kendi hesabina bildirim gitmemeli.');
+
+        $adminNotif = PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->where('type', 'broker_offer_request')->first();
+        $this->assertNotNull($adminNotif, 'Anlasmali kurum icin admin bildirimi gitmeli.');
+    }
+
+    public function test_remind_unanswered_questions_redirects_broker_managed_facility_to_admin(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek hata - Public\FacilityQuestionController::store()
+        // anlasmali kurumlarda ILK soru bildirimini kasitli olarak
+        // kurumdan gizleyip admin'e yonlendiriyordu, ama bu hatirlatma
+        // komutu ayni kurala uymuyordu - kurumdan gizlenen bir soru 48
+        // saat sonra bu hatirlatmayla dolayli olarak kuruma sizabiliyordu.
+        $this->childFacility->update(['is_broker_managed' => true]);
+        $question = $this->childFacility->questions()->create([
+            'brand' => 'bakimeviara',
+            'asker_name' => 'Test Aile',
+            'question' => 'Boş yer var mı?',
+            'status' => 'pending',
+        ]);
+        // 'created_at' fillable degil (bkz. FacilityQuestion model) - mass
+        // assignment sessizce yoksayardi, forceFill ile elle geriye alinir.
+        $question->forceFill(['created_at' => now()->subHours(49)])->save();
+
+        $this->artisan('questions:remind-unanswered')->assertSuccessful();
+
+        $facilityNotif = PlatformNotification::where('notifiable_type', FacilityUser::class)
+            ->where('notifiable_id', $this->facilityUser->id)->where('type', 'question_reminder')->first();
+        $this->assertNull($facilityNotif, 'Anlasmali kurumun kendi hesabina hatirlatma gitmemeli.');
+
+        $adminNotif = PlatformNotification::where('notifiable_type', \App\Models\Admin::class)
+            ->where('type', 'broker_question_reminder')->first();
+        $this->assertNotNull($adminNotif, 'Anlasmali kurum icin admin hatirlatmasi gitmeli.');
+        $this->assertNotNull($question->fresh()->reminder_sent_at);
+    }
+
+    public function test_faq_and_package_screens_have_working_edit_forms(): void
+    {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek eksik - update() route'lari zaten calisir
+        // durumdaydi ama ekranlarda hic "Duzenle" yoktu.
+        $faq = \App\Models\Faq::create(['brand' => 'bakimeviara', 'question' => 'Eski Soru', 'answer' => 'Eski Cevap', 'sort_order' => 0, 'is_active' => true]);
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/sss?edit='.$faq->id)
+            ->assertOk()
+            ->assertSee('value="Eski Soru"', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/sss/'.$faq->id, ['question' => 'Yeni Soru', 'answer' => 'Yeni Cevap', 'is_active' => '1'])
+            ->assertRedirect();
+        $this->assertSame('Yeni Soru', $faq->fresh()->question);
+
+        $package = \App\Models\SubscriptionPackage::create(['name' => 'Eski Paket', 'price' => 100, 'bonus_quote_credits' => 5, 'sort_order' => 0, 'is_active' => true]);
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/paketler?edit='.$package->id)
+            ->assertOk()
+            ->assertSee('value="Eski Paket"', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/paketler/'.$package->id, ['name' => 'Yeni Paket', 'price' => 200, 'is_active' => '1'])
+            ->assertRedirect();
+        $this->assertSame('Yeni Paket', $package->fresh()->name);
+    }
+
     public function test_admin_sees_offer_request_form_details_and_quoted_price(): void
     {
         $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Ihtiyac detayi mesaji'));
@@ -1884,8 +2015,17 @@ class PlatformFeatureTest extends TestCase
             ->assertDontSee('favorilere eklemek için önce giriş yapmalısınız');
     }
 
-    public function test_admin_can_suspend_and_reactivate_facility_account_from_complaint_review(): void
+    public function test_admin_can_suspend_facility_account_from_complaint_review(): void
     {
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek hata - bu test eskiden "askiya al -> tekrar
+        // tikla -> otomatik aktiflesir" davranisini dogruluyordu, ama tam
+        // bu kural, kurumun BASKA bir yetkilisi kotuye kullanim nedeniyle
+        // KASITLI banlanmissa o hesabi da sessizce geri aciyordu (bkz.
+        // OfferRequestController::suspendFacility() ayni tarihli yorum,
+        // TrashController::restore()'daki AYNI kokten daha once yapilmis
+        // duzeltmeyle tutarli). Bu ekran artik SADECE askiya alir;
+        // aktiflestirme bilerek Kullanicilar ekranina birakildi.
         $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Sikayet talebi'));
         $request->update(['facility_id' => $this->childFacility->id]);
 
@@ -1899,8 +2039,18 @@ class PlatformFeatureTest extends TestCase
             ->get('/site/bakimeviara/kurum-panel/panel')
             ->assertRedirect('/site/bakimeviara/kurum-panel/giris');
 
+        // Tekrar tiklanirsa (zaten aktif yetkili yoksa) ARTIK otomatik
+        // aktiflestirmez - kasitli banlanmis olabilecek hesap suspended
+        // kalmaya devam eder.
         $this->withSession(['admin_id' => $this->admin->id])
             ->post("/admin/teklif-talepleri/{$request->id}/kurum-durumu")
+            ->assertRedirect();
+
+        $this->assertSame('suspended', $this->facilityUser->fresh()->status);
+
+        // Gercek aktiflestirme Kullanicilar ekranindan yapilir.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post("/admin/kullanicilar/kurum-yetkilileri/{$this->facilityUser->id}/durum")
             ->assertRedirect();
 
         $this->assertSame('active', $this->facilityUser->fresh()->status);

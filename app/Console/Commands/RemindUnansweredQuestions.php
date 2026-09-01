@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\FacilityQuestion;
-use App\Models\FacilityUser;
 use Illuminate\Console\Command;
 
 // 21 Temmuz 2026: aile bir kuruma soru sordugunda kurum bildirim aliyor
@@ -36,14 +35,21 @@ class RemindUnansweredQuestions extends Command
                 continue;
             }
 
-            FacilityUser::where('facility_id', $facility->id)->get()->each(
-                fn (FacilityUser $user) => notify_user(
-                    $user,
-                    'question_reminder',
-                    'Cevaplanmamış bir sorunuz var',
-                    'Bir aile '.$hours.' saat önce soru sordu, henüz cevaplanmadı: "'.\Illuminate\Support\Str::limit($question->question, 100).'"',
-                    ['facility_question_id' => $question->id]
-                )
+            // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
+            // hata - Public\FacilityQuestionController::store() (31 Agustos
+            // 2026) anlasmali kurumlarda ILK soru bildirimini kasitli olarak
+            // kurumdan gizleyip admin'e yonlendiriyordu, ama bu komut ondan
+            // ONCE yazildigi icin guncellenmemisti - kurumdan bilerek
+            // gizlenen bir soru, 48 saat sonra bu hatirlatmayla DOLAYLI
+            // olarak kuruma sizip orijinal gizleme kuralini anlamsiz
+            // kiliyordu. Ayni ortak kural burada da uygulanir.
+            notify_facility_or_broker_admins(
+                $facility,
+                'question_reminder', 'Cevaplanmamış bir sorunuz var',
+                'Bir aile '.$hours.' saat önce soru sordu, henüz cevaplanmadı: "'.\Illuminate\Support\Str::limit($question->question, 100).'"',
+                'broker_question_reminder', 'Anlaşmalı kurum: cevaplanmamış soru',
+                "\"{$facility->name}\" kurumuna gelen bir soru {$hours} saattir cevaplanmadı: \"".\Illuminate\Support\Str::limit($question->question, 100).'"',
+                ['facility_question_id' => $question->id]
             );
 
             $question->update(['reminder_sent_at' => now()]);

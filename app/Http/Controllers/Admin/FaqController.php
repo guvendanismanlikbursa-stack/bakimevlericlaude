@@ -20,8 +20,14 @@ class FaqController extends Controller
 
         $faqs = $query->orderBy('brand')->orderBy('sort_order')->get();
         $brands = config('brands.brands');
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek eksik - update() route'u/aksiyonu zaten calisir
+        // durumdaydi ama ekranda hic "Duzenle" linki/formu yoktu, tek yol
+        // silip yeniden eklemekti (sira numarasini bozuyordu). AYNI
+        // ContentPageController::index() deseni uygulandi.
+        $editingFaq = $request->filled('edit') ? Faq::find($request->query('edit')) : null;
 
-        return view('admin.faqs.index', compact('faqs', 'brands'));
+        return view('admin.faqs.index', compact('faqs', 'brands', 'editingFaq'));
     }
 
     public function store(Request $request)

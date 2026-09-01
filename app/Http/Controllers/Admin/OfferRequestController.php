@@ -107,15 +107,27 @@ class OfferRequestController extends Controller
         $facility = $offerRequest->facility;
         abort_unless($facility, 404);
 
-        $newStatus = $facility->facilityUsers->firstWhere('status', 'active') ? 'suspended' : 'active';
-        FacilityUser::where('facility_id', $facility->id)->update(['status' => $newStatus]);
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek hata - bu ekran TUM yetkili hesaplarina AYNI
+        // status'u topluca yaziyordu, "aktiflestir" yonu ise ayrim
+        // yapmadan hepsini 'active' yapiyordu. Ayni status alani
+        // Admin\UserController::toggleFacilityUserStatus() ile admin'in
+        // kotuye kullanim nedeniyle KASITLI banladigi hesaplar icin de
+        // kullaniliyor - ikisini ayirt eden bir alan yok. Sonuc: bu
+        // kurumun BIR yetkilisi gecmiste kasitli banlanmis, digeri
+        // aktifken, admin buradan "aktiflestir" derse KASITLI BANLANMIS
+        // hesap da sessizce geri aciliyordu. TrashController::restore()'daki
+        // AYNI tarihli/ayni kokten duzeltmeyle tutarli olacak sekilde: bu
+        // aksiyon artik SADECE askiya alir, otomatik toplu aktiflestirme
+        // kaldirildi - tek tek aktiflestirme Kullanicilar ekranindan yapilir.
+        if (! $facility->facilityUsers->firstWhere('status', 'active')) {
+            return back()->with('info', 'Bu kurumun zaten aktif yetkilisi yok. Kasıtlı banlanmış olabilecek hesapları yanlışlıkla geri açmamak için, aktifleştirmeyi lütfen "Kullanıcılar › Kurum Yetkilileri" ekranından tek tek yapın.');
+        }
 
-        log_admin_event(
-            $newStatus === 'suspended' ? 'facility_users_suspended' : 'facility_users_reactivated',
-            $facility,
-            ['offer_request_id' => $offerRequest->id]
-        );
+        FacilityUser::where('facility_id', $facility->id)->update(['status' => 'suspended']);
 
-        return back()->with('success', $newStatus === 'suspended' ? 'Kurum yetkilisi hesabı/hesapları askıya alındı.' : 'Kurum yetkilisi hesabı/hesapları yeniden aktifleştirildi.');
+        log_admin_event('facility_users_suspended', $facility, ['offer_request_id' => $offerRequest->id]);
+
+        return back()->with('success', 'Kurum yetkilisi hesabı/hesapları askıya alındı.');
     }
 }

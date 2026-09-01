@@ -70,12 +70,19 @@
         <span class="inline-block mb-2 text-[11px] font-bold px-2 py-1 rounded {{ $facilityActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
           {{ $facilityActive ? 'Aktif' : 'Askıya Alınmış' }}
         </span>
-        <form method="POST" action="{{ route('admin.offer-requests.suspend-facility', $offerRequest) }}" onsubmit="return confirm('Bu kurumun yetkilisi hesabının durumunu değiştirmek istediğinize emin misiniz?');">
-          @csrf
-          <button type="submit" class="w-full text-xs font-semibold px-3 py-2 rounded-lg {{ $facilityActive ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-green-600 text-white hover:bg-green-700' }}">
-            {{ $facilityActive ? 'Kurum Hesabını Askıya Al' : 'Kurum Hesabını Aktifleştir' }}
-          </button>
-        </form>
+        {{-- 1 Eylul 2026: kullanicinin talebi - bkz. OfferRequestController::
+             suspendFacility() ayni tarihli yorum. Bu ekrandan artik SADECE
+             askiya alinabilir - aktiflestirme, kasitli banlanmis hesaplari
+             yanlislikla geri acmamak icin Kullanicilar ekranindan tek tek
+             yapilir. --}}
+        @if($facilityActive)
+          <form method="POST" action="{{ route('admin.offer-requests.suspend-facility', $offerRequest) }}" onsubmit="return confirm('Bu kurumun tüm yetkili hesaplarını askıya almak istediğinize emin misiniz?');">
+            @csrf
+            <button type="submit" class="w-full text-xs font-semibold px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">Kurum Hesabını Askıya Al</button>
+          </form>
+        @else
+          <a href="{{ route('admin.users.facility-users', ['q' => $offerRequest->facility->name]) }}" class="block text-center w-full text-xs font-semibold px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Kullanıcılar Ekranından Aktifleştir</a>
+        @endif
       @else
         <p class="text-sm text-gray-300">Bu talep bir yayın talebi olduğu için tek bir kuruma bağlı değil.</p>
       @endif

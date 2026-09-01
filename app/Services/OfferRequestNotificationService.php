@@ -52,13 +52,31 @@ class OfferRequestNotificationService
             return;
         }
 
-        // Yayin (broadcast) talebi: recipients() zaten SADECE is_claimed=true
-        // kurumlarin FacilityUser hesaplarini doner (bkz. asagidaki metodun
-        // yorumu) - anlasmali-ama-sahiplenilmemis kurumlar zaten yayin
-        // talebi alicisi degil, bu dal degismedi.
-        $this->recipients($offerRequest)->each(fn (FacilityUser $user) => notify_user($user, 'offer_request', $title, $body, [
-            'offer_request_id' => $offerRequest->id,
-        ]));
+        // 1 Eylul 2026: kullanicinin bildirdigi ikinci bir denetimde bulunan
+        // gercek hata - recipients() SADECE is_claimed=true filtreler, ama
+        // is_claimed ve is_broker_managed BIRBIRINDEN BAGIMSIZ (bkz.
+        // Admin\BrokerController::toggleFacility() - zaten sahiplenilmis
+        // bir kurum SONRADAN anlasmali isaretlenebilir). Yani yayin
+        // talebinde eslesen kurumlardan biri hem sahiplenilmis HEM
+        // anlasmaliysa, bu blok o kurumun KENDI hesabina dogrudan
+        // bildirim gonderiyordu - sinifin kendi yorumunda ("kurumun kendi
+        // hesabina ARTIK HICBIR bildirim gitmiyor") acikca yasaklanan
+        // durum. Recipients artik facility'siyle birlikte yuklenip
+        // anlasmali olanlar admin'e yonlendirilir.
+        $recipients = $this->recipients($offerRequest)->load('facility');
+
+        $recipients->reject(fn (FacilityUser $user) => $user->facility?->is_broker_managed)
+            ->each(fn (FacilityUser $user) => notify_user($user, 'offer_request', $title, $body, [
+                'offer_request_id' => $offerRequest->id,
+            ]));
+
+        $recipients->pluck('facility')->filter(fn (?Facility $f) => $f?->is_broker_managed)->unique('id')
+            ->each(fn (Facility $facility) => notify_facility_or_broker_admins(
+                $facility,
+                'offer_request', $title, $body,
+                'broker_offer_request', 'Anlaşmalı kurum: yeni talep', "\"{$facility->name}\" için yeni bir ücret/teklif talebi geldi.",
+                ['offer_request_id' => $offerRequest->id]
+            ));
     }
 
     /**

@@ -459,6 +459,11 @@ if (! function_exists('notification_preference_groups')) {
                 'messages' => ['label' => 'Kurum mesaj gönderdiğinde', 'types' => ['new_message']],
                 'updates' => ['label' => 'Talebim/sorum güncellendiğinde', 'types' => ['quote_accepted', 'quote_declined', 'question_answered']],
                 'review_invite' => ['label' => 'Yorum yazma daveti', 'types' => ['review_invite']],
+                // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+                // bulunan gercek eksik - kayitli arama eslesme bildirimi
+                // (bkz. NotifyFamilySavedSearches) gonderiliyordu ama bu
+                // ekranda hic secenegi yoktu, aile bunu asla kapatamiyordu.
+                'saved_search_match' => ['label' => 'Kayıtlı aramama uyan yeni kurum eklendiğinde', 'types' => ['saved_search_match']],
             ];
         }
 
@@ -529,7 +534,7 @@ if (! function_exists('notification_action_url')) {
                 // tiklaninca "Kullanicilar -> ara -> Kullanici olarak gör"
                 // zahmetli akisi yerine DOGRUDAN o kurumun paneline atlar
                 // (bkz. Admin\BrokerController::quickJump()).
-                'broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined', 'broker_visit_request', 'broker_new_question' => isset($data['facility_id'])
+                'broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined', 'broker_visit_request', 'broker_new_question', 'broker_question_reminder' => isset($data['facility_id'])
                     ? route('admin.broker.facilities.quick-jump', array_filter(['facility' => $data['facility_id'], 'offer_request' => $data['offer_request_id'] ?? null]))
                     : route('admin.broker.facilities'),
                 'registration_submitted' => route('admin.registrations.index'),

@@ -9,11 +9,18 @@ use Illuminate\Support\Facades\Cache;
 
 class SubscriptionPackageController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $packages = SubscriptionPackage::orderBy('sort_order')->orderBy('price')->get();
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek eksik - update() route'u/aksiyonu zaten calisir
+        // durumdaydi ama ekranda hic "Duzenle" linki/formu yoktu (ör. bir
+        // paketin fiyatini duzeltmek icin tek yol silip yeniden eklemekti,
+        // bu da sira/gecmisi bozuyordu). AYNI ContentPageController::index()
+        // deseni uygulandi.
+        $editingPackage = $request->filled('edit') ? SubscriptionPackage::find($request->query('edit')) : null;
 
-        return view('admin.packages.index', compact('packages'));
+        return view('admin.packages.index', compact('packages', 'editingPackage'));
     }
 
     public function store(Request $request)

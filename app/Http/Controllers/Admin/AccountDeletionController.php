@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AccountDeletionRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -33,49 +34,63 @@ class AccountDeletionController extends Controller
 
     public function approve(AccountDeletionRequest $accountDeletionRequest)
     {
-        abort_if($accountDeletionRequest->status !== 'pending', 400, 'Bu talep zaten işlenmiş.');
+        // 1 Eylul 2026: kullanicinin talebi uzerine yapilan denetimde
+        // bulunan gercek hata - platformdaki diger TUM "beklemede -> onay"
+        // akislari (WalletTopupController, FacilityClaimController,
+        // FacilityRegistrationController) cift-islem riskine karsi
+        // lockForUpdate() + transaction kullanirken, bu GERI ALINAMAZ
+        // (kisisel veri anonimlestirme, KVKK) islem bu korumadan yoksundu -
+        // cift tiklama/cift form submit yaris durumunda ayni hesabi iki kez
+        // isleyebilirdi.
+        DB::transaction(function () use ($accountDeletionRequest) {
+            $locked = AccountDeletionRequest::whereKey($accountDeletionRequest->id)->lockForUpdate()->firstOrFail();
+            abort_if($locked->status !== 'pending', 400, 'Bu talep zaten işlenmiş.');
 
-        $user = $accountDeletionRequest->requestable;
-        abort_if(! $user, 404, 'Hesap zaten silinmiş/bulunamadı.');
+            $user = $locked->requestable;
+            abort_if(! $user, 404, 'Hesap zaten silinmiş/bulunamadı.');
 
-        $user->update([
-            'name' => 'Silinmiş Kullanıcı',
-            'email' => 'silinmis-'.$user->id.'-'.time().'@silinmis.local',
-            'phone' => null,
-            'password' => Hash::make(Str::random(40)),
-            'status' => 'deleted',
-            'avatar_url' => null,
-            'google_id' => null,
-        ]);
+            $user->update([
+                'name' => 'Silinmiş Kullanıcı',
+                'email' => 'silinmis-'.$user->id.'-'.time().'@silinmis.local',
+                'phone' => null,
+                'password' => Hash::make(Str::random(40)),
+                'status' => 'deleted',
+                'avatar_url' => null,
+                'google_id' => null,
+            ]);
 
-        $accountDeletionRequest->update([
-            'status' => 'completed',
-            'processed_at' => now(),
-            'processed_by' => session('admin_id'),
-        ]);
+            $locked->update([
+                'status' => 'completed',
+                'processed_at' => now(),
+                'processed_by' => session('admin_id'),
+            ]);
 
-        log_admin_event('account_deletion_approved', $accountDeletionRequest, [
-            'requestable_type' => $accountDeletionRequest->requestable_type,
-            'requestable_id' => $accountDeletionRequest->requestable_id,
-        ]);
+            log_admin_event('account_deletion_approved', $locked, [
+                'requestable_type' => $locked->requestable_type,
+                'requestable_id' => $locked->requestable_id,
+            ]);
+        });
 
         return back()->with('success', 'Hesap silindi (kişisel veriler anonimleştirildi).');
     }
 
     public function reject(Request $request, AccountDeletionRequest $accountDeletionRequest)
     {
-        abort_if($accountDeletionRequest->status !== 'pending', 400, 'Bu talep zaten işlenmiş.');
-
         $data = $request->validate(['admin_note' => 'nullable|string|max:1000']);
 
-        $accountDeletionRequest->update([
-            'status' => 'rejected',
-            'processed_at' => now(),
-            'processed_by' => session('admin_id'),
-            'admin_note' => $data['admin_note'] ?? null,
-        ]);
+        DB::transaction(function () use ($accountDeletionRequest, $data) {
+            $locked = AccountDeletionRequest::whereKey($accountDeletionRequest->id)->lockForUpdate()->firstOrFail();
+            abort_if($locked->status !== 'pending', 400, 'Bu talep zaten işlenmiş.');
 
-        log_admin_event('account_deletion_rejected', $accountDeletionRequest);
+            $locked->update([
+                'status' => 'rejected',
+                'processed_at' => now(),
+                'processed_by' => session('admin_id'),
+                'admin_note' => $data['admin_note'] ?? null,
+            ]);
+
+            log_admin_event('account_deletion_rejected', $locked);
+        });
 
         return back()->with('success', 'Talep reddedildi, hesap silinmedi.');
     }
