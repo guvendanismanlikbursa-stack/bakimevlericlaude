@@ -17,12 +17,21 @@ class DashboardController extends Controller
         $facility = $user->facility;
         $facilityInBrandScope = $facility->isInBrandScope($brand['category_scope']);
 
-        $alreadyQuotedIds = $facility->quotes()
-            ->whereHas('offerRequest', fn ($q) => $q->where('brand', $brand['slug']))
-            ->pluck('offer_request_id');
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - kurumlar 3
+        // markada da AYNI envanteri paylasiyor (bkz. config/brands.php,
+        // category_scope UCU DE BIREBIR AYNI - bu kontrolun zaten hicbir
+        // ayirt edici etkisi yok), yani bir aile bu kurumu HANGI siteden
+        // (bakimevleri/bakimevibul/bakimeviara) bulup teklif isterse istesin
+        // AYNI kuruma ulasiyor. Ama bu sorgular 'brand' = su an goruntulenen
+        // site'ye gore filtrelendigi icin, kurum yetkilisi HANGI siteden
+        // giris yaptiysa SADECE o sitedeki talepleri goruyordu - diger 2
+        // siteden gelen GERCEK teklif talepleri panelde HIC gorunmuyordu
+        // (bkz. ayni tarihli MessageController/QuoteController duzeltmesi -
+        // orada erisim tamamen 403 ile engelleniyordu). Artik kurumun TUM
+        // markalardaki talepleri tek panelde birlesik gorunur.
+        $alreadyQuotedIds = $facility->quotes()->pluck('offer_request_id');
 
-        $directRequests = OfferRequest::where('brand', $brand['slug'])
-            ->where('facility_id', $facility->id)
+        $directRequests = OfferRequest::where('facility_id', $facility->id)
             ->with(['familyUser', 'city', 'category', 'quotes' => fn ($q) => $q->where('facility_id', $facility->id), 'messages'])
             ->latest()
             ->get();
@@ -30,8 +39,7 @@ class DashboardController extends Controller
         $broadcastLeads = collect();
 
         if ($facilityInBrandScope) {
-            $broadcastLeads = OfferRequest::where('brand', $brand['slug'])
-                ->whereNull('facility_id')
+            $broadcastLeads = OfferRequest::whereNull('facility_id')
                 ->where('city_id', $facility->city_id)
                 ->where('facility_category_id', $facility->facility_category_id)
                 ->whereNotIn('id', $alreadyQuotedIds)
@@ -41,7 +49,6 @@ class DashboardController extends Controller
         }
 
         $sentQuotes = $facility->quotes()
-            ->whereHas('offerRequest', fn ($q) => $q->where('brand', $brand['slug']))
             ->with('offerRequest.familyUser', 'offerRequest.city', 'offerRequest.category')
             ->latest()
             ->get();

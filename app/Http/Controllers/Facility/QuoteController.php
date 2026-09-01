@@ -18,7 +18,15 @@ class QuoteController extends Controller
         $offerRequest = $this->offerRequestFromRoute($request);
         $user = FacilityUser::with('facility.category')->findOrFail(session('facility_user_id'));
 
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Talebin markasi
+        // ile kurum yetkilisinin SU AN goruntuledigi site AYNI olmak
+        // ZORUNDA degil - kurum 3 markada da AYNI envanteri paylasiyor,
+        // ustelik category_scope ZATEN her markada birebir ayni (bkz.
+        // config/brands.php) - bu ikinci kontrol de hicbir zaman false
+        // donmuyordu, sadece brand esitligi gercek engeldi. Aile BASKA bir
+        // siteden teklif istediyse, kurum yetkilisi kendine gelen bu
+        // talebe ASLA teklif veremiyordu (403).
         abort_unless($user->facility->isInBrandScope($brand['category_scope']), 403);
 
         // 28 Temmuz 2026: canli uctan uca testte bulundu - FacilityUser::

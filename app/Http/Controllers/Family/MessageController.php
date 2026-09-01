@@ -18,7 +18,12 @@ class MessageController extends Controller
         $family = FamilyUser::findOrFail(session('family_user_id'));
 
         abort_unless($offerRequest->family_user_id === $family->id, 403);
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Tek gercek yetki
+        // kurali family_user_id sahipligi (yukarida kontrol edildi); talebin
+        // markasi ile ailenin SU AN goruntuledigi site AYNI olmak ZORUNDA
+        // degil.
         abort_unless($this->canAccessThread($offerRequest), 403);
 
         $offerRequest->load(['messages', 'facility', 'quotes.facility']);
@@ -28,12 +33,16 @@ class MessageController extends Controller
 
     public function store(Request $request, OfferRequestNotificationService $notifier)
     {
-        $brand = current_brand();
         $offerRequest = $this->offerRequestFromRoute($request);
         $family = FamilyUser::findOrFail(session('family_user_id'));
 
         abort_unless($offerRequest->family_user_id === $family->id, 403);
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Tek gercek yetki
+        // kurali family_user_id sahipligi (yukarida kontrol edildi); talebin
+        // markasi ile ailenin SU AN goruntuledigi site AYNI olmak ZORUNDA
+        // degil.
         abort_unless($this->canAccessThread($offerRequest), 403);
 
         // 21 Temmuz 2026: FacilityUserAuth ile ayni kural - dogrulanmamis
@@ -67,12 +76,16 @@ class MessageController extends Controller
      */
     public function poll(Request $request)
     {
-        $brand = current_brand();
         $offerRequest = $this->offerRequestFromRoute($request);
         $family = FamilyUser::findOrFail(session('family_user_id'));
 
         abort_unless($offerRequest->family_user_id === $family->id, 403);
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Tek gercek yetki
+        // kurali family_user_id sahipligi (yukarida kontrol edildi); talebin
+        // markasi ile ailenin SU AN goruntuledigi site AYNI olmak ZORUNDA
+        // degil.
         abort_unless($this->canAccessThread($offerRequest), 403);
 
         $afterId = (int) $request->query('after_id', 0);

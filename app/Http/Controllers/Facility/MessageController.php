@@ -16,7 +16,14 @@ class MessageController extends Controller
         $offerRequest = $this->offerRequestFromRoute($request);
         $user = FacilityUser::findOrFail(session('facility_user_id'));
 
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Talebin
+        // markasi ile kurum yetkilisinin SU AN goruntuledigi site AYNI
+        // olmak ZORUNDA degil - kurum 3 markada da AYNI envanteri
+        // paylasiyor. Bu kontrol, aile BASKA bir siteden yazdiysa
+        // (facility_id zaten dogru kuruma sabit oldugu icin, tek gercek
+        // yetki kurali canAccessThread()) kurum yetkilisini kendi
+        // mesajina 403 ile erisemez hale getiriyordu.
         abort_unless($this->canAccessThread($offerRequest, $user->facility_id), 403);
 
         $offerRequest->load(['messages', 'familyUser']);
@@ -26,11 +33,17 @@ class MessageController extends Controller
 
     public function store(Request $request)
     {
-        $brand = current_brand();
         $offerRequest = $this->offerRequestFromRoute($request);
         $user = FacilityUser::findOrFail(session('facility_user_id'));
 
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Talebin
+        // markasi ile kurum yetkilisinin SU AN goruntuledigi site AYNI
+        // olmak ZORUNDA degil - kurum 3 markada da AYNI envanteri
+        // paylasiyor. Bu kontrol, aile BASKA bir siteden yazdiysa
+        // (facility_id zaten dogru kuruma sabit oldugu icin, tek gercek
+        // yetki kurali canAccessThread()) kurum yetkilisini kendi
+        // mesajina 403 ile erisemez hale getiriyordu.
         abort_unless($this->canAccessThread($offerRequest, $user->facility_id), 403);
 
         $data = $request->validate(['body' => 'required|string|max:2000']);
@@ -67,11 +80,17 @@ class MessageController extends Controller
      */
     public function poll(Request $request)
     {
-        $brand = current_brand();
         $offerRequest = $this->offerRequestFromRoute($request);
         $user = FacilityUser::findOrFail(session('facility_user_id'));
 
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Talebin
+        // markasi ile kurum yetkilisinin SU AN goruntuledigi site AYNI
+        // olmak ZORUNDA degil - kurum 3 markada da AYNI envanteri
+        // paylasiyor. Bu kontrol, aile BASKA bir siteden yazdiysa
+        // (facility_id zaten dogru kuruma sabit oldugu icin, tek gercek
+        // yetki kurali canAccessThread()) kurum yetkilisini kendi
+        // mesajina 403 ile erisemez hale getiriyordu.
         abort_unless($this->canAccessThread($offerRequest, $user->facility_id), 403);
 
         $afterId = (int) $request->query('after_id', 0);

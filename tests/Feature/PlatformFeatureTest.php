@@ -183,8 +183,14 @@ class PlatformFeatureTest extends TestCase
         $this->assertNull(session('admin_id'));
     }
 
-    public function test_family_account_is_global_but_dashboard_is_brand_scoped(): void
+    public function test_family_account_is_global_and_dashboard_shows_requests_from_every_brand(): void
     {
+        // 1 Eylul 2026: bu test eskiden panelin BILEREK marka-bazli
+        // filtrelendigini dogruluyordu - kullanicinin sordugu gercek soru
+        // uzerine bunun bir hata oldugu ortaya cikti (bkz.
+        // Family\DashboardController ayni tarihli yorum). Aile TEK hesapla
+        // 3 markadan da talep olusturabilir; panel artik HANGI markadan
+        // acilirsa acilsin TUM talepleri birlikte gosterir.
         OfferRequest::create($this->offerData('bakimevibul', $this->elderlyCategory, 'Bul Talep'));
         OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Ara Talep'));
 
@@ -195,14 +201,14 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Toplam Talep')
             ->assertSee('Gelen Teklif')
             ->assertSee('Yasli Bakim Evi')
-            ->assertDontSee('Ara Talep');
+            ->assertSee('Ara Talep');
 
         $this->withSession(['family_user_id' => $this->family->id, 'family_user_name' => $this->family->name])
             ->get('/site/bakimeviara/aile/panel')
             ->assertOk()
             ->assertSee('Aile Paneli')
             ->assertSee('Ozel Egitim Merkezi')
-            ->assertDontSee('Bul Talep');
+            ->assertSee('Bul Talep');
     }
 
     public function test_family_can_view_and_update_profile_page(): void
@@ -6085,5 +6091,96 @@ class PlatformFeatureTest extends TestCase
         $facility->refresh();
         $this->assertFalse((bool) $facility->is_broker_managed);
         $this->assertTrue((bool) $facility->is_featured, 'Anlaşmalı statüsü geri alınınca Öne Çıkan durumu korunmalı.');
+    }
+
+    // 1 Eylul 2026: kullanicinin sordugu gercek soru - "kurum yetkilisi X
+    // sitesinden kurumu sahiplendi ama aile ayni kurumu Y sitesinden bulup
+    // teklif istedi, kurum yetkilisi HANGI siteden giris yaparsa yapsin
+    // bunu gorup islem yapabiliyor mu?" Asagidaki 4 test bunu dogrudan
+    // dogrular - bkz. Facility\DashboardController/MessageController/
+    // QuoteController ve Family\DashboardController/MessageController
+    // ayni tarihli yorumlari (kok neden: 'brand' sutunu sadece hangi
+    // sitenin talebi olusturdugunu kaydeder, erisim kontrolu icin
+    // KULLANILAMAZ - kurum 3 markada da ayni envanteri paylasir).
+    public function test_facility_dashboard_shows_offer_request_created_from_a_different_brand(): void
+    {
+        $offerRequest = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Baska marka panel testi') + ['facility_id' => $this->childFacility->id]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimevleri/kurum-panel/panel')
+            ->assertOk()
+            ->assertSee('Baska marka panel testi');
+    }
+
+    public function test_facility_can_view_and_send_message_for_offer_request_from_a_different_brand_session(): void
+    {
+        $offerRequest = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Baska marka mesaj testi') + ['facility_id' => $this->childFacility->id]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get("/site/bakimevleri/kurum-panel/talep/{$offerRequest->id}/mesajlar")
+            ->assertOk();
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post("/site/bakimevleri/kurum-panel/talep/{$offerRequest->id}/mesajlar", ['body' => 'Merhaba, size ulasiyoruz.'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('messages', [
+            'offer_request_id' => $offerRequest->id,
+            'sender_type' => 'facility',
+            'body' => 'Merhaba, size ulasiyoruz.',
+        ]);
+    }
+
+    public function test_facility_can_send_quote_for_offer_request_from_a_different_brand_session(): void
+    {
+        $offerRequest = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Baska marka teklif testi') + ['facility_id' => $this->childFacility->id]);
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post("/site/bakimevleri/kurum-panel/talep/{$offerRequest->id}/teklif-ver", [
+                'price' => 5000,
+                'price_period' => 'monthly',
+                'message' => 'Merhaba, teklifimiz ektedir.',
+            ])
+            ->assertSessionDoesntHaveErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('quotes', [
+            'offer_request_id' => $offerRequest->id,
+            'facility_id' => $this->childFacility->id,
+        ]);
+    }
+
+    public function test_family_can_accept_quote_and_message_for_offer_request_from_a_different_brand_session(): void
+    {
+        $offerRequest = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Aile baska marka testi') + ['facility_id' => $this->childFacility->id]);
+        $quote = Quote::create([
+            'offer_request_id' => $offerRequest->id,
+            'facility_id' => $this->childFacility->id,
+            'facility_user_id' => $this->facilityUser->id,
+            'price' => 4000,
+            'price_period' => 'monthly',
+            'status' => 'pending',
+        ]);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post("/site/bakimevleri/aile/teklif/{$quote->id}/kabul-et")
+            ->assertRedirect();
+
+        $quote->refresh();
+        $this->assertSame('accepted', $quote->status);
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->get("/site/bakimevleri/aile/talep/{$offerRequest->id}/mesajlar")
+            ->assertOk();
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post("/site/bakimevleri/aile/talep/{$offerRequest->id}/mesajlar", ['body' => 'Teklifinizi kabul ettim.'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('messages', [
+            'offer_request_id' => $offerRequest->id,
+            'sender_type' => 'family',
+            'body' => 'Teklifinizi kabul ettim.',
+        ]);
     }
 }

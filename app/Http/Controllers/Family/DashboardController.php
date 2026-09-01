@@ -19,8 +19,14 @@ class DashboardController extends Controller
         /** @var FamilyUser $family */
         $family = FamilyUser::findOrFail(session('family_user_id'));
 
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata ile ayni kokten
+        // (bkz. Facility\DashboardController ayni tarihli yorum) - bir
+        // aile birden fazla markada (ayni e-posta ile ayri ayri giris
+        // yaparak) talep olusturmus olabilir; panelde SADECE su an
+        // goruntulenen markanin talepleri gorunmesi, digerlerini
+        // gostermeme riski tasiyordu. Artik ailenin TUM markalardaki
+        // talepleri tek panelde birlesik gorunur.
         $requests = $family->offerRequests()
-            ->where('brand', $brand['slug'])
             ->with([
                 'facility',
                 'city',
@@ -49,14 +55,19 @@ class DashboardController extends Controller
 
     public function acceptQuote(Request $request)
     {
-        $brand = current_brand();
         $quote = $this->quoteFromRoute($request);
         $family = FamilyUser::findOrFail(session('family_user_id'));
         $quote->load('offerRequest');
         $offerRequest = $quote->offerRequest;
 
         abort_unless($offerRequest && $offerRequest->family_user_id === $family->id, 403);
-        abort_unless($offerRequest->brand === $brand['slug'], 403);
+
+        // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // Facility\DashboardController ayni tarihli yorum. Talebin markasi
+        // ile ailenin SU AN goruntuledigi site AYNI olmak ZORUNDA degil -
+        // tek gercek yetki kurali family_user_id sahipligi (yukarida zaten
+        // kontrol edildi). Aile bu teklifi BASKA bir siteden aldiysa,
+        // kendi teklifini kabul edemiyordu (403).
 
         // 21 Temmuz 2026: dogrulanmamis e-postali aile bir teklifi kabul edip
         // kurumla mesajlasma acamamali - kurum panelindeki ayni kuralla tutarli.
