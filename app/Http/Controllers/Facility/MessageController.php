@@ -48,6 +48,22 @@ class MessageController extends Controller
 
         $data = $request->validate(['body' => 'required|string|max:2000']);
 
+        // 2 Eylul 2026: kullanicinin talebi - "aileler beni devre disi
+        // birakmasin". Bir teklif kabul edilmeden once (bkz.
+        // message_contains_contact_info() helpers.php) telefon/e-posta/
+        // WhatsApp paylasimi engellenir - Airbnb/Upwork'un kullandigi ayni
+        // yontem. Kabulden SONRA serbest birakilir, cunku o noktada zaten
+        // kurumla anlasma sozlesmesindeki koruma suresi maddesi devrede.
+        if ($offerRequest->accepted_quote_id === null && message_contains_contact_info($data['body'])) {
+            $errorMessage = 'İletişim bilgisi (telefon, e-posta, WhatsApp vb.) paylaşımı, bir teklif kabul edilene kadar platform kurallarına aykırıdır. Lütfen mesajlaşmaya buradan devam edin.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $errorMessage], 422);
+            }
+
+            return back()->withErrors(['body' => $errorMessage])->withInput();
+        }
+
         $message = Message::create([
             'offer_request_id' => $offerRequest->id,
             'sender_type' => 'facility',

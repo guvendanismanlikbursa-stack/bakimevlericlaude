@@ -1069,3 +1069,57 @@ if (! function_exists('detect_chat_section')) {
         return null;
     }
 }
+
+if (! function_exists('message_contains_contact_info')) {
+    /**
+     * 2 Eylul 2026: kullanicinin talebi - "aileler beni devre disi
+     * birakmasin" sorusuna gercek, ucretsiz bir cozum: Airbnb/Upwork gibi
+     * platformlarin kullandigi ayni yontem - bir teklif kabul edilene kadar
+     * mesajlasmada telefon/e-posta/WhatsApp paylasimini engellemek. Boylece
+     * aile ile kurum, platform henuz hicbir eslesmeyi onaylamadan dogrudan
+     * iletisime gecip platformu tamamen atlayamaz. Mukemmel degil (yazi ile
+     * yazilmis "sifir beş beş..." gibi numaralari yakalamaz, fiziksel
+     * ziyarette karti eline alan biri her halukarda numarayi gorur) ama
+     * en kolay ve en erken bypass noktasini (ilk mesajda numara/whatsapp
+     * paylasimi) kapatir.
+     */
+    function message_contains_contact_info(string $body): bool
+    {
+        // Turkce telefon numaralari (05XX XXX XX XX, sabit hat, +90 vb.)
+        // ayirici karakterlerle (bosluk, tire, nokta, parantez) yazilabilir.
+        // Mesajdaki BUTUN rakamlari tek bir dizide birlestirip uzunluguna
+        // bakmak yanlis olurdu - "ilk ay 1500 TL, ikinci ay 2026'da baslar"
+        // gibi birbiriyle ilgisiz iki kucuk sayi metin arasinda bile
+        // birlesip yanlislikla 7+ haneli gorunebilir. Bunun yerine ONCE
+        // aralarinda sadece rakam/ayirici olan (harf/baska metinle
+        // BOLUNMEMIS) kumeler bulunur, sonra HER kumenin kendi rakamlarina
+        // (ulke kodu +90/90 varsa atilarak) bakilir - 10-11 hane ve 0 veya
+        // 5 ile basliyorsa (TR telefon formati) telefon sayilir. Bu, bir
+        // tarihi (ör. "15.09.2026", 8 hane) yanlislikla engellemez.
+        if (preg_match_all('/\d[\d\s().-]{7,}\d/', $body, $clusters)) {
+            foreach ($clusters[0] as $cluster) {
+                $digits = preg_replace('/\D/', '', $cluster);
+                if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+                    $digits = substr($digits, 2);
+                }
+                if (in_array(strlen($digits), [10, 11], true) && (str_starts_with($digits, '0') || str_starts_with($digits, '5'))) {
+                    return true;
+                }
+            }
+        }
+
+        if (preg_match('/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i', $body)) {
+            return true;
+        }
+
+        $keywords = ['whatsapp', 'wa.me', 'instagram.com', 'telegram', 't.me/'];
+        $normalized = mb_strtolower($body, 'UTF-8');
+        foreach ($keywords as $keyword) {
+            if (str_contains($normalized, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

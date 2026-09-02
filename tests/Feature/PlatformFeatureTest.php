@@ -2985,6 +2985,77 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('facility', $response->json('message.sender_type'));
     }
 
+    public function test_facility_message_containing_phone_number_is_blocked_before_quote_accepted(): void
+    {
+        // 2 Eylul 2026: kullanicinin talebi - "aileler beni devre disi
+        // birakmasin". Teklif kabul edilmeden once telefon/e-posta/WhatsApp
+        // paylasimi engellenmeli (bkz. message_contains_contact_info()
+        // helpers.php), Airbnb/Upwork'un kullandigi ayni yontem.
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Telefon Testi'));
+        $request->update(['facility_id' => $this->childFacility->id]);
+
+        $response = $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->postJson('/site/bakimeviara/kurum-panel/talep/'.$request->id.'/mesajlar', [
+                'body' => 'Beni 0532 123 45 67 numaramdan arayabilirsiniz',
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('messages', ['offer_request_id' => $request->id]);
+    }
+
+    public function test_family_message_containing_phone_number_is_blocked_before_quote_accepted(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Aile Telefon Testi'));
+        $request->update(['facility_id' => $this->childFacility->id, 'family_user_id' => $this->family->id]);
+
+        $response = $this->withSession(['family_user_id' => $this->family->id])
+            ->postJson('/site/bakimeviara/aile/talep/'.$request->id.'/mesajlar', [
+                'body' => 'whatsapp: 0532 123 45 67',
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('messages', ['offer_request_id' => $request->id]);
+    }
+
+    public function test_message_containing_phone_number_is_allowed_after_quote_accepted(): void
+    {
+        // Kabulden sonra kisitlama kalkar - o noktada zaten kurum
+        // sozlesmesindeki koruma suresi maddesi (Sistem Kaydi) devrede.
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Kabul Sonrasi Testi'));
+        $request->update(['facility_id' => $this->childFacility->id, 'family_user_id' => $this->family->id]);
+        $quote = Quote::create([
+            'offer_request_id' => $request->id,
+            'facility_id' => $this->childFacility->id,
+            'facility_user_id' => $this->facilityUser->id,
+            'price' => 5000,
+            'price_period' => 'monthly',
+            'status' => 'accepted',
+        ]);
+        $request->update(['accepted_quote_id' => $quote->id]);
+
+        $response = $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->postJson('/site/bakimeviara/kurum-panel/talep/'.$request->id.'/mesajlar', [
+                'body' => 'Beni 0532 123 45 67 numaramdan arayabilirsiniz',
+            ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('messages', ['offer_request_id' => $request->id, 'body' => 'Beni 0532 123 45 67 numaramdan arayabilirsiniz']);
+    }
+
+    public function test_message_without_contact_info_is_never_blocked(): void
+    {
+        $request = OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Normal Mesaj Testi'));
+        $request->update(['facility_id' => $this->childFacility->id]);
+
+        $response = $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->postJson('/site/bakimeviara/kurum-panel/talep/'.$request->id.'/mesajlar', [
+                'body' => 'Merhaba, aylık ücretimiz 15000 TL, 15.09.2026 tarihinde başlayabiliriz.',
+            ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('messages', ['offer_request_id' => $request->id]);
+    }
+
     public function test_review_invitation_command_notifies_eligible_family_only_once(): void
     {
         Mail::fake();

@@ -77,12 +77,27 @@
       // bunu bozuk bir mesaj sanip goruyor VE lastId'yi NaN'a bulastirip
       // sonraki tum yoklamalari mukerrer mesaj gostermeye basliyordu. Artik
       // basarisiz HTTP durumunda catch bloguna dusup yazilan metni geri koyuyor.
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (data) {
-        if (data.message) renderMessage(data.message);
+      //
+      // 2 Eylul 2026: 422 (ör. iletisim bilgisi paylasimi engeli, bkz.
+      // message_contains_contact_info() helpers.php) artik JSON govdesinden
+      // OKUNUP kullaniciya sunucunun GERCEK aciklamasi gosteriliyor - eskiden
+      // her hata ayni genel "oturumunuz zaman asimina ugramis" mesajini
+      // gosteriyordu, kullanici neden engellendigini hic anlamiyordu.
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (data) {
+          return { ok: r.ok, status: r.status, data: data };
+        });
       })
-      .catch(function () {
-        alert('Mesaj gönderilemedi. Oturumunuz zaman aşımına uğramış olabilir, sayfayı yenileyip tekrar deneyin.');
+      .then(function (result) {
+        if (!result.ok) {
+          var reason = (result.status === 422 && result.data && result.data.message) ? result.data.message : null;
+          throw new Error(reason || 'GENERIC');
+        }
+        if (result.data && result.data.message) renderMessage(result.data.message);
+      })
+      .catch(function (err) {
+        var reason = (err && err.message && err.message !== 'GENERIC') ? err.message : null;
+        alert(reason || 'Mesaj gönderilemedi. Oturumunuz zaman aşımına uğramış olabilir, sayfayı yenileyip tekrar deneyin.');
         input.value = body;
       })
       .finally(function () {
