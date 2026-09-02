@@ -220,12 +220,17 @@
         <label for="claim-applicant-phone" class="sr-only">Telefon</label>
         <input type="text" id="claim-applicant-phone" name="applicant_phone" value="{{ old('applicant_phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2.5 w-full">
         <div>
-          <label for="claim-document" class="text-sm font-medium block mb-1">Evrak / Fatura Görseli <span class="text-gray-400 font-normal">(opsiyonel, daha sonra da ekleyebilirsiniz)</span></label>
-          <input type="file" id="claim-document" name="document" accept="image/*" class="border rounded-lg px-3 py-2.5 w-full text-sm">
+          <label for="claim-document" class="text-sm font-medium block mb-1">Evrak / Fatura Görseli <span class="text-red-500 font-normal">(zorunlu)</span></label>
+          <input type="file" id="claim-document" name="document" accept="image/*" required class="border rounded-lg px-3 py-2.5 w-full text-sm">
           {{-- 13 Agustos 2026: kullanicinin talebi - belge neden istendigi
                ve nasil kullanildigi acikca yazilmali, aksi halde yabanci
-               bir platforma kimlik belgesi yuklerken tereddut olusur. --}}
-          <p class="text-xs text-gray-400 mt-1">Bu belge sadece kurum yetkilisi olduğunuzu doğrulamak için kullanılır, sitede yayınlanmaz, sadece yetkili adminler görebilir. Şimdi eklemezseniz 24 saat içinde WhatsApp veya e-posta ile gönderebilirsiniz — aksi halde başvurunuz otomatik iptal edilir (kurum sahibi olmayan kişilerin kurumları ele geçirmesini önlemek için).</p>
+               bir platforma kimlik belgesi yuklerken tereddut olusur.
+               2 Eylul 2026: kullanicinin bildirdigi gercek sorun - belge
+               opsiyonelken kurumla hicbir ilgisi olmayan kisiler bos
+               basvuru olusturabiliyordu (bkz. FacilityClaimController@store
+               ayni tarihli yorum) - artik zorunlu, bu tereddut riskini
+               goze alsak da spam basvuru daha buyuk sorundu. --}}
+          <p class="text-xs text-gray-400 mt-1">Bu belge sadece kurum yetkilisi olduğunuzu doğrulamak için kullanılır, sitede yayınlanmaz, sadece yetkili adminler görebilir.</p>
         </div>
         <label for="claim-note" class="sr-only">Not (opsiyonel)</label>
         <textarea id="claim-note" name="note" placeholder="Eklemek istediğiniz not (opsiyonel)" rows="3" class="border rounded-lg px-3 py-2.5 w-full">{{ old('note') }}</textarea>

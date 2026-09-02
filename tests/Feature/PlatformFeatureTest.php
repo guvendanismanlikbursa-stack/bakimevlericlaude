@@ -3185,21 +3185,43 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('Fazla Boşluklu İsim', $badName->fresh()->name);
     }
 
-    public function test_claim_without_document_cannot_be_approved_until_document_added(): void
+    public function test_claim_application_without_document_is_rejected_at_submission(): void
     {
-        Storage::fake('local');
-        Mail::fake();
-
+        // 2 Eylul 2026: kullanicinin bildirdigi gercek sorun - belge
+        // opsiyonelken kurumla hicbir ilgisi olmayan kisiler belgesiz, bos
+        // basvuru olusturabiliyordu (bkz. FacilityClaimController@store ayni
+        // tarihli yorum). Belge artik basvuru ANINDA zorunlu - form belgesiz
+        // gonderilirse basvuru hic olusturulmamali.
         $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
             'applicant_name' => 'Belgesiz Yetkili',
             'applicant_email' => 'belgesiz@test.local',
             'applicant_phone' => '05553334444',
             'consent' => '1',
-        ])->assertRedirect();
+        ])->assertSessionHasErrors('document');
 
-        $claim = FacilityClaim::firstOrFail();
-        $this->assertNull($claim->document_path);
-        $this->assertSame('claimed', $this->rehabFacility->fresh()->invitation_status);
+        $this->assertDatabaseMissing('facility_claims', ['applicant_email' => 'belgesiz@test.local']);
+        $this->assertSame('not_started', $this->rehabFacility->fresh()->invitation_status);
+    }
+
+    public function test_legacy_claim_without_document_cannot_be_approved_until_document_added(): void
+    {
+        // 2 Eylul 2026: belge artik yeni basvurularda zorunlu (bkz. yukaridaki
+        // test), ama eski (bu degisiklikten once olusturulmus) belgesiz
+        // basvurular veritabaninda kalmis olabilir - admin'in bunlari
+        // belgesiz onaylayamamasi, belgeyi sonradan ekleyip onaylayabilmesi
+        // guvencesi hala gecerli olmali.
+        Storage::fake('local');
+        Mail::fake();
+
+        $claim = FacilityClaim::create([
+            'facility_id' => $this->rehabFacility->id,
+            'brand' => 'bakimevleri',
+            'applicant_name' => 'Eski Belgesiz Yetkili',
+            'applicant_email' => 'eski-belgesiz@test.local',
+            'applicant_phone' => '05553334444',
+            'document_path' => null,
+            'status' => 'pending',
+        ]);
 
         // Belge olmadan onay kesinlikle reddedilmeli (suistimal koruması).
         $this->withSession(['admin_id' => $this->admin->id])
@@ -3224,16 +3246,21 @@ class PlatformFeatureTest extends TestCase
 
     public function test_expire_undocumented_claims_command_deletes_stale_claims_and_reverts_status(): void
     {
-        $this->post('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug.'/sahiplen', [
+        // 2 Eylul 2026: yeni basvurularda belge zorunlu oldugu icin bu
+        // senaryo artik sadece ESKI (bu degisiklikten once olusmus) belgesiz
+        // basvurular icin gecerli - dogrudan Eloquent ile olusturularak
+        // simule ediliyor (bkz. yukaridaki legacy testi ayni yorum).
+        $claim = FacilityClaim::create([
+            'facility_id' => $this->rehabFacility->id,
+            'brand' => 'bakimevleri',
             'applicant_name' => 'Eski Belgesiz',
             'applicant_email' => 'eski.belgesiz@test.local',
             'applicant_phone' => '05559998877',
-            'consent' => '1',
-        ])->assertRedirect();
-
-        $claim = FacilityClaim::firstOrFail();
+            'document_path' => null,
+            'status' => 'pending',
+        ]);
         $claim->forceFill(['created_at' => now()->subHours(30)])->save();
-        $this->assertSame('claimed', $this->rehabFacility->fresh()->invitation_status);
+        $this->rehabFacility->update(['invitation_status' => 'claimed', 'invitation_status_at' => now()]);
 
         $this->artisan('claims:expire-undocumented')->assertSuccessful();
 
@@ -5438,6 +5465,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_name' => 'Rizali Yetkili',
             'applicant_email' => 'rizali@test.local',
             'applicant_phone' => '05551110001',
+            'document' => $this->fakePngUpload('ruhsat-riza.png'),
             'consent' => '1',
         ])->assertRedirect();
 

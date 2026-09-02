@@ -52,14 +52,14 @@ class FacilityClaimController extends Controller
             // kisisel veri (ad/e-posta/telefon) onaysiz toplaniyordu.
             'consent' => 'required|accepted',
             'note' => 'nullable|string|max:1000',
-            // 13 Agustos 2026: kullanicinin talebi - belge yukleme artik
-            // basvuru aninda ZORUNLU DEGIL (surtunmeyi azaltmak icin, ör.
-            // telefondan basvururken elde taranmis belge olmayabilir).
-            // GUVENLIK: bu tek basina suistimale acik degil - admin
-            // onayi belge olmadan asla verilmiyor (bkz. approve()) ve
-            // 24 saat icinde belge eklenmezse basvuru otomatik silinir
-            // (bkz. App\Console\Commands\ExpireUndocumentedClaims).
-            'document' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            // 2 Eylul 2026: kullanicinin bildirdigi gercek sorun - 13 Agustos
+            // 2026'da surtunmeyi azaltmak icin belge ZORUNLU OLMAKTAN
+            // CIKARILMISTI, ama bunun sonucunda kurumla hicbir ilgisi
+            // olmayan kisiler belgesiz, bos basvuru olusturmaya basladi -
+            // 24 saatlik otomatik silme (bkz. ExpireUndocumentedClaims)
+            // bunlari temizliyordu ama admin'e her seferinde bos bir
+            // bildirim gidiyordu. Belge artik yeniden ZORUNLU.
+            'document' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
             'lat' => 'nullable|numeric|between:-90,90',
             'lng' => 'nullable|numeric|between:-180,180',
             // 15 Agustos 2026: honeypot - bkz. partials/honeypot.blade.php
@@ -85,19 +85,20 @@ class FacilityClaimController extends Controller
         // var oldugu ayrica dogrulanir - basarisizsa basvuru hic
         // OLUSTURULMAZ, kullaniciya acik bir hata gosterilip tekrar
         // denemesi istenir.
-        $path = null;
-        if ($request->hasFile('document')) {
-            try {
-                $path = $request->file('document')->store('claims', 'local');
-                if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
-                    throw new \RuntimeException('Belge diske yazildiktan sonra dogrulanamadi.');
-                }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('Sahiplenme basvurusu belgesi kaydedilemedi: ' . $e->getMessage());
-                \Sentry\captureException($e);
-
-                return back()->withErrors(['document' => 'Belge yüklenirken bir sorun oluştu, lütfen tekrar deneyin.'])->withInput();
+        // 2 Eylul 2026: 'document' artik zorunlu (bkz. yukaridaki validasyon
+        // yorumu) - hasFile() her zaman true olur, ama diske yazim yine de
+        // basarisiz olabilir (disk dolu, izin hatasi vb.), bu yuzden asagidaki
+        // dogrulama korunuyor.
+        try {
+            $path = $request->file('document')->store('claims', 'local');
+            if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                throw new \RuntimeException('Belge diske yazildiktan sonra dogrulanamadi.');
             }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Sahiplenme basvurusu belgesi kaydedilemedi: ' . $e->getMessage());
+            \Sentry\captureException($e);
+
+            return back()->withErrors(['document' => 'Belge yüklenirken bir sorun oluştu, lütfen tekrar deneyin.'])->withInput();
         }
 
         // Tarayici konumu izne bagli ve zorunlu degil (Nearby ile ayni
@@ -146,12 +147,8 @@ class FacilityClaimController extends Controller
             $facility->name.' için yeni bir sahiplenme başvurusu geldi.',
         ));
 
-        $successMessage = $path
-            ? 'Başvurunuz alındı! Ekibimiz belgenizi inceleyip onaylayacak, ardından giriş bilgileriniz e-postanıza gönderilecek.'
-            : 'Başvurunuz alındı! Belgenizi henüz eklemediniz — 24 saat içinde WhatsApp veya e-posta ile iletirseniz başvurunuz onaylanır, aksi halde otomatik olarak iptal edilir.';
-
         return redirect(brand_route('facilities.show', ['slug' => $facility->slug]))
-            ->with('success', $successMessage);
+            ->with('success', 'Başvurunuz alındı! Ekibimiz belgenizi inceleyip onaylayacak, ardından giriş bilgileriniz e-postanıza gönderilecek.');
     }
 
     private function facilityForRequest(Request $request, array $categoryScope): Facility
