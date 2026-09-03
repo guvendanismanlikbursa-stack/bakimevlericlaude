@@ -71,10 +71,18 @@ class VideoCompressionService
             // max_execution_time'ina (kisa, ör. 30sn) sahip - cagiran taraf
             // (Admin\FacilityController) set_time_limit() ile bunu genisletir,
             // burada sadece Process'in KENDI zaman asimini genis tutuyoruz.
+            // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - canli
+            // logda bulundu: "Error while opening encoder" + libx264'un
+            // "using cpu capabilities: ... AVX512" satiri. Bu, paylasimli/
+            // sanallastirilmis sunucularda bilinen bir hata sinifi - CPU
+            // AVX512 destekliyormus gibi gorunuyor (CPUID) ama sanallastirma
+            // katmani bunu GERCEKTE calistiramiyor, libx264 encoder'i acarken
+            // patliyor. 'asm=0' x264'un tum ozel islemci (SIMD) optimizasyonlarini
+            // kapatip yavas ama HER ORTAMDA calisan sade C koduna zorlar.
             $convert = new Process([
                 $ffmpeg, '-y', '-i', $realPath,
                 '-vf', 'scale='.self::MAX_WIDTH.':-2:force_original_aspect_ratio=decrease',
-                '-c:v', 'libx264', '-preset', 'medium', '-crf', '30',
+                '-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-x264-params', 'asm=0',
                 '-c:a', 'aac', '-b:a', '96k', '-ac', '2',
                 '-movflags', '+faststart',
                 $outPath,
