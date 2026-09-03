@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -64,6 +64,7 @@ class OpsController extends Controller
             'python-check' => $this->pythonCheck(),
             'ffmpeg-check' => $this->ffmpegCheck(),
             'ffmpeg-install' => $this->ffmpegInstall(),
+            'ffmpeg-x264-diagnose' => $this->ffmpegX264Diagnose(),
             'qa-video-upload-test' => $this->qaVideoUploadTest($request),
             'disk-usage' => $this->diskUsage(),
             'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
@@ -1365,6 +1366,73 @@ class OpsController extends Controller
             @unlink($tmpIn);
             @unlink($tmpOut);
         }
+    }
+
+    /**
+     * 3 Eylul 2026: kullanicinin bildirdigi canli hata - "Error while
+     * opening encoder" - libx264 spesifik. ffmpegRealCompressionTest()
+     * BILEREK/YANLISLIKLA webm/vp8'e cevirir, libx264'u HIC TEST ETMEZ -
+     * bu yuzden bu hata daha once hic yakalanmamis. Bu tanı, GERCEK
+     * VideoCompressionService komutunun (portre 720x1280, asm=0) yani
+     * sirada birkac degisken (thread sayisi, olcekleme filtresiz) ile
+     * dogrudan sunucuda test edip HANGISININ calistigini gosterir - tahmin
+     * degil, kesin kanit.
+     */
+    private function ffmpegX264Diagnose(): string
+    {
+        $ffmpeg = \App\Services\FfmpegLocator::resolve();
+        if (! $ffmpeg) {
+            return "HATA: hicbir ffmpeg ikili dosyasi bulunamadi.\n";
+        }
+
+        $out = "ffmpeg: {$ffmpeg}\n\n";
+
+        $nproc = new Process(['nproc']);
+        $nproc->run();
+        $out .= "nproc: " . trim($nproc->getOutput()) . "\n";
+
+        $ulimit = new Process(['sh', '-c', 'ulimit -a']);
+        $ulimit->run();
+        $out .= "ulimit -a:\n" . trim($ulimit->getOutput() . $ulimit->getErrorOutput()) . "\n\n";
+
+        // Gercek prodüksiyon senaryosuyla birebir ayni: 720x1280 portre.
+        $tmpIn = tempnam(sys_get_temp_dir(), 'x264in_').'.mp4';
+        $gen = new Process([$ffmpeg, '-y', '-f', 'lavfi', '-i', 'testsrc=duration=3:size=720x1280:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=3', '-c:v', 'libx264', '-c:a', 'aac', '-shortest', $tmpIn]);
+        $gen->setTimeout(30);
+        $gen->run();
+        if (! $gen->isSuccessful() || ! is_file($tmpIn)) {
+            return $out . "Test girdi videosu uretilemedi (ham libx264 encode bile basarisiz): " . trim($gen->getErrorOutput()) . "\n";
+        }
+        $out .= "Test girdi videosu (720x1280, libx264 ile) BASARIYLA uretildi - demek ki libx264 temelde CALISIYOR.\n\n";
+
+        $variants = [
+            'A) VideoCompressionService ile BIREBIR AYNI (scale + asm=0)' => ['-vf', 'scale=720:-2:force_original_aspect_ratio=decrease', '-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-x264-params', 'asm=0', '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-movflags', '+faststart'],
+            'B) scale filtresi OLMADAN (asm=0 korunuyor)' => ['-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-x264-params', 'asm=0', '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-movflags', '+faststart'],
+            'C) threads=1 (hem ffmpeg hem x264) EKLENEREK' => ['-threads', '1', '-vf', 'scale=720:-2:force_original_aspect_ratio=decrease', '-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-x264-params', 'asm=0:threads=1', '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-movflags', '+faststart'],
+            'D) asm/threads HIC belirtilmeden (varsayilan)' => ['-vf', 'scale=720:-2:force_original_aspect_ratio=decrease', '-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-movflags', '+faststart'],
+            'E) preset ultrafast + threads=1' => ['-threads', '1', '-vf', 'scale=720:-2:force_original_aspect_ratio=decrease', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '30', '-x264-params', 'threads=1', '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-movflags', '+faststart'],
+        ];
+
+        foreach ($variants as $label => $args) {
+            $tmpOut = tempnam(sys_get_temp_dir(), 'x264out_').'.mp4';
+            @unlink($tmpOut);
+            $cmd = array_merge([$ffmpeg, '-y', '-i', $tmpIn], $args, [$tmpOut]);
+            $convert = new Process($cmd);
+            $convert->setTimeout(60);
+            $convert->run();
+
+            if ($convert->isSuccessful() && is_file($tmpOut) && filesize($tmpOut) > 500) {
+                $out .= "{$label}: BASARILI (" . filesize($tmpOut) . " bayt)\n";
+            } else {
+                $errTail = mb_substr(trim($convert->getErrorOutput()), -600);
+                $out .= "{$label}: BASARISIZ\n    ...{$errTail}\n";
+            }
+            @unlink($tmpOut);
+        }
+
+        @unlink($tmpIn);
+
+        return $out;
     }
 
     private function ffmpegCheck(): string
