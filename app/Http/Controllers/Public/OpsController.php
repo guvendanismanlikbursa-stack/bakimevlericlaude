@@ -1397,7 +1397,11 @@ class OpsController extends Controller
 
         // Gercek prodüksiyon senaryosuyla birebir ayni: 720x1280 portre.
         $tmpIn = tempnam(sys_get_temp_dir(), 'x264in_').'.mp4';
-        $gen = new Process([$ffmpeg, '-y', '-f', 'lavfi', '-i', 'testsrc=duration=3:size=720x1280:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=3', '-c:v', 'libx264', '-c:a', 'aac', '-shortest', $tmpIn]);
+        // 3 Eylul 2026: kok neden bulundu (bkz. bu metodun asagisindaki
+        // varyant listesi) - x264 nproc=40'a gore otomatik thread acmaya
+        // calisiyor, ulimit -v sinirini asip "malloc failed" veriyordu.
+        // Test girdisi uretimi de ayni hataya dusmesin diye threads=1.
+        $gen = new Process([$ffmpeg, '-y', '-threads', '1', '-f', 'lavfi', '-i', 'testsrc=duration=3:size=720x1280:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=3', '-c:v', 'libx264', '-x264-params', 'threads=1', '-c:a', 'aac', '-shortest', $tmpIn]);
         $gen->setTimeout(30);
         $gen->run();
         if (! $gen->isSuccessful() || ! is_file($tmpIn)) {

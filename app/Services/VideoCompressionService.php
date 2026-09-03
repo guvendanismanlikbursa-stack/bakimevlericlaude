@@ -71,18 +71,22 @@ class VideoCompressionService
             // max_execution_time'ina (kisa, ör. 30sn) sahip - cagiran taraf
             // (Admin\FacilityController) set_time_limit() ile bunu genisletir,
             // burada sadece Process'in KENDI zaman asimini genis tutuyoruz.
-            // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - canli
-            // logda bulundu: "Error while opening encoder" + libx264'un
-            // "using cpu capabilities: ... AVX512" satiri. Bu, paylasimli/
-            // sanallastirilmis sunucularda bilinen bir hata sinifi - CPU
-            // AVX512 destekliyormus gibi gorunuyor (CPUID) ama sanallastirma
-            // katmani bunu GERCEKTE calistiramiyor, libx264 encoder'i acarken
-            // patliyor. 'asm=0' x264'un tum ozel islemci (SIMD) optimizasyonlarini
-            // kapatip yavas ama HER ORTAMDA calisan sade C koduna zorlar.
+            // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - once
+            // "AVX512 sanallastirmada calismiyor" sanilmisti (asm=0 eklendi)
+            // ama hata AYNEN devam etti; yeni bir canli teshis ucuyla
+            // (/_ops/ffmpeg-x264-diagnose, gecici, sonradan kaldirilabilir)
+            // GERCEK kok neden bulundu: "x264 [error]: malloc of size
+            // 1586256 failed". Sunucu nproc'ta 40 cekirdek gosteriyor,
+            // x264 buna gore otomatik cok sayida thread acmaya calisiyor,
+            // her thread kendi arabellegini ayiriyor - toplam bu paylasimli
+            // hesabin ulimit -v (sanal bellek) sinirini (~2GB) asiyor,
+            // encoder hic acilamiyor. Cozum: thread sayisini sabit ve
+            // dusuk tutmak (hem ffmpeg hem x264'un kendi ic thread havuzu
+            // icin ayri ayri belirtilmesi gerekiyor).
             $convert = new Process([
-                $ffmpeg, '-y', '-i', $realPath,
+                $ffmpeg, '-y', '-threads', '1', '-i', $realPath,
                 '-vf', 'scale='.self::MAX_WIDTH.':-2:force_original_aspect_ratio=decrease',
-                '-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-x264-params', 'asm=0',
+                '-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-x264-params', 'threads=1',
                 '-c:a', 'aac', '-b:a', '96k', '-ac', '2',
                 '-movflags', '+faststart',
                 $outPath,
