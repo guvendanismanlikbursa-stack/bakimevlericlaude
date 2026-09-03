@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -65,6 +65,7 @@ class OpsController extends Controller
             'ffmpeg-check' => $this->ffmpegCheck(),
             'ffmpeg-install' => $this->ffmpegInstall(),
             'ffmpeg-x264-diagnose' => $this->ffmpegX264Diagnose(),
+            'admin-facility-edit-render' => $this->adminFacilityEditRender($request),
             'qa-video-upload-test' => $this->qaVideoUploadTest($request),
             'disk-usage' => $this->diskUsage(),
             'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
@@ -232,6 +233,57 @@ class OpsController extends Controller
 
     // 26 Agustos 2026: bkz. App\Console\Commands\CheckAdminFlows ayni tarihli
     // yorum - check-user-flows ile birebir ayni desen, admin paneli icin.
+    /**
+     * 3 Eylul 2026: kullanicinin bildirdigi "Kaydet butonuna basilmiyor"
+     * hatasi - hem masaustu hem mobilde. Tahmin etmek yerine GERCEK canli
+     * admin oturumuyla GERCEK sayfayi (Kernel::handle) render edip, Kaydet
+     * butonu ve etrafindaki ham HTML'i dogrudan gosterir - byte byte neyin
+     * GERCEKTEN sunucuda oldugunu kanitlar.
+     */
+    private function adminFacilityEditRender(Request $incomingRequest): string
+    {
+        $facilityId = (int) $incomingRequest->query('facility_id', 0);
+        $facility = $facilityId ? Facility::find($facilityId) : Facility::query()->latest()->first();
+        if (! $facility) {
+            return 'HATA: kurum bulunamadi.';
+        }
+
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+
+        $kernel = app(\Illuminate\Contracts\Http\Kernel::class);
+        $editRequest = Request::create('https://'.$incomingRequest->getHttpHost().'/admin/kurumlar/'.$facility->id.'/edit', 'GET');
+        $editRequest->setLaravelSession(app('session.store'));
+        $editRequest->getSession()->put('admin_id', $admin->id);
+        $editRequest->getSession()->save();
+
+        $response = $kernel->handle($editRequest);
+        $kernel->terminate($editRequest, $response);
+
+        $html = (string) $response->getContent();
+        $out = "facility_id: {$facility->id}\n";
+        $out .= "HTTP durumu: {$response->getStatusCode()}\n";
+        $out .= 'HTML uzunlugu: '.strlen($html)." bayt\n\n";
+
+        // "Kaydet" butonunu ve etrafindaki 400 karakteri (once/sonra) goster.
+        $pos = mb_strpos($html, '>Kaydet<');
+        if ($pos === false) {
+            $out .= "'Kaydet' metni sayfada HIC bulunamadi.\n";
+        } else {
+            $start = max(0, $pos - 400);
+            $out .= "Kaydet butonu etrafindaki ham HTML:\n---\n".mb_substr($html, $start, 800)."\n---\n\n";
+        }
+
+        // </form> ile ana formun gercekten dogru kapandigini dogrula.
+        $formOpenCount = substr_count($html, '<form');
+        $formCloseCount = substr_count($html, '</form>');
+        $out .= "Toplam <form acilis: {$formOpenCount}, </form> kapanis: {$formCloseCount}\n";
+
+        return $out;
+    }
+
     private function checkAdminFlows(): string
     {
         Artisan::call('platform:check-admin-flows');
