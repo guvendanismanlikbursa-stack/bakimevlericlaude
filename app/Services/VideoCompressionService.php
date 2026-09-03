@@ -44,8 +44,19 @@ class VideoCompressionService
             throw new \RuntimeException('unsupported_video_format');
         }
 
-        $duration = $this->probeDuration($ffmpeg, $realPath);
+        // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - "desteklenmeyen
+        // veya bozuk video dosyasi" hicbir log/hata kaydi birakmiyordu,
+        // gercek sebebi (ffmpeg'in GERCEK stderr ciktisi) hic gorunmuyordu.
+        // Simdi hem probe hem donusum asamasinda basarisizlik durumunda
+        // ffmpeg'in kendi ciktisi loglanir.
+        [$duration, $probeOutput] = $this->probeDuration($ffmpeg, $realPath);
         if ($duration === null) {
+            \Illuminate\Support\Facades\Log::warning('Video sure tespiti basarisiz (unsupported_video_format).', [
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'ffmpeg_output' => mb_substr($probeOutput, -2000),
+            ]);
             throw new \RuntimeException('unsupported_video_format');
         }
         if ($duration > self::MAX_DURATION_SECONDS) {
@@ -72,6 +83,13 @@ class VideoCompressionService
             $convert->run();
 
             if (! $convert->isSuccessful() || ! is_file($outPath) || filesize($outPath) < 500) {
+                \Illuminate\Support\Facades\Log::warning('Video donusumu basarisiz (unsupported_video_format).', [
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'exit_code' => $convert->getExitCode(),
+                    'ffmpeg_output' => mb_substr($convert->getErrorOutput(), -2000),
+                ]);
                 throw new \RuntimeException('unsupported_video_format');
             }
 
@@ -89,17 +107,19 @@ class VideoCompressionService
      * cikti dosyasi verilmese bile stderr'e "Duration: HH:MM:SS.ms" satirini
      * yazar - bu, ikinci bir ikili dosyaya (ffprobe) ihtiyac duymadan sure
      * tespiti icin yeterli.
+     *
+     * @return array{0: ?float, 1: string} [sure_saniye, ffmpeg_ciktisi]
      */
-    private function probeDuration(string $ffmpeg, string $inputPath): ?float
+    private function probeDuration(string $ffmpeg, string $inputPath): array
     {
         $probe = new Process([$ffmpeg, '-i', $inputPath]);
         $probe->setTimeout(20);
         $probe->run();
 
         if (preg_match('/Duration:\s*(\d+):(\d+):(\d+\.\d+)/', $probe->getErrorOutput(), $m)) {
-            return ((int) $m[1]) * 3600 + ((int) $m[2]) * 60 + (float) $m[3];
+            return [((int) $m[1]) * 3600 + ((int) $m[2]) * 60 + (float) $m[3], $probe->getErrorOutput()];
         }
 
-        return null;
+        return [null, $probe->getErrorOutput()];
     }
 }

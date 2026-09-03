@@ -724,6 +724,11 @@ class FacilityController extends Controller
                 'video_too_long' => 'Video 60 saniyeden uzun olamaz.',
                 default => 'Desteklenmeyen veya bozuk bir video dosyası.',
             };
+            // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - bu istisna
+            // hicbir yere kaydedilmiyordu, gercek sebebi (VideoCompressionService
+            // artik ffmpeg ciktisini da logluyor) hic gorulemiyordu.
+            \Illuminate\Support\Facades\Log::error('Kurum videosu (admin) sikistirilamadi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+            \Sentry\captureException($e);
             session()->flash('image_warning', $message);
 
             return;
