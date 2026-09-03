@@ -1,0 +1,25 @@
+VIDEO SIKISTIRICI - NASIL KULLANILIR
+=====================================
+
+Neden gerekli: Sunucumuzun su anki dosya yukleme siniri 10MB - telefonla
+cekilmis ham bir video genelde bundan cok daha buyuk oldugu icin admin
+panelinden dogrudan yuklenemiyor. Bu program videoyu, panelden rahatca
+yuklenebilecek kucuklukte bir dosyaya donusturur.
+
+ADIMLAR:
+1. Kucultmek istediginiz video dosyasini "girdi" klasorune kopyalayin
+   (surukleyip birakabilirsiniz).
+2. "BASLAT.bat" dosyasina cift tiklayin.
+3. Islem bitince "cikti" klasoru otomatik acilir - kucultulmus video
+   orada, ayni isimle duruyor.
+4. O dosyayi admin panelinde ilgili kurumun "Tanitim Videosu" alanindan
+   normal sekilde yukleyin.
+
+NOTLAR:
+- Video 60 saniyeden uzunsa otomatik olarak ilk 60 saniyeye kirpilir
+  (sitenin kendi kurali zaten bu - 60 saniyeden uzun video kabul
+  edilmiyor).
+- Cok hareketli/detayli videolarda sikistirilmis dosya yine de 10MB'i
+  gecebilir - boyle bir durumda videoyu daha kisa cekip tekrar deneyin.
+- Bilgisayarinizda ffmpeg kurulu olmali. Kurulu degilse program size
+  otomatik olarak indirme sayfasini acar.
