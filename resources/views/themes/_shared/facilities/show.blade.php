@@ -227,9 +227,61 @@
          ayni tarihli yorum). Galeriden ONCE, cunku video fotografdan
          daha ikna edici bir arac - aile once onu gormeli. --}}
     @if($facility->video_path)
+      {{-- 3 Eylul 2026: kullanicinin bildirdigi gercek hata - "video daha
+           kucuk olmali ekrana sigmiyor". Kok neden: video dikey (portre,
+           9:16) cekilmis olabiliyor, w-full (tam genislik) ile bu oranda
+           devasa bir yukseklige cikip sayfayi/ekrani kapliyordu. Artik
+           kucuk sabit boyutlu bir onizleme gosterilir, tiklaninca
+           buyuyup oynayan basit bir lightbox acilir (mobilde de calisir).
+           Boyutlandirma BILEREK inline style ile yapildi - Tailwind'in
+           arbitrary-value siniflarinin (ör. eski max-h-[480px]) derlemeye
+           girmeme riskini (bu projede daha once gercekten yasanmis "stale
+           build" hatasi, bkz. 28 Temmuz 2026 CSS duzeltmesi) tamamen
+           ortadan kaldirir - geri kalan siniflar zaten uygulamanin her
+           yerinde kullanilan, kesinlikle derlenmis temel siniflardir. --}}
       <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
         <div class="text-sm font-black mb-3" style="color: {{ $colors['primary'] }};">Tanıtım Videosu</div>
-        <video src="{{ facility_asset($facility->video_path) }}" controls playsinline preload="metadata" class="w-full rounded-xl bg-black max-h-[480px]"></video>
+        <button type="button" id="js-video-thumb-trigger" class="relative block rounded-xl overflow-hidden bg-black mx-auto sm:mx-0" style="width:200px;" aria-label="Videoyu büyüt ve oynat">
+          <video src="{{ facility_asset($facility->video_path) }}#t=0.5" preload="metadata" muted playsinline style="width:100%;aspect-ratio:9/16;object-fit:cover;pointer-events:none;display:block;"></video>
+          <span class="absolute inset-0 flex items-center justify-center" style="background:rgba(0,0,0,0.25);">
+            <span class="flex items-center justify-center rounded-full bg-white" style="width:48px;height:48px;font-size:20px;">▶</span>
+          </span>
+        </button>
+
+        <div id="js-video-lightbox" class="fixed inset-0 hidden items-center justify-center p-4" style="z-index:60;background:rgba(0,0,0,0.92);">
+          <button type="button" id="js-video-lightbox-close" class="absolute text-white" style="top:16px;right:20px;font-size:32px;line-height:1;" aria-label="Kapat">&times;</button>
+          <video id="js-video-lightbox-video" src="{{ facility_asset($facility->video_path) }}" controls playsinline style="max-width:100%;max-height:85vh;border-radius:12px;"></video>
+        </div>
+
+        <script>
+        (function () {
+          var trigger = document.getElementById('js-video-thumb-trigger');
+          var lightbox = document.getElementById('js-video-lightbox');
+          var lightboxVideo = document.getElementById('js-video-lightbox-video');
+          var closeBtn = document.getElementById('js-video-lightbox-close');
+          if (!trigger || !lightbox || !lightboxVideo) return;
+
+          function openLightbox() {
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            lightboxVideo.currentTime = 0;
+            lightboxVideo.play().catch(function () {});
+            document.body.style.overflow = 'hidden';
+          }
+          function closeLightbox() {
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+            lightboxVideo.pause();
+            document.body.style.overflow = '';
+          }
+
+          trigger.addEventListener('click', openLightbox);
+          closeBtn.addEventListener('click', closeLightbox);
+          lightbox.addEventListener('click', function (e) {
+            if (e.target === lightbox) closeLightbox();
+          });
+        })();
+        </script>
       </section>
     @endif
 
