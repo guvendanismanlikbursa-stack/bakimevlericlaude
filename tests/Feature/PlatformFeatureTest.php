@@ -4224,6 +4224,33 @@ class PlatformFeatureTest extends TestCase
     // (cep/sabit hat) siniflandirilsin - bu alan (phone_type) WhatsApp
     // davet kuyrugunu belirliyor (bkz. helpers.php classify_phone_type(),
     // Admin\FacilityController::update()).
+    public function test_admin_can_update_description_on_broker_managed_facility_with_video(): void
+    {
+        // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali,
+        // videosu olan bir kurumda aciklamayi degistirip "Kaydet" deyince
+        // guncellenmiyordu. Gercek senaryoyu (is_broker_managed + video_path
+        // dolu + minimal olmayan tam form payload'u) birebir taklit eder.
+        $this->childFacility->update(['is_broker_managed' => true, 'video_path' => 'facilities/videos/mevcut-test.mp4']);
+
+        $response = $this->withSession(['admin_id' => $this->admin->id])
+            ->put('/admin/kurumlar/'.$this->childFacility->id, [
+                'name' => $this->childFacility->name,
+                'city_id' => $this->childFacility->city_id,
+                'facility_category_id' => $this->childFacility->facility_category_id,
+                'district' => $this->childFacility->district,
+                'address' => $this->childFacility->address,
+                'phone' => $this->childFacility->phone,
+                'description' => 'GUNCELLENMIS ACIKLAMA METNI 12345',
+                'capacity' => $this->childFacility->capacity,
+                'price_min' => $this->childFacility->price_min,
+                'price_max' => $this->childFacility->price_max,
+                'is_published' => '1',
+            ]);
+
+        $response->assertRedirect();
+        $this->assertSame('GUNCELLENMIS ACIKLAMA METNI 12345', $this->childFacility->fresh()->description);
+    }
+
     public function test_admin_saving_facility_phone_auto_classifies_phone_type(): void
     {
         $this->withSession(['admin_id' => $this->admin->id])

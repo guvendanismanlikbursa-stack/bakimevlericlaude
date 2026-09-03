@@ -396,7 +396,7 @@
   @endif
 
   <div class="md:col-span-2">
-    <button class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold">Kaydet</button>
+    <button type="submit" class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold">Kaydet</button>
   </div>
 </form>
 
@@ -422,12 +422,12 @@
             @else
               <form method="POST" action="{{ route('admin.facilities.image.set-primary', $img) }}" class="absolute bottom-1 left-1">
                 @csrf
-                <button class="bg-white/90 text-gray-700 text-[10px] font-semibold px-1.5 py-0.5 rounded hover:bg-white">Ana Görsel Yap</button>
+                <button type="submit" class="bg-white/90 text-gray-700 text-[10px] font-semibold px-1.5 py-0.5 rounded hover:bg-white">Ana Görsel Yap</button>
               </form>
             @endif
             <form method="POST" action="{{ route('admin.facilities.image.destroy', $img) }}" class="absolute top-1 right-1">
               @csrf @method('DELETE')
-              <button class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>
+              <button type="submit" class="bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">Sil</button>
             </form>
           </div>
         @endforeach
@@ -445,7 +445,7 @@
         <div><label class="text-xs text-gray-500 block">Bakiye Değişimi (TL, +/-)</label><input type="number" step="0.01" name="balance_delta" placeholder="örn: 100 veya -50" class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
         <div><label class="text-xs text-gray-500 block">Hak Değişimi (+/-)</label><input type="number" name="credits_delta" placeholder="örn: 5 veya -2" class="border rounded-lg px-3 py-1.5 text-sm w-32"></div>
         <div class="flex-1 min-w-[160px]"><label class="text-xs text-gray-500 block">Not</label><input type="text" name="note" placeholder="Sebep" class="border rounded-lg px-3 py-1.5 text-sm w-full"></div>
-        <button class="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold">Uygula</button>
+        <button type="submit" class="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold">Uygula</button>
       </form>
 
       <div class="border-t border-gray-100 mt-4 pt-4">
@@ -455,7 +455,7 @@
         <form method="POST" action="{{ route('admin.facilities.balance.adjust', $facility) }}" class="flex flex-wrap gap-2 items-end">
           @csrf
           <div><label class="text-xs text-gray-500 block">Özel Teklif Ücreti (TL)</label><input type="number" step="0.01" min="0" name="quote_price_override" placeholder="örn: 150" class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
-          <button class="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold">Kaydet</button>
+          <button type="submit" class="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold">Kaydet</button>
           @if($facility->quote_price_override !== null)
             <button type="submit" name="clear_quote_price_override" value="1" class="bg-white border border-gray-300 text-gray-600 px-4 py-1.5 rounded-lg text-sm font-semibold">Genel ücrete dön</button>
           @endif
