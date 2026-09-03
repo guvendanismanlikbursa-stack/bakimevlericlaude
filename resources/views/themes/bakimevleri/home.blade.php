@@ -124,6 +124,15 @@
 
 @include('themes._shared.partials.discover-links')
 @include('themes._shared.partials.location-filter-script')
+{{-- 2 Eylul 2026: kullanicinin bildirdigi gercek hata - anasayfadaki kurum
+     kartlarinin (facility-card.blade.php) favori/karsilastir/toplu-fiyat
+     butonlari, bu script'i tanimlayan engagement-script.blade.php sadece
+     /kurumlar ve kurum detay sayfasina dahil edildigi icin anasayfada HIC
+     calismiyordu - buton goze gorunuyordu ama tiklamak hicbir sey
+     yapmiyordu (giris yonlendirmesi dahil). location-filter-script zaten
+     window.paintEngagementToggles() cagirmaya hazirdi, sadece bu script hic
+     yuklenmiyordu. --}}
+@include('themes._shared.partials.engagement-script')
 @endsection
 
 

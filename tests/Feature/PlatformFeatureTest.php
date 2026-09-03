@@ -114,6 +114,21 @@ class PlatformFeatureTest extends TestCase
         $this->get('/admin/giris')->assertOk()->assertSee('Ortak Admin Panel');
     }
 
+    public function test_homepage_includes_engagement_script_so_favorite_button_works(): void
+    {
+        // 2 Eylul 2026: kullanicinin bildirdigi gercek hata - anasayfadaki
+        // kurum kartlarindaki favori/karsilastir/toplu-fiyat butonlari
+        // (facility-card.blade.php) goze gorunuyordu ama tiklamak hicbir sey
+        // yapmiyordu, cunku bu butonlari calistiran engagement-script.blade.php
+        // sadece /kurumlar ve kurum detay sayfasina dahil ediliyordu, anasayfaya
+        // hic eklenmemisti (bkz. bakimevleri/home.blade.php ayni tarihli
+        // yorum). Bu test 3 markanin da anasayfasinda scriptin GERCEKTEN
+        // yuklendigini dogrular.
+        $this->get('/site/bakimevleri/')->assertOk()->assertSee('isFamilyLoggedIn', false);
+        $this->get('/site/bakimevibul/')->assertOk()->assertSee('isFamilyLoggedIn', false);
+        $this->get('/site/bakimeviara/')->assertOk()->assertSee('isFamilyLoggedIn', false);
+    }
+
     public function test_admin_correct_password_requires_2fa_code_before_dashboard_access(): void
     {
         // 30 Temmuz 2026: kullanici talebiyle 2FA GECICI olarak devre disi
@@ -3470,11 +3485,21 @@ class PlatformFeatureTest extends TestCase
             ->assertDontSee('Bu kurumu seçerseniz');
 
         // Ayni kurum anlasmali (ama hala sahiplenilmemis) yapilinca claim
-        // butonu KAYBOLMALI, yerine aileye yonelik deger ibaresi cikmali.
+        // butonu KAYBOLMALI. 2 Eylul 2026: kullanicinin bildirdigi gercek
+        // hata - "ayda 2 defa ucretsiz ziyaret" vaat eden sari kart bu
+        // bolumde (rehabilitasyon) YANLISLIKLA gorunuyordu, sadece yasli
+        // bakim icin gecerli bir vaat - artik burada GORUNMEMELI.
         $this->rehabFacility->update(['is_broker_managed' => true]);
         $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
             ->assertOk()
             ->assertDontSee('Kurum Size mi Ait?')
+            ->assertDontSee('Bu kurumu seçerseniz');
+
+        // Yasli bakim kategorisindeki anlasmali bir kurumda ise kart
+        // GORUNMELI - vaat sadece bu bolum icin gecerli ve dogru.
+        $this->elderlyFacility->update(['is_broker_managed' => true]);
+        $this->get('/site/bakimevleri/kurumlar/'.$this->elderlyFacility->slug)
+            ->assertOk()
             ->assertSee('Bu kurumu seçerseniz')
             ->assertSee('ayda 2 defa');
     }

@@ -691,7 +691,16 @@
            degerli), ve kullanicinin ikinci talebi uzerine kutunun ustune,
            en dikkat cekici konuma tasindi + daha belirgin (sari) renk
            verildi - once soluk yesil zeminde secilmiyordu. --}}
-      @if($facility->is_broker_managed)
+      {{-- 2 Eylul 2026: kullanicinin bildirdigi gercek hata - bu kart
+           "ayda 2 defa ucretsiz yerinde ziyaret" vaat ediyor, ama ziyaret
+           hizmeti anlamli/dogru olan TEK bolum yasli bakim (bkz. asagidaki
+           allows_visit_service kartinin ayni kategori kontrolu, ve bu
+           konudaki gecmis tartisma: cocuk/rehabilitasyon icin "ziyaret"
+           vaadi anlamsiz - aile zaten cocugunu/hastasini gunluk goruyor).
+           Kontrol eskiden SADECE is_broker_managed idi, kategoriye
+           bakmiyordu - cocuk ve rehabilitasyon bolumundeki anlasmali
+           kurumlarda da yanlislikla gorunuyordu. --}}
+      @if($facility->is_broker_managed && ($facility->category->brand_scope ?? null) === 'yasli-bakim')
         <div class="rounded-lg bg-amber-100 border-2 border-amber-300 p-4 mb-6">
           <p class="text-sm font-black text-amber-900 mb-1">🤝 Bu kurumu seçerseniz</p>
           <p class="text-sm text-amber-800">Güven Bakım Hizmetleri, ayda 2 defa sizin adınıza ücretsiz yerinde ziyaret gerçekleştirir ve sizi bilgilendirir.</p>

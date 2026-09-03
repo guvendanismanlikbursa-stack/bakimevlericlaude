@@ -118,6 +118,9 @@
 
 @include('themes._shared.partials.discover-links')
 @include('themes._shared.partials.location-filter-script')
+{{-- 2 Eylul 2026: bkz. bakimevleri/home.blade.php ayni tarihli yorum -
+     anasayfa favori/karsilastir butonlari bu script olmadan calismiyordu. --}}
+@include('themes._shared.partials.engagement-script')
 @endsection
 
 
