@@ -56,7 +56,7 @@ echo.
 
 for %%F in (girdi\*.mp4 girdi\*.mov girdi\*.avi girdi\*.mkv girdi\*.webm girdi\*.m4v) do (
     echo  Isleniyor: %%~nxF
-    ffmpeg -y -threads 1 -i "%%F" -t 60 -vf "scale=720:-2:force_original_aspect_ratio=decrease" -c:v libx264 -preset medium -crf 30 -x264-params threads=1 -c:a aac -b:a 96k -ac 2 -movflags +faststart "cikti\%%~nF.mp4" -loglevel error
+    ffmpeg -y -threads 1 -i "%%F" -t 60 -vf "scale=720:-2:force_original_aspect_ratio=decrease" -c:v libx264 -preset ultrafast -crf 30 -x264-params threads=1 -c:a aac -b:a 96k -ac 2 -movflags +faststart "cikti\%%~nF.mp4" -loglevel error
 
     if exist "cikti\%%~nF.mp4" (
         for %%A in ("cikti\%%~nF.mp4") do (
