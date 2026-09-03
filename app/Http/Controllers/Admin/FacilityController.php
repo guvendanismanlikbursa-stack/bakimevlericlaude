@@ -87,8 +87,22 @@ class FacilityController extends Controller
             $query->forBrand($scope);
         }
 
-        if ($request->filled('claim_status')) {
-            $query->where('is_claimed', $request->claim_status === 'claimed');
+        // 3 Eylul 2026: kullanicinin talebi - eskiden ayri iki filtre vardi
+        // ("Kuruluş Türleri" ozel/kamu/belediye/vakif VE "Sahiplenme"
+        // claimed/unclaimed). Kamu/belediye/vakif kurumlari zaten veritabanindan
+        // ayiklandigi icin o filtre artik anlamsizdi - kullanicinin gercekten
+        // ihtiyaci olan 3 durum (Ön Kayıt / Anlaşmalı / Sahipli) tek bir
+        // filtrede birlestirildi. is_claimed ve is_broker_managed BIRBIRINDEN
+        // BAGIMSIZ oldugu icin (bkz. Admin\BrokerController::toggleFacility()
+        // yorumu) "Anlaşmalı" her iki durumda da (sahiplenilmis veya
+        // sahiplenilmemis) olabilir - bu yuzden once o kontrol edilir.
+        if ($request->filled('status')) {
+            match ($request->status) {
+                'broker_managed' => $query->where('is_broker_managed', true),
+                'claimed' => $query->where('is_claimed', true)->where('is_broker_managed', false),
+                'pre_registered' => $query->where('is_claimed', false)->where('is_broker_managed', false),
+                default => null,
+            };
         }
 
         if ($request->filled('city')) {
@@ -101,10 +115,6 @@ class FacilityController extends Controller
 
         if ($includeCategory && $request->filled('category')) {
             $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
-        }
-
-        if ($request->filled('ownership_type')) {
-            $query->where('ownership_type', $request->ownership_type);
         }
 
         // 28 Temmuz 2026: kurum ismiyle arama - toplu Excel ice aktarmada
@@ -597,6 +607,7 @@ class FacilityController extends Controller
     {
         if ($facility->video_path) {
             Storage::disk('public')->delete($facility->video_path);
+            sync_video_delete_from_canonical_domain($facility->video_path);
             $facility->update(['video_path' => null, 'video_updated_at' => null]);
         }
 
@@ -725,6 +736,10 @@ class FacilityController extends Controller
 
             return;
         }
+
+        // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // sync_video_to_canonical_domain() helpers.php ayni tarihli yorum.
+        sync_video_to_canonical_domain($path);
 
         $oldPath = $facility->video_path;
         $facility->update(['video_path' => $path, 'video_updated_at' => now()]);

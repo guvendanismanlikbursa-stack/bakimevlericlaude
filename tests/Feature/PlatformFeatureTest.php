@@ -1585,12 +1585,12 @@ class PlatformFeatureTest extends TestCase
 
         // 3) Admin panelinde "Ön Kayıtlı Kurumlar" filtresinde gorunmeli, "Onaylı Kurumlar" filtresinde gorunmemeli.
         $this->withSession(['admin_id' => $this->admin->id])
-            ->get('/admin/kurumlar?claim_status=unclaimed')
+            ->get('/admin/kurumlar?status=pre_registered')
             ->assertOk()
             ->assertSee('Uskudar Ornek Huzurevi');
 
         $this->withSession(['admin_id' => $this->admin->id])
-            ->get('/admin/kurumlar?claim_status=claimed')
+            ->get('/admin/kurumlar?status=claimed')
             ->assertOk()
             ->assertDontSee('Uskudar Ornek Huzurevi');
 
@@ -1631,13 +1631,13 @@ class PlatformFeatureTest extends TestCase
 
         // 9) Admin panelinde artik "Onaylı Kurumlar" filtresinde gorunmeli, "Ön Kayıtlı" filtresinde gorunmemeli.
         $this->withSession(['admin_id' => $this->admin->id])
-            ->get('/admin/kurumlar?claim_status=claimed')
+            ->get('/admin/kurumlar?status=claimed')
             ->assertOk()
             ->assertSee('Uskudar Ornek Huzurevi')
             ->assertSee('Sahiplenilmiş', false);
 
         $this->withSession(['admin_id' => $this->admin->id])
-            ->get('/admin/kurumlar?claim_status=unclaimed')
+            ->get('/admin/kurumlar?status=pre_registered')
             ->assertOk()
             ->assertDontSee('Uskudar Ornek Huzurevi');
 
@@ -1934,9 +1934,9 @@ class PlatformFeatureTest extends TestCase
             ->assertDontSee($this->childFacility->name)
             ->assertDontSee($this->elderlyFacility->name);
 
-        // "On Kayitli Kurumlar" ekraninda ayni filtreler claim_status ile birlikte calisir.
+        // "On Kayitli Kurumlar" ekraninda ayni filtreler status ile birlikte calisir.
         $this->withSession(['admin_id' => $this->admin->id])
-            ->get('/admin/kurumlar?claim_status=unclaimed&category='.$this->rehabCategory->slug)
+            ->get('/admin/kurumlar?status=pre_registered&category='.$this->rehabCategory->slug)
             ->assertOk()
             ->assertSee($this->rehabFacility->name);
     }
@@ -3226,12 +3226,59 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('1 görüntülenme');
     }
 
-    public function test_admin_facilities_filter_form_has_no_duplicate_claim_status_field(): void
+    public function test_admin_facilities_filter_form_has_no_duplicate_status_field(): void
     {
-        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurumlar?claim_status=claimed');
+        $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurumlar?status=claimed');
 
         $response->assertOk();
-        $this->assertSame(1, substr_count($response->getContent(), 'name="claim_status"'));
+        $this->assertSame(1, substr_count($response->getContent(), 'name="status"'));
+    }
+
+    public function test_admin_facilities_status_filter_separates_pre_registered_broker_managed_and_claimed(): void
+    {
+        // 3 Eylul 2026: kullanicinin talebi - kamu/belediye/vakif kurumlari
+        // veritabanindan zaten ayiklandigi icin anlamsizlasan "Kuruluş
+        // Türleri" filtresi kaldirilip, yerine kullanicinin gercekten
+        // kullandigi 3 durumu (Ön Kayıt / Anlaşmalı / Sahipli) ayirt eden
+        // tek bir filtre kondu (bkz. FacilityController::filteredQuery()
+        // ayni tarihli yorum). is_claimed VE is_broker_managed birbirinden
+        // bagimsiz oldugu icin (bkz. Admin\BrokerController::toggleFacility()
+        // yorumu) sahiplenilmis-VE-anlasmali bir kurumun "Sahipli" degil
+        // "Anlaşmalı" filtresinde cikmasi gerekir.
+        $this->rehabFacilityClaimed->update(['is_broker_managed' => true]);
+
+        $this->assertFalse($this->rehabFacility->is_claimed);
+        $this->assertFalse((bool) $this->rehabFacility->is_broker_managed);
+        $this->assertTrue($this->childFacility->is_claimed);
+        $this->assertFalse((bool) $this->childFacility->is_broker_managed);
+        $this->assertTrue($this->rehabFacilityClaimed->is_claimed);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?status=pre_registered')
+            ->assertOk()
+            ->assertSee('Rehab Kurum', false)
+            ->assertDontSee('Cocuk Kurum', false)
+            ->assertDontSee('Rehab Kurum Onayli', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?status=broker_managed')
+            ->assertOk()
+            ->assertSee('Rehab Kurum Onayli', false)
+            ->assertSee('🤝 Anlaşmalı', false)
+            ->assertDontSee('Cocuk Kurum', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar?status=claimed')
+            ->assertOk()
+            ->assertSee('Cocuk Kurum', false)
+            ->assertDontSee('Rehab Kurum Onayli', false);
+
+        // Eski "Kuruluş Türleri" filtresi (ozel/kamu/belediye/vakif) artik yok.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/kurumlar')
+            ->assertOk()
+            ->assertDontSee('Tüm Kuruluş Türleri')
+            ->assertSee('Kurum Durumu: Tümü');
     }
 
     public function test_data_quality_page_detects_and_fixes_issues(): void
@@ -5937,6 +5984,36 @@ class PlatformFeatureTest extends TestCase
         Storage::fake('public');
         $path = 'facilities/demo/5/1.webp';
         Storage::disk('public')->put($path, 'icerik');
+
+        $this->withHeaders(['Authorization' => 'Bearer test-sync-secret'])
+            ->post('/_internal/kurum-gorseli-sil', ['path' => $path])
+            ->assertOk();
+
+        Storage::disk('public')->assertMissing($path);
+    }
+
+    public function test_facility_image_sync_endpoint_accepts_video_path_and_larger_file(): void
+    {
+        // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - "anlaşmalı
+        // kuruma video eklenmiyor eklendi diyor ama kurum profilinde
+        // görünmüyor". Kok neden: baska bir domain'den yuklenen video, TEK
+        // depolama varsayimi (video BILEREK kopyalanmiyor) yuzunden
+        // bakimevleri.com'da hic olmuyordu (bkz. sync_video_to_canonical_
+        // domain() helpers.php ayni tarihli yorum). Bu senkronizasyonun
+        // calisabilmesi icin PATH_PATTERN'in videos/ altklasorunu ve .mp4
+        // uzantisini, boyut sinirinin da eski 20MB'i kabul etmesi sarttı -
+        // eskiden bu istek 422 (yol) veya 413/422 (boyut) ile reddedilirdi.
+        config(['platform.ops_secret' => 'test-sync-secret']);
+        Storage::fake('public');
+        $path = 'facilities/videos/'.\Illuminate\Support\Str::random(32).'.mp4';
+
+        $this->withHeaders(['Authorization' => 'Bearer test-sync-secret'])
+            ->post('/_internal/kurum-gorseli-sync', [
+                'path' => $path,
+                'file' => $this->fakeMp4Upload(),
+            ])->assertOk();
+
+        Storage::disk('public')->assertExists($path);
 
         $this->withHeaders(['Authorization' => 'Bearer test-sync-secret'])
             ->post('/_internal/kurum-gorseli-sil', ['path' => $path])

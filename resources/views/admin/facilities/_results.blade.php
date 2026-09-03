@@ -40,7 +40,15 @@
             @if($quality['missing'])<div class="text-[11px] text-gray-400 mt-1">Eksik: {{ implode(', ', array_slice($quality['missing'], 0, 2)) }}</div>@endif
           </td>
           <td class="p-3">
-            @if($f->is_claimed)
+            {{-- 3 Eylul 2026: kullanicinin talebi - admin/kurumlar filtresi
+                 artik Ön Kayıt/Anlaşmalı/Sahipli 3 durumunu ayirt ediyor
+                 (bkz. FacilityController::filteredQuery() ayni tarihli
+                 yorum), bu sutun da ayni 3 durumu gostermeli - eskiden
+                 Anlaşmalı kurumlar bile sadece "✓ Sahiplenilmiş" veya
+                 "Ön Kayıtlı" gorunuyordu, ayirt edilemiyordu. --}}
+            @if($f->is_broker_managed)
+              <span class="text-amber-700 text-xs font-semibold">🤝 Anlaşmalı</span>
+            @elseif($f->is_claimed)
               <span class="text-green-700 text-xs font-semibold">✓ Sahiplenilmiş</span>
             @else
               <span class="text-gray-400 text-xs">Ön Kayıtlı</span>

@@ -434,6 +434,10 @@ class ProfileController extends Controller
             return back()->withErrors(['video' => 'Video yüklenirken bir sorun oluştu, lütfen tekrar deneyin.']);
         }
 
+        // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - bkz.
+        // sync_video_to_canonical_domain() helpers.php ayni tarihli yorum.
+        sync_video_to_canonical_domain($path);
+
         $oldPath = $facility->video_path;
         $facility->update(['video_path' => $path, 'video_updated_at' => now()]);
 
@@ -451,6 +455,7 @@ class ProfileController extends Controller
 
         if ($facility->video_path) {
             Storage::disk('public')->delete($facility->video_path);
+            sync_video_delete_from_canonical_domain($facility->video_path);
             $facility->update(['video_path' => null, 'video_updated_at' => null]);
         }
 

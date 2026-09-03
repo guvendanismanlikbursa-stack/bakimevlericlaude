@@ -4,12 +4,12 @@
 @section('content')
 <div class="flex items-center justify-between mb-3">
   <div class="flex items-center gap-3">
-    <h1 class="text-2xl font-bold">{{ request('claim_status') === 'unclaimed' ? 'Ön Kayıtlı Kurumlar' : 'Kurumlar' }}</h1>
+    <h1 class="text-2xl font-bold">{{ request('status') === 'pre_registered' ? 'Ön Kayıtlı Kurumlar' : (request('status') === 'broker_managed' ? 'Anlaşmalı Kurumlar' : (request('status') === 'claimed' ? 'Sahipli Kurumlar' : 'Kurumlar')) }}</h1>
     <span class="inline-flex items-center rounded-full bg-gray-900 text-white text-sm font-semibold px-3 py-1"><span id="js-result-count">{{ number_format($facilities->total(), 0, ',', '.') }}</span> kurum bulundu</span>
   </div>
   <div class="flex items-center gap-3">
     <a href="{{ route('admin.facilities.create') }}" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">+ Yeni Kurum</a>
-    @if(request('claim_status') === 'unclaimed')
+    @if(request('status'))
       <a href="{{ route('admin.facilities.index') }}" class="text-sm font-semibold text-gray-700 underline">Tüm kurumlara dön</a>
     @endif
   </div>
@@ -66,19 +66,21 @@
       <option value="{{ $category->slug }}" @selected(request('category') === $category->slug)>{{ $category->name }}</option>
     @endforeach
   </select>
-  <select name="ownership_type" class="border rounded-lg px-3 py-2 text-sm">
-    <option value="">Tüm Kuruluş Türleri</option>
-    @foreach($ownershipTypes as $value => $label)
-      <option value="{{ $value }}" @selected(request('ownership_type') === $value)>{{ $label }}</option>
-    @endforeach
+  {{-- 3 Eylul 2026: kullanicinin talebi - kamu/belediye/vakif kurumlari
+       veritabanindan zaten ayiklandigi icin "Kuruluş Türleri" filtresi
+       anlamsizlasmisti. Onun yerine ve eskiden ayri olan "Sahiplenme"
+       filtresinin yerine, kullanicinin gercekten kullandigi 3 durumu
+       (Ön Kayıt / Anlaşmalı / Sahipli) tek bir filtrede birlestiren
+       "Kurum Durumu" filtresi kondu (bkz. FacilityController::filteredQuery()
+       ayni tarihli yorum). --}}
+  <select name="status" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="">Kurum Durumu: Tümü</option>
+    <option value="pre_registered" @selected(request('status')==='pre_registered')>Ön Kayıt</option>
+    <option value="broker_managed" @selected(request('status')==='broker_managed')>Anlaşmalı</option>
+    <option value="claimed" @selected(request('status')==='claimed')>Sahipli</option>
   </select>
-  <select name="claim_status" class="border rounded-lg px-3 py-2 text-sm">
-    <option value="">Sahiplenme: Tümü</option>
-    <option value="claimed" @selected(request('claim_status')==='claimed')>Onaylı Kurumlar</option>
-    <option value="unclaimed" @selected(request('claim_status')==='unclaimed')>Ön Kayıtlı Kurumlar</option>
-  </select>
-  @if(request('city') || request('district') || request('category') || request('brand') || request('ownership_type') || request('q'))
-    <a href="{{ route('admin.facilities.index', array_filter(['claim_status' => request('claim_status')])) }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreleri temizle</a>
+  @if(request('city') || request('district') || request('category') || request('brand') || request('status') || request('q'))
+    <a href="{{ route('admin.facilities.index', array_filter(['status' => request('status')])) }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreleri temizle</a>
   @endif
 </form>
 

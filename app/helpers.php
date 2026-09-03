@@ -271,6 +271,77 @@ if (! function_exists('facility_asset')) {
     }
 }
 
+if (! function_exists('sync_video_to_canonical_domain')) {
+    /**
+     * 3 Eylul 2026: kullanicinin bildirdigi gercek hata - "anlaşmalı kuruma
+     * video eklenmiyor eklendi diyor ama kurum profilinde görünmüyor".
+     * facility_asset() TUM gorseller/videolar icin URL'i her zaman
+     * bakimevleri.com uzerinden uretir (bkz. o fonksiyonun yorumu), ama bu
+     * SADECE dosya GERCEKTEN o domain'in kendi diskinde varsa calisir.
+     * Gorseller CrossDomainImageSync ile 3 domain'e de kopyalanir; video ise
+     * (kullanicinin acik talebi - depolama maliyeti) BILEREK TEK kopya
+     * olarak tutulur - ama o TEK kopyanin HER ZAMAN bakimevleri.com'da
+     * olmasi gerekir, hangi domain'den yuklenirse yuklensin. Admin veya
+     * kurum yetkilisi bakimevibul.com/bakimeviara.com uzerinden video
+     * yukleyince dosya sadece o domain'in ayri diskine yaziliyordu -
+     * bakimevleri.com'da hic olmuyordu, video kirik/gorunmez oluyordu. Bu
+     * fonksiyon, yukleme baska bir domain'den geldiyse dosyayi (mevcut
+     * FacilityImageSyncController ucu uzerinden, ayni Bearer token deseniyle)
+     * bakimevleri.com'a da yazar - zaten oradaysa hicbir sey yapmaz.
+     */
+    function sync_video_to_canonical_domain(string $path): void
+    {
+        $canonicalHost = 'bakimevleri.com';
+
+        if (app()->environment('local', 'testing') || request()->getHost() === $canonicalHost) {
+            return;
+        }
+
+        $bytes = \Illuminate\Support\Facades\Storage::disk('public')->get($path);
+        if ($bytes === null) {
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\Http::withToken((string) config('platform.ops_secret'))
+                ->timeout(60)
+                ->attach('file', $bytes, basename($path))
+                ->post("https://{$canonicalHost}/_internal/kurum-gorseli-sync", ['path' => $path])
+                ->throw();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Kurum videosu {$canonicalHost} adresine senkronize edilemedi: ".$e->getMessage(), ['path' => $path]);
+            notify_admin_of_exception($e);
+        }
+    }
+}
+
+if (! function_exists('sync_video_delete_from_canonical_domain')) {
+    /**
+     * 3 Eylul 2026: sync_video_to_canonical_domain() ile simetrik silme -
+     * video baska bir domain'den silinirse bakimevleri.com'daki (varsa
+     * senkronize edilmis) kopyanin da silinmesi gerekir, aksi halde eski
+     * video orada kalir ve facility_asset() hala eski dosyayi sunar.
+     */
+    function sync_video_delete_from_canonical_domain(string $path): void
+    {
+        $canonicalHost = 'bakimevleri.com';
+
+        if (app()->environment('local', 'testing') || request()->getHost() === $canonicalHost) {
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\Http::withToken((string) config('platform.ops_secret'))
+                ->timeout(15)
+                ->post("https://{$canonicalHost}/_internal/kurum-gorseli-sil", ['path' => $path])
+                ->throw();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Kurum videosu silme {$canonicalHost} adresine senkronize edilemedi: ".$e->getMessage(), ['path' => $path]);
+            notify_admin_of_exception($e);
+        }
+    }
+}
+
 if (! function_exists('facility_card_image')) {
     function facility_card_image($facility, ?array $section = null): string
     {

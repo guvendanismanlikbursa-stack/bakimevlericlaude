@@ -39,7 +39,18 @@ class FacilityImageSyncController extends Controller
     // "Hatalar" ekraninda gercek bir hata olarak dusuyordu - dosyanin
     // KENDISI silinen domain'de dogru silinse de DIGER 2 domain'de kirik
     // kaliyordu. Simdi demo/ alt klasor yapisi da acikca kabul edilir.
-    private const PATH_PATTERN = '/^facilities\/(demo\/[A-Za-z0-9_\-]{1,60}(\/[A-Za-z0-9_\-]{1,60})?|[A-Za-z0-9_\-]{6,60})\.(webp|jpg|jpeg|png)$/';
+    //
+    // 3 Eylul 2026: kullanicinin bildirdigi gercek hata - "anlaşmalı kuruma
+    // video eklenmiyor eklendi diyor ama kurum profilinde görünmüyor". Kok
+    // neden: VideoCompressionService'in class-basi yorumundaki varsayim
+    // yanlisti - "facility_asset() zaten her zaman bakimevleri.com uzerinden
+    // sunar" dogru, AMA bu sadece dosya GERCEKTEN bakimevleri.com'un kendi
+    // diskinde varsa calisir. Admin/kurum yetkilisi bakimevibul.com veya
+    // bakimeviara.com uzerinden video yuklerse, dosya SADECE o domain'in
+    // kendi ayri diskine yaziliyordu - bakimevleri.com'da hic olmuyordu,
+    // video kirik/gorunmez oluyordu. facilities/videos/{...}.mp4 yolu da
+    // artik kabul edilir (bkz. helpers.php sync_video_to_canonical_domain()).
+    private const PATH_PATTERN = '/^facilities\/(demo\/[A-Za-z0-9_\-]{1,60}(\/[A-Za-z0-9_\-]{1,60})?|videos\/[A-Za-z0-9_\-]{6,60}|[A-Za-z0-9_\-]{6,60})\.(webp|jpg|jpeg|png|mp4)$/';
 
     public function store(Request $request): Response
     {
@@ -47,7 +58,11 @@ class FacilityImageSyncController extends Controller
 
         $data = $request->validate([
             'path' => 'required|string',
-            'file' => 'required|file|max:20480',
+            // 3 Eylul 2026: video icin 20MB yetersizdi (bkz. yukaridaki
+            // PATH_PATTERN yorumu) - VideoCompressionService sikistirilmis
+            // 60 saniyelik bir klip icin bile bazen bunu asabiliyordu,
+            // sinir video'yu da rahat karsilayacak sekilde yukseltildi.
+            'file' => 'required|file|max:61440',
         ]);
 
         if (! preg_match(self::PATH_PATTERN, $data['path'])) {

@@ -16,8 +16,12 @@ use Symfony\Component\Process\Process;
  * cevrilir (genis tarayici/telefon uyumlulugu icin, webm degil).
  *
  * Depolama BILEREK 3 domain'e kopyalanmiyor (kullanicinin acik talebi -
- * "tek depolama alanı") - facility_asset() helper'i zaten TUM gorseller
- * icin oldugu gibi videoyu da her zaman bakimevleri.com uzerinden sunar.
+ * "tek depolama alanı") - facility_asset() helper'i videoyu da (tum
+ * gorseller gibi) her zaman bakimevleri.com uzerinden sunar. 3 Eylul 2026:
+ * bunun calisabilmesi icin TEK kopyanin GERCEKTEN bakimevleri.com'da
+ * olmasi sart - baska bir domain'den yuklenirse cagiran taraf
+ * sync_video_to_canonical_domain() (bkz. helpers.php) ile onu oraya da
+ * yazmali, aksi halde video kirik/gorunmez olur (yasanan gercek hata).
  */
 class VideoCompressionService
 {
