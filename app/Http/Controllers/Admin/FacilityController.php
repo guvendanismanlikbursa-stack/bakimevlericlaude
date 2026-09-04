@@ -577,6 +577,55 @@ class FacilityController extends Controller
     }
 
     /**
+     * 4 Eylul 2026: kullanicinin talebi - "Panelde Gör" (impersonation)
+     * sadece is_claimed && facilityUsers dolu olan kurumlarda vardi. Anlaşmalı
+     * (broker-managed ama HENUZ sahiplenilmemiş) kurumlarin kendi hesabi hic
+     * olmadigi icin bu buton hic gorunmuyordu - admin bu kurumlari sadece
+     * "Revize" (duz bir form) ile yonetebiliyordu, gercek kurum panelindeki
+     * (teklif/soru-cevap/zam gibi) ozellikler ona kapaliydi. GUVENLIK/IS
+     * KURALI: is_claimed BILEREK degistirilmiyor - anlaşmalı ile sahipli,
+     * sozlesme/komisyon acisindan FARKLI durumlar (bkz. Anlaşmalı Kurum
+     * Sözleşmesi), bu metod sadece PANEL ERISIMI sağlar, sahiplenme durumunu
+     * degistirmez.
+     */
+    public function impersonate(Facility $facility)
+    {
+        abort_unless($facility->is_claimed || $facility->is_broker_managed, 400, 'Bu kurumun paneli yok (ne sahiplenilmiş ne anlaşmalı).');
+
+        $facilityUser = $facility->facilityUsers()->first();
+
+        if (! $facilityUser) {
+            $facilityUser = \App\Models\FacilityUser::create([
+                'facility_id' => $facility->id,
+                'name' => $facility->name,
+                'email' => 'anlasmali-'.$facility->id.'@panel.bakimevleri.internal',
+                'password' => \Illuminate\Support\Facades\Hash::make(Str::password(20)),
+                'status' => 'active',
+                'must_change_password' => false,
+                'email_verified_at' => now(),
+            ]);
+
+            log_admin_event('facility_panel_account_auto_created', $facility, [
+                'facility_user_id' => $facilityUser->id,
+                'reason' => 'anlasmali kurum icin ilk kez Panelde Gor kullanildi',
+            ]);
+        }
+
+        log_admin_event('facility_user_impersonation_start', $facility, ['via' => 'facilities.impersonate', 'facility_user_id' => $facilityUser->id]);
+
+        session([
+            'impersonator_admin_id' => session('admin_id'),
+            'impersonator_admin_name' => session('admin_name'),
+        ]);
+        session()->forget(['admin_id', 'admin_name']);
+        session()->regenerate();
+        session()->regenerateToken();
+        session(['facility_user_id' => $facilityUser->id, 'facility_user_name' => $facilityUser->name]);
+
+        return redirect(brand_route('facility.dashboard'));
+    }
+
+    /**
      * 19 Agustos 2026: kullanicinin talebi - 10 gorselden hangisinin ANA
      * (kapak) gorsel oldugu secilebilsin. Bkz. Facility::primaryImage().
      */
@@ -809,6 +858,11 @@ class FacilityController extends Controller
             // tum formu reddedip diger tum alanlardaki degisiklikleri de
             // kaydetmeden geri donduruyordu.
             'price_max' => ['nullable', 'numeric', 'min:0', Rule::when($request->filled('price_min'), ['gte:price_min'])],
+            // 4 Eylul 2026: kullanicinin talebi - Google Maps'ten cekilen
+            // kurumlarin puani (source=google_maps_veri_cekici) yanlis/eski
+            // olabiliyordu, admin elle duzeltebilsin diye eklendi. 0-5 arasi,
+            // Google'in kendi olcegiyle ayni.
+            'rating' => 'nullable|numeric|between:0,5',
             'cover_image' => 'nullable|string|max:255',
             'services_raw' => 'nullable|string',
             'services' => 'nullable|array',

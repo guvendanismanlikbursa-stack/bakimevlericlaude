@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountDeletionRequest;
 use App\Models\ContactMessage;
 use App\Models\Facility;
 use App\Models\FacilityClaim;
@@ -44,6 +45,13 @@ class DashboardController extends Controller
         // GORUNMUYORDU, admin fark etmiyordu. Ayni "bekleyen islemler" kutusuna eklendi.
         $newVisitServiceRequests = VisitServiceRequest::where('status', 'yeni')->count();
 
+        // 4 Eylul 2026: kullanicinin talebi - VisitServiceRequest icin 27
+        // Agustos'ta yapilan duzeltmeyle AYNI kalip: bu iki talep turu de
+        // veride zaten "bekliyor" olarak tutuluyordu ama "bekleyen islemler"
+        // kutusuna hic yansimiyordu, admin ayri sayfaya girmeden fark edemiyordu.
+        $unreadContactMessages = ContactMessage::where('is_read', false)->count();
+        $pendingAccountDeletions = AccountDeletionRequest::where('status', 'pending')->count();
+
         $latestOffers = OfferRequest::with('facility')->latest()->limit(8)->get();
         $latestClaims = FacilityClaim::with('facility')->where('status', 'pending')->latest()->limit(5)->get();
 
@@ -53,7 +61,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
             'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health',
-            'categoryDemand'
+            'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions'
         ));
     }
 

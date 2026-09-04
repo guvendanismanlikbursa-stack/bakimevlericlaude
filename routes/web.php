@@ -409,6 +409,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/kurumlar/{facility}/bakiye-gecmisi/{balanceLog}', [AdminBalanceController::class, 'destroyLog'])->name('facilities.balance-log.destroy');
         Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
         Route::post('/kurumlar/{facility}/yerinde-sahiplendir', [AdminFacilityController::class, 'instantClaim'])->name('facilities.instant-claim');
+        Route::post('/kurumlar/{facility}/panelde-gor', [AdminFacilityController::class, 'impersonate'])->name('facilities.impersonate');
 
         Route::get('/kurum-davetleri', [AdminFacilityInvitationController::class, 'index'])->name('invitations.index');
         Route::get('/kurum-davetleri/hizli-gonderim', [AdminFacilityInvitationController::class, 'quickSend'])->name('invitations.quick-send');
@@ -465,6 +466,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/teklif-talepleri/{offerRequest}/kurum-durumu', [AdminOfferRequestController::class, 'suspendFacility'])->name('offer-requests.suspend-facility');
 
         Route::get('/yorumlar', [AdminFacilityReviewController::class, 'index'])->name('reviews.index');
+        Route::post('/kurumlar/{facility}/yorum-ekle', [AdminFacilityReviewController::class, 'store'])->name('reviews.store-for-facility');
         Route::put('/yorumlar/{review}', [AdminFacilityReviewController::class, 'update'])->name('reviews.update');
         Route::delete('/yorumlar/{review}', [AdminFacilityReviewController::class, 'destroy'])->name('reviews.destroy');
 

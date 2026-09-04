@@ -19,6 +19,12 @@ class ContactMessageController extends Controller
             $query->where('brand', $request->brand);
         }
 
+        // 4 Eylul 2026: kullanicinin talebi - dashboard'daki "okunmamis mesaj"
+        // kutusundan buraya tiklaninca dogrudan okunmamislari filtrelemek icin.
+        if ($request->boolean('unread')) {
+            $query->where('is_read', false);
+        }
+
         $messages = $query->latest()->paginate(20)->withQueryString();
 
         if ($redirect = $this->redirectIfPageOutOfRange($request, $messages)) {

@@ -75,8 +75,12 @@
           <td class="p-3 text-gray-500 whitespace-nowrap">{{ $f->updated_at?->format('d.m.Y H:i') ?? '—' }}</td>
           <td class="p-3 text-right space-x-2">
             <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600">Revize</a>
-            @if($f->is_claimed && $f->facilityUsers->isNotEmpty())
-              <form method="POST" action="{{ route('admin.users.facility-users.impersonate', $f->facilityUsers->first()) }}" class="inline" onsubmit="return confirm('{{ $f->facilityUsers->first()->name }} adına kurum paneline gireceksiniz. Devam edilsin mi?')">
+            {{-- 4 Eylul 2026: anlaşmalı (broker-managed) kurumlarin kendi hesabi
+                 hic olmayabilir - facilities.impersonate route'u (admin.
+                 FacilityController::impersonate()) yoksa otomatik olusturup
+                 giris yapar, is_claimed'a DOKUNMAZ. --}}
+            @if($f->is_claimed || $f->is_broker_managed)
+              <form method="POST" action="{{ route('admin.facilities.impersonate', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} kurum paneline gireceksiniz. Devam edilsin mi?')">
                 @csrf
                 <button class="text-purple-600">Panelde Gör</button>
               </form>

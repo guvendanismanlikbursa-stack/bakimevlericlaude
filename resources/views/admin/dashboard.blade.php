@@ -8,7 +8,7 @@
 @endphp
 <h1 class="text-2xl font-bold mb-6">Genel Bakış</h1>
 
-@if($pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0 || $newVisitServiceRequests > 0)
+@if($pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0 || $newVisitServiceRequests > 0 || $unreadContactMessages > 0 || $pendingAccountDeletions > 0)
 <div class="grid md:grid-cols-3 gap-4 mb-6">
   @if($pendingClaims > 0)
     <a href="{{ route('admin.claims.index') }}" class="block bg-orange-50 border border-orange-200 text-orange-800 px-5 py-4 rounded-xl">
@@ -34,6 +34,20 @@
   @if($newVisitServiceRequests > 0)
     <a href="{{ route('admin.visit-service.index', ['status' => 'yeni']) }}" class="block bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl">
       <strong>{{ $newVisitServiceRequests }}</strong> yeni "Yakınımı Ziyaret Et" talebi var →
+    </a>
+  @endif
+  {{-- 4 Eylul 2026: kullanicinin talebi - ContactMessage (is_read) ve
+       AccountDeletionRequest (status) verisi zaten vardi ama bu kutuya hic
+       yansimiyordu, 27 Agustos'taki VisitServiceRequest duzeltmesiyle AYNI
+       eksiklik turu (bkz. DashboardController ayni tarihli yorum). --}}
+  @if($unreadContactMessages > 0)
+    <a href="{{ route('admin.contact-messages.index', ['unread' => 1]) }}" class="block bg-yellow-50 border border-yellow-200 text-yellow-800 px-5 py-4 rounded-xl">
+      <strong>{{ $unreadContactMessages }}</strong> okunmamış iletişim mesajı var →
+    </a>
+  @endif
+  @if($pendingAccountDeletions > 0)
+    <a href="{{ route('admin.account-deletions.index') }}" class="block bg-red-50 border border-red-200 text-red-800 px-5 py-4 rounded-xl">
+      <strong>{{ $pendingAccountDeletions }}</strong> hesap silme talebi onay bekliyor →
     </a>
   @endif
 </div>

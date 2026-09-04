@@ -27,7 +27,12 @@
     <div class="flex items-end gap-1 h-32 min-w-[600px]">
       @foreach($dailySeries as $date => $rows)
         @php $dayTotal = $rows->sum('count'); @endphp
-        <div class="flex-1 bg-primary/80 rounded-t" style="height: {{ max(4, round($dayTotal / $maxDaily * 100)) }}%" title="{{ $date }}: {{ $dayTotal }}"></div>
+        {{-- 4 Eylul 2026: kullanicinin "trend verisini cekmiyor" bildirimi -
+             veri her zaman doluydu, ama "bg-primary" bu projede TANIMLI
+             bir Tailwind rengi degildi (tailwind.config.js'de yok), o yuzden
+             cubuklar veriyle birlikte olusuyor ama RENKSIZ/GORUNMEZ
+             kaliyordu - grafik "bos" gibi gorunuyordu. --}}
+        <div class="flex-1 rounded-t" style="background:#0b5d8c; height: {{ max(4, round($dayTotal / $maxDaily * 100)) }}%" title="{{ $date }}: {{ $dayTotal }}"></div>
       @endforeach
     </div>
     <div class="text-xs text-gray-400 mt-2">{{ $dailySeries->keys()->first() }} — {{ $dailySeries->keys()->last() }}</div>

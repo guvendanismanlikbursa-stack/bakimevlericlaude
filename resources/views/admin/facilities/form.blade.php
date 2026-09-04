@@ -107,6 +107,25 @@
   </div>
 @endif
 
+{{-- 3 Eylul 2026: KRITIK duzeltme - "Videoyu Sil" formu daha once asagida
+     ana duzenleme formunun ICINDE (nested <form>) idi. HTML <form> ice ice
+     GECERSIZDIR; tarayici gecersiz ic formu yok sayip alanlarini (ozellikle
+     _method=DELETE gizli input'unu) DIS forma tasir. Dis formun kendi
+     _method=PUT alaniyla AYNI isimde ikinci bir _method alani olustugu icin,
+     gonderimde SONUNCU deger (DELETE) kazanir - boylece "Videoyu Sil"e
+     basmak degil, ayni sayfadaki HERHANGI bir submit (Kaydet dahil) butonu
+     bile dis formu DELETE metoduyla /admin/kurumlar/{id} adresine gonderip
+     KURUMUN TAMAMINI siliyordu (resource route'un destroy'una dusuyordu).
+     Cozum: video-silme formu disariya tasindi, buton "form" ozniteligiyle
+     (asagidaki 499. satirdaki referrals ile ayni, halihazirda kullanilan
+     desen) ona bagliyor - artik gercek bir ic ice form yok. --}}
+@if($facility->exists && $facility->video_path)
+  <form id="video-delete-form" method="POST" action="{{ route('admin.facilities.video.destroy', $facility) }}" onsubmit="return confirm('Video silinsin mi?');">
+    @csrf
+    @method('DELETE')
+  </form>
+@endif
+
 <form method="POST" action="{{ $facility->exists ? route('admin.facilities.update', $facility) : route('admin.facilities.store') }}" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm p-6 grid md:grid-cols-2 gap-4 max-w-4xl">
   @csrf
   @if($facility->exists) @method('PUT') @endif
@@ -194,6 +213,14 @@
   <div>
     <label class="text-sm font-medium">Kapak Görseli URL</label>
     <input type="text" name="cover_image" value="{{ old('cover_image', $facility->cover_image) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+  </div>
+
+  {{-- 4 Eylul 2026: kullanicinin talebi - Google Maps'ten cekilen kurumlarin
+       (source=google_maps_veri_cekici) puani yanlis/eski olabiliyordu,
+       admin elle duzeltebilsin diye eklendi. --}}
+  <div>
+    <label class="text-sm font-medium">Puan (0-5) @if($facility->source === 'google_maps_veri_cekici')<span class="text-xs font-normal text-gray-400">— Google Maps'ten çekildi</span>@endif</label>
+    <input type="number" step="0.1" min="0" max="5" name="rating" value="{{ old('rating', $facility->rating) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
   </div>
 
   <div>
@@ -383,22 +410,91 @@
       <label class="text-sm font-semibold block mb-1">Tanıtım Videosu <span class="text-xs font-normal text-gray-400">(sadece anlaşmalı kurumlar)</span></label>
       <p class="text-xs text-gray-500 mb-3">En fazla 60 saniye. Yüklenince otomatik olarak sıkıştırılır, biraz zaman alabilir.</p>
       @if($facility->video_path)
-        <video src="{{ facility_asset($facility->video_path) }}" controls class="w-full max-w-sm rounded-lg mb-3"></video>
-        <form method="POST" action="{{ route('admin.facilities.video.destroy', $facility) }}" onsubmit="return confirm('Video silinsin mi?');" class="mb-3">
-          @csrf
-          @method('DELETE')
-          <button type="submit" class="text-red-600 text-xs font-bold hover:underline">Videoyu Sil</button>
-        </form>
+        {{-- 3 Eylul 2026: kullanicinin bildirdigi gercek hata - "Kaydet
+             butonu tiklanmiyor, SADECE video altindaki". Bu videoda
+             YUKSEKLIK sinirlamasi hic yoktu (sadece max-w-sm genislik) -
+             dikey (portre) bir video, hesaplanan yuksekligiyle altindaki
+             icerigin (Kaydet butonu dahil) UZERINE tasip tiklamalari
+             yutuyor olabilirdi. Inline style ile kesin bir yukseklik
+             sinirlamasi eklendi (bkz. themes._shared.facilities.show.blade.php
+             ayni tarihli, ayni kok nedenli duzeltme). --}}
+        <video src="{{ facility_asset($facility->video_path) }}" controls class="w-full max-w-sm rounded-lg mb-3" style="max-height:400px;"></video>
+        <div class="mb-3">
+          <button type="submit" form="video-delete-form" class="text-red-600 text-xs font-bold hover:underline">Videoyu Sil</button>
+        </div>
         <p class="text-xs text-gray-500 mb-2">Yeni bir video yüklerseniz, bu videonun yerine geçer:</p>
       @endif
       <input type="file" name="video" accept="video/*" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
     </div>
   @endif
 
-  <div class="md:col-span-2">
+  {{-- 3 Eylul 2026: yukaridaki video yukseklik duzeltmesiyle birlikte,
+       bu butonun kendisi de HERHANGI bir olasi ust uste binmeye karsi
+       kendi katmaninda (position:relative + yuksek z-index) garantiye
+       alindi - video duzeltmesi tek basina yetmezse bile buton artik
+       tiklanabilir kalir. --}}
+  <div class="md:col-span-2" style="position:relative;z-index:10;">
     <button type="submit" class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold">Kaydet</button>
   </div>
 </form>
+
+{{-- 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlarin tanitimi
+     "süper" gorunsun diye admin buradan dogrudan (aile hesabina gerek
+     olmadan) bir yorum ekleyebilir. Ayni facility_reviews tablosuna,
+     status=approved olarak yazilir - kurum sayfasinda organik bir aile
+     yorumundan hicbir gorsel/veri farki olmaz (bkz. Admin\
+     FacilityReviewController::store() ayni tarihli yorum). --}}
+@if($facility->exists && $facility->is_broker_managed)
+  <div class="max-w-4xl mt-8">
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold mb-1">Yorum Ekle <span class="text-xs font-normal text-gray-400">(anlaşmalı kurum)</span></h2>
+      <p class="text-xs text-gray-500 mb-4">Telefon/WhatsApp üzerinden topladığınız bir aile geri bildirimini buradan ekleyebilirsiniz — kurum sayfasında ailelerin platform üzerinden yazdığı yorumlarla birebir aynı şekilde görünür.</p>
+      <form method="POST" action="{{ route('admin.reviews.store-for-facility', $facility) }}" class="grid md:grid-cols-3 gap-3">
+        @csrf
+        <div>
+          <label class="text-sm font-medium">Aile Adı</label>
+          <input type="text" name="reviewer_name" required maxlength="120" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="ör. Ayşe Y.">
+        </div>
+        <div>
+          <label class="text-sm font-medium">Puan</label>
+          <select name="rating" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+            <option value="5">★★★★★ (5)</option>
+            <option value="4">★★★★ (4)</option>
+            <option value="3">★★★ (3)</option>
+            <option value="2">★★ (2)</option>
+            <option value="1">★ (1)</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold w-full">Yorumu Ekle ve Yayınla</button>
+        </div>
+        <div class="md:col-span-3">
+          <label class="text-sm font-medium">Yorum Metni</label>
+          <textarea name="body" rows="2" maxlength="2000" class="border rounded-lg px-3 py-2 w-full mt-1"></textarea>
+        </div>
+      </form>
+
+      @if($facility->approvedReviews->isNotEmpty())
+        <div class="mt-5 pt-5 border-t border-gray-100 space-y-2">
+          <div class="text-xs font-semibold text-gray-500 mb-2">Yayındaki yorumlar ({{ $facility->approvedReviews->count() }})</div>
+          @foreach($facility->approvedReviews as $review)
+            <div class="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2 text-sm">
+              <div class="min-w-0">
+                <span class="font-bold">{{ $review->reviewer_name }}</span>
+                <span class="text-amber-700 font-black ml-1">★ {{ $review->rating }}</span>
+                @if($review->body)<div class="text-gray-500 text-xs mt-0.5 line-clamp-1">{{ $review->body }}</div>@endif
+              </div>
+              <form method="POST" action="{{ route('admin.reviews.destroy', $review) }}" onsubmit="return confirm('Bu yorum silinsin mi?');">
+                @csrf @method('DELETE')
+                <button type="submit" class="text-red-600 text-xs font-bold hover:underline whitespace-nowrap">Sil</button>
+              </form>
+            </div>
+          @endforeach
+        </div>
+      @endif
+    </div>
+  </div>
+@endif
 
 {{-- 29 Agustos 2026: kullanicinin talebi - "gorsel ekle" alani ile "mevcut
      galeri" ust uste/bitisik olsun istiyor, aralarinda "Bakiye / Hak"

@@ -54,7 +54,10 @@ class FacilityController extends Controller
         // kurum (3 sutunlu gride tam sigan bir sayi), fazlasi icin normal
         // sayfalama linkleri.
         $perPage = 21;
-        $facilities = $query->orderByDesc('is_featured')->orderByDesc('rating')->paginate($perPage)->withQueryString();
+        // 4 Eylul 2026: kullanicinin acik talebi - "anlaşmalı kurumlar her
+        // zaman en ustte cikmali". is_broker_managed artik is_featured'dan
+        // BILE once, ilk siralama kriteri.
+        $facilities = $query->orderByDesc('is_broker_managed')->orderByDesc('is_featured')->orderByDesc('rating')->paginate($perPage)->withQueryString();
 
         // 14 Agustos 2026: menzil disi bir sayfaya gidilirse (eski bir
         // yer imi/paylasilan link, filtre degisiminden sonra sayfa sayisi
@@ -161,6 +164,7 @@ class FacilityController extends Controller
 
         $preview = (clone $query)
             ->with(['city', 'category', 'images'])
+            ->orderByDesc('is_broker_managed')
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')
             ->limit(6)
@@ -254,6 +258,8 @@ class FacilityController extends Controller
             ->with(['city', 'category', 'images'])
             ->orderByRaw('CASE WHEN district = ? THEN 0 ELSE 1 END', [$facility->district])
             ->orderByRaw('CASE WHEN facility_category_id = ? THEN 0 ELSE 1 END', [$facility->facility_category_id])
+            // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
+            ->orderByDesc('is_broker_managed')
             ->limit(3)
             ->get();
 

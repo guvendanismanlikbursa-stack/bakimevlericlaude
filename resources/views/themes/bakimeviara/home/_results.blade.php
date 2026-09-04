@@ -56,21 +56,39 @@
   </div>
   <div class="grid md:grid-cols-3 gap-6">
     @forelse($featured as $facility)
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="group bg-white rounded-2xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
+      {{-- 4 Eylul 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum (ic ice <a> onlemek icin dis eleman <div>'e cevrildi). --}}
+      <div class="group bg-white rounded-2xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
         <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
+        @if($facility->is_broker_managed)
+          <div class="absolute top-3 -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md tracking-wider pointer-events-none">🤝 ANLAŞMALI</div>
+        @endif
         @php $cardImage = facility_card_image($facility, $section); @endphp
-        <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
-        <div class="p-5">
-          <div class="flex items-center justify-between gap-2 mb-2">
-            <div class="text-xs font-bold" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div>
-            {{-- 31 Agustos 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum. --}}
-            @if($facility->site_visited_at)
-              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 whitespace-nowrap">🤝 Yerinde Ziyaret Edildi</span>
-            @endif
+        <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
+          <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+          <div class="p-5">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="text-xs font-bold" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div>
+              {{-- 31 Agustos 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum. --}}
+              @if($facility->site_visited_at)
+                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 whitespace-nowrap">🤝 Yerinde Ziyaret Edildi</span>
+              @endif
+              {{-- 4 Eylul 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum. --}}
+              @if($facility->is_broker_managed)
+                <span class="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 whitespace-nowrap">🤝 Anlaşmalı</span>
+              @endif
+            </div>
+            <h3 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h3>
+            <p class="text-sm text-gray-500 mb-4">{{ $facility->city->name }}</p><div class="flex items-center justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-black text-gray-800">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Teklif al' }}</span></div>
           </div>
-          <h3 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h3>
-<p class="text-sm text-gray-500 mb-4">{{ $facility->city->name }}</p><div class="flex items-center justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-black text-gray-800">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Teklif al' }}</span></div></div>
-      </a>
+        </a>
+        @if($facility->is_broker_managed)
+          <div class="px-5 pb-5 -mt-1">
+            <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black text-white text-center bg-gradient-to-r from-blue-600 to-sky-500 shadow-md shadow-blue-400/40 hover:shadow-lg hover:shadow-blue-400/60 transition">
+              💬 Hemen Ücret Sor <span class="font-normal opacity-90">· Öncelikli Yanıt</span>
+            </a>
+          </div>
+        @endif
+      </div>
     @empty
       <div class="md:col-span-3 bg-white border border-dashed rounded-2xl p-8 text-center text-gray-500">Bu bölüm için öne çıkan kurum eklenmedi.</div>
     @endforelse

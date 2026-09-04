@@ -46,13 +46,35 @@
   Altin/amber tonlu bir cerceve + kose seridi ekleniyor - marka rengine
   bagli degil (premium = altin, evrensel bir dil), digerlerinden aciyor.
 --}}
+{{--
+  4 Eylul 2026: kullanicinin talebi - anlaşmalı (is_broker_managed) kurumlar
+  da gorsel olarak fark edilsin, ama "⭐ ÖNE ÇIKAN" (is_featured, admin'in
+  bilerek one cikardigi) ile KARISTIRILMASIN diye BILEREK farkli renk
+  (amber degil mavi) ve kurdele yerine sade cerceve kullanildi - iki
+  etiketin anlami farkli (biri "vitrin", digeri "bizimle ticari anlasmasi
+  var"), gorsel olarak da ayirt edilebilir kalmali.
+--}}
+@php
+  $isBrokerHighlight = $facility->is_broker_managed && ! $facility->is_featured;
+@endphp
 <article class="bg-white rounded-xl overflow-hidden group relative transition
   {{ $facility->is_featured
       ? 'border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50'
-      : 'border border-gray-100 shadow-sm hover:shadow-lg' }}">
+      : ($isBrokerHighlight
+          ? 'border-2 border-blue-400 shadow-lg shadow-blue-300/60 hover:shadow-xl hover:shadow-blue-400/60 bg-gradient-to-b from-blue-50/70 via-white to-white'
+          : 'border border-gray-100 shadow-sm hover:shadow-lg') }}">
   @if($facility->is_featured)
     <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">
       ⭐ ÖNE ÇIKAN
+    </div>
+  @endif
+  {{-- 4 Eylul 2026: kullanicinin talebi - ince bir cizgi ("kartlar hala
+       ayni gorunuyor") yetersiz kaldi, "Öne Çıkan"in AYNI gorsel gucunde
+       ikinci bir kurdele lazimdi - karsi kosede (sag ust), mavi/lacivert,
+       BEYAZ kalin yazi ile en az onun kadar dikkat cekici. --}}
+  @if($facility->is_broker_managed)
+    <div class="absolute top-3 -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md tracking-wider pointer-events-none">
+      🤝 ANLAŞMALI
     </div>
   @endif
   @unless($isPreRegisteredCard)
@@ -69,7 +91,7 @@
       <div class="flex items-center gap-2 mb-2 flex-wrap">
         @if($section)<span class="bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $section['title'] }}</span>@endif
         @if($facility->is_claimed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Onaylı</span>
-        @elseif($facility->is_broker_managed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Anlaşmalı</span>@endif
+        @elseif($facility->is_broker_managed)<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">🤝 Anlaşmalı</span>@endif
         @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
         @if($isPreRegisteredCard)<span class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">Ön Kayıtlı</span>@endif
@@ -98,11 +120,28 @@
       </div>
     </div>
   </a>
+  {{-- 4 Eylul 2026: kullanicinin acik talebi - anlaşmalı kurumlar sadece
+       gorsel olarak degil, AILEYI GERCEKTEN TEKLIF ISTEMEYE tesvik edecek
+       sekilde one cikmali. Buyuk, tek basina, ikonlu bir birincil CTA -
+       diger 4 buton (İncele/Karşılaştır/Toplu Fiyat Al dahil "Fiyat Al")
+       kucuk/ikincil kalir, tekrar etmez. --}}
+  @if($facility->is_broker_managed)
+    <div class="px-4 pb-3">
+      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black text-white text-center bg-gradient-to-r from-blue-600 to-sky-500 shadow-md shadow-blue-400/40 hover:shadow-lg hover:shadow-blue-400/60 transition">
+        💬 Hemen Ücret Sor <span class="font-normal opacity-90">· Öncelikli Yanıt</span>
+      </a>
+    </div>
+  @endif
   <div class="px-4 pb-4 grid grid-cols-2 gap-2">
     <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 text-center hover:bg-gray-50">İncele</a>
-    <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="rounded-lg px-3 py-2 text-sm font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Fiyat Al</a>
-    <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
-    <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
+    @if($facility->is_broker_managed)
+      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50 col-span-2" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
+    @else
+      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="rounded-lg px-3 py-2 text-sm font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Fiyat Al</a>
+      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
+    @endif
   </div>
 </article>
 @endif

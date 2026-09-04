@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -66,6 +66,16 @@ class OpsController extends Controller
             'ffmpeg-install' => $this->ffmpegInstall(),
             'ffmpeg-x264-diagnose' => $this->ffmpegX264Diagnose(),
             'admin-facility-edit-render' => $this->adminFacilityEditRender($request),
+            'admin-facility-update-simulate' => $this->adminFacilityUpdateSimulate($request),
+            'facilities-with-video-list' => $this->facilitiesWithVideoList(),
+            'facility-trash-check' => $this->facilityTrashCheck($request),
+            'facility-find-and-restore' => $this->facilityFindAndRestore($request),
+            'facility-clear-video-only' => $this->facilityClearVideoOnly($request),
+            'qa-delete-video-test' => $this->qaDeleteVideoTest(),
+            'qa-facility-impersonate-test' => $this->qaFacilityImpersonateTest(),
+            'site-visits-diagnose' => $this->siteVisitsDiagnose(),
+            'broker-claimed-overlap-check' => $this->brokerClaimedOverlapCheck(),
+            'qa-admin-review-add-test' => $this->qaAdminReviewAddTest(),
             'qa-video-upload-test' => $this->qaVideoUploadTest($request),
             'disk-usage' => $this->diskUsage(),
             'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
@@ -253,19 +263,36 @@ class OpsController extends Controller
             return 'HATA: hic admin yok.';
         }
 
-        $kernel = app(\Illuminate\Contracts\Http\Kernel::class);
-        $editRequest = Request::create('https://'.$incomingRequest->getHttpHost().'/admin/kurumlar/'.$facility->id.'/edit', 'GET');
-        $editRequest->setLaravelSession(app('session.store'));
-        $editRequest->getSession()->put('admin_id', $admin->id);
-        $editRequest->getSession()->save();
+        // 3 Eylul 2026: ilk denemede $editRequest->getSession()->put(...)
+        // kullanildi - bu Laravel'in degil Symfony'nin session arayuzu,
+        // put() metodu yok, "Call to undefined method" ile 500 verdi.
+        // Sonra Kernel::handle() ile ic ice (nested) istek denendi - bu da
+        // session/middleware acisindan guvenilmez. qaVideoUploadTest() ile
+        // AYNI, zaten kanitlanmis, en guvenli desene gecildi: controller
+        // metodu DOGRUDAN cagrilir (middleware/routing/session katmanlari
+        // tamamen atlanir, session() helper'i ayni PHP sureci icinde zaten
+        // gecerlidir).
+        session(['admin_id' => $admin->id]);
+        $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category', 'roomTypes', 'ageGroups', 'programTypes']);
 
-        $response = $kernel->handle($editRequest);
-        $kernel->terminate($editRequest, $response);
+        $controller = app(\App\Http\Controllers\Admin\FacilityController::class);
+        $view = $controller->edit(Request::create('/admin/kurumlar/'.$facility->id.'/edit', 'GET'), $facility);
+        $html = $view instanceof \Illuminate\Contracts\View\View ? $view->render() : (string) $view;
 
-        $html = (string) $response->getContent();
         $out = "facility_id: {$facility->id}\n";
-        $out .= "HTTP durumu: {$response->getStatusCode()}\n";
         $out .= 'HTML uzunlugu: '.strlen($html)." bayt\n\n";
+
+        // 4 Eylul 2026: genel amacli ad-hoc arama - ?q= verilirse o metnin
+        // etrafindaki 600 karakteri gosterir (yeni eklenen alanlari dogrulamak icin).
+        if ($q = $incomingRequest->query('q')) {
+            $qPos = mb_strpos($html, $q);
+            if ($qPos === false) {
+                $out .= "'{$q}' sayfada HIC bulunamadi.\n\n";
+            } else {
+                $qStart = max(0, $qPos - 200);
+                $out .= "'{$q}' etrafindaki ham HTML:\n---\n".mb_substr($html, $qStart, 600)."\n---\n\n";
+            }
+        }
 
         // "Kaydet" butonunu ve etrafindaki 400 karakteri (once/sonra) goster.
         $pos = mb_strpos($html, '>Kaydet<');
@@ -276,10 +303,431 @@ class OpsController extends Controller
             $out .= "Kaydet butonu etrafindaki ham HTML:\n---\n".mb_substr($html, $start, 800)."\n---\n\n";
         }
 
+        // 3 Eylul 2026: kullanicinin bildirdigi kritik hata - "Videoyu Sil"
+        // butonu kurumun TAMAMINI siliyor. Bu formun GERCEK action adresini
+        // dogrudan gosterir.
+        $videoDeletePos = mb_strpos($html, 'Videoyu Sil');
+        if ($videoDeletePos === false) {
+            $out .= "'Videoyu Sil' metni sayfada bulunamadi.\n";
+        } else {
+            $start = max(0, $videoDeletePos - 500);
+            $out .= "'Videoyu Sil' etrafindaki ham HTML:\n---\n".mb_substr($html, $start, 600)."\n---\n\n";
+        }
+
+        $idPos = mb_strpos($html, 'id="video-delete-form"');
+        $mainFormPos = mb_strpos($html, 'enctype="multipart/form-data"');
+        $out .= "video-delete-form konumu: ".($idPos === false ? 'YOK' : $idPos)."\n";
+        $out .= "ana edit form konumu: ".($mainFormPos === false ? 'YOK' : $mainFormPos)."\n";
+        $out .= (($idPos !== false && $mainFormPos !== false && $idPos < $mainFormPos) ? "DOGRU: video-delete-form ana formdan ONCE (kardes, ic ice degil).\n" : "DIKKAT: sira beklenenden farkli.\n");
+
         // </form> ile ana formun gercekten dogru kapandigini dogrula.
         $formOpenCount = substr_count($html, '<form');
         $formCloseCount = substr_count($html, '</form>');
         $out .= "Toplam <form acilis: {$formOpenCount}, </form> kapanis: {$formCloseCount}\n";
+
+        return $out;
+    }
+
+    /**
+     * 3 Eylul 2026: "Kaydet butonuna basilmiyor" hatasi - z-index/CSS/JS
+     * taraflari tek tek elendi. Son ihtimal: buton aslinda TIKLANIYOR,
+     * form GONDERILIYOR ama BU KURUMUN mevcut verisinde bir dogrulama
+     * hatasi (ör. price_max < price_min) VAR ve sayfa sessizce hatayla
+     * geri donuyor - kullanici sayfanin altindaysa (hata mesaji ustte
+     * cikar) hicbir sey degismemis gibi goruyor. Bu, GERCEK guncelleme
+     * ucuna, kurumun KENDI mevcut degerleriyle (formun dolduracagi AYNI
+     * degerler) gercek bir istek gonderip sonucu (redirect mi, 422 mi,
+     * hangi dogrulama hatasi) dogrudan gosterir.
+     */
+    private function adminFacilityUpdateSimulate(Request $incomingRequest): string
+    {
+        $facilityId = (int) $incomingRequest->query('facility_id', 0);
+        $facility = $facilityId ? Facility::find($facilityId) : null;
+        if (! $facility) {
+            return 'HATA: kurum bulunamadi (facility_id parametresi gerekli).';
+        }
+
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id]);
+
+        $payload = [
+            'name' => $facility->name,
+            'city_id' => $facility->city_id,
+            'facility_category_id' => $facility->facility_category_id,
+            'district' => $facility->district,
+            'address' => $facility->address,
+            'phone' => $facility->phone,
+            'description' => trim((string) $facility->description).' [ops-test-'.now()->format('His').']',
+            'capacity' => $facility->capacity,
+            'price_min' => $facility->price_min,
+            'price_max' => $facility->price_max,
+            'is_published' => $facility->is_published ? '1' : '0',
+            'is_featured' => $facility->is_featured ? '1' : '0',
+            'allows_visit_service' => $facility->allows_visit_service ? '1' : '0',
+        ];
+
+        $out = "facility_id: {$facility->id}\n";
+        $out .= 'Gonderilen aciklama: '.$payload['description']."\n";
+        $out .= 'Mevcut price_min: '.var_export($facility->price_min, true).', price_max: '.var_export($facility->price_max, true)."\n\n";
+
+        $updateRequest = Request::create('/admin/kurumlar/'.$facility->id, 'PUT', $payload);
+        $updateRequest->headers->set('Accept', 'text/html');
+        app()->instance('request', $updateRequest);
+
+        $controller = app(\App\Http\Controllers\Admin\FacilityController::class);
+
+        try {
+            $response = $controller->update($updateRequest, $facility, app(\App\Services\GeocodingService::class));
+            $out .= 'Controller yaniti sinifi: '.get_class($response)."\n";
+            if (method_exists($response, 'getTargetUrl')) {
+                $out .= 'Redirect hedefi: '.$response->getTargetUrl()."\n";
+            }
+            if (method_exists($response, 'getSession')) {
+                $out .= 'Session flash "success": '.var_export(session('success'), true)."\n";
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $out .= "DOGRULAMA HATASI firladi:\n";
+            foreach ($e->errors() as $field => $messages) {
+                $out .= "  - {$field}: ".implode(', ', $messages)."\n";
+            }
+
+            return $out;
+        } catch (\Throwable $e) {
+            $out .= 'BEKLENMEYEN HATA: '.get_class($e).': '.$e->getMessage()."\n";
+            $out .= $e->getFile().':'.$e->getLine()."\n";
+
+            return $out;
+        }
+
+        $facility->refresh();
+        $out .= "\nGuncelleme SONRASI aciklama (veritabaninda): ".$facility->description."\n";
+        $out .= ($facility->description === $payload['description']) ? "SONUC: BASARILI - aciklama gercekten guncellendi.\n" : "SONUC: BASARISIZ - aciklama veritabaninda degismedi.\n";
+
+        return $out;
+    }
+
+    /**
+     * 3 Eylul 2026: kullanicinin belirleyici bulgusu - "Kaydet butonu
+     * SADECE bu kurumun revize panelinde calismiyor, diger kurum
+     * panellerinde calisiyor". Videosu olan BASKA kurum var mi kontrol
+     * eder - varsa orada da ayni sorun mu diye karsilastirma yapilabilir.
+     */
+    private function facilitiesWithVideoList(): string
+    {
+        $rows = Facility::whereNotNull('video_path')->select('id', 'name', 'is_broker_managed', 'is_claimed')->get();
+        if ($rows->isEmpty()) {
+            return 'Videosu olan hicbir kurum yok.';
+        }
+
+        return $rows->map(fn ($f) => "#{$f->id} {$f->name} (broker_managed=".($f->is_broker_managed ? '1' : '0').', claimed='.($f->is_claimed ? '1' : '0').')')->join("\n");
+    }
+
+    /**
+     * 3 Eylul 2026: kullanicinin bildirdigi gercek gelisme - facility_id=6713
+     * artik "kurum bulunamadi" donuyor, canli sayfa 404 veriyor. Bu kurum
+     * SILINMIS mi (yumusak/soft-delete, cop kutusunda) yoksa GERCEKTEN
+     * kalici mi silinmis (force delete) kontrol eder.
+     */
+    /**
+     * 4 Eylul 2026: kullanicinin "dashboard 30 gunluk trend verisini
+     * cekmiyor" bildirimi icin - site_visits tablosunun GERCEK durumunu
+     * (kac satir, en son hangi tarih, hangi brand degerleri kullaniliyor)
+     * dogrudan gosterir.
+     */
+    private function siteVisitsDiagnose(): string
+    {
+        $total = DB::table('site_visits')->count();
+        $last30 = DB::table('site_visits')->where('visit_date', '>=', now()->subDays(29)->toDateString())->count();
+        $latest = DB::table('site_visits')->orderByDesc('visit_date')->first();
+        $oldest = DB::table('site_visits')->orderBy('visit_date')->first();
+        $brands = DB::table('site_visits')->select('brand')->distinct()->pluck('brand');
+        $configuredBrands = array_keys(config('brands.brands'));
+        $sumsByBrand = DB::table('site_visits')->selectRaw('brand, count(*) as satir_sayisi, sum(count) as toplam')->groupBy('brand')->get();
+
+        $out = "Toplam site_visits satiri: {$total}\n";
+        $out .= "Son 30 gun icindeki satir sayisi: {$last30}\n";
+        $out .= 'En yeni visit_date: '.($latest->visit_date ?? 'YOK')."\n";
+        $out .= 'En eski visit_date: '.($oldest->visit_date ?? 'YOK')."\n";
+        $out .= 'Simdiki tarih (sunucu): '.now()->toDateString()."\n\n";
+        $out .= 'Tablodaki brand degerleri: '.$brands->implode(', ')."\n";
+        $out .= 'config(brands.brands) anahtarlari: '.implode(', ', $configuredBrands)."\n\n";
+        foreach ($sumsByBrand as $row) {
+            $out .= "  brand={$row->brand}: {$row->satir_sayisi} satir, toplam {$row->toplam} ziyaret\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 4 Eylul 2026: kullanicinin "Anlaşmalı rozeti/sıralaması hiç fark
+     * etmiyor" bildirimi icin - form.blade.php, facility-card.blade.php ve
+     * show.blade.php'nin HEPSI @if(is_claimed) ... @elseif(is_broker_managed)
+     * sirasini kullaniyor. Eger cok sayida kurum HEM is_claimed HEM
+     * is_broker_managed ise, bu kurumlar HER YERDE "Onaylı" gorunur,
+     * "Anlaşmalı" rozeti/oncelik SIRALAMASI (badge gorunse bile is_claimed
+     * kurumlar zaten rating'e gore ustte olabilir) pratikte hic
+     * gorunmuyor olabilir - GERCEK sebep bu mu, veriyle dogrular.
+     */
+    private function brokerClaimedOverlapCheck(): string
+    {
+        $totalBroker = Facility::where('is_broker_managed', true)->count();
+        $brokerAndClaimed = Facility::where('is_broker_managed', true)->where('is_claimed', true)->count();
+        $brokerOnlyNotClaimed = Facility::where('is_broker_managed', true)->where('is_claimed', false)->count();
+
+        $out = "Toplam is_broker_managed=true kurum: {$totalBroker}\n";
+        $out .= "  - Bunlarin is_claimed=true OLANI (rozet hep 'Onaylı' gösterir, 'Anlaşmalı' hiç görünmez): {$brokerAndClaimed}\n";
+        $out .= "  - Bunlarin is_claimed=false OLANI (rozet gerçekten 'Anlaşmalı' gösterir): {$brokerOnlyNotClaimed}\n\n";
+
+        $sample = Facility::where('is_broker_managed', true)->where('is_claimed', true)
+            ->select('id', 'name', 'is_featured')->limit(10)->get();
+        if ($sample->isNotEmpty()) {
+            $out .= "Ornek (hem anlasmali HEM sahiplenilmis, rozet 'Onaylı' gösteriyor):\n";
+            foreach ($sample as $f) {
+                $out .= "  #{$f->id} {$f->name} (is_featured=".($f->is_featured ? '1' : '0').")\n";
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * 4 Eylul 2026: Admin\FacilityReviewController::store()'un KANITI -
+     * sahte bir anlaşmalı test kurumuna gercek controller uzerinden bir
+     * yorum ekler, approvedReviews() iliskisinde dogru gorunup gorunmedigini
+     * kontrol eder, sonra hem yorumu hem test kurumunu temizler.
+     */
+    private function qaAdminReviewAddTest(): string
+    {
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id]);
+
+        $facility = Facility::create([
+            'name' => 'qatest-review-add-'.now()->format('His'),
+            'slug' => 'qatest-review-add-'.now()->format('His'),
+            'brand' => 'bakimevleri',
+            'city_id' => Facility::query()->value('city_id'),
+            'facility_category_id' => Facility::query()->value('facility_category_id'),
+            'is_broker_managed' => true,
+            'is_published' => true,
+        ]);
+
+        $out = "Test kurumu olusturuldu: #{$facility->id}\n";
+
+        $reviewRequest = Request::create('/admin/kurumlar/'.$facility->id.'/yorum-ekle', 'POST', [
+            'reviewer_name' => 'QATEST Ailesi',
+            'rating' => 5,
+            'body' => 'Bu bir QA test yorumudur.',
+        ]);
+
+        try {
+            $controller = app(\App\Http\Controllers\Admin\FacilityReviewController::class);
+            $response = $controller->store($reviewRequest, $facility);
+            $out .= 'store() calisti, yanit sinifi: '.get_class($response)."\n";
+        } catch (\Throwable $e) {
+            $out .= 'store() ISTISNA FIRLATTI: '.get_class($e).' - '.$e->getMessage()."\n";
+        }
+
+        $facility->refresh();
+        $approved = $facility->approvedReviews;
+        $out .= 'approvedReviews sayisi: '.$approved->count()."\n";
+        foreach ($approved as $r) {
+            $out .= "  #{$r->id} {$r->reviewer_name} - {$r->rating} yildiz - status={$r->status} - family_user_id=".var_export($r->family_user_id, true)."\n";
+        }
+
+        \App\Models\FacilityReview::where('facility_id', $facility->id)->delete();
+        Facility::withTrashed()->where('id', $facility->id)->forceDelete();
+        $out .= "\n(test kurumu #{$facility->id} ve yorumu temizlendi)";
+
+        return $out;
+    }
+
+    private function facilityTrashCheck(Request $incomingRequest): string
+    {
+        $facilityId = (int) $incomingRequest->query('facility_id', 0);
+        $trashed = Facility::withTrashed()->find($facilityId);
+        if (! $trashed) {
+            return "facility_id={$facilityId}: veritabaninda HIC YOK (ne aktif ne cop kutusunda) - kalici olarak silinmis.";
+        }
+
+        $out = "facility_id={$facilityId}: {$trashed->name}\n";
+        $out .= 'deleted_at: '.($trashed->deleted_at ? $trashed->deleted_at->format('Y-m-d H:i:s') : '(silinmemis, aktif)')."\n";
+        $out .= 'updated_at: '.$trashed->updated_at->format('Y-m-d H:i:s')."\n";
+        $out .= 'video_path: '.($trashed->video_path ?? 'NULL')."\n";
+        $out .= 'is_published: '.var_export($trashed->is_published, true)."\n";
+        $out .= 'is_claimed: '.var_export($trashed->is_claimed, true)."\n";
+        $out .= 'is_broker_managed: '.var_export($trashed->is_broker_managed, true)."\n";
+        $out .= 'category brand_scope: '.($trashed->category?->brand_scope ?? 'YOK')."\n";
+
+        return $out;
+    }
+
+    /**
+     * 3 Eylul 2026: acil - isme gore kurum bulur, ?restore=1 verilirse
+     * soft-delete'li (cop kutusundaki) kaydi ANINDA geri yukler. "Videoyu Sil"
+     * hatasi yuzunden yayindan dusen bir kurumu ailelerin ziyaret ettigi
+     * anda hizlica geri getirmek icin.
+     */
+    private function facilityFindAndRestore(Request $incomingRequest): string
+    {
+        $name = (string) $incomingRequest->query('name', '');
+        if ($name === '') {
+            return 'HATA: name parametresi gerekli.';
+        }
+
+        $rows = Facility::withTrashed()->where('name', 'like', '%'.$name.'%')->get();
+        if ($rows->isEmpty()) {
+            return "'{$name}' icin hicbir kurum bulunamadi.";
+        }
+
+        $restore = $incomingRequest->boolean('restore');
+        $out = '';
+        foreach ($rows as $f) {
+            $wasDeleted = (bool) $f->deleted_at;
+            if ($restore && $wasDeleted) {
+                $f->deleted_at = null;
+                $f->save();
+            }
+            $out .= "#{$f->id} {$f->name}\n"
+                . '  deleted_at (once): '.($wasDeleted ? $f->deleted_at?->format('Y-m-d H:i:s') ?? 'onceden silinmisti, simdi GERI YUKLENDI' : '(silinmemis, aktif)')."\n"
+                . '  video_path: '.($f->video_path ?? 'NULL')."\n"
+                . '  updated_at: '.$f->updated_at->format('Y-m-d H:i:s')."\n\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 3 Eylul 2026: acil - "Videoyu Sil" butonunun (deleteVideo()) neden
+     * kurumu sildigi henuz kanitlanmadan, GERCEK bir kuruma o butona tekrar
+     * bastirmadan videosunu kaldirmak icin. Sadece video_path/video_updated_at
+     * temizler ve dosyayi diskten siler - deleteVideo()'nun geri kalanini
+     * (sync_video_delete_from_canonical_domain) BILEREK cagirmaz, ta ki
+     * o cagrinin kendisinin sorunla ilgisi olup olmadigi anlasilana kadar.
+     */
+    private function facilityClearVideoOnly(Request $incomingRequest): string
+    {
+        $facilityId = (int) $incomingRequest->query('facility_id', 0);
+        $facility = Facility::find($facilityId);
+        if (! $facility) {
+            return "HATA: facility_id={$facilityId} bulunamadi (silinmis olabilir, facility-trash-check ile kontrol edin).";
+        }
+
+        $oldPath = $facility->video_path;
+        if ($oldPath) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+        }
+        $facility->update(['video_path' => null, 'video_updated_at' => null]);
+
+        $fresh = Facility::withTrashed()->find($facilityId);
+
+        return "#{$facilityId} {$facility->name}\nEski video_path: {$oldPath}\nYeni video_path: ".var_export($fresh->video_path, true)."\ndeleted_at: ".var_export($fresh->deleted_at, true);
+    }
+
+    /**
+     * 3 Eylul 2026: kullanicinin "Videoyu Sil kurumu komple siliyor" bildirimi
+     * icin KESIN kanit - GERCEK kurum verisine dokunmadan, sahte bir
+     * qatest- kurum + sahte video_path uzerinde deleteVideo() metodunu
+     * DOGRUDAN cagirir, once/sonra deleted_at ve video_path degerlerini
+     * karsilastirir. Islem sonunda test kurumu ne olursa olsun temizlenir.
+     */
+    private function qaDeleteVideoTest(): string
+    {
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id]);
+
+        $facility = Facility::create([
+            'name' => 'qatest-video-delete-'.now()->format('His'),
+            'slug' => 'qatest-video-delete-'.now()->format('His'),
+            'brand' => 'bakimevleri',
+            'city_id' => Facility::query()->value('city_id'),
+            'facility_category_id' => Facility::query()->value('facility_category_id'),
+            'is_broker_managed' => true,
+            'is_published' => true,
+            'video_path' => 'facilities/videos/qatest-fake-video.mp4',
+        ]);
+
+        $out = "Test kurumu olusturuldu: #{$facility->id}\n";
+        $out .= 'ONCE -> deleted_at: '.var_export($facility->deleted_at, true).', video_path: '.$facility->video_path."\n";
+
+        try {
+            $controller = app(\App\Http\Controllers\Admin\FacilityController::class);
+            $response = $controller->deleteVideo($facility);
+            $out .= 'deleteVideo() calisti, yanit sinifi: '.get_class($response)."\n";
+        } catch (\Throwable $e) {
+            $out .= 'deleteVideo() ISTISNA FIRLATTI: '.get_class($e).' - '.$e->getMessage()."\n";
+        }
+
+        $fresh = Facility::withTrashed()->find($facility->id);
+        $out .= "SONRA -> deleted_at: ".var_export($fresh?->deleted_at, true).', video_path: '.var_export($fresh?->video_path, true)."\n";
+        $out .= $fresh?->deleted_at ? "\n!!! KANITLANDI: deleteVideo() facility'yi SOFT-DELETE ETTI.\n" : "\nKurum silinmedi - deleteVideo() bu haliyle sadece video alanini temizliyor.\n";
+
+        // Test kurumunu her ihtimale karsi kalici olarak temizle.
+        Facility::withTrashed()->where('id', $facility->id)->forceDelete();
+        $out .= "\n(test kurumu #{$facility->id} temizlendi)";
+
+        return $out;
+    }
+
+    /**
+     * 4 Eylul 2026: "anlaşmalı kurumlarda da Panelde Gör olmali" talebi
+     * icin eklenen Admin\FacilityController::impersonate()'in KANITI - sahte,
+     * SAHIPLENILMEMIS (is_claimed=false, is_broker_managed=true) bir test
+     * kurumuyla dogrudan cagirir. Kontrol eder: (1) istisna firlatmiyor,
+     * (2) bir facility_user olusturuyor, (3) is_claimed hala FALSE (yan etki
+     * yok), (4) session dogru facility_user_id'ye ayarlaniyor.
+     */
+    private function qaFacilityImpersonateTest(): string
+    {
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id, 'admin_name' => 'QATEST']);
+
+        $facility = Facility::create([
+            'name' => 'qatest-impersonate-'.now()->format('His'),
+            'slug' => 'qatest-impersonate-'.now()->format('His'),
+            'brand' => 'bakimevleri',
+            'city_id' => Facility::query()->value('city_id'),
+            'facility_category_id' => Facility::query()->value('facility_category_id'),
+            'is_broker_managed' => true,
+            'is_claimed' => false,
+            'is_published' => true,
+        ]);
+
+        $out = "Test kurumu olusturuldu: #{$facility->id} (is_claimed=".var_export($facility->is_claimed, true).", is_broker_managed=".var_export($facility->is_broker_managed, true).")\n";
+
+        try {
+            $controller = app(\App\Http\Controllers\Admin\FacilityController::class);
+            $response = $controller->impersonate($facility);
+            $out .= 'impersonate() calisti, yanit sinifi: '.get_class($response)."\n";
+        } catch (\Throwable $e) {
+            $out .= 'impersonate() ISTISNA FIRLATTI: '.get_class($e).' - '.$e->getMessage()."\n";
+        }
+
+        $freshFacility = Facility::find($facility->id);
+        $createdUser = \App\Models\FacilityUser::where('facility_id', $facility->id)->first();
+
+        $out .= 'facility_user olusturuldu mu: '.($createdUser ? "EVET (#{$createdUser->id}, email={$createdUser->email})" : 'HAYIR')."\n";
+        $out .= 'is_claimed SONRA (degismemis olmali): '.var_export($freshFacility->is_claimed, true)."\n";
+        $out .= 'session facility_user_id: '.var_export(session('facility_user_id'), true).' (beklenen: '.($createdUser->id ?? 'N/A').")\n";
+
+        session()->forget(['facility_user_id', 'facility_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
+
+        if ($createdUser) {
+            \App\Models\FacilityUser::where('id', $createdUser->id)->delete();
+        }
+        Facility::withTrashed()->where('id', $facility->id)->forceDelete();
+        $out .= "\n(test kurumu #{$facility->id} ve hesabi temizlendi)";
 
         return $out;
     }
@@ -706,7 +1154,7 @@ class OpsController extends Controller
             ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
             ->where('facilities.name', 'like', '%'.$q.'%')
             ->whereNull('facilities.deleted_at')
-            ->select('facilities.id', 'facilities.name', 'facilities.is_claimed', 'facility_categories.name as category_name', 'facility_categories.id as category_id')
+            ->select('facilities.id', 'facilities.name', 'facilities.slug', 'facilities.is_claimed', 'facility_categories.name as category_name', 'facility_categories.id as category_id')
             ->limit(20)
             ->get();
 
@@ -716,7 +1164,7 @@ class OpsController extends Controller
 
         $out = '';
         foreach ($facilities as $f) {
-            $out .= "#{$f->id} {$f->name} | kategori: {$f->category_name} (#{$f->category_id}) | sahiplenme: " . ($f->is_claimed ? 'SAHIPLENILMIS' : 'on kayitli/sahiplenilmemis') . "\n";
+            $out .= "#{$f->id} {$f->name} | slug: {$f->slug} | kategori: {$f->category_name} (#{$f->category_id}) | sahiplenme: " . ($f->is_claimed ? 'SAHIPLENILMIS' : 'on kayitli/sahiplenilmemis') . "\n";
             $images = DB::table('facility_images')->where('facility_id', $f->id)->get(['id', 'path']);
             if ($images->isEmpty()) {
                 $out .= "    (hic gorseli yok)\n";

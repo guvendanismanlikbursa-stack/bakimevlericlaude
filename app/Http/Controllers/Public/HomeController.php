@@ -29,6 +29,11 @@ class HomeController extends Controller
             ->forBrand($sectionScopes)
             ->where('is_featured', true)
             ->with(['city', 'category', 'images'])
+            // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
+            // ONCEKI hata: bu ANA "Öne Çıkanlar" sorgusu degil, sadece filtre
+            // uygulaninca kullanilan $filteredFacilities guncellenmisti - kullanicinin
+            // gordugu asil bolum hic degismemisti.
+            ->orderByDesc('is_broker_managed')
             ->orderByDesc('rating')
             ->orderByDesc('id')
             ->paginate(6, ['*'], 'featured_page')
@@ -92,6 +97,8 @@ class HomeController extends Controller
 
             $filteredFacilities = $baseQuery
                 ->when($filteredFeatured->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $filteredFeatured->pluck('id')))
+                // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
+                ->orderByDesc('is_broker_managed')
                 ->orderByDesc('rating')
                 ->paginate(21)
                 ->withQueryString();

@@ -61,7 +61,7 @@
       @if($facility->is_claimed)
         <span class="bg-white/15 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded-full">✓ Onaylı / sahiplenilmiş kurum</span>
       @elseif($facility->is_broker_managed)
-        <span class="bg-white/15 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded-full">✓ Anlaşmalı kurum</span>
+        <span class="bg-blue-500/25 border border-blue-300/40 text-white text-xs font-semibold px-2 py-1 rounded-full">🤝 Anlaşmalı kurum</span>
       @else
         <span class="bg-white/10 border border-white/15 text-white/80 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
       @endif
@@ -95,7 +95,7 @@
       @if($facility->is_claimed)
         <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Onaylı / sahiplenilmiş kurum</span>
       @elseif($facility->is_broker_managed)
-        <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Anlaşmalı kurum</span>
+        <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">🤝 Anlaşmalı kurum</span>
       @else
         <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
       @endif
@@ -435,7 +435,7 @@
         @if($perf['is_claimed'])
           <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Yetkilisi tarafından doğrulandı{{ $perf['claimed_at'] ? ' · '.$perf['claimed_at']->format('d.m.Y') : '' }}</span>
         @elseif($facility->is_broker_managed)
-          <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Anlaşmalı kurum</span>
+          <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">🤝 Anlaşmalı kurum</span>
         @else
           <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">Henüz doğrulanmadı (ön kayıtlı profil)</span>
         @endif
@@ -961,6 +961,7 @@
             <div class="text-sm font-black text-gray-950 line-clamp-1">{{ $r->name }}</div>
             <div class="text-xs text-gray-500 line-clamp-1">{{ $r->city->name }} · {{ $r->district }}</div>
             @if($r->is_featured)<span class="inline-block mt-0.5 text-[10px] font-black text-amber-700">⭐ Öne Çıkan</span>@endif
+            @if($r->is_broker_managed)<span class="inline-block mt-0.5 text-[10px] font-black text-blue-700">🤝 Anlaşmalı</span>@endif
           </div>
         </a>
       @endforeach
