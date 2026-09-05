@@ -110,12 +110,24 @@ class FacilityController extends Controller
         // filtresi secilmis olmasidir. Bos filtreyle sadece goz atma
         // (pre_registered, sayfalama vb.) loglanmaz.
         if ($request->filled('city') || $request->filled('category') || $request->filled('service')) {
-            SearchQuery::record(
-                $brand['slug'],
-                $request->filled('city') ? $cities->firstWhere('slug', $request->city)?->id : null,
-                $request->filled('category') ? $categories->firstWhere('slug', $request->category)?->id : null,
-                $request->filled('service') ? $request->service : null,
-            );
+            // 5 Eylul 2026: kullanicinin bildirdigi gercek olay - "service"
+            // parametresinde gecersiz/bozuk bir bayt dizisi (ör. bazi eski
+            // tarayicilar/botlar Turkce karakteri yanlis yuzde-kodlarsa)
+            // gelirse, sadece istatistik amacli bu INSERT QueryException
+            // firlatiyor ve TUM arama sonucu sayfasini 500'e dusuruyordu -
+            // aile sonuclari GORE MEDIGI icin arama tamamen calismiyordu.
+            // Bu sadece analitik loglama, arama sonucunun kendisini
+            // ETKILEMEMELI - basarisiz olursa sessizce atlanir.
+            try {
+                SearchQuery::record(
+                    $brand['slug'],
+                    $request->filled('city') ? $cities->firstWhere('slug', $request->city)?->id : null,
+                    $request->filled('category') ? $categories->firstWhere('slug', $request->category)?->id : null,
+                    $request->filled('service') ? $request->service : null,
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Arama kaydi loglanamadi: '.$e->getMessage());
+            }
         }
 
         $nearbyFacilities = [];

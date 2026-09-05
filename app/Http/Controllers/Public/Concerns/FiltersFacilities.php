@@ -45,7 +45,16 @@ trait FiltersFacilities
         }
 
         if ($request->filled('service')) {
-            $query->whereJsonContains('services', $request->service);
+            // 5 Eylul 2026: kullanicinin bildirdigi gercek hata - "Yaşlı Bakım
+            // özellikleri" (7/24 hemşire, Doktor kontrolü vb.) filtresi HER
+            // ZAMAN 0 sonuc donduruyordu. Kanit: whereJsonContains() bu
+            // MariaDB kurulumunda Turkce (non-ASCII) karakterli JSON string
+            // degerlerini asla eslestirmiyor (services kolonu utf8mb4_bin,
+            // baglanti utf8mb4_unicode_ci - collation uyusmazligi JSON_CONTAINS'i
+            // sessizce kirıyor, veri/JSON'in kendisi tamamen dogru ve gecerli).
+            // JSON_SEARCH() AYNI veride sorunsuz calisiyor (917 kurum dogru
+            // eslesti, JSON_CONTAINS ile 0) - bu yuzden ona gecildi.
+            $query->whereRaw("JSON_SEARCH(services, 'one', ?) is not null", [$request->service]);
         }
 
         if ($request->boolean('pre_registered')) {

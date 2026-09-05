@@ -92,7 +92,7 @@
             <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
               <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
               <div class="p-5">
-                <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="flex items-center flex-wrap gap-2 mb-2">
                   <div class="text-xs font-black" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div>
                   {{-- 31 Agustos 2026: kullanicinin talebi - "yerinde ziyaret
                        edildi" bilgisi sadece kurum detay sayfasinda vardi,

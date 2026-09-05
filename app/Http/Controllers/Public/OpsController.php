@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -76,6 +76,7 @@ class OpsController extends Controller
             'site-visits-diagnose' => $this->siteVisitsDiagnose(),
             'broker-claimed-overlap-check' => $this->brokerClaimedOverlapCheck(),
             'qa-admin-review-add-test' => $this->qaAdminReviewAddTest(),
+            'services-column-diagnose' => $this->servicesColumnDiagnose($request),
             'qa-video-upload-test' => $this->qaVideoUploadTest($request),
             'disk-usage' => $this->diskUsage(),
             'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
@@ -543,6 +544,100 @@ class OpsController extends Controller
         \App\Models\FacilityReview::where('facility_id', $facility->id)->delete();
         Facility::withTrashed()->where('id', $facility->id)->forceDelete();
         $out .= "\n(test kurumu #{$facility->id} ve yorumu temizlendi)";
+
+        return $out;
+    }
+
+    /**
+     * 5 Eylul 2026: kullanicinin "ozellik filtresi 0 sonuc donduruyor"
+     * bildirimi icin - facilities.services kolonunun GERCEK icerigini
+     * (whereJsonContains'in aradigi format ile ayni mi) dogrudan gosterir.
+     */
+    private function servicesColumnDiagnose(Request $incomingRequest): string
+    {
+        $service = (string) $incomingRequest->query('service', '7/24 hemşire');
+        $scope = (string) $incomingRequest->query('scope', 'yasli-bakim');
+
+        $sample = Facility::whereHas('category', fn ($q) => $q->where('brand_scope', $scope))
+            ->whereNotNull('services')
+            ->limit(10)
+            ->get(['id', 'name', 'services']);
+
+        $out = "Aranan servis degeri: '{$service}'\n\n";
+        if ($sample->isEmpty()) {
+            return $out."'{$scope}' kapsaminda services dolu HICBIR kurum yok.\n";
+        }
+
+        foreach ($sample as $f) {
+            $out .= "#{$f->id} {$f->name}\n";
+            $out .= '  services (ham): '.json_encode($f->services, JSON_UNESCAPED_UNICODE)."\n";
+        }
+
+        $matchCount = Facility::whereHas('category', fn ($q) => $q->where('brand_scope', $scope))
+            ->whereJsonContains('services', $service)
+            ->count();
+        $out .= "\nwhereJsonContains('services', '{$service}') ile eslesen kurum sayisi: {$matchCount}\n";
+
+        // 5 Eylul 2026: kok nedeni izole etmek icin - "/" veya turkce karakter
+        // mi sorun cikariyor, ayri ayri test eder.
+        $noSlash = Facility::whereHas('category', fn ($q) => $q->where('brand_scope', $scope))
+            ->whereJsonContains('services', 'Doktor kontrolü')
+            ->count();
+        $out .= "whereJsonContains('services', 'Doktor kontrolü') (slash yok) eslesen: {$noSlash}\n";
+
+        $rawSql = Facility::whereHas('category', fn ($q) => $q->where('brand_scope', $scope))
+            ->whereJsonContains('services', $service)
+            ->toSql();
+        $out .= "Uretilen SQL: {$rawSql}\n";
+
+        $rawResult = DB::select("select count(*) as c from facilities where JSON_CONTAINS(services, ?)", [json_encode($service, JSON_UNESCAPED_UNICODE)]);
+        $out .= 'Dogrudan JSON_CONTAINS(services, '.json_encode($service, JSON_UNESCAPED_UNICODE).") sonucu: {$rawResult[0]->c}\n";
+
+        // 5 Eylul 2026: tek bir SATIR uzerinde, join/scope'suz, en yalin test.
+        $isolated = DB::select("select id, services, JSON_CONTAINS(services, '\"Doktor kontrolü\"') as sonuc, JSON_VALID(services) as gecerli_mi, JSON_TYPE(services) as tip from facilities where id = 2");
+        $out .= "\nTEK SATIR testi (facility #2):\n".json_encode($isolated, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)."\n";
+
+        // 5 Eylul 2026: turkce karakter mi yoksa JSON_CONTAINS'in kendisi mi
+        // sorunlu, ayirt etmek icin SALT-ASCII bir eleman uzerinde dener,
+        // ayrica tablo/kolon collation'ini gosterir.
+        $asciiTest = DB::select("select JSON_CONTAINS(JSON_ARRAY('a','b','c'), '\"b\"') as sonuc");
+        $out .= "SALT-ASCII test (JSON_ARRAY('a','b','c') icinde 'b' var mi): ".$asciiTest[0]->sonuc."\n";
+
+        $collationInfo = DB::select("select COLUMN_NAME, CHARACTER_SET_NAME, COLLATION_NAME, DATA_TYPE from information_schema.columns where table_schema = DATABASE() and table_name = 'facilities' and COLUMN_NAME = 'services'");
+        $out .= 'services kolonu collation bilgisi: '.json_encode($collationInfo)."\n";
+
+        $connCollation = DB::select("select @@collation_connection as c, @@character_set_connection as cs");
+        $out .= 'Baglanti collation/charset: '.json_encode($connCollation)."\n";
+
+        // 5 Eylul 2026: kok neden hipotezi - Unicode NORMALIZASYON formu
+        // farki (NFC/NFD). Google Maps'ten gelen "Doktor kontrolü" ile
+        // benim burada YAZDIGIM "Doktor kontrolü" GORSEL olarak ayni ama
+        // byte duzeyinde farkli olabilir (ör. "ü" tek codepoint mi, yoksa
+        // "u" + birlesen aksan mi). Iki tarafin hex dokumunu karsilastirir.
+        $storedRow = DB::selectOne("select JSON_UNQUOTE(JSON_EXTRACT(services, '$[2]')) as val from facilities where id = 2");
+        $storedRaw = $storedRow->val;
+        $out .= "\nDB'deki 3. eleman (raw): ".$storedRaw."\n";
+        $out .= 'DB hex: '.bin2hex($storedRaw)."\n";
+        $myLiteral = 'Doktor kontrolü';
+        $out .= 'Benim yazdigim: '.$myLiteral."\n";
+        $out .= 'Benim hex: '.bin2hex($myLiteral)."\n";
+        $out .= 'Byte-esit mi: '.($storedRaw === $myLiteral ? 'EVET' : 'HAYIR - FARKLI BYTE DIZISI')."\n";
+        if (class_exists('Normalizer')) {
+            $normalized = \Normalizer::normalize($storedRaw, \Normalizer::FORM_C);
+            $out .= 'DB degeri NFC normalize edilince benimkiyle esit mi: '.($normalized === $myLiteral ? 'EVET' : 'HAYIR')."\n";
+        } else {
+            $out .= "PHP intl/Normalizer sinifi yuklu degil, normalizasyon testi yapilamadi.\n";
+        }
+
+        // 5 Eylul 2026: byte'lar birebir ayni cikinca (kanitlandi) - alternatif
+        // JSON_SEARCH fonksiyonunun bu MariaDB'de dogru calisip calismadigini test eder.
+        $jsonSearchCountDynamic = DB::selectOne("select count(*) as c from facilities where JSON_SEARCH(services, 'one', ?) is not null", [$service]);
+        $out .= "\nJSON_SEARCH ile ARANAN '{$service}' degeri icin eslesen kurum sayisi: {$jsonSearchCountDynamic->c}\n";
+
+        $matchingFacilities = DB::select("select f.id, f.name, f.is_published, f.deleted_at, fc.brand_scope from facilities f left join facility_categories fc on fc.id = f.facility_category_id where JSON_SEARCH(f.services, 'one', ?) is not null", [$service]);
+        foreach ($matchingFacilities as $mf) {
+            $out .= "  #{$mf->id} {$mf->name} | brand_scope={$mf->brand_scope} | is_published=".var_export((bool) $mf->is_published, true).' | silinmis='.var_export($mf->deleted_at !== null, true)."\n";
+        }
 
         return $out;
     }
