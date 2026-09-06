@@ -21,20 +21,33 @@ class SiteVisit extends Model
      */
     public static function recordVisit(string $brand): void
     {
-        $today = now()->toDateString();
-
-        $updated = static::where('brand', $brand)->where('visit_date', $today)->increment('count');
-
-        if ($updated) {
-            return;
-        }
-
+        // 6 Eylul 2026: kullanicinin tekrar bildirdigi "Too many connections"
+        // (paylasimli sunucunun 300 baglantilik GENEL limitine - bkz.
+        // /_ops/mysql-connections-diagnose - takilmasi) olayinda bu metodun
+        // ICINDEKI increment/create cagrisi QueryException firlatiyor ve
+        // hicbir try/catch olmadigi icin TUM sayfa istegini 500'e dusuruyordu
+        // - sirf bir ziyaret sayaci yazilamadi diye GERCEK bir aile arama
+        // sonucunu hic goremiyordu. Bu sadece ikincil/analitik bir yazma,
+        // basarisiz olursa sessizce atlanmali (bkz. FacilityController::
+        // index() SearchQuery::record() ayni tarihli/turden duzeltme).
         try {
-            static::create(['brand' => $brand, 'visit_date' => $today, 'count' => 1]);
-        } catch (QueryException $e) {
-            // Ayni anda baska bir istek satiri olusturmus olabilir (yaris durumu);
-            // bu durumda basitce artir, hata firlatma.
-            static::where('brand', $brand)->where('visit_date', $today)->increment('count');
+            $today = now()->toDateString();
+
+            $updated = static::where('brand', $brand)->where('visit_date', $today)->increment('count');
+
+            if ($updated) {
+                return;
+            }
+
+            try {
+                static::create(['brand' => $brand, 'visit_date' => $today, 'count' => 1]);
+            } catch (QueryException $e) {
+                // Ayni anda baska bir istek satiri olusturmus olabilir (yaris durumu);
+                // bu durumda basitce artir, hata firlatma.
+                static::where('brand', $brand)->where('visit_date', $today)->increment('count');
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Site ziyareti kaydedilemedi: '.$e->getMessage(), ['brand' => $brand]);
         }
     }
 }

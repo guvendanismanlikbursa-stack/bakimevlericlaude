@@ -236,13 +236,18 @@ class FacilityController extends Controller
         // ziyaretinin sayilmamasini "calismiyor" olarak yasadi; artik
         // KOSULSUZ, istisnasiz her istek sayilir.
         {
-            $facility->increment('views_count');
             // GUVENLIK: try/catch ile sarmalandi - bu ikincil/analitik bir
             // yazma islemi, sayfanin asil yuklenmesini engellememeli
             // (canli olayda tam olarak yasandi: bir deploy'un dosya
             // yukleme ile migration adimlari arasindaki birkac saniyelik
             // pencerede gercek bir ziyaretci bu satirda 500 aldi).
+            // 6 Eylul 2026: kullanicinin bildirdigi "Too many connections"
+            // olayinda GORULDU - increment('views_count') YORUMDA "sarmalandi"
+            // denmesine ragmen ASLINDA try bloğunun DISINDAYDI, sadece
+            // engagementEvents()->create() sarilmisti. Simdi GERCEKTEN ikisi
+            // de sarili.
             try {
+                $facility->increment('views_count');
                 $facility->engagementEvents()->create(['type' => 'view']);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Goruntulenme olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
