@@ -98,6 +98,17 @@ ScheduledJobMonitor::attach(
     60 * 24
 );
 
+// 6 Eylul 2026: kullanicinin talebi - admin dashboard'daki "Kurum Turune
+// Gore Ilgi" kartinin TUM ZAMANLAR toplami yerine "son 30 gunde GERCEKTEN
+// kazanilan goruntulenme"yi gosterebilmesi icin (bkz. App\Console\Commands\
+// SnapshotCategoryViews ayni tarihli yorum) her gece bolum bazinda toplam
+// goruntulenmeyi kaydeder.
+ScheduledJobMonitor::attach(
+    Schedule::command('category:snapshot-views')->dailyAt('23:50'),
+    'category:snapshot-views',
+    60 * 24
+);
+
 // 14 Agustos 2026: kullanicinin talebi - "hizli yanit veren kurum" rozeti
 // icin her gece son 90 gundeki ortalama teklif yanit suresini hesaplar
 // (bkz. App\Console\Commands\CalculateFacilityResponseTime,

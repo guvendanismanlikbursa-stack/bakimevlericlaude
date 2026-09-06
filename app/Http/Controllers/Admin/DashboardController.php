@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccountDeletionRequest;
+use App\Models\CategoryViewSnapshot;
 use App\Models\ContactMessage;
 use App\Models\Facility;
 use App\Models\FacilityClaim;
@@ -70,10 +71,19 @@ class DashboardController extends Controller
      * turunu en cok ariyor" sorusuna panelde dogrudan cevap: kurum
      * turune (bolume) gore GERCEK goruntulenme dagilimi ve yuzdesi.
      * Harici tahmin degil, platformun kendi verisi.
+     *
+     * 6 Eylul 2026: kullanicinin bildirdigi gercek gozlem - "yuzdeler hic
+     * degismiyor". Sebep: views_count TUM ZAMANLARIN toplami, zaten cok
+     * buyumus bu sayiya bir gunluk artis yuzdeyi neredeyse hic kipirdatmiyor.
+     * Artik CategoryViewSnapshot (bkz. SnapshotCategoryViews komutu ayni
+     * tarihli yorum) kullanilarak SON 30 GUNDE GERCEKTEN KAZANILAN
+     * goruntulenme farki hesaplanir - bu, guncel "hangi bolume ilgi artti"
+     * sorusuna gercekten cevap verir. Henuz 30 gunluk gecmis birikmediyse
+     * (ozellik yeni eklendi), durustce "veri birikiyor" durumuna duser.
      */
     private function categoryDemandSummary(): array
     {
-        $rows = Facility::query()
+        $currentRows = Facility::query()
             ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
             ->whereNull('facilities.deleted_at')
             ->where('facilities.is_published', true)
@@ -81,20 +91,49 @@ class DashboardController extends Controller
             ->groupBy('facility_categories.brand_scope')
             ->pluck('toplam', 'brand_scope');
 
+        $cutoff = now()->subDays(30)->toDateString();
+        $oldestSnapshotDate = CategoryViewSnapshot::min('date');
+        $hasTrendData = $oldestSnapshotDate !== null && $oldestSnapshotDate <= $cutoff;
+
+        $baselineRows = collect();
+        if ($hasTrendData) {
+            // Her bolum icin 30 gun ONCEYE en yakin (o tarihten once/esit,
+            // en yeni) anlik goruntuyu bulur - komut her gece calismasa/
+            // atlasa bile en yakin gecerli degeri kullanir.
+            $baselineRows = CategoryViewSnapshot::where('date', '<=', $cutoff)
+                ->selectRaw('brand_scope, total_views')
+                ->whereIn('id', function ($q) use ($cutoff) {
+                    $q->selectRaw('max(id)')
+                        ->from('category_view_snapshots')
+                        ->where('date', '<=', $cutoff)
+                        ->groupBy('brand_scope');
+                })
+                ->pluck('total_views', 'brand_scope');
+        }
+
         $bySection = [];
-        foreach ($rows as $scope => $count) {
+        foreach ($currentRows as $scope => $count) {
             $title = service_section_for_scope($scope)['title'] ?? $scope;
-            $bySection[$title] = ($bySection[$title] ?? 0) + (int) $count;
+            $value = $hasTrendData
+                ? max(0, (int) $count - (int) ($baselineRows[$scope] ?? 0))
+                : (int) $count;
+            $bySection[$title] = ($bySection[$title] ?? 0) + $value;
         }
         arsort($bySection);
 
         $total = array_sum($bySection) ?: 1;
+        $daysSinceFirstSnapshot = $oldestSnapshotDate ? (int) \Illuminate\Support\Carbon::parse($oldestSnapshotDate)->diffInDays(now()) : 0;
+        $daysUntilTrend = $hasTrendData ? 0 : max(0, 30 - $daysSinceFirstSnapshot);
 
-        return collect($bySection)->map(fn ($count, $title) => [
-            'title' => $title,
-            'count' => $count,
-            'percent' => round($count / $total * 100, 1),
-        ])->values()->all();
+        return [
+            'has_trend_data' => $hasTrendData,
+            'days_until_trend' => max(0, $daysUntilTrend),
+            'rows' => collect($bySection)->map(fn ($count, $title) => [
+                'title' => $title,
+                'count' => $count,
+                'percent' => round($count / $total * 100, 1),
+            ])->values()->all(),
+        ];
     }
 
     /**

@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -77,6 +77,7 @@ class OpsController extends Controller
             'broker-claimed-overlap-check' => $this->brokerClaimedOverlapCheck(),
             'qa-admin-review-add-test' => $this->qaAdminReviewAddTest(),
             'services-column-diagnose' => $this->servicesColumnDiagnose($request),
+            'recent-activity-scan' => $this->recentActivityScan($request),
             'qa-video-upload-test' => $this->qaVideoUploadTest($request),
             'disk-usage' => $this->diskUsage(),
             'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
@@ -147,6 +148,8 @@ class OpsController extends Controller
             'cleanup-stale-qa-debris' => $this->cleanupStaleQaDebris($request),
             'invite-review-families' => $this->inviteReviewFamilies(),
             'snapshot-facility-stats' => $this->snapshotFacilityStats(),
+            'snapshot-category-views' => $this->snapshotCategoryViews(),
+            'admin-dashboard-render' => $this->adminDashboardRender($request),
             'platform-errors-list' => $this->platformErrorsList(),
             'test-platform-error' => $this->testPlatformError(),
             'cleanup-test-platform-errors' => $this->cleanupTestPlatformErrors(),
@@ -642,6 +645,56 @@ class OpsController extends Controller
         return $out;
     }
 
+    /**
+     * 5 Eylul 2026: kullanicinin "1 saat once mesaj geldi ama bulamiyorum"
+     * bildirimi icin - platformdaki TUM mesaj/yorum/soru kanallarini
+     * (iletisim mesaji, kurum yorumu, canli sohbet, aile sorusu, teklif
+     * talebi mesaji, yakinimi ziyaret et talebi) tek ekranda, son N saat
+     * icinde olusanlari, admin panelinde NEREDE goruntulenecegi bilgisiyle
+     * birlikte listeler.
+     */
+    private function recentActivityScan(Request $incomingRequest): string
+    {
+        $hours = (int) $incomingRequest->query('hours', 3);
+        $since = now()->subHours($hours);
+        $out = "Son {$hours} saat icindeki aktivite (simdi: ".now()->toDateTimeString().", esik: {$since->toDateTimeString()}):\n\n";
+
+        $sections = [
+            'İletişim mesajları (Admin > Mesajlar)' => fn () => DB::table('contact_messages')->where('created_at', '>=', $since)->orderByDesc('created_at')->get(['id', 'name', 'subject', 'created_at']),
+            'Kurum yorumları (Admin > Yorumlar)' => fn () => DB::table('facility_reviews')->where('created_at', '>=', $since)->orderByDesc('created_at')->get(['id', 'facility_id', 'reviewer_name', 'status', 'created_at']),
+            'Canlı sohbet mesajları (Admin > Canlı Sohbet)' => fn () => DB::table('chat_messages')->where('created_at', '>=', $since)->orderByDesc('created_at')->get(['id', 'chat_thread_id', 'sender_type', 'created_at']),
+            'Aile soruları (Admin > Aile Soruları)' => fn () => DB::table('facility_questions')->where('created_at', '>=', $since)->orderByDesc('created_at')->get(['id', 'facility_id', 'created_at']),
+            'Teklif talebi mesajları (kurum/aile paneli - Admin > Teklif Talepleri > ilgili talebin mesajları)' => fn () => DB::table('messages')->where('created_at', '>=', $since)->orderByDesc('created_at')->get(['id', 'offer_request_id', 'sender_type', 'created_at']),
+            '"Yakınımı Ziyaret Et" talepleri (Admin > Ziyaret Talepleri)' => fn () => DB::table('visit_service_requests')->where('created_at', '>=', $since)->orderByDesc('created_at')->get(['id', 'facility_id', 'status', 'created_at']),
+            'Yeni teklif talepleri (Admin > Teklif Talepleri)' => fn () => DB::table('offer_requests')->where('created_at', '>=', $since)->orderByDesc('created_at')->get(['id', 'facility_id', 'status', 'created_at']),
+        ];
+
+        $foundAny = false;
+        foreach ($sections as $label => $callback) {
+            try {
+                $rows = $callback();
+            } catch (\Throwable $e) {
+                $out .= "[{$label}] HATA: ".$e->getMessage()."\n\n";
+                continue;
+            }
+            if ($rows->isEmpty()) {
+                continue;
+            }
+            $foundAny = true;
+            $out .= "=== {$label} ({$rows->count()} kayit) ===\n";
+            foreach ($rows as $r) {
+                $out .= '  '.json_encode($r, JSON_UNESCAPED_UNICODE)."\n";
+            }
+            $out .= "\n";
+        }
+
+        if (! $foundAny) {
+            $out .= "Bu {$hours} saat icinde taranan hicbir kanalda yeni kayit bulunamadi.";
+        }
+
+        return $out;
+    }
+
     private function facilityTrashCheck(Request $incomingRequest): string
     {
         $facilityId = (int) $incomingRequest->query('facility_id', 0);
@@ -855,6 +908,41 @@ class OpsController extends Controller
         Artisan::call('facility:snapshot-daily-stats');
 
         return Artisan::output();
+    }
+
+    private function snapshotCategoryViews(): string
+    {
+        Artisan::call('category:snapshot-views');
+
+        return Artisan::output();
+    }
+
+    /**
+     * 6 Eylul 2026: "Kurum Turune Gore Ilgi" karti karti gercekten
+     * beklendigi gibi (bg-primary yerine hex renk, "veri birikiyor" notu
+     * hasTrendData=false iken) render ediliyor mu diye - admin-facility-
+     * edit-render ile AYNI guvenli desen, dashboard icin.
+     */
+    private function adminDashboardRender(Request $incomingRequest): string
+    {
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
+
+        $response = app(\App\Http\Controllers\Admin\DashboardController::class)->index();
+        $html = $response->render();
+
+        $out = 'HTML uzunlugu: '.strlen($html)." bayt\n\n";
+        $pos = mb_strpos($html, 'Kurum Türüne Göre İlgi');
+        if ($pos === false) {
+            $out .= "'Kurum Türüne Göre İlgi' bulunamadi.\n";
+        } else {
+            $out .= mb_substr($html, $pos, 1200)."\n";
+        }
+
+        return $out;
     }
 
     // 3 Agustos 2026: mail'ler artik hic kuyruklanmadigi (sendNow) icin
