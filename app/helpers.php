@@ -1141,6 +1141,43 @@ if (! function_exists('detect_chat_section')) {
     }
 }
 
+if (! function_exists('is_bot_user_agent')) {
+    /**
+     * 6 Eylul 2026: kullanicinin talebi - "gercek tiklama" icin ayri bir
+     * bolum. Mevcut views_count/facility_engagement_events('view') BILEREK
+     * botlar dahil TUM istekleri sayiyor (bkz. FacilityController::show()
+     * ayni tarihli/17 Agustos yorumlari, kullanicinin kendi eski talebi).
+     * Bu fonksiyon SADECE bu YENI "gercek tiklama" olcumu icin kullanilir,
+     * eski sayaclara DOKUNMAZ. Bilinen arama motoru/SEO/onizleme botlarinin
+     * User-Agent imzalarina (kucuk/buyuk harf duyarsiz) bakar - mukemmel
+     * degil ama standart, yaygin kullanilan bir yontemdir.
+     */
+    function is_bot_user_agent(?string $userAgent): bool
+    {
+        if (! $userAgent) {
+            return true;
+        }
+
+        $patterns = [
+            'bot', 'crawl', 'spider', 'slurp', 'facebookexternalhit', 'telegrambot',
+            'twitterbot', 'linkedinbot', 'pinterest', 'discordbot', 'applebot',
+            'ahrefs', 'semrush', 'mj12bot', 'dotbot', 'petalbot', 'seznambot',
+            'sogou', 'exabot', 'ia_archiver', 'curl', 'wget', 'python-requests',
+            'go-http-client', 'okhttp', 'headlesschrome', 'phantomjs', 'selenium',
+            'lighthouse', 'pagespeed', 'uptimerobot', 'pingdom', 'gtmetrix',
+        ];
+
+        $ua = mb_strtolower($userAgent);
+        foreach ($patterns as $pattern) {
+            if (str_contains($ua, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (! function_exists('message_contains_contact_info')) {
     /**
      * 2 Eylul 2026: kullanicinin talebi - "aileler beni devre disi

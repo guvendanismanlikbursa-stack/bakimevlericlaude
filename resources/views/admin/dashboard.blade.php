@@ -129,6 +129,38 @@
   </div>
 </div>
 
+{{-- 6 Eylul 2026: kullanicinin talebi - yukaridaki kart bot dahil TUM
+     istekleri sayan views_count'u kullaniyor (kullanicinin kendi eski
+     talebi uzerine). Bu YENI, AYRI kart SADECE gercek (bot haric, oturumda
+     24 saatte 1 kez) tiklamayi gosterir - bkz. Admin\DashboardController::
+     categoryRealClickSummary() ayni tarihli yorum. --}}
+<div class="bg-white rounded-xl shadow-sm p-5 mb-10">
+  <h2 class="font-bold text-lg mb-1">Gerçek Tıklama (Bot Hariç)</h2>
+  <p class="text-xs text-gray-500 mb-4">
+    Son 30 gün · yalnızca bilinen arama motoru/SEO botları hariç tutulan, aynı tarayıcının aynı kurumu 24 saatte yalnızca 1 kez saydığı ölçüm
+    @if($realClickDemand['tracking_since'])
+      · takip başlangıcı: {{ \Illuminate\Support\Carbon::parse($realClickDemand['tracking_since'])->format('d.m.Y') }}
+    @endif
+  </p>
+  @if($realClickDemand['total'] === 0)
+    <p class="text-sm text-gray-400">Henüz gerçek tıklama kaydı yok.</p>
+  @else
+    <div class="space-y-3">
+      @foreach($realClickDemand['rows'] as $row)
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-semibold text-gray-800">{{ $row['title'] }}</span>
+            <span class="font-black text-gray-950">%{{ number_format($row['percent'], 1, ',', '.') }} <span class="font-normal text-gray-400">({{ number_format($row['count'], 0, ',', '.') }} tıklama)</span></span>
+          </div>
+          <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden">
+            <div class="h-full rounded-full" style="width: {{ $row['percent'] }}%; background:#1e6f5c;"></div>
+          </div>
+        </div>
+      @endforeach
+    </div>
+  @endif
+</div>
+
 <div class="grid md:grid-cols-3 gap-6 mb-10">
   @foreach($stats as $slug => $s)
     <div class="bg-white rounded-xl shadow-sm p-5">

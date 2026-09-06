@@ -249,6 +249,25 @@ class FacilityController extends Controller
             }
         }
 
+        // 6 Eylul 2026: kullanicinin talebi - yukaridaki sayac BILEREK bot
+        // dahil her istegi sayiyor (kullanicinin kendi 17 Agustos talebi).
+        // Bu, AYRI, "gercek tiklama" olcumu icin: bilinen botlar HARIC
+        // tutulur, ayni tarayici oturumu 24 saatte SADECE 1 kez sayilir -
+        // trackContactClick() ile AYNI, kanitlanmis oturum-tekillestirme
+        // deseni. Admin dashboard'da ayri bir bolumde gosterilir.
+        if (! is_bot_user_agent($request->userAgent())) {
+            $realViewSessionKey = "real_view_{$facility->id}";
+            $lastRealViewAt = session($realViewSessionKey);
+            if (! $lastRealViewAt || now()->diffInHours($lastRealViewAt) >= 24) {
+                try {
+                    $facility->engagementEvents()->create(['type' => 'real_view']);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Gercek tiklama olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+                }
+                session([$realViewSessionKey => now()]);
+            }
+        }
+
         $serviceSection = service_section_for_scope($facility->category?->brand_scope);
 
         // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - eski sorgu

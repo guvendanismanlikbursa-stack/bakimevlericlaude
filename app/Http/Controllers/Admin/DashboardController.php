@@ -58,11 +58,12 @@ class DashboardController extends Controller
 
         $health = $this->healthSummary();
         $categoryDemand = $this->categoryDemandSummary();
+        $realClickDemand = $this->categoryRealClickSummary();
 
         return view('admin.dashboard', compact(
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
             'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health',
-            'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions'
+            'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions', 'realClickDemand'
         ));
     }
 
@@ -132,6 +133,52 @@ class DashboardController extends Controller
                 'title' => $title,
                 'count' => $count,
                 'percent' => round($count / $total * 100, 1),
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * 6 Eylul 2026: kullanicinin talebi - yukaridaki categoryDemandSummary()
+     * BILEREK bot dahil TUM istekleri sayan views_count'u kullaniyor
+     * (kullanicinin kendi eski talebi - bkz. FacilityController::show()
+     * ayni tarihli yorum). Bu, AYRI, GERCEK (bot haric, oturum bazinda
+     * tekillestirilmis) tiklamayi bolum bazinda gosterir - facility_
+     * engagement_events tablosundaki 'real_view' olaylari (bkz. is_bot_
+     * user_agent() helper, FacilityController::show() ayni tarihli yorum).
+     * Bu bir OLAY GUNLUGU oldugu icin (anlik goruntu farki degil), ilk
+     * gunden itibaren KISMI ama GERCEK veri gosterir - "veri birikiyor"
+     * beklemeye gerek yok, sadece zamanla dolar.
+     */
+    private function categoryRealClickSummary(): array
+    {
+        $since = now()->subDays(30);
+
+        $rows = \Illuminate\Support\Facades\DB::table('facility_engagement_events')
+            ->join('facilities', 'facilities.id', '=', 'facility_engagement_events.facility_id')
+            ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+            ->where('facility_engagement_events.type', 'real_view')
+            ->where('facility_engagement_events.created_at', '>=', $since)
+            ->selectRaw('facility_categories.brand_scope, count(*) as toplam')
+            ->groupBy('facility_categories.brand_scope')
+            ->pluck('toplam', 'brand_scope');
+
+        $bySection = [];
+        foreach ($rows as $scope => $count) {
+            $title = service_section_for_scope($scope)['title'] ?? $scope;
+            $bySection[$title] = ($bySection[$title] ?? 0) + (int) $count;
+        }
+        arsort($bySection);
+
+        $total = array_sum($bySection);
+        $oldestEventAt = \Illuminate\Support\Facades\DB::table('facility_engagement_events')->where('type', 'real_view')->min('created_at');
+
+        return [
+            'total' => $total,
+            'tracking_since' => $oldestEventAt,
+            'rows' => collect($bySection)->map(fn ($count, $title) => [
+                'title' => $title,
+                'count' => $count,
+                'percent' => $total > 0 ? round($count / $total * 100, 1) : 0,
             ])->values()->all(),
         ];
     }
