@@ -474,16 +474,40 @@ class FacilityController extends Controller
             $facility = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
             abort_if($facility->is_claimed, 400, 'Bu kurum zaten sahiplenilmiş.');
 
-            $facilityUser = \App\Models\FacilityUser::create([
-                'facility_id' => $facility->id,
-                'name' => $data['applicant_name'],
-                'email' => $data['applicant_email'],
-                'phone' => $data['applicant_phone'],
-                'password' => \Illuminate\Support\Facades\Hash::make($temporaryPassword),
-                'must_change_password' => true,
-                'status' => 'active',
-                'email_verified_at' => null,
-            ]);
+            // 7 Eylul 2026: kullanicinin bildirdigi gercek hata - "Panelde
+            // Gör" (impersonate()) anlaşmalı bir kurumda hesap yoksa otomatik
+            // gorunmez bir yer-tutucu hesap ('...@panel.bakimevleri.internal')
+            // olusturuyordu. Sonra ayni kurum GERCEKTEN yerinde sahiplendirilince
+            // burasi bunu bilmeden IKINCI bir facility_user daha olusturuyordu -
+            // kurumun 2 hesabi oluyordu, "Panelde Gör" hangisinin ilk
+            // olusturuldugunu (genelde yer-tutucu, kucuk id) kullanmaya devam
+            // ediyordu, yeni gercek hesap gormezden geliniyordu. Artik boyle
+            // bir yer-tutucu varsa YENI hesap YARATILMIYOR, o hesap GERCEK
+            // bilgilerle GUNCELLENIYOR.
+            $facilityUser = $facility->facilityUsers()->where('email', 'like', '%@panel.bakimevleri.internal')->first();
+
+            if ($facilityUser) {
+                $facilityUser->update([
+                    'name' => $data['applicant_name'],
+                    'email' => $data['applicant_email'],
+                    'phone' => $data['applicant_phone'],
+                    'password' => \Illuminate\Support\Facades\Hash::make($temporaryPassword),
+                    'must_change_password' => true,
+                    'status' => 'active',
+                    'email_verified_at' => null,
+                ]);
+            } else {
+                $facilityUser = \App\Models\FacilityUser::create([
+                    'facility_id' => $facility->id,
+                    'name' => $data['applicant_name'],
+                    'email' => $data['applicant_email'],
+                    'phone' => $data['applicant_phone'],
+                    'password' => \Illuminate\Support\Facades\Hash::make($temporaryPassword),
+                    'must_change_password' => true,
+                    'status' => 'active',
+                    'email_verified_at' => null,
+                ]);
+            }
 
             $update = [
                 'is_claimed' => true,

@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'qa-instant-claim-after-impersonate-test', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -152,6 +152,9 @@ class OpsController extends Controller
             'admin-dashboard-render' => $this->adminDashboardRender($request),
             'real-view-check' => $this->realViewCheck(),
             'mysql-connections-diagnose' => $this->mysqlConnectionsDiagnose(),
+            'facility-user-duplicate-check' => $this->facilityUserDuplicateCheck(),
+            'facility-user-cleanup-placeholder' => $this->facilityUserCleanupPlaceholder($request),
+            'qa-instant-claim-after-impersonate-test' => $this->qaInstantClaimAfterImpersonateTest(),
             'platform-errors-list' => $this->platformErrorsList(),
             'test-platform-error' => $this->testPlatformError(),
             'cleanup-test-platform-errors' => $this->cleanupTestPlatformErrors(),
@@ -944,6 +947,129 @@ class OpsController extends Controller
         }
 
         return $out;
+    }
+
+    /**
+     * 7 Eylul 2026: kullanicinin "sahiplenilen ve anlaşmalı kurumlara admin
+     * giris bilgisi olusturma calismiyor" bildirimi icin - "Panelde Gör"
+     * (impersonate()) otomatik olusturdugu 'anlasmali-{id}@panel...' hesabi
+     * ile "Yerinde Sahiplendir" (instantClaim()) sonradan olusturdugu
+     * GERCEK hesap CAKISIYOR mu, yani bir kurumun BIRDEN FAZLA facility_user
+     * kaydi var mi - dogrudan gosterir.
+     */
+    /**
+     * 7 Eylul 2026: "Panelde Gör" -> "Yerinde Sahiplendir" cakismasi
+     * duzeltmesinin KANITI - sahte bir anlaşmalı kurum uzerinde: once
+     * impersonate() (yer-tutucu hesap olusturur), sonra GERCEK bilgilerle
+     * instantClaim() cagirir. Sonunda kurumun SADECE 1 hesabi olmali VE
+     * o hesabin e-postasi GERCEK (yer-tutucu degil) olmali.
+     */
+    private function qaInstantClaimAfterImpersonateTest(): string
+    {
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
+
+        $facility = Facility::create([
+            'name' => 'qatest-claim-after-imp-'.now()->format('His'),
+            'slug' => 'qatest-claim-after-imp-'.now()->format('His'),
+            'brand' => 'bakimevleri',
+            'city_id' => Facility::query()->value('city_id'),
+            'facility_category_id' => Facility::query()->value('facility_category_id'),
+            'is_broker_managed' => true,
+            'is_claimed' => false,
+            'is_published' => true,
+        ]);
+        $out = "Test kurumu: #{$facility->id}\n";
+
+        $controller = app(\App\Http\Controllers\Admin\FacilityController::class);
+
+        try {
+            $controller->impersonate($facility);
+            session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
+        } catch (\Throwable $e) {
+            $out .= 'impersonate() hata: '.$e->getMessage()."\n";
+        }
+
+        $afterImpersonate = DB::table('facility_users')->where('facility_id', $facility->id)->get(['id', 'email']);
+        $out .= "impersonate() sonrasi hesap sayisi: {$afterImpersonate->count()} (".$afterImpersonate->pluck('email')->implode(', ').")\n";
+
+        $claimRequest = Request::create('/admin/kurumlar/'.$facility->id.'/yerinde-sahiplendir', 'POST', [
+            'applicant_name' => 'QATEST Yetkili',
+            'applicant_email' => 'qatest-real-'.now()->format('His').'@example.com',
+            'applicant_phone' => '05551234567',
+        ]);
+
+        try {
+            $controller->instantClaim($claimRequest, $facility);
+        } catch (\Throwable $e) {
+            $out .= 'instantClaim() hata: '.get_class($e).' - '.$e->getMessage()."\n";
+        }
+
+        $after = DB::table('facility_users')->where('facility_id', $facility->id)->get(['id', 'email']);
+        $out .= "instantClaim() SONRASI hesap sayisi: {$after->count()} (beklenen: 1)\n";
+        foreach ($after as $u) {
+            $out .= "  #{$u->id} {$u->email}\n";
+        }
+        $freshFacility = Facility::find($facility->id);
+        $out .= 'is_claimed: '.var_export($freshFacility->is_claimed, true)."\n";
+
+        DB::table('facility_users')->where('facility_id', $facility->id)->delete();
+        Facility::withTrashed()->where('id', $facility->id)->forceDelete();
+        $out .= "\n(temizlendi)";
+
+        return $out;
+    }
+
+    private function facilityUserDuplicateCheck(): string
+    {
+        $duplicates = DB::table('facility_users')
+            ->select('facility_id', DB::raw('count(*) as adet'))
+            ->groupBy('facility_id')
+            ->having('adet', '>', 1)
+            ->get();
+
+        if ($duplicates->isEmpty()) {
+            return 'Hicbir kurumun birden fazla facility_user kaydi yok.';
+        }
+
+        $out = "Birden fazla hesabi olan kurumlar ({$duplicates->count()}):\n\n";
+        foreach ($duplicates as $d) {
+            $facility = Facility::find($d->facility_id);
+            $out .= "#{$d->facility_id} {$facility?->name} - {$d->adet} hesap - is_claimed=".var_export($facility?->is_claimed, true).' is_broker_managed='.var_export($facility?->is_broker_managed, true)."\n";
+            $users = DB::table('facility_users')->where('facility_id', $d->facility_id)->get(['id', 'email', 'status', 'created_at']);
+            foreach ($users as $u) {
+                $out .= "    #{$u->id} {$u->email} status={$u->status} created_at={$u->created_at}\n";
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * 7 Eylul 2026: facility_user duplicate hatasinin temizligi - SADECE
+     * ayni kurumda GERCEK (panel.bakimevleri.internal olmayan) baska bir
+     * hesap VARSA, yer-tutucu (panel.bakimevleri.internal) hesabi siler.
+     * Tek basina bir yer-tutucuyu ASLA silmez (o zaman "Panelde Gör" tekrar
+     * hesap olusturur, zararsiz).
+     */
+    private function facilityUserCleanupPlaceholder(Request $incomingRequest): string
+    {
+        $facilityId = (int) $incomingRequest->query('facility_id', 0);
+        $users = DB::table('facility_users')->where('facility_id', $facilityId)->get(['id', 'email']);
+
+        $placeholder = $users->first(fn ($u) => str_ends_with($u->email, '@panel.bakimevleri.internal'));
+        $real = $users->first(fn ($u) => ! str_ends_with($u->email, '@panel.bakimevleri.internal'));
+
+        if (! $placeholder || ! $real) {
+            return "Temizlenecek bir sey yok (yer-tutucu: ".($placeholder ? "#{$placeholder->id}" : 'yok').", gercek: ".($real ? "#{$real->id}" : 'yok').').';
+        }
+
+        DB::table('facility_users')->where('id', $placeholder->id)->delete();
+
+        return "Silindi: yer-tutucu hesap #{$placeholder->id} ({$placeholder->email}). Kalan gercek hesap: #{$real->id} ({$real->email}).";
     }
 
     private function realViewCheck(): string
