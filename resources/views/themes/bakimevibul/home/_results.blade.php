@@ -79,7 +79,15 @@
             @if($facility->is_broker_managed)
               <span class="inline-block text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 mb-1.5">🤝 Anlaşmalı</span>
             @endif
-            <h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p><div class="flex justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-bold">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span></div>
+            <h3 class="font-extrabold text-gray-950 mb-1">{{ $facility->name }}</h3><p class="text-sm text-gray-500 mb-3">{{ $facility->city->name }} · {{ $facility->category->name }}</p>
+            <div class="flex justify-between text-sm">
+              @if($facility->rating > 0)<span class="text-amber-700 font-bold">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif
+              @if(session('family_user_id'))
+                <span class="font-bold text-gray-700">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Fiyat iste' }}</span>
+              @else
+                @include('themes._shared.partials.price-locked')
+              @endif
+            </div>
           </div>
         </a>
         @if($facility->is_broker_managed)

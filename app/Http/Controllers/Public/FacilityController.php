@@ -187,7 +187,10 @@ class FacilityController extends Controller
                 'image' => facility_card_image($facility, $activeSection),
                 'city' => $facility->city->name ?? '',
                 'category' => $facility->category->name ?? '',
-                'price' => $facility->price_min ? number_format($facility->price_min, 0, ',', '.').' TL' : 'Fiyat iste',
+                // 7 Eylul 2026: kullanicinin talebi - bkz. price-locked.blade.php ayni tarihli yorum.
+                'price' => session('family_user_id')
+                    ? ($facility->price_min ? number_format($facility->price_min, 0, ',', '.').' TL' : 'Fiyat iste')
+                    : '🔒 Fiyat için giriş yapın',
                 'rating' => (float) $facility->rating,
                 'is_claimed' => (bool) $facility->is_claimed,
             ]);

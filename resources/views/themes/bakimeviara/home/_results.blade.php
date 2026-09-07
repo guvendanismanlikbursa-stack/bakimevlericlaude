@@ -78,7 +78,15 @@
               @endif
             </div>
             <h3 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h3>
-            <p class="text-sm text-gray-500 mb-4">{{ $facility->city->name }}</p><div class="flex items-center justify-between text-sm">@if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif<span class="font-black text-gray-800">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Teklif al' }}</span></div>
+            <p class="text-sm text-gray-500 mb-4">{{ $facility->city->name }}</p>
+            <div class="flex items-center justify-between text-sm">
+              @if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif
+              @if(session('family_user_id'))
+                <span class="font-black text-gray-800">{{ $facility->price_min ? number_format($facility->price_min,0,',','.') . ' TL' : 'Teklif al' }}</span>
+              @else
+                @include('themes._shared.partials.price-locked')
+              @endif
+            </div>
           </div>
         </a>
         @if($facility->is_broker_managed)

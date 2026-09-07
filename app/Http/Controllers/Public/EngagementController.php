@@ -132,7 +132,14 @@ class EngagementController extends Controller
             ->limit(80)
             ->get();
 
-        $facilitiesForJs = $facilities->map(function (Facility $facility) {
+        // 7 Eylul 2026: kullanicinin talebi - gercek fiyat sadece giris
+        // yapmis ailelere gorunmeli. Bu veri JS tarafindan sayfa kaynagina
+        // GOMULU JSON olarak render edildigi icin, Blade'de gizlemek
+        // YETERSIZ olurdu (sayfa kaynaginda hala okunabilir kalirdi) -
+        // fiyat CONTROLLER seviyesinde, JSON'a hic konmadan degistirilir.
+        $familyLoggedIn = (bool) session('family_user_id');
+
+        $facilitiesForJs = $facilities->map(function (Facility $facility) use ($familyLoggedIn) {
             $section = service_section_for_scope($facility->category?->brand_scope);
             $image = $facility->primaryImage();
 
@@ -152,7 +159,9 @@ class EngagementController extends Controller
                 // yapmadan formatliyordu. null donup JS tarafinda "Puan yok"
                 // gosteriliyor (bkz. board.blade.php).
                 'rating' => $facility->rating > 0 ? number_format((float) $facility->rating, 1) : null,
-                'price_min' => $facility->price_min ? number_format($facility->price_min, 0, ',', '.') . ' TL' : 'Fiyat iste',
+                'price_min' => $familyLoggedIn
+                    ? ($facility->price_min ? number_format($facility->price_min, 0, ',', '.') . ' TL' : 'Fiyat iste')
+                    : '🔒 Fiyat için giriş yapın',
                 'capacity' => $facility->capacity ?: '-',
                 'services' => array_slice($facility->services ?? [], 0, 5),
                 'description' => $facility->description,

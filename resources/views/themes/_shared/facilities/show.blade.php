@@ -532,7 +532,10 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div class="text-gray-500">Fiyat Aralığı</div>
         <div class="font-black text-gray-950">
-          @if($facility->price_min && $facility->price_max)
+          {{-- 7 Eylul 2026: kullanicinin talebi - bkz. price-locked.blade.php ayni tarihli yorum. --}}
+          @if(! session('family_user_id') && ($facility->price_min || $facility->price_max))
+            @include('themes._shared.partials.price-locked', ['class' => 'text-sm font-bold text-gray-500'])
+          @elseif($facility->price_min && $facility->price_max)
             {{ number_format($facility->price_min,0,',','.') }} TL - {{ number_format($facility->price_max,0,',','.') }} TL
           @elseif($facility->price_min)
             {{ number_format($facility->price_min,0,',','.') }} TL'den başlıyor

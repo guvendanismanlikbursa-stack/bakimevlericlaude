@@ -11,7 +11,10 @@
       <div class="flex items-center justify-between px-4 py-2.5 text-sm">
         <span class="text-gray-700">{{ $item->label() }}</span>
         <span class="font-bold text-gray-950">
-          @if($item->price_min && $item->price_max)
+          {{-- 7 Eylul 2026: kullanicinin talebi - bkz. price-locked.blade.php ayni tarihli yorum. --}}
+          @if(! session('family_user_id'))
+            @include('themes._shared.partials.price-locked', ['class' => 'text-xs font-bold text-gray-500'])
+          @elseif($item->price_min && $item->price_max)
             {{ number_format($item->price_min,0,',','.') }} - {{ number_format($item->price_max,0,',','.') }} TL
           @else
             {{ number_format($item->price_min ?: $item->price_max,0,',','.') }} TL'den başlıyor
