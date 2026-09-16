@@ -20,7 +20,7 @@ class CareAdvisorController extends Controller
         $sections = service_sections();
         $activeSection = active_service_section($request->query('bolum'), $brand);
         $cities = City::orderBy('name')->get();
-        $categories = FacilityCategory::whereIn('brand_scope', $activeSection['scopes'])->orderBy('name')->get();
+        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $activeSection['scopes'])->values();
 
         $defaults = config('platform.default_price_tiers');
         $priceTiers = [

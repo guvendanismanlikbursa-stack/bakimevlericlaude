@@ -82,14 +82,23 @@ class DataImportRowApprovalService
         $description = $item['description'] ?: $this->generatedDescription($item, $category);
         $phoneType = classify_phone_type($item['phone']);
 
+        // 10 Eylul 2026: mahalle bilgisi varsa adresin basina "X Mahallesi"
+        // olarak eklenir (zaten iceriyorsa tekrar eklenmez) - hem adres
+        // kalitesi artar hem geocoding daha isabetli olur.
+        $address = $item['address'];
+        if (filled($item['neighborhood'])
+            && stripos($address, $item['neighborhood']) === false) {
+            $address = trim($item['neighborhood'].' Mahallesi'.($address !== '' ? ', '.$address : ''));
+        }
+
         // 17 Agustos 2026: kullanicinin talebi - Google Maps'ten cekilen
         // satirda koordinat bazen bos gelir (kazima sirasinda kaybolmus
         // olabilir); adres varsa burada otomatik tamamlanir, artik periyodik
         // toplu geocoding'e bagimli degil (bkz. GeocodingService yorumu).
         $lat = $this->coordinate($item['lat']);
         $lng = $this->coordinate($item['lng']);
-        if ($lat === null && $lng === null && filled($item['address'])) {
-            $coords = $this->geocodingService->geocodeAddress($item['address'], $districtModel?->name ?? $item['district'], $city->name);
+        if ($lat === null && $lng === null && filled($address)) {
+            $coords = $this->geocodingService->geocodeAddress($address, $districtModel?->name ?? $item['district'], $city->name);
             if ($coords) {
                 $lat = $coords['lat'];
                 $lng = $coords['lng'];
@@ -104,7 +113,7 @@ class DataImportRowApprovalService
             'facility_category_id' => $category->id,
             'ownership_type' => $ownershipType,
             'district' => $districtModel?->name ?? $item['district'],
-            'address' => $item['address'],
+            'address' => $address,
             'lat' => $lat,
             'lng' => $lng,
             'phone' => $item['phone'],
@@ -172,6 +181,12 @@ class DataImportRowApprovalService
             'email' => trim((string) ($payload['email'] ?? $payload['E-posta'] ?? $payload['Eposta'] ?? '')),
             'rating' => trim((string) ($payload['rating'] ?? $payload['Puan'] ?? '')),
             'district' => trim((string) ($payload['district'] ?? $payload['Ilce'] ?? $payload['İlçe'] ?? '')),
+            // 10 Eylul 2026: kullanicinin talebi - buyuk ilcelerde Google
+            // Maps ilce bazli arama TUM kurumlari dondurmuyor, mahalle
+            // bazinda aramak gerekiyor. Mahalle bilgisi kaydedilir ve onayda
+            // adresin basina eklenir (hem gorunur hale gelir hem geocoding'i
+            // guclendirir - bkz. OpsController::facilityGeoPinVerify()).
+            'neighborhood' => trim((string) ($payload['neighborhood'] ?? $payload['Mahalle'] ?? $payload['mahalle'] ?? '')),
             'description' => trim((string) ($payload['description'] ?? '')),
             'lat' => trim((string) ($payload['lat'] ?? $payload['Enlem'] ?? '')),
             'lng' => trim((string) ($payload['lng'] ?? $payload['Boylam'] ?? '')),

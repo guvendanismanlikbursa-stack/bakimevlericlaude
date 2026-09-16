@@ -54,7 +54,7 @@
      ayni gorsel dil. --}}
 @if($heroImage)
 <section class="relative bg-gray-950 text-white overflow-hidden">
-  <img src="{{ $heroImage }}" alt="{{ $facility->name }}" class="absolute inset-0 w-full h-full object-cover opacity-75">
+  <img src="{{ $heroImage }}" alt="{{ $facility->imageAltText() }}" class="absolute inset-0 w-full h-full object-cover opacity-75">
   <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/55 to-gray-950/15"></div>
   <div class="relative max-w-6xl mx-auto px-4 py-10 md:py-14">
     <div class="flex items-center gap-2 mb-3 flex-wrap">
@@ -77,6 +77,9 @@
       @endif
       @if($facility->hasFastResponseBadge())
         <span class="bg-blue-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
+      @endif
+      @if($facility->hasFreeChildAccidentInsurance())
+        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
       @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full bg-white text-gray-950">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
@@ -107,6 +110,9 @@
       @endif
       @if($facility->hasFastResponseBadge())
         <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
+      @endif
+      @if($facility->hasFreeChildAccidentInsurance())
+        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
       @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
@@ -147,6 +153,34 @@
           <span class="text-sm font-black text-emerald-800">{{ $vacancyHighlight }}</span>
         </div>
       @endif
+    @endif
+
+    {{-- 10 Eylul 2026: kullanicinin talebi - anlasmali kres/anaokullarina
+         kayit yaptiran cocuk icin bakimevleri.com'un UCRETSIZ yaptirdigi
+         1 yillik ferdi kaza sigortasini dikkat cekici sekilde anlatan
+         kutu. Kosul: Facility::hasFreeChildAccidentInsurance() (SADECE
+         anlasmali + 'kres-ve-anaokulu' kategorisi). --}}
+    @if($facility->hasFreeChildAccidentInsurance())
+      <div class="mt-5 rounded-2xl border-2 p-5 shadow-sm" style="border-color:#5eead4;background:#f0fdfa;">
+        <div class="flex items-start gap-3">
+          <span class="text-3xl leading-none">🛡️</span>
+          <div>
+            <h3 class="font-black text-lg" style="color:#134e4a;">Çocuğunuza 1 Yıl Ücretsiz Ferdi Kaza Sigortası</h3>
+            <p class="text-sm mt-1.5 leading-relaxed" style="color:#115e59;">
+              Bu anlaşmalı kuruma, platformumuz üzerinden ulaşıp çocuğunuzu buradan kaydettirdiğinizde,
+              <span class="font-black">bakimevleri.com</span> çocuğunuz adına
+              <span class="font-black">1 yıllık ferdi kaza sigortasını tamamen ücretsiz olarak yaptırır</span> — sizden hiçbir
+              ek ücret talep edilmez. Okul saatleri içinde ve dışında geçerli bu güvence, çocuğunuzun kaza sonucu
+              yaralanma durumlarında ailenizin yanında olması için platformumuzun hediyesidir.
+            </p>
+            <p class="text-xs mt-2" style="color:#0f766e;">
+              Bu ayrıcalıktan yararlanabilmeniz için kurumla doğrudan değil, platformumuz üzerinden iletişime geçmeniz gerekir;
+              sigorta süreci yalnızca bu şekilde tamamlanan kayıtlar için bakimevleri.com tarafından başlatılır.
+              Yalnızca anlaşmalı kreş ve anaokullarında geçerlidir.
+            </p>
+          </div>
+        </div>
+      </div>
     @endif
 
     {{-- 12 Agustos 2026: kullanicinin talebi - "ucret bilgisi al" formu
@@ -307,7 +341,7 @@
              devam ediyor, sadece tiklanan gorselin GUNCEL index'inden acilir. --}}
         <div class="grid lg:grid-cols-[1.5fr_1fr] gap-3">
           <div class="relative">
-            <img id="{{ $galleryId }}-main" src="{{ facility_asset(($primaryImage ?? $galleryImages->first())->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] ?? {{ $primaryIndex }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] ?? {{ $primaryIndex }});}" tabindex="0" role="button" aria-label="Galeriyi büyük görüntüle" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} ana görseli">
+            <img id="{{ $galleryId }}-main" src="{{ facility_asset(($primaryImage ?? $galleryImages->first())->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] ?? {{ $primaryIndex }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', window.facilityGalleryIndex['{{ $galleryId }}'] ?? {{ $primaryIndex }});}" tabindex="0" role="button" aria-label="Galeriyi büyük görüntüle" class="h-72 w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->imageAltText() }} - ana görsel">
             @if($galleryCount > 1)
               <button type="button" onclick="event.stopPropagation(); shiftFacilityMainImage('{{ $galleryId }}', -1)" aria-label="Önceki görsel" class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-950/60 text-white text-lg flex items-center justify-center hover:bg-gray-950/80 transition">‹</button>
               <button type="button" onclick="event.stopPropagation(); shiftFacilityMainImage('{{ $galleryId }}', 1)" aria-label="Sonraki görsel" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-950/60 text-white text-lg flex items-center justify-center hover:bg-gray-950/80 transition">›</button>
@@ -317,7 +351,7 @@
           @if($galleryCount > 1)
             <div class="grid grid-cols-2 gap-3">
               @foreach($secondaryEntries as $entry)
-                <img src="{{ facility_asset($entry['image']->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $entry['index'] }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', {{ $entry['index'] }});}" tabindex="0" role="button" aria-label="Galeri görseli, büyük görüntüle" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->name }} görseli">
+                <img src="{{ facility_asset($entry['image']->path) }}" onclick="openFacilityGalleryAt('{{ $galleryId }}', {{ $entry['index'] }})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFacilityGalleryAt('{{ $galleryId }}', {{ $entry['index'] }});}" tabindex="0" role="button" aria-label="Galeri görseli, büyük görüntüle" class="h-[132px] w-full rounded-xl object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-offset-2" style="--tw-ring-color: {{ $colors['primary'] }};" alt="{{ $facility->imageAltText() }} - galeri görseli">
               @endforeach
             </div>
           @endif
@@ -357,7 +391,7 @@
       <div id="{{ $galleryId }}" class="grid grid-cols-5 sm:grid-cols-10 gap-2 mt-3">
         @foreach($galleryImages as $img)
           <a href="{{ facility_asset($img->path) }}" data-pswp-width="1600" data-pswp-height="1200" data-image-id="{{ $img->id }}" target="_blank" rel="noopener">
-            <img src="{{ facility_asset($img->path) }}" class="h-16 w-full rounded-lg object-cover border border-gray-100 cursor-zoom-in hover:opacity-80 transition" alt="{{ $facility->name }} küçük görsel">
+            <img src="{{ facility_asset($img->path) }}" class="h-16 w-full rounded-lg object-cover border border-gray-100 cursor-zoom-in hover:opacity-80 transition" alt="{{ $facility->imageAltText() }} - küçük görsel">
           </a>
         @endforeach
       </div>
@@ -372,7 +406,10 @@
          galeriden/diger kartlardan bilerek farkli (turuncu/amber vurgulu,
          rozetli) bir tasarim; sade beyaz kart yerine goze carpsin. --}}
     @if($facility->menu_image_path)
-      @php $menuGalleryId = 'ps-menu-'.$facility->id; @endphp
+      @php
+        $menuGalleryId = 'ps-menu-'.$facility->id;
+        $menuIsPdf = str_ends_with(strtolower($facility->menu_image_path), '.pdf');
+      @endphp
       <div class="mt-6 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-300 rounded-xl p-5 shadow-sm">
         <div class="flex items-center gap-2 mb-3">
           <span class="text-2xl leading-none">🍽️</span>
@@ -381,17 +418,23 @@
             <span class="bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">GÜNCEL</span>
           @endif
         </div>
-        <div id="{{ $menuGalleryId }}">
-          <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="relative inline-block group">
-            <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-20 object-cover border-2 border-white shadow cursor-zoom-in group-hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
-            <span class="absolute bottom-1 right-1 bg-gray-950/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1">🔍 Büyüt</span>
+        @if($menuIsPdf)
+          <a href="{{ facility_asset($facility->menu_image_path) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg bg-white border-2 border-orange-300 px-4 py-3 text-sm font-black text-orange-900 hover:bg-orange-100 transition">
+            📄 Yemek Listesini Görüntüle (PDF)
           </a>
-        </div>
+        @else
+          <div id="{{ $menuGalleryId }}">
+            <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="relative inline-block group">
+              <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-20 object-cover border-2 border-white shadow cursor-zoom-in group-hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
+              <span class="absolute bottom-1 right-1 bg-gray-950/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1">🔍 Büyüt</span>
+            </a>
+          </div>
+          <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $menuGalleryId }}'); });</script>
+        @endif
         @if($facility->menu_image_updated_at)
           <p class="text-xs text-orange-800/70 mt-2">Son güncelleme: {{ $facility->menu_image_updated_at->diffForHumans() }}</p>
         @endif
       </div>
-      <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('{{ $menuGalleryId }}'); });</script>
     @endif
 
     {{-- 17 Agustos 2026: kullanicinin talebi - Kurum Performansi karti
@@ -807,8 +850,18 @@
              ama sahiplenilmemis bir kurum artik BU dala dustugu icin
              (bkz. $acceptsFamilyRequests), direkt arama/WhatsApp imkani
              kaybolmus olurdu. --}}
-        @if($contactPhoneClaimed = facility_public_contact_phone($facility))
+        {{-- 8 Eylul 2026: kullanicinin talebi - anlaşmalı (is_broker_managed)
+             kurumlarda ham 0850'li numarayi duz metin olarak gostermek
+             "itici" geliyordu (ozellikle bu numara zaten kurumun kendi
+             hatti degil, facility_public_contact_phone()'un dondurdugu
+             paylasimli Güven Bakım hatti). Anlaşmalı kurumlarda artik
+             numara YAZILMIYOR, sadece diger buton (📞 Kurumu Ara, asagida
+             876. satirdaki AYNI stil) gorunuyor. Gercekten sahiplenilmis
+             (kendi hatti olan) kurumlarda numara aynen gosterilmeye devam eder. --}}
+        @if(($contactPhoneClaimed = facility_public_contact_phone($facility)) && ! $facility->is_broker_managed)
           <a href="tel:{{ $contactPhoneClaimed }}" class="block mt-4 text-sm font-black text-center" style="color: {{ $colors['primary'] }};">📞 {{ $contactPhoneClaimed }}</a>
+        @elseif($contactPhoneClaimed)
+          <a href="tel:{{ $contactPhoneClaimed }}" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mt-4" style="background: {{ $colors['primary'] }};">📞 Hemen Ara</a>
         @endif
         @if($claimedWhatsappUrl = facility_public_whatsapp_url($facility))
           <a href="{{ $claimedWhatsappUrl }}" target="_blank" rel="noopener" class="block mt-2 text-sm font-black text-center" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
@@ -1048,6 +1101,38 @@
       'ratingValue' => (float) $facility->approved_reviews_avg_rating,
       'reviewCount' => $reviewCount,
     ];
+
+    // 15 Eylul 2026: kullanicinin talebi - simdiye kadar SADECE ortalama
+    // puan (aggregateRating) yayinlaniyordu, tekil yorum metinleri Google'a
+    // hic bildirilmiyordu. Gercek yorumlarin (approvedReviews - zaten
+    // yukarida $reviewCount icin yuklendi, ekstra sorgu yok) bir kismini
+    // 'review' dizisine ekliyoruz - Google arama sonucunda yildiz + yorum
+    // alintisi gosterme ihtimalini artirir. Sadece dolu (bos olmayan)
+    // yorum metni olanlar eklenir, ilk 10 ile sinirlanir (asiri buyuk
+    // sayfa kaynagi olusturmasin diye).
+    $reviewEntries = $facility->approvedReviews
+      ->filter(fn ($r) => filled($r->body))
+      ->take(10)
+      ->map(fn ($r) => array_filter([
+        '@type' => 'Review',
+        'reviewRating' => [
+          '@type' => 'Rating',
+          'ratingValue' => (int) $r->rating,
+          'bestRating' => 5,
+        ],
+        'author' => [
+          '@type' => 'Person',
+          'name' => $r->reviewer_name ?: 'Aile üyesi',
+        ],
+        'reviewBody' => strip_tags($r->body),
+        'datePublished' => optional($r->approved_at ?? $r->created_at)->toDateString(),
+      ]))
+      ->values()
+      ->all();
+
+    if ($reviewEntries) {
+      $facilitySchema['review'] = $reviewEntries;
+    }
   }
 @endphp
 <script type="application/ld+json">

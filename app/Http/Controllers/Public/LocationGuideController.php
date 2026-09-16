@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class LocationGuideController extends Controller
@@ -27,7 +28,7 @@ class LocationGuideController extends Controller
         $section = active_service_section($sectionSlug, $brand);
         abort_if(($section['slug'] ?? null) !== $sectionSlug, 404);
 
-        $cities = City::orderBy('name')->get(['slug', 'name']);
+        $cities = City::cachedAll();
         $sections = service_sections();
 
         return view("themes.{$brand['theme']}.location-guide-index", compact('brand', 'section', 'sections', 'cities'));
@@ -43,30 +44,48 @@ class LocationGuideController extends Controller
         $section = active_service_section($sectionSlug, $brand);
         abort_if(($section['slug'] ?? null) !== $sectionSlug, 404);
 
-        $city = City::where('slug', $citySlug)->firstOrFail();
+        $city = (City::findBySlugCached($citySlug) ?? abort(404));
         $districts = districts_for_city($city->name);
         $districtName = $this->resolveDistrict($districts, $districtSlug);
 
-        $query = Facility::discoverable()
-            ->forBrand($section['scopes'])
-            ->where('city_id', $city->id)
-            ->with(['city', 'category', 'images'])
-            ->orderByDesc('is_featured')
-            ->orderByDesc('rating');
+        // 11 Eylul 2026: kullanicinin bildirdigi tekrarlayan "Too many
+        // connections" hatasi - bu sayfa Turkiye'deki 81 il x binlerce ilce
+        // kombinasyonunu kapsiyor, Googlebot gibi botlar kisa surede pek
+        // cok farkli kombinasyonu art arda geziyor. Her ziyarette 2 ayri
+        // sorgu (sayim + liste) calisiyordu; sonuc 15 dakikalik kisa sureli
+        // onbellege alindi - ayni il/ilce tekrar ziyaret edilirse veritabanina
+        // hic gidilmiyor.
+        $guideCacheKey = 'location-guide:v1:'.md5(implode('|', [
+            $brand['slug'], $section['slug'], $city->id, $districtName ?? '',
+        ]));
 
-        if ($districtName) {
-            $query->where('district', $districtName);
-        }
+        ['facilityCount' => $facilityCount, 'facilities' => $facilities, 'priceRange' => $priceRange] = Cache::remember(
+            $guideCacheKey, now()->addMinutes(15), function () use ($section, $city, $districtName) {
+                $query = Facility::discoverable()
+                    ->forBrand($section['scopes'])
+                    ->where('city_id', $city->id)
+                    ->with(['city', 'category', 'images'])
+                    ->orderByDesc('is_featured')
+                    ->orderByDesc('rating');
 
-        $facilityCount = (clone $query)->count();
-        $facilities = $query->limit(12)->get();
+                if ($districtName) {
+                    $query->where('district', $districtName);
+                }
+
+                $facilityCount = (clone $query)->count();
+                $facilities = $query->limit(12)->get();
+                $priceRange = $this->priceRangeFor($section['scopes'], $city->id, $districtName);
+
+                return compact('facilityCount', 'facilities', 'priceRange');
+            }
+        );
+
         $nearDistricts = collect($districts)->take(18)->values();
         $content = site_section_content($brand['slug'], $section['slug']);
-        $sectionCategories = FacilityCategory::whereIn('brand_scope', $section['scopes'])->orderBy('name')->get();
+        $sectionCategories = FacilityCategory::cachedAll()->whereIn('brand_scope', $section['scopes'])->values();
         $category = null;
         $topicTitle = $section['seo_title'] ?? $section['title'];
         $guideContent = guide_page_content($brand, $city->name, $districtName, $section['title'].' kurumları', $facilityCount);
-        $priceRange = $this->priceRangeFor($section['scopes'], $city->id, $districtName);
         $content['faq_preview'] = $this->withLocalFaq($content['faq_preview'] ?? [], $city->name, $districtName, $topicTitle, $priceRange, $facilityCount);
 
         return view("themes.{$brand['theme']}.location-guide", compact(
@@ -100,33 +119,42 @@ class LocationGuideController extends Controller
         $section = active_service_section($sectionSlug, $brand);
         abort_if(($section['slug'] ?? null) !== $sectionSlug, 404);
 
-        $category = FacilityCategory::where('slug', $categorySlug)
-            ->whereIn('brand_scope', $brand['category_scope'])
-            ->firstOrFail();
+        $category = FacilityCategory::findBySlugCached($categorySlug, $brand['category_scope']) ?? abort(404);
         abort_if((service_section_for_scope($category->brand_scope)['slug'] ?? null) !== $sectionSlug, 404);
 
-        $city = City::where('slug', $citySlug)->firstOrFail();
+        $city = (City::findBySlugCached($citySlug) ?? abort(404));
         $districts = districts_for_city($city->name);
         $districtName = $this->resolveDistrict($districts, $districtSlug);
 
-        $query = Facility::discoverable()
-            ->where('facility_category_id', $category->id)
-            ->where('city_id', $city->id)
-            ->with(['city', 'category', 'images'])
-            ->orderByDesc('is_featured')
-            ->orderByDesc('rating');
+        $guideCacheKey = 'location-guide-cat:v1:'.md5(implode('|', [
+            $brand['slug'], $section['slug'], $category->id, $city->id, $districtName ?? '',
+        ]));
 
-        if ($districtName) {
-            $query->where('district', $districtName);
-        }
+        ['facilityCount' => $facilityCount, 'facilities' => $facilities, 'priceRange' => $priceRange] = Cache::remember(
+            $guideCacheKey, now()->addMinutes(15), function () use ($section, $category, $city, $districtName) {
+                $query = Facility::discoverable()
+                    ->where('facility_category_id', $category->id)
+                    ->where('city_id', $city->id)
+                    ->with(['city', 'category', 'images'])
+                    ->orderByDesc('is_featured')
+                    ->orderByDesc('rating');
 
-        $facilityCount = (clone $query)->count();
-        $facilities = $query->limit(12)->get();
+                if ($districtName) {
+                    $query->where('district', $districtName);
+                }
+
+                $facilityCount = (clone $query)->count();
+                $facilities = $query->limit(12)->get();
+                $priceRange = $this->priceRangeFor($section['scopes'], $city->id, $districtName, $category->id);
+
+                return compact('facilityCount', 'facilities', 'priceRange');
+            }
+        );
+
         $nearDistricts = collect($districts)->take(18)->values();
         $content = site_section_content($brand['slug'], $section['slug']);
-        $sectionCategories = FacilityCategory::whereIn('brand_scope', $section['scopes'])->orderBy('name')->get();
+        $sectionCategories = FacilityCategory::cachedAll()->whereIn('brand_scope', $section['scopes'])->values();
         $guideContent = guide_page_content($brand, $city->name, $districtName, $category->name, $facilityCount);
-        $priceRange = $this->priceRangeFor($section['scopes'], $city->id, $districtName, $category->id);
         $content['faq_preview'] = $this->withLocalFaq($content['faq_preview'] ?? [], $city->name, $districtName, $category->name, $priceRange, $facilityCount);
 
         return view("themes.{$brand['theme']}.location-guide", compact(

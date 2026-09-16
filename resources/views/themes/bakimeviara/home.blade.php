@@ -41,6 +41,10 @@
       </div>
     </div>
 
+    <div class="max-w-5xl mx-auto">
+      @include('themes._shared.partials.broker-incentive-banner')
+    </div>
+
     <div class="relative z-10 max-w-5xl mx-auto mb-10">
       <form method="GET" action="{{ brand_route('home') }}" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-home-results" class="js-location-filter bg-white rounded-2xl shadow-xl border border-gray-100 p-5 grid sm:grid-cols-2 lg:grid-cols-7 gap-3">
         <input type="hidden" name="bolum" value="{{ $section['slug'] }}">
@@ -117,6 +121,7 @@
 @include('themes._shared.partials.trust-stats')
 
 @include('themes._shared.partials.discover-links')
+@include('themes._shared.partials.broker-map-script')
 @include('themes._shared.partials.location-filter-script')
 {{-- 2 Eylul 2026: bkz. bakimevleri/home.blade.php ayni tarihli yorum -
      anasayfa favori/karsilastir butonlari bu script olmadan calismiyordu. --}}

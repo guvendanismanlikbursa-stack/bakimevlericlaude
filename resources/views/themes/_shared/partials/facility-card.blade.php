@@ -27,7 +27,7 @@
        (asagida) DEGISMEDEN kaliyor. --}}
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition group">
     <div class="w-14 h-14 shrink-0 rounded-md overflow-hidden bg-gray-50 relative">
-      <img src="{{ $cardImage }}" alt="{{ $facility->name }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition">
+      <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition">
     </div>
     <div class="min-w-0">
       <div class="flex items-center gap-1.5">
@@ -82,7 +82,7 @@
   @endunless
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
     <div class="h-44 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center relative">
-      <img src="{{ $cardImage }}" alt="{{ $facility->name }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+      <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
       @if($isSampleImage)
         <span class="absolute bottom-2 left-2 bg-gray-950/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Örnek görsel</span>
       @endif
@@ -93,6 +93,7 @@
         @if($facility->is_claimed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Onaylı</span>
         @elseif($facility->is_broker_managed)<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">🤝 Anlaşmalı</span>@endif
         @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>@endif
+        @if($facility->hasFreeChildAccidentInsurance())<span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
         @if($isPreRegisteredCard)<span class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">Ön Kayıtlı</span>@endif
         @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])

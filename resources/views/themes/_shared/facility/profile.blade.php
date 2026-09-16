@@ -67,6 +67,31 @@
       <label for="profile-address" class="text-sm font-medium">Adres</label>
       <input type="text" id="profile-address" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
     </div>
+
+    {{-- 8 Eylul 2026: kullanicinin talebi - haritadaki pin yanlis yerde olan
+         kurumlari kurum yetkilisi kendisi duzeltebilsin diye eklendi. Admin
+         panelindeki ayni surukle-birak Leaflet/Nominatim aracinin birebir
+         ayni deseni (bkz. admin/facilities/form.blade.php). --}}
+    <div class="md:col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-4">
+      <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+        <label class="text-sm font-black text-gray-900">Haritadaki Konum</label>
+        <button type="button" id="profile-geocode-btn" class="bg-primary text-white text-xs font-bold px-3 py-2 rounded-lg">📍 Adresten konum bul</button>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">Adres/ilçe/şehir dolduktan sonra yukarıdaki butona basın, harita otomatik açılır. Pin yanlış yerdeyse üzerine tıklayıp sürükleyerek düzeltebilirsiniz.</p>
+      <div id="profile-geocode-status" class="text-xs font-semibold mb-2"></div>
+      <div id="profile-location-map" class="hidden rounded-lg border border-gray-200" style="height:280px;"></div>
+
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label class="text-xs text-gray-500">Enlem (lat)</label>
+          <input type="text" id="profile-lat" name="lat" value="{{ old('lat', $facility->lat) }}" placeholder="Örn: 40.1826" class="border rounded-lg px-3 py-2 w-full mt-1 text-sm">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500">Boylam (lng)</label>
+          <input type="text" id="profile-lng" name="lng" value="{{ old('lng', $facility->lng) }}" placeholder="Örn: 29.0670" class="border rounded-lg px-3 py-2 w-full mt-1 text-sm">
+        </div>
+      </div>
+    </div>
     <div class="md:col-span-2">
       <label for="profile-description" class="text-sm font-medium">Açıklama</label>
       <textarea id="profile-description" name="description" rows="4" class="border rounded-lg px-3 py-2 w-full mt-1">{{ old('description', $facility->description) }}</textarea>
@@ -183,28 +208,38 @@
       <p class="text-sm text-gray-500">Haftalık yemek listenizin fotoğrafını yükleyin, ziyaretçiler kurum sayfanızda görüp büyüterek inceleyebilir.</p>
     </div>
 
+    @php $menuIsPdf = $facility->menu_image_path && str_ends_with(strtolower($facility->menu_image_path), '.pdf'); @endphp
     @if($facility->menu_image_path)
-      <div id="ps-menu-facility-profile" class="mb-4">
-        <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="inline-block">
-          <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-40 object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
-        </a>
-      </div>
-      @include('themes._shared.partials.image-lightbox')
-      <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('ps-menu-facility-profile'); });</script>
+      @if($menuIsPdf)
+        <div class="mb-4">
+          <a href="{{ facility_asset($facility->menu_image_path) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg bg-gray-100 border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-200 transition">
+            📄 Yemek Listesini Görüntüle (PDF)
+          </a>
+        </div>
+      @else
+        <div id="ps-menu-facility-profile" class="mb-4">
+          <a href="{{ facility_asset($facility->menu_image_path) }}" data-pswp-width="1600" data-pswp-height="2000" target="_blank" rel="noopener" class="inline-block">
+            <img src="{{ facility_asset($facility->menu_image_path) }}" class="rounded-lg h-40 object-cover border border-gray-100 cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} yemek listesi">
+          </a>
+        </div>
+        @include('themes._shared.partials.image-lightbox')
+        <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('ps-menu-facility-profile'); });</script>
+      @endif
       <p class="text-xs text-gray-400 mb-3">Son güncelleme: {{ $facility->menu_image_updated_at?->diffForHumans() }}</p>
-      <form method="POST" action="{{ brand_route('facility.profile.menu-image.destroy') }}" onsubmit="return confirm('Yemek listesi görselini kaldırmak istediğinize emin misiniz?');" class="inline">
+      <form method="POST" action="{{ brand_route('facility.profile.menu-image.destroy') }}" onsubmit="return confirm('Yemek listesini kaldırmak istediğinize emin misiniz?');" class="inline">
         @csrf @method('DELETE')
         <button class="text-red-600 text-xs font-semibold">Kaldır</button>
       </form>
     @else
-      <div class="rounded-lg bg-gray-50 border border-dashed border-gray-300 p-4 text-sm text-gray-400 mb-4">Henüz yemek listesi görseli eklenmedi.</div>
+      <div class="rounded-lg bg-gray-50 border border-dashed border-gray-300 p-4 text-sm text-gray-400 mb-4">Henüz yemek listesi eklenmedi.</div>
     @endif
 
     <form method="POST" action="{{ brand_route('facility.profile.menu-image.store') }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row mt-3">
       @csrf
-      <input type="file" name="menu_image" accept="image/*" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+      <input type="file" name="menu_image" accept="image/*,application/pdf" required class="border rounded-lg px-3 py-2 text-sm flex-1">
       <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">{{ $facility->menu_image_path ? 'Yemek Listesini Güncelle' : 'Yemek Listesi Ekle' }}</button>
     </form>
+    <p class="text-xs text-gray-400 mt-2">Fotoğraf (JPG/PNG/WEBP) veya PDF yükleyebilirsiniz — listeniz 2 sayfaysa PDF olarak yüklemeniz önerilir.</p>
     @error('menu_image')<p class="text-xs text-red-600 mt-2">{{ $message }}</p>@enderror
   </div>
 
@@ -323,4 +358,105 @@
   </form>
   @error('password')<p class="text-xs text-red-600 mt-2">{{ $message }}</p>@enderror
 </div>
+
+{{-- 8 Eylul 2026: bkz. yukaridaki "Haritadaki Konum" kutusu yorumu - admin
+     panelindeki Leaflet/Nominatim entegrasyonuyla birebir ayni kod. --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var addressEl = document.getElementById('profile-address');
+  var districtEl = document.getElementById('profile-district');
+  var cityEl = document.getElementById('profile-city');
+  var latEl = document.getElementById('profile-lat');
+  var lngEl = document.getElementById('profile-lng');
+  var btn = document.getElementById('profile-geocode-btn');
+  var statusEl = document.getElementById('profile-geocode-status');
+  var mapEl = document.getElementById('profile-location-map');
+  if (!btn || !mapEl || typeof L === 'undefined') return;
+
+  var map = null;
+  var marker = null;
+
+  function setStatus(text, colorClass) {
+    statusEl.textContent = text;
+    statusEl.className = 'text-xs font-semibold mb-2 ' + colorClass;
+  }
+
+  function showMap(lat, lng, zoom) {
+    mapEl.classList.remove('hidden');
+    if (!map) {
+      map = L.map(mapEl).setView([lat, lng], zoom || 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap katkıda bulunanlar',
+        maxZoom: 19,
+      }).addTo(map);
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      marker.on('dragend', function () {
+        var pos = marker.getLatLng();
+        latEl.value = pos.lat.toFixed(6);
+        lngEl.value = pos.lng.toFixed(6);
+      });
+    } else {
+      map.setView([lat, lng], zoom || 15);
+      marker.setLatLng([lat, lng]);
+      setTimeout(function () { map.invalidateSize(); }, 50);
+    }
+    latEl.value = lat.toFixed(6);
+    lngEl.value = lng.toFixed(6);
+  }
+
+  function geocode(query, onFound, onNotFound) {
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=tr&q=' + encodeURIComponent(query))
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        if (results && results.length) {
+          onFound(parseFloat(results[0].lat), parseFloat(results[0].lon));
+        } else if (onNotFound) {
+          onNotFound();
+        }
+      })
+      .catch(function () {
+        setStatus('Konum servisi şu an yanıt vermedi, lütfen birazdan tekrar deneyin.', 'text-red-600');
+      });
+  }
+
+  btn.addEventListener('click', function () {
+    var address = addressEl.value.trim();
+    var district = districtEl.value.trim();
+    var city = cityEl.options[cityEl.selectedIndex] ? cityEl.options[cityEl.selectedIndex].text : '';
+
+    if (!address && !district && !city) {
+      setStatus('Önce şehir/ilçe/adres bilgisini girin.', 'text-amber-600');
+      return;
+    }
+
+    setStatus('Konum aranıyor...', 'text-gray-500');
+
+    var fullQuery = [address, district, city, 'Türkiye'].filter(Boolean).join(', ');
+
+    geocode(fullQuery, function (lat, lng) {
+      setStatus('✓ Konum bulundu - pin yanlış yerdeyse sürükleyerek düzeltebilirsiniz.', 'text-green-700');
+      showMap(lat, lng, 16);
+    }, function () {
+      var fallbackQuery = [district, city, 'Türkiye'].filter(Boolean).join(', ');
+      geocode(fallbackQuery, function (lat, lng) {
+        setStatus('Tam adres bulunamadı, haritayı ' + (district || city) + ' bölgesine ortaladık - pini elle doğru yere sürükleyin.', 'text-amber-600');
+        showMap(lat, lng, 13);
+      }, function () {
+        setStatus('Konum bulunamadı, lütfen adresi kontrol edin veya haritayı açıp pini elle yerleştirin.', 'text-red-600');
+        showMap(39.9, 32.85, 6);
+      });
+    });
+  });
+
+  var existingLat = parseFloat(latEl.value);
+  var existingLng = parseFloat(lngEl.value);
+  if (!isNaN(existingLat) && !isNaN(existingLng)) {
+    showMap(existingLat, existingLng, 15);
+  }
+});
+</script>
 @endsection

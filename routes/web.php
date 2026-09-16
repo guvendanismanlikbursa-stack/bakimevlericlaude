@@ -408,6 +408,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/kurumlar/{facility}/bakiye-gecmisi/{balanceLog}', [AdminBalanceController::class, 'updateLog'])->name('facilities.balance-log.update');
         Route::delete('/kurumlar/{facility}/bakiye-gecmisi/{balanceLog}', [AdminBalanceController::class, 'destroyLog'])->name('facilities.balance-log.destroy');
         Route::post('/kurumlar/{facility}/onaya-kaldir', [AdminFacilityController::class, 'revertToPreRegistered'])->name('facilities.revert');
+        Route::post('/kurumlar/{facility}/kaydi-sifirla', [AdminFacilityController::class, 'resetRegistration'])->name('facilities.reset-registration');
         Route::post('/kurumlar/{facility}/yerinde-sahiplendir', [AdminFacilityController::class, 'instantClaim'])->name('facilities.instant-claim');
         Route::post('/kurumlar/{facility}/panelde-gor', [AdminFacilityController::class, 'impersonate'])->name('facilities.impersonate');
 
@@ -451,6 +452,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/bakiye-yuklemeleri/{topup}/reddet', [AdminWalletTopupController::class, 'reject'])->name('topups.reject');
 
         Route::get('/veri-cekici', [AdminDataExtractorController::class, 'index'])->name('data-extractor.index');
+        Route::get('/veri-cekici/mahalleler', [AdminDataExtractorController::class, 'neighborhoods'])->name('data-extractor.neighborhoods');
         Route::post('/veri-cekici/import', [AdminDataExtractorController::class, 'import'])->name('data-extractor.import');
         Route::post('/veri-cekici/calistir', [AdminDataExtractorController::class, 'run'])->name('data-extractor.run');
         Route::get('/veri-cekici/satir/{row}', [AdminDataExtractorController::class, 'showRow'])->name('data-extractor.rows.show');
@@ -494,6 +496,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/canli-sohbet/{thread}/yanitla', [AdminChatController::class, 'reply'])->name('chat.reply');
         Route::get('/canli-sohbet/{thread}/mesajlar', [AdminChatController::class, 'poll'])->name('chat.poll');
         Route::post('/canli-sohbet/{thread}/kapat', [AdminChatController::class, 'close'])->name('chat.close');
+        Route::delete('/canli-sohbet/{thread}', [AdminChatController::class, 'destroy'])->name('chat.destroy');
         Route::get('/canli-sohbet-ayarlari', [AdminChatSettingsController::class, 'edit'])->name('chat-settings.edit');
         Route::put('/canli-sohbet-ayarlari', [AdminChatSettingsController::class, 'update'])->name('chat-settings.update');
 

@@ -107,6 +107,12 @@ document.querySelectorAll('.js-location-filter, .js-instant-filter').forEach((fo
           if (countEl && typeof data.count !== 'undefined') countEl.textContent = Number(data.count).toLocaleString('tr-TR');
           window.history.replaceState(null, '', url);
           if (window.paintEngagementToggles) window.paintEngagementToggles();
+          // 14 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar haritasi.
+          // innerHTML degisimi <script> etiketlerini calistirmadigi icin
+          // (harita div'i her AJAX guncellemesinde yeni veriyle degisiyor),
+          // sadece bu haritayi kullanan sayfalarda (home.blade.php) tanimli
+          // global fonksiyon burada yeniden cagirilir.
+          if (window.initBrokerMap) window.initBrokerMap();
           if (scrollToResults) resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         })
         .catch((err) => {

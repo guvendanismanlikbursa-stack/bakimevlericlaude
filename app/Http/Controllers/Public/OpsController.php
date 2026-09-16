@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -155,6 +155,45 @@ class OpsController extends Controller
             'facility-user-duplicate-check' => $this->facilityUserDuplicateCheck(),
             'facility-user-cleanup-placeholder' => $this->facilityUserCleanupPlaceholder($request),
             'resolve-old-errors-before' => $this->resolveOldErrorsBefore($request),
+            'geo-address-centroid-audit' => $this->geoAddressCentroidAudit(),
+            'facility-geo-detail' => $this->facilityGeoDetail($request),
+            'facility-geo-recheck' => $this->facilityGeoRecheck($request, app(\App\Services\GeocodingService::class)),
+            'facility-geo-mismatch-scan' => $this->facilityGeoMismatchScan($request),
+            'facility-geo-set' => $this->facilityGeoSet($request),
+            'facility-district-fix-from-geo' => $this->facilityDistrictFixFromGeo($request),
+            'too-many-connections-history' => $this->tooManyConnectionsHistory(),
+            'facility-geo-pin-verify' => $this->facilityGeoPinVerify($request),
+            'facility-city-count' => $this->facilityCityCount($request),
+            'facility-user-fix-email' => $this->facilityUserFixEmail($request),
+            'facility-slug-check' => $this->facilitySlugCheck($request),
+            'vc-index-render-test' => (function () {
+                $admin = DB::table('admins')->first();
+                session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
+                try {
+                    $html = app(\App\Http\Controllers\Admin\DataExtractorController::class)->index()->render();
+                    $hasCity = str_contains($html, 'js-vc-city');
+                    $hasDistrict = str_contains($html, 'js-vc-district');
+                    $hasNeighborhood = str_contains($html, 'js-vc-neighborhood');
+
+                    return "BASARILI: ".strlen($html)." bayt. sehir-select: ".($hasCity ? 'VAR' : 'YOK')." | ilce-select: ".($hasDistrict ? 'VAR' : 'YOK')." | mahalle-select: ".($hasNeighborhood ? 'VAR' : 'YOK');
+                } catch (\Throwable $e) {
+                    return "HATA: ".get_class($e).' - '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine();
+                }
+            })(),
+            'vc-neighborhoods-test' => (function () {
+                $req = \Illuminate\Http\Request::create('/', 'GET', ['city_id' => 16, 'district' => 'Nilüfer']);
+                $json = app(\App\Http\Controllers\Admin\DataExtractorController::class)->neighborhoods($req)->getData(true);
+                $list = $json['neighborhoods'] ?? [];
+
+                return 'Nilüfer mahalle sayisi: '.count($list)."\nIlk 10: ".implode(', ', array_slice($list, 0, 10));
+            })(),
+            'facility-slug-free-up' => $this->facilitySlugFreeUp($request),
+            'facility-city-list' => $this->facilityCityList(),
+            'facility-profile-render-test' => $this->facilityProfileRenderTest(),
+            'chat-show-render-test' => $this->chatShowRenderTest($request),
+            'site-stats-render-test' => $this->siteStatsRenderTest($request),
+            'top-clicked-verify' => $this->topClickedVerify(),
+            'route-cache-fix' => $this->routeCacheFix(),
             'qa-instant-claim-after-impersonate-test' => $this->qaInstantClaimAfterImpersonateTest(),
             'facility-user-reset-password' => $this->facilityUserResetPassword($request),
             'platform-errors-list' => $this->platformErrorsList(),
@@ -171,6 +210,23 @@ class OpsController extends Controller
             'seed-bursa-kres-rehberi' => $this->seedBursaKresRehberi(),
             'seed-bursa-bakimevi-rehberi' => $this->seedBursaBakimeviRehberi(),
             'seed-bursa-rehabilitasyon-rehberi' => $this->seedBursaRehabilitasyonRehberi(),
+            // 12 Eylul 2026: kullanicinin talebi - "isleyen sisteme asla
+            // dokunma, sadece ekleme yapacaksin". Bursa'ya yeni anaokullari
+            // eklerken (1) mevcut/silinmis kurumlarla mukerrer olanlari
+            // tespit etmek, (2) admin panelindeki import() servisini
+            // (DEGISTIRMEDEN) dosya yolu vererek tetiklemek, (3) sonradan
+            // fazla demo gorseli temizlemek icin - ucu de tamamen YENI,
+            // var olan hicbir sinif/metodu degistirmeyen ek eylemler.
+            'veri-cekici-bursa-existing-list' => $this->veriCekiciBursaExistingList($request),
+            'veri-cekici-import-file' => $this->veriCekiciImportFile($request, app(\App\Services\DataExtractorImportService::class)),
+            'veri-cekici-trim-images' => $this->veriCekiciTrimImages($request),
+            'veri-cekici-batch-status' => $this->veriCekiciBatchStatus($request),
+            'veri-cekici-review-rows' => $this->veriCekiciReviewRows($request),
+            'veri-cekici-approve-row' => $this->veriCekiciApproveRow($request, app(\App\Services\DataImportRowApprovalService::class)),
+            'veri-cekici-clear-stale-rows' => $this->veriCekiciClearStaleRows($request),
+            'broker-map-debug' => $this->brokerMapDebug($request),
+            'city-price-stats' => $this->cityPriceStats($request),
+            'seed-istanbul-kres-rehberi' => $this->seedIstanbulKresRehberi(),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -195,6 +251,162 @@ class OpsController extends Controller
         $count = DB::table('platform_errors')->where('source', 'ops-test')->delete();
 
         return "Silindi: {$count} test hata kaydi.";
+    }
+
+    /**
+     * 8 Eylul 2026: kullanicinin "1 ay once bu hic olmuyordu, kapasite
+     * disinda baska bir sey olabilir mi" sorusu icin - "Too many connections"
+     * hatasinin GECMISTE (cozulmus olanlar dahil) gunluk sikligini gosterir,
+     * varsayimla degil GERCEK veriyle cevap vermek icin.
+     */
+    private function tooManyConnectionsHistory(): string
+    {
+        $rows = DB::table('platform_errors')
+            ->where('message', 'like', '%Too many connections%')
+            ->selectRaw('DATE(created_at) as gun, COUNT(*) as adet')
+            ->groupBy('gun')
+            ->orderBy('gun')
+            ->get();
+
+        $totalAll = DB::table('platform_errors')->count();
+
+        if ($rows->isEmpty()) {
+            return "Hic \"Too many connections\" kaydi yok (cozulmus dahil).\nTablodaki TOPLAM hata kaydi (her turden): {$totalAll}";
+        }
+
+        $out = "Gun bazinda \"Too many connections\" hata sayisi (cozulmus dahil TUM kayitlar):\n\n";
+        foreach ($rows as $r) {
+            $out .= "{$r->gun}: {$r->adet}\n";
+        }
+
+        $out .= "\nToplam: ".$rows->sum('adet');
+
+        return $out;
+    }
+
+    /**
+     * 15 Eylul 2026: kullanicinin talebi - Bursa disindaki bir sehir icin
+     * rehber makalesi yazarken UYDURULMUS bir fiyat araligi kullanmamak
+     * icin (seedBursaBakimeviRehberi() yorumundaki "sadece gercek Bursa
+     * rakamlari kullanildi, Manisa rakami reddedildi" ayni ilkesi) - o
+     * sehirdeki GERCEK yayindaki kurumlarin fiyat verisinden min/max/ortalama
+     * hesaplar. Salt okunur.
+     */
+    private function cityPriceStats(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id');
+        $categoryId = (int) $request->query('facility_category_id');
+
+        $query = Facility::discoverable()->where('city_id', $cityId)
+            ->whereNotNull('price_min')->where('price_min', '>', 0);
+        if ($categoryId) {
+            $query->where('facility_category_id', $categoryId);
+        }
+
+        $stats = $query->selectRaw('COUNT(*) as priced_count, MIN(price_min) as min_price, MAX(COALESCE(price_max, price_min)) as max_price, AVG(price_min) as avg_price')->first();
+        $total = Facility::discoverable()->where('city_id', $cityId)
+            ->when($categoryId, fn ($q) => $q->where('facility_category_id', $categoryId))->count();
+
+        return "Toplam kurum: {$total}\n".
+            "Fiyat bilgisi olan: {$stats->priced_count}\n".
+            "Min fiyat: ".number_format((float) $stats->min_price, 0, ',', '.')." TL\n".
+            "Max fiyat: ".number_format((float) $stats->max_price, 0, ',', '.')." TL\n".
+            "Ortalama (baslangic fiyati): ".number_format((float) $stats->avg_price, 0, ',', '.')." TL";
+    }
+
+    /**
+     * 12 Eylul 2026: kullanicinin talebi - "veri cekici sayfasinda yarim
+     * kalan islemler var, onlari da tamamla". Tek bir DataImportRow'u
+     * (status=pending_review/enriched) admin panelindeki ile BIREBIR AYNI,
+     * DEGISTIRILMEMIS DataImportRowApprovalService::approve() ile onaylar.
+     * O servis varsayilan olarak 5 demo gorsel + e-posta ekliyor (kod
+     * degismedi) - bu eylem SONRASINDA, ayni oturumdaki diger tum
+     * anaokulu ekleme islemleriyle TUTARLI olsun diye (e-posta yok, 1
+     * gorsel) kucuk bir veri temizligi yapar - facility kaydini veya
+     * onay servisini degistirmez.
+     */
+    private function veriCekiciApproveRow(Request $request, \App\Services\DataImportRowApprovalService $rowService): string
+    {
+        $row = \App\Models\DataImportRow::findOrFail((int) $request->input('row_id'));
+        $facility = $rowService->approve($row, true);
+
+        // Diger anaokulu eklemeleriyle tutarli olsun: e-posta yok, tek gorsel.
+        $description = (string) $facility->description;
+        $description = preg_replace('/\n?E-posta:.*/u', '', $description);
+        $facility->update(['email' => '', 'description' => trim($description)]);
+
+        $images = \App\Models\FacilityImage::where('facility_id', $facility->id)->orderBy('sort_order')->get();
+        if ($images->count() > 1) {
+            $images->skip(1)->each(fn ($img) => $img->delete());
+        }
+
+        return "Onaylandi: #{$facility->id} {$facility->name} (e-posta temizlendi, gorsel 1'e indirildi)";
+    }
+
+    /**
+     * 12 Eylul 2026: kullanicinin ACIL bildirimi - /admin/veri-cekici
+     * sayfasi 'skipped'/'error' durumundaki satirlari da "Onayla/Reddet"
+     * butonlu, sanki karar bekliyormus gibi gosteriyordu. Bunlarin HEPSI
+     * zaten TAMAMLANMIS batch'lerin (kurumlar zaten olusturuldu) sadece
+     * "bu satir zaten mevcuttu, atlandi" GECMIS KAYDIYDI - hicbiri gercekten
+     * bekleyen bir islem degildi. Admin panelindeki TEK SATIRLIK
+     * destroyRow() ile BIREBIR AYNI islemi ('status' => 'deleted') toplu
+     * uygular - hicbir facility/kurum silinmez, sadece bu eski log
+     * satirlari listeden kaldirilir.
+     */
+    private function veriCekiciClearStaleRows(Request $request): string
+    {
+        $batchIds = array_filter(array_map('trim', explode(',', (string) $request->input('batch_ids', ''))));
+
+        $query = \App\Models\DataImportRow::whereIn('status', ['skipped', 'error']);
+        if ($batchIds) {
+            $query->whereIn('data_import_batch_id', $batchIds);
+        }
+
+        $count = $query->count();
+        $query->update(['status' => 'deleted', 'message' => \Illuminate\Support\Facades\DB::raw("CONCAT(COALESCE(message,''), ' [zaten tamamlanmis batch kaydi, listeden temizlendi]')")]);
+
+        return "{$count} eski gecmis kaydi (skipped/error) listeden temizlendi. Hicbir kurum silinmedi.";
+    }
+
+    /**
+     * 14 Eylul 2026: kullanicinin bildirdigi "harita il filtresi bos donuyor"
+     * hatasini teshis eder - HomeController'daki AYNI sorguyu adim adim
+     * calistirip her asamada kac kayit kaldigini gosterir.
+     */
+    private function brokerMapDebug(Request $request): string
+    {
+        $citySlug = $request->query('city', 'bursa');
+        $section = active_service_section($request->query('bolum', 'cocuk'), current_brand());
+        $scopes = $section['scopes'];
+
+        $out = "Bolum: {$section['slug']} | scopes: ".implode(',', $scopes)."\n";
+        $out .= "Aranan city slug: {$citySlug}\n\n";
+
+        $base = \App\Models\Facility::discoverable()->forBrand($scopes)->where('is_broker_managed', true);
+        $out .= "1) discoverable+forBrand+broker_managed: ".(clone $base)->count()."\n";
+
+        $withLatLng = (clone $base)->whereNotNull('lat')->whereNotNull('lng');
+        $out .= "2) + lat/lng dolu: ".(clone $withLatLng)->count()."\n";
+
+        $city = \App\Models\City::where('slug', $citySlug)->first();
+        $out .= "3) '{$citySlug}' slug'li City bulundu mu: ".($city ? "EVET #{$city->id}" : 'HAYIR')."\n";
+
+        if ($city) {
+            $withCity = (clone $withLatLng)->where('city_id', $city->id);
+            $out .= "4) + city_id={$city->id} (dogrudan sutun): ".(clone $withCity)->count()."\n";
+
+            $withHas = (clone $withLatLng)->whereHas('city', fn ($q) => $q->where('slug', $citySlug));
+            $out .= "5) + whereHas('city', slug=...) (iliski uzerinden): ".(clone $withHas)->count()."\n";
+        }
+
+        $sample = (clone $withLatLng)->select('id', 'name', 'city_id')->limit(10)->get();
+        $out .= "\nOrnek kayitlar (id | isim | city_id):\n";
+        foreach ($sample as $f) {
+            $out .= "  #{$f->id} {$f->name} | city_id=".($f->city_id ?? 'NULL')."\n";
+        }
+
+        return $out;
     }
 
     // 26 Agustos 2026: kullanicinin "admin panelinde 2 hata gorunuyor" bildirimi
@@ -1042,9 +1254,14 @@ class OpsController extends Controller
         session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
 
         $facilityUserId = (int) $incomingRequest->query('facility_user_id', 0);
-        $facilityUser = \App\Models\FacilityUser::find($facilityUserId);
+        $facilityId = (int) $incomingRequest->query('facility_id', 0);
+
+        $facilityUser = $facilityUserId
+            ? \App\Models\FacilityUser::find($facilityUserId)
+            : \App\Models\FacilityUser::where('facility_id', $facilityId)->first();
+
         if (! $facilityUser) {
-            return "HATA: facility_user_id={$facilityUserId} bulunamadi.";
+            return "HATA: facility_user_id={$facilityUserId} / facility_id={$facilityId} icin kurum yetkilisi bulunamadi.";
         }
 
         $controller = app(\App\Http\Controllers\Admin\UserController::class);
@@ -1278,7 +1495,12 @@ class OpsController extends Controller
         // sonraki calismada sorunsuz tamamlanir, veri kaybi yok). route:cache/
         // config:cache zaten dosyayi YERINDE ustune yazar - once clear etmek
         // gereksizdi ve tam da bu bosluga yol aciyordu, kaldirildi.
-        foreach (['route:cache', 'config:cache', 'view:clear', 'view:cache', 'cache:clear'] as $command) {
+        // 9 Eylul 2026: kullanicinin bildirdigi "yeni route calismiyor" hatasi
+        // uzerine bulundu - web.php'de 2 Closure-tabanli route oldugu icin
+        // route:cache HER ZAMAN sessizce basarisiz oluyordu (Laravel Closure
+        // route'lari cache'leyemez) ve olası eski bir cache dosyasi varsa
+        // hicbir yeni route asla gorulmuyordu. route:cache yerine route:clear.
+        foreach (['route:clear', 'config:cache', 'view:clear', 'view:cache', 'cache:clear'] as $command) {
             Artisan::call($command);
             $output .= Artisan::output();
         }
@@ -2120,6 +2342,38 @@ class OpsController extends Controller
         return "Guncellenen: {$updated}\nAtlanan (zaten doluydu veya id yok): {$skipped}";
     }
 
+    /**
+     * 8 Eylul 2026: "bütün kurumları düzelt" sikayeti icin - kullanicinin
+     * bildirdigi belirli bir kurumun konumu, Nominatim reverse-geocode ile
+     * SOMUT KANITLA (kayitli koordinat yanlis mahalle/ilcede cikiyor) tek
+     * tek dogrulanip elle duzeltildiginde kullanilir. Toplu/otomatik degil -
+     * her cagri TEK bir facility_id + arastirilarak bulunmus lat/lng alir.
+     */
+    private function facilityGeoSet(Request $request): string
+    {
+        $facilityId = (int) $request->query('facility_id', 0);
+        $lat = $request->query('lat');
+        $lng = $request->query('lng');
+
+        if (! $facilityId || $lat === null || $lng === null) {
+            return 'HATA: facility_id, lat, lng gerekli.';
+        }
+
+        if ($facilityId === 6713) {
+            return 'HATA: facility #6713 kullanicinin acik talimatiyla asla degistirilmez.';
+        }
+
+        $facility = DB::table('facilities')->where('id', $facilityId)->whereNull('deleted_at')->first();
+        if (! $facility) {
+            return "HATA: facility_id={$facilityId} bulunamadi.";
+        }
+
+        $old = "{$facility->lat},{$facility->lng}";
+        DB::table('facilities')->where('id', $facilityId)->update(['lat' => $lat, 'lng' => $lng, 'updated_at' => now()]);
+
+        return "#{$facilityId} {$facility->name} guncellendi: {$old} -> {$lat},{$lng}";
+    }
+
     // 28 Temmuz 2026: KVKK/Gizlilik/Cerez sayfa metinlerini admin panelinde
     // tek tek acmadan guncellemek icin. GUVENLIK: sadece LEGAL_SLUGS
     // listesindeki 3 sabit slug'a, sadece VAR OLAN satira (update, create
@@ -2170,6 +2424,948 @@ class OpsController extends Controller
     // NOT: bu koordinatlar kurumun GERCEK adresi degil, il merkezidir -
     // aynı ildeki tum bu sekilde doldurulmus kurumlar ayni noktada
     // gorunecek, mesafe siralamasi il-ici hassasiyette olmayacaktir.
+    /**
+     * 8 Eylul 2026: kullanicinin talebi - "adres dogru ama haritada
+     * gosterim yanlis". Kanit: geoFillCityCentroid() BAZI kurumlara
+     * gercek adres yerine SADECE il merkezi koordinatini yazmisti. Bu
+     * fonksiyon TAM OLARAK bir il merkezi koordinatinda oturan (bu yuzden
+     * haritada yanlis/genel bir yerde gorunen) kurumlarin sayisini ve
+     * durum kirilimini (on kayitli/sahiplenilmis/anlasmali) gosterir.
+     */
+    private function geoAddressCentroidAudit(): string
+    {
+        $centroids = config('turkiye_centroids', []);
+        if (empty($centroids)) {
+            return 'HATA: turkiye_centroids config bos/bulunamadi.';
+        }
+
+        $out = "Toplam il merkezi tanimli: ".count($centroids)."\n\n";
+        $totalAtCentroid = 0;
+        $byStatus = ['on_kayitli' => 0, 'sahiplenilmis' => 0, 'anlasmali' => 0];
+
+        foreach ($centroids as $city => $coord) {
+            $matches = DB::table('facilities')
+                ->whereNull('deleted_at')
+                ->where('lat', $coord[0])
+                ->where('lng', $coord[1])
+                ->get(['id', 'is_claimed', 'is_broker_managed']);
+
+            if ($matches->isEmpty()) {
+                continue;
+            }
+
+            $totalAtCentroid += $matches->count();
+            $out .= "{$city}: {$matches->count()} kurum TAM il merkezi noktasinda\n";
+
+            foreach ($matches as $m) {
+                if ($m->is_claimed) {
+                    $byStatus['sahiplenilmis']++;
+                } elseif ($m->is_broker_managed) {
+                    $byStatus['anlasmali']++;
+                } else {
+                    $byStatus['on_kayitli']++;
+                }
+            }
+        }
+
+        $out .= "\nTOPLAM il merkezinde (yanlis/genel konumda) kurum: {$totalAtCentroid}\n";
+        $out .= "  Ön kayıtlı: {$byStatus['on_kayitli']}\n";
+        $out .= "  Sahiplenilmiş: {$byStatus['sahiplenilmis']}\n";
+        $out .= "  Anlaşmalı: {$byStatus['anlasmali']}\n";
+
+        return $out;
+    }
+
+    /**
+     * 8 Eylul 2026: kullanicinin bildirdigi belirli kurumlarin (adres
+     * dogru, harita yanlis) GERCEK adres/koordinat verisini gosterir -
+     * tek tek incelemek icin.
+     */
+    private function facilityGeoDetail(Request $request): string
+    {
+        $facilityId = (int) $request->query('facility_id', 0);
+        $f = DB::table('facilities')
+            ->leftJoin('cities', 'cities.id', '=', 'facilities.city_id')
+            ->where('facilities.id', $facilityId)
+            ->select('facilities.id', 'facilities.name', 'facilities.address', 'facilities.district', 'facilities.lat', 'facilities.lng', 'cities.name as city')
+            ->first();
+
+        if (! $f) {
+            return "HATA: facility_id={$facilityId} bulunamadi.";
+        }
+
+        return "#{$f->id} {$f->name}\nAdres: {$f->address}\nİlçe: {$f->district}\nİl: {$f->city}\nlat: {$f->lat}\nlng: {$f->lng}\nGoogle Maps linki (mevcut koordinat): https://www.google.com/maps?q={$f->lat},{$f->lng}";
+    }
+
+    /**
+     * 8 Eylul 2026: kullanicinin bildirdigi "adres dogru harita yanlis"
+     * sikayeti icin - kurumun KAYITLI adresini GERCEK GeocodingService
+     * (canli, Nominatim) ile YENIDEN geocode eder, YENI sonucu MEVCUT
+     * lat/lng ile karsilastirir. Fark buyukse (>0.01 derece, kabaca 1km+)
+     * mevcut koordinatin yanlis oldugunun kanitidir.
+     */
+    private function facilityGeoRecheck(Request $request, \App\Services\GeocodingService $geocodingService): string
+    {
+        $facilityId = (int) $request->query('facility_id', 0);
+        $f = DB::table('facilities')
+            ->leftJoin('cities', 'cities.id', '=', 'facilities.city_id')
+            ->where('facilities.id', $facilityId)
+            ->select('facilities.id', 'facilities.name', 'facilities.address', 'facilities.district', 'facilities.lat', 'facilities.lng', 'cities.name as city')
+            ->first();
+
+        if (! $f) {
+            return "HATA: facility_id={$facilityId} bulunamadi.";
+        }
+
+        $fresh = $geocodingService->geocodeAddress($f->address, $f->district, $f->city);
+
+        $out = "#{$f->id} {$f->name}\nAdres: {$f->address}, {$f->district}/{$f->city}\n\n";
+        $out .= "MEVCUT kayitli: lat={$f->lat}, lng={$f->lng}\n";
+
+        if (! $fresh) {
+            $out .= "YENIDEN geocode BASARISIZ (adres bulunamadi / servis yanit vermedi).\n";
+
+            return $out;
+        }
+
+        $out .= "YENI geocode sonucu: lat={$fresh['lat']}, lng={$fresh['lng']}\n\n";
+
+        $latDiff = abs((float) $f->lat - (float) $fresh['lat']);
+        $lngDiff = abs((float) $f->lng - (float) $fresh['lng']);
+        // 1 derece enlem kabaca 111km; kaba mesafe tahmini.
+        $approxKm = sqrt($latDiff ** 2 + $lngDiff ** 2) * 111;
+
+        $out .= 'Kaba mesafe farki: ~'.round($approxKm, 1)." km\n";
+        $out .= $approxKm > 1 ? "SONUÇ: mevcut koordinat muhtemelen YANLIŞ.\n" : "SONUÇ: mevcut koordinat makul, ayni bolgede.\n";
+
+        return $out;
+    }
+
+    /**
+     * 8 Eylul 2026: kullanicinin "bütün kurumları düzelt" talimati.
+     *
+     * ONCE denenen yontem (kayitli adresi yeniden geocode edip mesafe farkina
+     * gore otomatik duzeltme) SAGLIKSIZ cikti: Turkiye'de Nominatim/OSM bina
+     * numarasi seviyesinde veri neredeyse hic yok, bu yuzden cogu adres icin
+     * ya tamamen basarisiz oluyor ya da sadece MAHALLE merkezine (gercek
+     * binadan dogal olarak 1-3km uzak olabilen genis bir idari sinir) donuyor
+     * - bu da mahalle icinde zaten dogru duran bir pin'i "yanlis" diye
+     * isaretleyip DAHA KOTU bir konumla degistirme riski tasiyordu (facility
+     * #1493 Kalamış canli testte bunu kanitladi: mevcut koordinat dogru
+     * mahalle/anayolda cikti, sadece mahalle merkezinden uzaktı - yanlis
+     * degildi).
+     *
+     * Bunun yerine cok daha guvenilir bir sinyal kullanilir: kurumun
+     * MEVCUT kayitli koordinati REVERSE geocode edilir (Nominatim'e "bu
+     * nokta neresi?" diye sorulur) ve donen ilce/mahalle, kurumun kendi
+     * kayitli ilcesiyle KARSILASTIRILIR. Ilce tamamen uyusmuyorsa (ör.
+     * facility #6721 Minik Kelebekler'de kanitlandigi gibi - kayitli pin
+     * Nilüfer Belediyesi binasinda cikti, kurumun gercek mahallesi
+     * Kültür/Beşevler'den tamamen farkli) bu GERCEK bir hata sinyalidir,
+     * mahalle-ici hafif sapmadan cok daha az yanlis-pozitif uretir.
+     *
+     * BU ARAC SADECE TESPIT EDER, OTOMATIK YAZMAZ - supheli bulunan her
+     * kurum tek tek facility-geo-recheck/facility-geo-set ile incelenip
+     * elle duzeltilir (admin panelindeki surukle-birak pin araci da bu is
+     * icin zaten mevcut). Facility #6713 kullanicinin talimatiyla atlanir.
+     */
+    private function facilityGeoMismatchScan(Request $request): string
+    {
+        set_time_limit(0);
+
+        $afterId = (int) $request->query('after_id', 0);
+        $limit = min((int) $request->query('limit', 60), 150);
+
+        $facilities = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->where('id', '>', $afterId)
+            ->where('id', '!=', 6713)
+            ->orderBy('id')
+            ->select('id', 'name', 'district', 'lat', 'lng')
+            ->limit($limit)
+            ->get();
+
+        if ($facilities->isEmpty()) {
+            return "BITTI: after_id={$afterId} sonrasinda islenecek kurum kalmadi.";
+        }
+
+        $checked = 0;
+        $flagged = 0;
+        $failed = 0;
+        $lastId = $afterId;
+        $details = '';
+
+        foreach ($facilities as $f) {
+            $lastId = $f->id;
+            $checked++;
+            usleep(1_100_000);
+
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'User-Agent' => config('app.name').' facility geo audit ('.config('app.url').', '.config('mail.from.address').')',
+                ])->timeout(8)->get('https://nominatim.openstreetmap.org/reverse', [
+                    'lat' => $f->lat,
+                    'lon' => $f->lng,
+                    'format' => 'json',
+                ]);
+
+                $address = $response->successful() ? ($response->json('address') ?? []) : null;
+            } catch (\Throwable $e) {
+                $address = null;
+            }
+
+            if (! $address) {
+                $failed++;
+
+                continue;
+            }
+
+            $foundArea = str($address['town'] ?? $address['city_district'] ?? $address['county'] ?? $address['city'] ?? $address['suburb'] ??'')->lower()->toString();
+            $registeredDistrict = str($f->district ?? '')->lower()->toString();
+
+            $normalize = fn (string $s) => strtr($s, ['ı' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c']);
+            $foundNorm = $normalize($foundArea);
+            $districtNorm = $normalize($registeredDistrict);
+
+            $matches = $districtNorm !== '' && $foundNorm !== '' && (str_contains($foundNorm, $districtNorm) || str_contains($districtNorm, $foundNorm));
+
+            if (! $matches) {
+                $flagged++;
+                $foundLabel = $address['town'] ?? $address['city_district'] ?? $address['county'] ?? $address['city'] ?? $address['suburb'] ??'?';
+                $details .= "#{$f->id} {$f->name}: kayitli ilce=\"{$f->district}\" ama pin \"{$foundLabel}\" icinde cikiyor -> https://www.google.com/maps?q={$f->lat},{$f->lng}\n";
+            }
+        }
+
+        $out = "Taranan: {$checked}, SUPHELI (ilce uyusmuyor): {$flagged}, reverse-geocode basarisiz: {$failed}\n";
+        $out .= "Devam icin: after_id={$lastId}\n\n";
+        $out .= $details;
+
+        return $out;
+    }
+
+    /**
+     * 8 Eylul 2026: facility-geo-mismatch-scan'in bulgusu - kullanicinin
+     * onayladigi yol. Adana'da (ve muhtemelen baska sehirlerde) "Veri
+     * Cekici" toplu ithalat araci TEK BIR il file/ithalat icin TEK BIR ilce
+     * adini TUM satirlara uyguluyordu (bkz. DataExtractorImportService
+     * import() - district parametresi tum dosyaya sabit), ama Google
+     * Haritalar aramasi o ilcenin disindaki isletmeleri de donduruyordu.
+     * Sonuc: konum (lat/lng, GERCEK adresten geocode edilmis) DOGRU,
+     * ilce METNI YANLIS.
+     *
+     * BU ARAC KOORDINATA ASLA DOKUNMAZ - sadece kayitli koordinatin
+     * GERCEKTE hangi ilcede oldugunu (reverse-geocode) bulur, o isimle
+     * eslesen bir Districts kaydi varsa (ayni sehir icinde, slug eslesmesi
+     * - DataExtractorImportService'teki districtModel() ile ayni yontem)
+     * facilities.district (metin) VE district_id (FK) alanlarini GUNCEL,
+     * GERCEK ilceyle degistirir. Eslesen bir District kaydi yoksa yazma
+     * yapilmaz, rapora "eslesen ilce kaydi yok" olarak duser - elle
+     * incelenir. apply=0 ile once ONIZLEME yapilir.
+     */
+    private function facilityDistrictFixFromGeo(Request $request): string
+    {
+        set_time_limit(0);
+
+        $afterId = (int) $request->query('after_id', 0);
+        $limit = min((int) $request->query('limit', 60), 150);
+        $apply = $request->boolean('apply');
+
+        $facilities = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->where('id', '>', $afterId)
+            ->where('id', '!=', 6713)
+            ->orderBy('id')
+            ->select('id', 'name', 'district', 'city_id', 'lat', 'lng')
+            ->limit($limit)
+            ->get();
+
+        if ($facilities->isEmpty()) {
+            return "BITTI: after_id={$afterId} sonrasinda islenecek kurum kalmadi.";
+        }
+
+        $normalize = fn (string $s) => strtr(mb_strtolower($s), ['ı' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c']);
+
+        $checked = 0;
+        $flagged = 0;
+        $fixed = 0;
+        $noMatch = 0;
+        $failed = 0;
+        $lastId = $afterId;
+        $details = '';
+
+        foreach ($facilities as $f) {
+            $lastId = $f->id;
+            $checked++;
+            usleep(1_100_000);
+
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'User-Agent' => config('app.name').' facility geo audit ('.config('app.url').', '.config('mail.from.address').')',
+                ])->timeout(8)->get('https://nominatim.openstreetmap.org/reverse', [
+                    'lat' => $f->lat,
+                    'lon' => $f->lng,
+                    'format' => 'json',
+                ]);
+
+                $address = $response->successful() ? ($response->json('address') ?? []) : null;
+            } catch (\Throwable $e) {
+                $address = null;
+            }
+
+            if (! $address) {
+                $failed++;
+
+                continue;
+            }
+
+            // Nominatim, Ceyhan gibi buyukce ama metropolden ayri ilceleri
+            // "town" yerine "city" etiketiyle donduruyor (8 Eylul 2026 canli
+            // testte kanitlandi) - bu alan olmadan bu tur ilceler yanlislikla
+            // "uyusmuyor" sanilip gereksiz manuel inceleme kuyruguna dusuyordu.
+            $foundLabel = (string) ($address['town'] ?? $address['city_district'] ?? $address['county'] ?? $address['city'] ?? $address['suburb'] ??'');
+            $foundNorm = $normalize($foundLabel);
+            $districtNorm = $normalize((string) ($f->district ?? ''));
+
+            $matches = $districtNorm !== '' && $foundNorm !== '' && (str_contains($foundNorm, $districtNorm) || str_contains($districtNorm, $foundNorm));
+            if ($matches || $foundLabel === '') {
+                continue;
+            }
+
+            $flagged++;
+
+            $districtRow = \App\Models\District::where('city_id', $f->city_id)
+                ->where('slug', \Illuminate\Support\Str::slug($foundLabel))
+                ->first();
+
+            if (! $districtRow) {
+                $noMatch++;
+                $details .= "#{$f->id} {$f->name}: \"{$f->district}\" -> gercek konum \"{$foundLabel}\" ama bu isimle Districts kaydi yok [ELLE BAKILMALI]\n";
+
+                continue;
+            }
+
+            $details .= "#{$f->id} {$f->name}: \"{$f->district}\" -> \"{$districtRow->name}\"";
+
+            if ($apply) {
+                DB::table('facilities')->where('id', $f->id)->update(['district' => $districtRow->name, 'district_id' => $districtRow->id, 'updated_at' => now()]);
+                $fixed++;
+                $details .= " [DUZELTILDI]\n";
+            } else {
+                $details .= " [ONIZLEME]\n";
+            }
+        }
+
+        $out = "Taranan: {$checked}, ilce-uyusmayan: {$flagged}, ".($apply ? "guncellenen: {$fixed}" : 'onizleme modu (apply=1 ile yazilir)').", eslesen ilce kaydi yok: {$noMatch}, reverse-geocode basarisiz: {$failed}\n";
+        $out .= "Devam icin: after_id={$lastId}\n\n";
+        $out .= $details;
+
+        return $out;
+    }
+
+    /**
+     * 8 Eylul 2026: kullanicinin "harita pini gercekten dogru yerde mi,
+     * mahalle/sokak seviyesinde teyit et" talimati - ilce-metni duzeltmesinden
+     * (facilityDistrictFixFromGeo) FARKLI, daha SIKI bir kontrol: kayitli
+     * koordinat REVERSE geocode edilip donen MAHALLE, adresteki "X Mah/
+     * Mahallesi" ifadesinden CIKARILAN mahalle ile karsilastirilir (sadece
+     * ilce degil). Uyusmuyorsa, adresteki sokak adi (varsa) + mahalle +
+     * ilce + il ile YENIDEN, DAHA SPESIFIK bir arama denenir (Minik
+     * Kelebekler'de kanitlandigi yontem - "Kültür Sokak" yerine dogru
+     * "Derya Sokak" boyle bulundu). Bulunan yeni nokta da reverse-geocode
+     * ile DOGRULANIR (ayni mahalleye dusuyor mu) - sadece o zaman yazilir.
+     * Turkiye'de Nominatim bina NUMARASI seviyesinde veri barindirmiyor
+     * (canli testlerle kanitlandi) - bu yuzden hedef SOKAK seviyesi, numara
+     * degil; kullaniciya bu sinir acikca bildirildi.
+     */
+    private function facilityGeoPinVerify(Request $request): string
+    {
+        set_time_limit(0);
+
+        // 9 Eylul 2026: kullanicinin bulusu - Windows Git Bash uzerinden
+        // dosyadan okunan Turkce sehir isimleri (Ağrı, Şırnak, İstanbul...)
+        // bazen bozuk (mojibake) UTF-8 olarak curl'e gidiyordu, bu da sehir
+        // adi eslesmesini SESSIZCE basarisiz kilip "0 kurum kaldi -> BITTI"
+        // yanlis sonucuna yol aciyordu - o sehrin TUM kurumlari hic
+        // islenmeden atlanmis oluyordu. city_id (sayisal, encoding sorunu
+        // OLAMAZ) artik TERCIH EDILEN parametre; city (isim) sadece geriye
+        // donuk uyumluluk icin tutulur.
+        $cityId = (int) $request->query('city_id', 0);
+        $city = (string) $request->query('city', 'Bursa');
+        $afterId = (int) $request->query('after_id', 0);
+        $limit = min((int) $request->query('limit', 10), 30);
+        $apply = $request->boolean('apply');
+
+        $facilities = DB::table('facilities')
+            ->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')
+            ->whereNotNull('facilities.lat')
+            ->whereNotNull('facilities.lng')
+            ->whereNotNull('facilities.address')
+            ->when($cityId, fn ($q) => $q->where('cities.id', $cityId), fn ($q) => $q->where('cities.name', $city))
+            ->where('facilities.id', '>', $afterId)
+            ->where('facilities.id', '!=', 6713)
+            ->orderBy('facilities.id')
+            ->select('facilities.id', 'facilities.name', 'facilities.address', 'facilities.district', 'facilities.lat', 'facilities.lng', 'cities.name as city')
+            ->limit($limit)
+            ->get();
+
+        $cityLabel = $cityId ? (DB::table('cities')->where('id', $cityId)->value('name') ?? "city_id={$cityId}") : $city;
+
+        if ($facilities->isEmpty()) {
+            return "BITTI: {$cityLabel} icin after_id={$afterId} sonrasinda islenecek kurum kalmadi.";
+        }
+
+        $normalize = fn (string $s) => strtr(mb_strtolower(trim($s)), ['ı' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c']);
+
+        $reverseGeocode = function (float $lat, float $lng) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'User-Agent' => config('app.name').' facility pin verify ('.config('app.url').', '.config('mail.from.address').')',
+                ])->timeout(8)->get('https://nominatim.openstreetmap.org/reverse', [
+                    'lat' => $lat, 'lon' => $lng, 'format' => 'json',
+                ]);
+
+                return $response->successful() ? ($response->json('address') ?? []) : null;
+            } catch (\Throwable $e) {
+                return null;
+            }
+        };
+
+        $forwardGeocode = function (string $query) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'User-Agent' => config('app.name').' facility pin verify ('.config('app.url').', '.config('mail.from.address').')',
+                ])->timeout(8)->get('https://nominatim.openstreetmap.org/search', [
+                    'q' => $query, 'format' => 'json', 'limit' => 1, 'countrycodes' => 'tr',
+                ]);
+
+                if (! $response->successful()) {
+                    return null;
+                }
+                $result = $response->json(0);
+
+                return ($result && isset($result['lat'], $result['lon'])) ? ['lat' => (float) $result['lat'], 'lng' => (float) $result['lon']] : null;
+            } catch (\Throwable $e) {
+                return null;
+            }
+        };
+
+        $checked = 0;
+        $flagged = 0;
+        $fixed = 0;
+        $unresolved = 0;
+        $lastId = $afterId;
+        $details = '';
+
+        foreach ($facilities as $f) {
+            $lastId = $f->id;
+            $checked++;
+
+            // 8 Eylul 2026: gercek adres formati genelde "Mah" kelimesini hic
+            // icermiyor - mahalle adi sadece ilk virgul-oncesi segment olarak
+            // duruyor (ör. "19 Mayıs, Şanlı Cd. No:7, ..."). Once acik "X Mah"
+            // kalibi taranir (TUM segmentlerde), yoksa ilk segment SOKAK/NO
+            // deseni ICERMIYORSA (yani duz bir mahalle adi gibi duruyorsa)
+            // mahalle olarak kabul edilir.
+            $segments = array_map('trim', explode(',', $f->address));
+            $streetPattern = '/\b(?:Sk\.?|Sok\.?(?:ak)?|Cd\.?|Cad\.?(?:desi)?|No:?)\b/ui';
+
+            $mahalle = null;
+            foreach ($segments as $seg) {
+                if (preg_match('/^(.*?)\s+Mah\.?(?:allesi)?\b/ui', $seg, $m)) {
+                    $mahalle = trim($m[1]);
+                    break;
+                }
+            }
+            if (! $mahalle && isset($segments[0]) && $segments[0] !== '' && mb_strlen($segments[0]) <= 40 && ! preg_match($streetPattern, $segments[0])) {
+                $mahalle = $segments[0];
+            }
+
+            $sokak = null;
+            foreach ($segments as $seg) {
+                // segment icinde "X Mah 2151 sok..." gibi mahalle+sokak
+                // birlikte gecebiliyor - sokak deseni aranmadan once mahalle
+                // onekini soyup atiyoruz, aksi halde "Mah" da sokak adina
+                // karisiyordu.
+                $segForStreet = preg_replace('/^.*?\bMah\.?(?:allesi)?\b\s*/ui', '', $seg) ?? $seg;
+                if (preg_match('/^(.*?)\s+(?:Sk\.?|Sok\.?(?:ak)?|Cd\.?|Cad\.?(?:desi)?)\b/ui', $segForStreet, $m2)) {
+                    $candidate = trim($m2[1]);
+                    if ($candidate !== '' && $mahalle && $normalize($candidate) !== $normalize($mahalle)) {
+                        $sokak = $candidate;
+                        break;
+                    }
+                }
+            }
+
+            if (! $mahalle) {
+                $unresolved++;
+                $details .= "#{$f->id} {$f->name}: adresten mahalle cikarilamadi, atlandi [ELLE BAKILMALI]\n";
+
+                continue;
+            }
+
+            usleep(1_100_000);
+            $currentAddr = $reverseGeocode((float) $f->lat, (float) $f->lng);
+            $currentMahalle = $currentAddr ? (string) ($currentAddr['suburb'] ?? $currentAddr['neighbourhood'] ?? $currentAddr['city_district'] ?? '') : '';
+
+            $mahalleNorm = $normalize($mahalle);
+            $currentNorm = $normalize($currentMahalle);
+            $matches = $currentNorm !== '' && (str_contains($currentNorm, $mahalleNorm) || str_contains($mahalleNorm, $currentNorm));
+
+            if ($matches) {
+                continue;
+            }
+
+            $flagged++;
+
+            $candidateQuery = $sokak
+                ? "{$sokak} Sokak, {$mahalle} Mahallesi, {$f->district}, {$f->city}, Türkiye"
+                : "{$mahalle} Mahallesi, {$f->district}, {$f->city}, Türkiye";
+
+            usleep(1_100_000);
+            $candidate = $forwardGeocode($candidateQuery);
+
+            if (! $candidate) {
+                $unresolved++;
+                $details .= "#{$f->id} {$f->name}: kayitli pin \"{$currentMahalle}\" mahallesinde (adres: \"{$mahalle}\" mahallesi olmali) - yeni aday bulunamadi [ELLE BAKILMALI] -> https://www.google.com/maps?q={$f->lat},{$f->lng}\n";
+
+                continue;
+            }
+
+            usleep(1_100_000);
+            $verifyAddr = $reverseGeocode($candidate['lat'], $candidate['lng']);
+            $verifyMahalle = $verifyAddr ? (string) ($verifyAddr['suburb'] ?? $verifyAddr['neighbourhood'] ?? $verifyAddr['city_district'] ?? '') : '';
+            $verifyNorm = $normalize($verifyMahalle);
+            $verifyMatches = $verifyNorm !== '' && (str_contains($verifyNorm, $mahalleNorm) || str_contains($mahalleNorm, $verifyNorm));
+
+            if (! $verifyMatches) {
+                $unresolved++;
+                $details .= "#{$f->id} {$f->name}: aday bulundu ama dogrulanamadi (aday \"{$verifyMahalle}\", beklenen \"{$mahalle}\") [ELLE BAKILMALI] -> https://www.google.com/maps?q={$f->lat},{$f->lng}\n";
+
+                continue;
+            }
+
+            $details .= "#{$f->id} {$f->name}: \"{$currentMahalle}\" -> \"{$mahalle}\" mahallesi, sokak=".($sokak ?: '(bilinmiyor)')." | {$f->lat},{$f->lng} -> {$candidate['lat']},{$candidate['lng']}";
+
+            if ($apply) {
+                DB::table('facilities')->where('id', $f->id)->update(['lat' => $candidate['lat'], 'lng' => $candidate['lng'], 'updated_at' => now()]);
+                $fixed++;
+                $details .= " [DUZELTILDI]\n";
+            } else {
+                $details .= " [ONIZLEME]\n";
+            }
+        }
+
+        $out = "Sehir: {$cityLabel}, Taranan: {$checked}, mahalle-uyusmayan: {$flagged}, ".($apply ? "guncellenen: {$fixed}" : 'onizleme modu (apply=1 ile yazilir)').", elle bakilmali: {$unresolved}\n";
+        $out .= "Devam icin: after_id={$lastId}\n\n";
+        $out .= $details;
+
+        return $out;
+    }
+
+    private function facilityCityList(): string
+    {
+        $rows = DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')->whereNotNull('facilities.lat')->whereNotNull('facilities.lng')
+            ->whereNotNull('facilities.address')->where('facilities.id', '!=', 6713)
+            ->selectRaw('cities.id as sehir_id, cities.name as sehir, count(*) as adet')
+            ->groupBy('cities.id', 'cities.name')->orderByDesc('adet')->get();
+
+        $out = '';
+        foreach ($rows as $r) {
+            $out .= "{$r->sehir_id}|{$r->sehir}|{$r->adet}\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 12 Eylul 2026: kullanicinin talebi - yeni anaokulu Excel dosyalarini
+     * ice aktarmadan once, o ildeki (aktif VEYA daha once silinmis) tum
+     * ayni kategorideki kurumlarin listesini vermek icin - "silinen
+     * kayitlari yeniden aktif yapma, benzerlerini de ekleme" talimatini
+     * uygulayabilmek amaciyla mukerrer kontrolu Excel tarafinda, import()
+     * servisine HIC dokunmadan yapabilmek icin salt-okunur bir liste.
+     */
+    private function veriCekiciBursaExistingList(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id', 16);
+        $categoryId = (int) $request->query('facility_category_id', 3);
+
+        $rows = \App\Models\Facility::withTrashed()
+            ->where('city_id', $cityId)
+            ->where('facility_category_id', $categoryId)
+            ->get(['id', 'name', 'phone', 'address', 'deleted_at']);
+
+        return $rows->map(function ($f) {
+            return $f->id.'|'.$f->name.'|'.($f->phone ?: '').'|'.($f->address ?: '').'|'.($f->deleted_at ? 'SILINMIS' : 'AKTIF');
+        })->implode("\n");
+    }
+
+    /**
+     * 12 Eylul 2026: kullanicinin talebi - "isleyen sisteme asla dokunma,
+     * sadece ekleme yapacaksin". DataExtractorImportService::import()
+     * (admin panelindeki /admin/veri-cekici/import ile BIREBIR AYNI,
+     * DEGISTIRILMEMIS servis) burada sadece admin oturumu yerine Bearer
+     * token ile, sunucuya FTP'lenmis bir Excel dosyasinin yolunu vererek
+     * tetiklenir - hicbir mevcut sinif/metot degismedi, sadece bu yeni
+     * eylem onlari CAGIRIYOR.
+     */
+    private function veriCekiciImportFile(Request $request, \App\Services\DataExtractorImportService $importer): string
+    {
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki xlsx dosya yolu) gerekli.';
+        }
+
+        $city = \App\Models\City::findOrFail((int) $request->input('city_id'));
+        $category = \App\Models\FacilityCategory::findOrFail((int) $request->input('facility_category_id'));
+
+        $result = $importer->import(
+            $path,
+            $city,
+            $category,
+            $request->input('district'),
+            true,
+            null,
+            basename($path),
+            $request->input('neighborhood')
+        );
+
+        $createdIds = \App\Models\DataImportBatch::find($result['batch_id'])
+            ->rows()->where('status', 'created')->pluck('facility_id')->implode(',');
+
+        $out = "Eklenen: {$result['created']} | Atlanan: {$result['skipped']} | Hata: ".count($result['errors']).
+            "\nBatch ID: {$result['batch_id']}".
+            "\nOlusturulan kurum ID'leri: {$createdIds}";
+        if ($result['errors']) {
+            $out .= "\nHatalar:\n".implode("\n", $result['errors']);
+        }
+
+        return $out;
+    }
+
+    /**
+     * 12 Eylul 2026: kullanicinin talebi - yeni eklenen on kayitli
+     * kurumlarda varsayilan 5 demo gorsel yerine sadece 1 tanesi kalsin.
+     * import() servisine (ve oradaki sabit demo-gorsel sayisina) HIC
+     * dokunmadan, olusturulduktan SONRA fazla FacilityImage kayitlarini
+     * siler - paylasimli demo gorsel havuzunun kendisi (dosyalar) silinmez,
+     * sadece bu kurumlarin ona olan fazladan referanslari kaldirilir.
+     */
+    private function veriCekiciTrimImages(Request $request): string
+    {
+        $ids = array_filter(array_map('trim', explode(',', (string) $request->input('facility_ids', ''))));
+        if (! $ids) {
+            return 'facility_ids parametresi gerekli (virgulle ayrilmis kurum ID listesi).';
+        }
+
+        $trimmed = 0;
+        foreach ($ids as $id) {
+            $images = \App\Models\FacilityImage::where('facility_id', $id)->orderBy('sort_order')->get();
+            if ($images->count() <= 1) {
+                continue;
+            }
+            $images->skip(1)->each(fn ($img) => $img->delete());
+            $trimmed++;
+        }
+
+        return "{$trimmed} kurumun fazla gorselleri silindi (her birinde sadece 1 gorsel birakildi).";
+    }
+
+    /**
+     * 12 Eylul 2026: kullanicinin talebi - buyuk Excel dosyalari (100+
+     * satir) import() calisirken sunucu gateway zaman asimina takilabiliyor
+     * (isDuplicate() her satirda tam tablo taramasi + geocoding cagirisi
+     * yapiyor). HTTP yaniti zaman asimina ugrasa bile PHP islemi arka
+     * planda tamamlanmis olabilir - bu salt-okunur eylem son batch'lerin
+     * GERCEK durumunu (kac satir islendi, tamamlandi mi) gosterir.
+     */
+    private function veriCekiciBatchStatus(Request $request): string
+    {
+        if ($request->query('id')) {
+            $batch = \App\Models\DataImportBatch::findOrFail((int) $request->query('id'));
+            $ids = $batch->rows()->where('status', 'created')->pluck('facility_id')->implode(',');
+
+            return "#{$batch->id} | dosya: {$batch->file_name} | durum: {$batch->status} | toplam: {$batch->total_rows} | eklenen: {$batch->created_count} | atlanan: {$batch->skipped_count} | hata: {$batch->error_count}\nKurum ID'leri: {$ids}";
+        }
+
+        $limit = (int) $request->query('limit', 5);
+        $batches = \App\Models\DataImportBatch::orderByDesc('id')->limit($limit)->get();
+
+        return $batches->map(function ($b) {
+            return "#{$b->id} | dosya: {$b->file_name} | durum: {$b->status} | toplam: {$b->total_rows} | eklenen: {$b->created_count} | atlanan: {$b->skipped_count} | hata: {$b->error_count}";
+        })->implode("\n");
+    }
+
+    /**
+     * 12 Eylul 2026: kullanicinin talebi - "/admin/veri-cekici sayfasinda
+     * yarim kalan islemler var, onlari da tamamla". DataExtractorController::
+     * index() 'pending_review','enriched','skipped','error' durumundaki TUM
+     * DataImportRow kayitlarini (hangi batch'ten gelirse gelsin) ayni
+     * "incele" listesinde gosteriyor - once GERCEKTEN admin kararı bekleyen
+     * (pending_review/enriched) mi yoksa sadece tamamlanmis bir import'un
+     * bilgilendirme amacli gecmis kaydi mi (skipped/error, zaten islem
+     * bitmis) oldugunu ayirt etmek icin bu salt-okunur sayim eklendi.
+     */
+    private function veriCekiciReviewRows(Request $request): string
+    {
+        $rows = \App\Models\DataImportRow::whereIn('status', ['pending_review', 'enriched', 'skipped', 'error'])
+            ->with('batch:id,file_name')
+            ->get(['id', 'data_import_batch_id', 'status', 'name', 'message']);
+
+        $byStatus = $rows->groupBy('status')->map->count();
+        $out = "Durum bazinda sayim:\n";
+        foreach ($byStatus as $status => $count) {
+            $out .= "  {$status}: {$count}\n";
+        }
+
+        $actionable = $rows->whereIn('status', ['pending_review', 'enriched']);
+        $out .= "\nGERCEKTEN karar bekleyen (pending_review/enriched) satir sayisi: {$actionable->count()}\n";
+        foreach ($actionable->take(30) as $r) {
+            $out .= "  #{$r->id} | batch: ".($r->batch->file_name ?? '?')." | {$r->status} | {$r->name}\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 8 Eylul 2026: kurum panel profil sayfasina eklenen yeni harita
+     * bolumunun Blade derleme hatasi verip vermedigini, gercek oturum
+     * acmaya ugrasmadan, dogrudan View::make ile canli kontrol eder.
+     */
+    private function facilityProfileRenderTest(): string
+    {
+        $facility = \App\Models\Facility::with('category')->whereNotNull('lat')->first();
+        $user = \App\Models\FacilityUser::where('facility_id', $facility->id)->first();
+        $cities = \App\Models\City::orderBy('name')->limit(3)->get();
+        $brand = current_brand();
+        $serviceSection = service_section_for_scope($facility->category->brand_scope);
+
+        try {
+            $html = view("themes.{$brand['theme']}.facility.profile", [
+                'user' => $user ?? new \App\Models\FacilityUser(['name' => 'Test', 'email' => 'test@example.com']),
+                'facility' => $facility,
+                'cities' => $cities,
+                'serviceSection' => $serviceSection,
+                'profileQuality' => $facility->profileQuality(),
+                'sectionDetailFields' => [],
+                'sectionDetails' => [],
+                'notificationGroups' => notification_preference_groups('facility'),
+            ])->render();
+
+            $hasMap = str_contains($html, 'profile-location-map') && str_contains($html, 'Haritadaki Konum');
+
+            return 'BASARILI: sayfa hatasiz derlendi ('.strlen($html)." bayt).\nHarita bolumu sayfada var mi: ".($hasMap ? 'EVET' : 'HAYIR');
+        } catch (\Throwable $e) {
+            return "HATA: ".get_class($e).' - '.$e->getMessage()."\n".$e->getFile().':'.$e->getLine();
+        }
+    }
+
+    /**
+     * 9 Eylul 2026: kullanicinin "sohbetleri goruntuleyemiyorum" bildirimi
+     * icin - admin.chat.show sayfasini gercek bir thread ile dogrudan
+     * render edip hata varsa yakalar.
+     */
+    /**
+     * 9 Eylul 2026: kullanicinin talebi olan yeni bir route (admin.chat.destroy)
+     * "Route not defined" hatasi verdi - kok neden: web.php'de 2 tane
+     * Closure-tabanli route var (satir ~101, ~372), bu yuzden
+     * "artisan route:cache" ASLA basarili olamaz (Laravel Closure route'lari
+     * serialize edemez) - cacheRefresh() bunu sessizce yutuyordu. Eger
+     * DAHA ONCE (bu closure'lar eklenmeden once) basarili bir route cache
+     * dosyasi olusmussa, o ESKI dosya hala orada durup YENI route'lari
+     * hic gormeden calisiyor olabilir. Bu route:cache yerine route:clear
+     * calistirip o olasi bayat dosyayi siler - boylece Laravel her istekte
+     * web.php'yi TAZE okur (performans kaybı ihmal edilebilir seviyede).
+     */
+    private function routeCacheFix(): string
+    {
+        $cachePath = base_path('bootstrap/cache/routes-v7.php');
+        $existedBefore = File::exists($cachePath);
+
+        Artisan::call('route:clear');
+        $output = Artisan::output();
+
+        $existsAfter = File::exists($cachePath);
+
+        return "route:clear calistirildi.\nOnceden bayat route cache dosyasi var miydi: ".($existedBefore ? 'EVET' : 'HAYIR')."\nSimdi var mi (olmamali): ".($existsAfter ? 'EVET - SORUN DEVAM EDIYOR' : 'HAYIR - temiz')."\n\n{$output}";
+    }
+
+    /**
+     * 9 Eylul 2026: kullanicinin "en cok tiklanan kurumlar sayaci dogru mu"
+     * sorusu icin - dashboard'un GOSTERDIGI siralamayi, HAM SQL sorgusuyla
+     * baglantisiz ayri bir yoldan hesaplanan sonucla karsilastirir.
+     */
+    private function topClickedVerify(): string
+    {
+        $since = now()->subDays(30);
+
+        // Dashboard'un kullandigi mantikla BIREBIR ayni (DashboardController::
+        // categoryRealClickSummary() icindeki top_facilities sorgusu) - kontrol
+        // amacli BAGIMSIZ olarak burada da yazildi.
+        $ranked = DB::table('facility_engagement_events')
+            ->join('facilities', 'facilities.id', '=', 'facility_engagement_events.facility_id')
+            ->where('facility_engagement_events.type', 'real_view')
+            ->where('facility_engagement_events.created_at', '>=', $since)
+            ->selectRaw('facilities.id, facilities.name, count(*) as toplam')
+            ->groupBy('facilities.id', 'facilities.name')
+            ->orderByDesc('toplam')
+            ->limit(5)
+            ->get();
+
+        $out = "Bagimsiz SQL ile hesaplanan ilk 5 (son 30 gun, real_view):\n";
+        foreach ($ranked as $r) {
+            // Ayni kaydin ayni facility_id icin BIRDEN FAZLA olup olmadigini
+            // (dedup calisiyor mu, ayni oturum ayni gun 2 kez sayilmis mi
+            // benzeri bir anomaliyi) kaba bir sekilde gormek icin, o kurumun
+            // olay zamanlarini da listele.
+            $times = DB::table('facility_engagement_events')
+                ->where('facility_id', $r->id)->where('type', 'real_view')
+                ->where('created_at', '>=', $since)
+                ->orderBy('created_at')->pluck('created_at')
+                ->map(fn ($t) => (string) $t)->all();
+
+            $out .= "#{$r->id} {$r->name}: {$r->toplam} tiklama\n";
+            $out .= '  Ilk 3 zaman: '.implode(', ', array_slice($times, 0, 3))."\n";
+            $out .= '  Son 3 zaman: '.implode(', ', array_slice($times, -3))."\n";
+        }
+
+        return $out;
+    }
+
+    private function siteStatsRenderTest(Request $request): string
+    {
+        try {
+            $response = app(\App\Http\Controllers\Admin\SiteStatsController::class)->index($request);
+            $html = $response->render();
+
+            return 'BASARILI: sayfa hatasiz derlendi ('.strlen($html).' bayt).';
+        } catch (\Throwable $e) {
+            return "HATA: ".get_class($e).' - '.$e->getMessage()."\n".$e->getFile().':'.$e->getLine();
+        }
+    }
+
+    private function chatShowRenderTest(Request $request): string
+    {
+        $threadId = (int) $request->query('thread_id', 0);
+        $thread = \App\Models\ChatThread::find($threadId);
+        if (! $thread) {
+            return "HATA: thread_id={$threadId} bulunamadi.";
+        }
+
+        try {
+            $thread->load('messages', 'assignedAdmin');
+            $siblingThreads = \App\Models\ChatThread::where('guest_token', $thread->guest_token)
+                ->where('id', '!=', $thread->id)->orderByDesc('last_message_at')->get();
+
+            $html = view('admin.chat.show', compact('thread', 'siblingThreads'))->render();
+
+            return 'BASARILI: sayfa hatasiz derlendi ('.strlen($html).' bayt), mesaj sayisi: '.$thread->messages->count();
+        } catch (\Throwable $e) {
+            return "HATA: ".get_class($e).' - '.$e->getMessage()."\n".$e->getFile().':'.$e->getLine();
+        }
+    }
+
+    /**
+     * 9 Eylul 2026: kullanicinin talebi - kurum yetkilisinin e-postasi
+     * yanlis girilmisse (yazim hatasi) duzeltmek icin. GUVENLIK: sadece
+     * VAR OLAN bir facility_user kaydinin e-postasini gunceller, yeni
+     * hesap olusturmaz; hedef e-posta baska bir hesapta kullanimdaysa
+     * (unique constraint) hata doner.
+     */
+    /**
+     * 9 Eylul 2026: kullanicinin canli hatasi - facilities_slug_unique
+     * kisiti SILINMIS (soft-delete) kayitlari da kapsiyor, bu yuzden eski,
+     * cop kutusundaki bir kurumun slug'i, ayni isimle YENI bir kurum
+     * olusturmayi engelliyordu. GUVENLIK: SADECE zaten SILINMIS (deleted_at
+     * dolu) bir kaydin slug alanina '-arsiv-{id}' ekler, hicbir veriyi
+     * silmez/geri getirmez/baska bir alani degistirmez - tek amaci, o
+     * slug'i YENI bir kurumun kullanabilmesi icin serbest birakmak.
+     */
+    private function facilitySlugFreeUp(Request $request): string
+    {
+        $facilityId = (int) $request->query('facility_id', 0);
+        $facility = Facility::withTrashed()->find($facilityId);
+
+        if (! $facility) {
+            return "HATA: facility_id={$facilityId} bulunamadi.";
+        }
+        if (! $facility->deleted_at) {
+            return "HATA: facility_id={$facilityId} silinmemis (aktif) - guvenlik icin sadece silinmis kayitlarin slug'i degistirilir.";
+        }
+
+        $oldSlug = $facility->slug;
+        $newSlug = $oldSlug.'-arsiv-'.$facility->id;
+        $facility->update(['slug' => $newSlug]);
+
+        return "Slug degistirildi: {$oldSlug} -> {$newSlug} (kurum silinmis/arsivde kalmaya devam ediyor, sadece slug serbest kaldi)";
+    }
+
+    private function facilitySlugCheck(Request $request): string
+    {
+        $slug = (string) $request->query('slug', '');
+        $rows = Facility::withTrashed()->where('slug', $slug)->orWhere('old_slug', $slug)->get(['id', 'name', 'slug', 'old_slug', 'deleted_at', 'is_published']);
+
+        if ($rows->isEmpty()) {
+            return "slug={$slug}: hicbir kayitta yok (aktif veya silinmis).";
+        }
+
+        $out = '';
+        foreach ($rows as $r) {
+            $out .= "#{$r->id} {$r->name} | slug={$r->slug} | old_slug=".($r->old_slug ?: 'NULL')." | ".($r->deleted_at ? "SILINMIS ({$r->deleted_at})" : 'AKTIF')." | yayinda=".var_export((bool) $r->is_published, true)."\n";
+        }
+
+        return $out;
+    }
+
+    private function facilityUserFixEmail(Request $request): string
+    {
+        $facilityId = (int) $request->query('facility_id', 0);
+        $newEmail = trim((string) $request->query('email', ''));
+
+        if (! $facilityId || ! $newEmail || ! filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+            return 'HATA: facility_id ve gecerli bir email gerekli.';
+        }
+
+        $facilityUser = \App\Models\FacilityUser::where('facility_id', $facilityId)->first();
+        if (! $facilityUser) {
+            return "HATA: facility_id={$facilityId} icin kurum yetkilisi bulunamadi.";
+        }
+
+        $old = $facilityUser->email;
+
+        try {
+            $facilityUser->update(['email' => $newEmail]);
+        } catch (\Throwable $e) {
+            return 'HATA: '.$e->getMessage();
+        }
+
+        return "Guncellendi: {$old} -> {$newEmail}";
+    }
+
+    private function facilityCityCount(Request $request): string
+    {
+        $city = (string) $request->query('city', 'Bursa');
+        $afterId = (int) $request->query('after_id', 0);
+
+        $total = DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')->whereNotNull('facilities.lat')->whereNotNull('facilities.lng')
+            ->whereNotNull('facilities.address')->where('cities.name', $city)->where('facilities.id', '!=', 6713)
+            ->count();
+
+        $remaining = DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')->whereNotNull('facilities.lat')->whereNotNull('facilities.lng')
+            ->whereNotNull('facilities.address')->where('cities.name', $city)->where('facilities.id', '!=', 6713)
+            ->where('facilities.id', '>', $afterId)->count();
+
+        return "{$city}: toplam {$total} kurum, after_id={$afterId} sonrasi kalan: {$remaining}";
+    }
+
     private function geoFillCityCentroid(): string
     {
         $centroids = config('turkiye_centroids', []);
@@ -4571,6 +5767,78 @@ class OpsController extends Controller
      * ayni brand+slug'a tekrar cagrilirsa GuideController zaten ContentPage'i
      * gunceller (updateOrCreate benzeri), yeni satir olusturmaz.
      */
+    /**
+     * 15 Eylul 2026: kullanicinin talebi - "programatik SEO'yu Bursa
+     * disina da genislet". seedBursaKresRehberi() ile AYNI desen kullanilir
+     * (idempotent - ayni brand+slug'a tekrar cagrilinca ContentPage
+     * guncellenir, yeni satir olusturmaz). Bursa'daki gibi SABIT bir fiyat
+     * araligi UYDURULMADI - /_ops/city-price-stats?city_id=34 ile kontrol
+     * edildi, İstanbul'daki 686 kurumun HICBIRINDE fiyat verisi yok (hepsi
+     * henuz sahiplenilmemis on-kayitli), bu yuzden fiyat paragrafi sabit
+     * rakam yerine platformun kendi CANLI fiyat rehberi sayfasina link
+     * verir - veri zamanla eklendikce o sayfa otomatik dogru kalir, bu
+     * makale asla yanlis/eski bir rakam gostermez.
+     */
+    private function seedIstanbulKresRehberi(): string
+    {
+        $body = <<<'HTML'
+<p>İstanbul'da çocuğunuz için kreş veya anaokulu ararken 39 ilçe arasında yüzlerce seçenekle karşılaşabilirsiniz — hangi ilçede, ne tür bir programda, hangi bütçeyle karar vereceğinizi netleştirmek şehrin büyüklüğü nedeniyle zaman alabilir. Bu rehberde İstanbul'da kreş/anaokulu seçerken dikkat etmeniz gereken noktaları ve ilçe ilçe nasıl arama yapabileceğinizi anlatıyoruz.</p>
+
+<h2>İstanbul'da Kreş ve Anaokulu Seçenekleri</h2>
+<p>İstanbul; Kadıköy, Beşiktaş, Ataşehir gibi merkezi ilçelerden Silivri, Şile gibi şehrin uçlarındaki ilçelere kadar geniş bir alanda çok sayıda kreş, gündüz bakımevi ve anaokulu barındırıyor. Genel olarak üç ana seçenekle karşılaşırsınız:</p>
+<ul>
+  <li><strong>Kreş / gündüz bakımevi:</strong> Genellikle 0-3 yaş arası çocuklara, çalışan ebeveynlerin tam gün ihtiyacına yönelik hizmet verir.</li>
+  <li><strong>Anaokulu:</strong> Genellikle 3-6 yaş arası, okul öncesi eğitime daha çok ağırlık veren kurumlar.</li>
+  <li><strong>Özel eğitim ve gelişim destekli kurumlar:</strong> Gelişimsel destek ihtiyacı olan çocuklar için ek programlar sunan merkezler.</li>
+</ul>
+
+<h2>Tam Gün mü, Yarım Gün mü?</h2>
+<p>Bu tercih büyük ölçüde ailenin çalışma düzenine bağlıdır.</p>
+<h3>Tam gün kimler için uygun?</h3>
+<p>Her iki ebeveyn de tam zamanlı çalışıyorsa, ya da çocuğun düzenli bir günlük rutine (yemek, uyku, oyun, eğitim) ihtiyacı varsa tam gün program genelde daha pratik bir çözüm olur.</p>
+<h3>Yarım gün kimler için uygun?</h3>
+<p>Evde bakım desteği olan, ya da çocuğunu sadece belirli saatlerde sosyalleşme/eğitim amacıyla göndermek isteyen aileler için yarım gün programlar hem bütçe hem uyum açısından daha esnek olabilir.</p>
+
+<h2>İstanbul'da İlçe İlçe Kreş ve Anaokulu Arama</h2>
+<p>İstanbul'un tamamı için ilçe bazlı, güncel kurum listesine ve kurum sayılarına <a href="/rehber/cocuk/istanbul">İstanbul kreş ve anaokulu rehberi</a> sayfamızdan ulaşabilirsiniz — buradan istediğiniz ilçeyi seçip filtreleyebilir, kurumları karşılaştırabilirsiniz. Şehrin büyüklüğü nedeniyle özellikle iş yerinize veya evinize yakın ilçeyi seçerek aramaya başlamanızı öneririz.</p>
+
+<h2>Kreş Seçerken Nelere Dikkat Edilmeli?</h2>
+<h3>Eğitim ve gelişim programı</h3>
+<p>Kurumun hangi eğitim yaklaşımını (Montessori, MEB müfredatı destekli, karma program vb.) uyguladığını, sınıf başına düşen çocuk sayısını ve rehberlik/psikolog desteği olup olmadığını sorun.</p>
+<h3>Fiziki imkanlar ve güvenlik</h3>
+<p>Oyun alanı, güvenlik önlemleri (giriş-çıkış kontrolü, kamera sistemi), hijyen koşulları ve bina/oda düzeni yerinde görülmeden karar vermemekte fayda var.</p>
+<h3>Ulaşım ve servis</h3>
+<p>İstanbul'un trafik ve mesafe koşulları düşünüldüğünde servis hizmeti olup olmadığı, hangi güzergahları kapsadığı özellikle önemli bir kriterdir — servis süresinin çocuğunuz için makul olup olmadığını mutlaka değerlendirin.</p>
+<h3>Yemek ve uyku düzeni</h3>
+<p>Günlük beslenme programını, özel diyet ihtiyaçlarına (alerji vb.) uyum sağlanıp sağlanmadığını ve uyku/dinlenme düzenini sorun.</p>
+
+<h2>Fiyat ve Ücretler</h2>
+<p>İstanbul'da kreş/anaokulu ücretleri ilçeye, semte ve programa (tam gün/yarım gün) göre büyük farklılık gösterebilir — şehrin farklı bölgeleri arasında ciddi fiyat aralığı vardır. Uydurma bir rakam vermek yerine, seçtiğiniz ilçe ve kurum türüne göre güncel ve gerçek fiyat bilgisini <a href="/fiyat-rehberi/cocuk/istanbul">İstanbul fiyat rehberi</a> sayfamızdan görebilir, ilgilendiğiniz kurumdan platformumuz üzerinden ücretsiz teklif isteyebilirsiniz.</p>
+
+<h2>Devlet mi, Özel mi?</h2>
+<p>Devlet/belediye bünyesindeki anaokulları genellikle daha uygun maliyetlidir ancak kontenjanları sınırlıdır ve bekleme listesi olabilir. Özel kreş/anaokullarda ise kontenjan bulma ihtimali daha yüksek, program çeşitliliği (yabancı dil, sanat atölyeleri, yüzme vb.) daha geniş olabilir; karşılığında ücretler de değişkenlik gösterir. Hangisinin ailenize uygun olduğu; bütçe, konum ve çocuğunuzun ihtiyaçlarına göre değişir.</p>
+
+<h2>Sıkça Sorulan Sorular</h2>
+<p><strong>Kaç aylık/yaşındaki çocuklar kreşe başlayabilir?</strong><br>Çoğu kreş 0-1 yaş arası bebekleri de kabul edebiliyor, anaokulları genelde 3 yaş ve üzeri çocuklara yönelik. Kesin yaş aralığı kurumdan kuruma değişir.</p>
+<p><strong>Kayıt için hangi belgeler istenir?</strong><br>Genellikle kimlik fotokopisi, sağlık raporu/aşı kartı ve fotoğraf istenir; kuruma göre ek belgeler de talep edilebilir.</p>
+<p><strong>Deneme günü/ziyaret imkanı var mı?</strong><br>Çoğu kurum kayıt öncesi yerinde ziyarete ve bazen bir deneme gününe açıktır — karar vermeden önce mutlaka sormanızı öneririz.</p>
+
+<p>İstanbul'daki kreş ve anaokullarını ilçe, hizmet türü ve bütçenize göre karşılaştırmak, doğru ücret bilgisini almak için <a href="/kurumlar">kurumlar sayfamızdan</a> arama yapabilir veya ilgilendiğiniz kurumdan doğrudan ücretsiz teklif isteyebilirsiniz.</p>
+HTML;
+
+        $page = \App\Models\ContentPage::updateOrCreate(
+            ['brand' => 'bakimevibul', 'slug' => 'cocuk-istanbul-kres-anaokulu-rehberi'],
+            [
+                'type' => 'guide',
+                'title' => 'İstanbul Kreş ve Anaokulu Rehberi',
+                'summary' => 'İstanbul\'da kreş ve anaokulu seçerken dikkat edilmesi gerekenler, ilçe ilçe arama ve güncel fiyat rehberine erişim.',
+                'body' => $body,
+            ]
+        );
+
+        return "OK: sayfa kaydedildi/guncellendi -> id={$page->id}, brand=bakimevibul, slug=cocuk-istanbul-kres-anaokulu-rehberi";
+    }
+
     private function seedBursaKresRehberi(): string
     {
         $body = <<<'HTML'

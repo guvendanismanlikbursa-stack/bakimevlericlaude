@@ -24,6 +24,16 @@
       <div class="flex items-start justify-between gap-4">
         <div>
           <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ $error->created_at->format('d.m.Y H:i') }}{{ $error->title && str_contains($error->title, '—') ? ' · '.trim(explode('—', $error->title)[1]) : '' }}</div>
+          {{-- 11 Eylul 2026: kullanicinin talebi - "hata ciddi mi gecici mi
+               farkina varamiyorum" - her hatanin yanina tek bakista anlasilir
+               bir onem derecesi rozeti eklendi. --}}
+          @php($severityMap = [
+            'dusuk' => ['label' => '🟢 Zararsız — kendiliğinden düzelir', 'class' => 'bg-green-100 text-green-700'],
+            'orta' => ['label' => '🟡 İzlenmeli — sık tekrarlarsa bildirin', 'class' => 'bg-amber-100 text-amber-700'],
+            'yuksek' => ['label' => '🔴 Ciddi — bana gösterin', 'class' => 'bg-red-100 text-red-700'],
+          ])
+          @php($severity = $severityMap[$explanation['severity'] ?? 'yuksek'] ?? $severityMap['yuksek'])
+          <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1 {{ $severity['class'] }}">{{ $severity['label'] }}</span>
           <div class="font-bold text-gray-900">{{ $explanation['summary'] }}</div>
           <p class="text-sm text-gray-600 mt-1">{{ $explanation['detail'] }}</p>
           @if($error->resolved_at)

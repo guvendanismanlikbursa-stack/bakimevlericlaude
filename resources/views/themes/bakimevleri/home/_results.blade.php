@@ -16,6 +16,10 @@
       <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-black" style="color: {{ $colors['primary'] }};">Tam sayfada aç →</a>
     </div>
 
+    {{-- 14 Eylul 2026: kullanicinin talebi - il secilince (filtre moduna
+         gecildiginde) harita da o ile gore guncellenip burada gorunmeli. --}}
+    @include('themes._shared.partials.broker-map')
+
     @if(request()->filled('q') && ! empty($sectionBreakdown ?? []))
       <div class="mb-6 flex flex-wrap items-center gap-2 text-sm bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
         <span class="font-black text-gray-500">Tüm bölümlerde "{{ request('q') }}" için bulunanlar:</span>
@@ -90,7 +94,7 @@
             @endif
             @php $cardImage = facility_card_image($facility, $section); @endphp
             <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
-              <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->name }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+              <div class="h-48 overflow-hidden flex items-center justify-center" style="background: {{ $colors['soft'] }};"><img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
               <div class="p-5">
                 <div class="flex items-center flex-wrap gap-2 mb-2">
                   <div class="text-xs font-black" style="color: {{ $colors['primary'] }};">{{ $facility->category->name }}</div>
@@ -108,6 +112,9 @@
                        edilemiyordu. --}}
                   @if($facility->is_broker_managed)
                     <span class="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 whitespace-nowrap">🤝 Anlaşmalı</span>
+                  @endif
+                  @if($facility->hasFreeChildAccidentInsurance())
+                    <span class="text-[10px] font-black rounded-full px-2 py-0.5 whitespace-nowrap" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
                   @endif
                 </div>
                 <h3 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h3>
@@ -138,7 +145,22 @@
   </div>
 </section>
 
+{{-- 10 Eylul 2026: kullanicinin bildirdigi hata - Öne Çıkanlar sayfalamasinda
+     "2. sayfa"ya gecince tarayici #one-cikanlar capasina dogru kaymiyor,
+     sayfa ustunde/asagida (ön kayitli kurumlar hizasinda) aciliyordu. Bu,
+     sayfa yuklendikten sonra (gorseller yerlesince) capaya KESIN olarak
+     kaydirir - sadece featured_page parametresi varken calisir. --}}
+@if(request()->has('featured_page'))
+  <script>
+    window.addEventListener('load', function () {
+      var el = document.getElementById('one-cikanlar');
+      if (el) { setTimeout(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150); }
+    });
+  </script>
+@endif
+
 @include('themes._shared.partials.claimed-facilities')
+@include('themes._shared.partials.broker-map')
 @include('themes._shared.partials.pre-registered-facilities')
 
 <section class="max-w-6xl mx-auto px-4 py-12">

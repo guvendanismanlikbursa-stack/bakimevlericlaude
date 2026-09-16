@@ -24,15 +24,19 @@
   @php $maxDaily = $dailySeries->flatMap(fn($rows) => $rows->pluck('count'))->max() ?: 1; @endphp
   <h2 class="font-bold text-lg mb-3">Son 30 Gün Trend</h2>
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10 overflow-x-auto">
-    <div class="flex items-end gap-1 h-32 min-w-[600px]">
+    {{-- 9 Eylul 2026: kullanicinin "cubuklar hep ust sinirda, anlasilmiyor"
+         bildirimi - oranlama dogruydu (son gunler gercekten birbirine yakin
+         yuksek trafige sahip), ama BIRBIRE YAKIN cubuklarin GERCEK farki
+         sadece hover ile gorulebiliyordu, ilk bakista okunmuyordu. Her
+         cubugun USTUNE sayiyi dogrudan yazarak (kucuk cubuklarda sigmiyorsa
+         cubugun UZERINE tasarak) farkin her zaman gorunur olmasi saglandi. --}}
+    <div class="flex items-end gap-1 h-40 min-w-[600px] pt-6">
       @foreach($dailySeries as $date => $rows)
-        @php $dayTotal = $rows->sum('count'); @endphp
-        {{-- 4 Eylul 2026: kullanicinin "trend verisini cekmiyor" bildirimi -
-             veri her zaman doluydu, ama "bg-primary" bu projede TANIMLI
-             bir Tailwind rengi degildi (tailwind.config.js'de yok), o yuzden
-             cubuklar veriyle birlikte olusuyor ama RENKSIZ/GORUNMEZ
-             kaliyordu - grafik "bos" gibi gorunuyordu. --}}
-        <div class="flex-1 rounded-t" style="background:#0b5d8c; height: {{ max(4, round($dayTotal / $maxDaily * 100)) }}%" title="{{ $date }}: {{ $dayTotal }}"></div>
+        @php $dayTotal = $rows->sum('count'); $barPct = max(4, round($dayTotal / $maxDaily * 100)); @endphp
+        <div class="flex-1 h-full flex flex-col justify-end items-center relative" title="{{ $date }}: {{ $dayTotal }}">
+          <span class="text-[10px] font-bold text-gray-600 mb-1 whitespace-nowrap">{{ number_format($dayTotal, 0, ',', '.') }}</span>
+          <div class="w-full rounded-t" style="background:#0b5d8c; height: {{ $barPct }}%"></div>
+        </div>
       @endforeach
     </div>
     <div class="text-xs text-gray-400 mt-2">{{ $dailySeries->keys()->first() }} — {{ $dailySeries->keys()->last() }}</div>

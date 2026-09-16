@@ -31,6 +31,7 @@ class FacilityCategoryController extends Controller
         ]);
         $data['slug'] = Str::slug($data['name']);
         FacilityCategory::create($data);
+        FacilityCategory::forgetCache();
 
         return back()->with('success', 'Kategori eklendi.');
     }
@@ -49,6 +50,7 @@ class FacilityCategoryController extends Controller
         ]);
 
         $category->update($data);
+        FacilityCategory::forgetCache();
 
         return back()->with('success', "{$category->name} segment eşikleri güncellendi.");
     }
@@ -63,6 +65,7 @@ class FacilityCategoryController extends Controller
         }
 
         $category->delete();
+        FacilityCategory::forgetCache();
 
         return back()->with('success', 'Kategori silindi.');
     }

@@ -158,6 +158,19 @@
         </div>
       @endforeach
     </div>
+    @if($realClickDemand['top_facilities']->isNotEmpty())
+      <div class="mt-5 pt-5 border-t border-gray-100">
+        <div class="text-xs font-semibold text-gray-500 mb-2">En çok tıklanan kurumlar</div>
+        <div class="space-y-1.5">
+          @foreach($realClickDemand['top_facilities'] as $i => $f)
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-700"><span class="text-gray-400 font-mono text-xs mr-1">{{ $i + 1 }}.</span>{{ $f->name }}</span>
+              <span class="font-black text-gray-950">{{ number_format($f->toplam, 0, ',', '.') }} tıklama</span>
+            </div>
+          @endforeach
+        </div>
+      </div>
+    @endif
   @endif
 </div>
 

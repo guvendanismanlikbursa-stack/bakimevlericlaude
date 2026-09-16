@@ -50,7 +50,12 @@ class FacilityImageSyncController extends Controller
     // kendi ayri diskine yaziliyordu - bakimevleri.com'da hic olmuyordu,
     // video kirik/gorunmez oluyordu. facilities/videos/{...}.mp4 yolu da
     // artik kabul edilir (bkz. helpers.php sync_video_to_canonical_domain()).
-    private const PATH_PATTERN = '/^facilities\/(demo\/[A-Za-z0-9_\-]{1,60}(\/[A-Za-z0-9_\-]{1,60})?|videos\/[A-Za-z0-9_\-]{6,60}|[A-Za-z0-9_\-]{6,60})\.(webp|jpg|jpeg|png|mp4)$/';
+    // 9 Eylul 2026: kullanicinin canli hatasi - yemek listesine PDF destegi
+    // eklenince (2 sayfali listeler icin), bu desen PDF uzantisini
+    // TANIMIYORDU, cross-domain senkronizasyon 422 ile reddediyordu - asil
+    // yukleme kendi domain'inde basariliydi ama diger 2 domain'e hic
+    // kopyalanamiyordu (bkz. CrossDomainImageSync/ProfileController).
+    private const PATH_PATTERN = '/^facilities\/(demo\/[A-Za-z0-9_\-]{1,60}(\/[A-Za-z0-9_\-]{1,60})?|videos\/[A-Za-z0-9_\-]{6,60}|[A-Za-z0-9_\-]{6,60})\.(webp|jpg|jpeg|png|mp4|pdf)$/';
 
     public function store(Request $request): Response
     {

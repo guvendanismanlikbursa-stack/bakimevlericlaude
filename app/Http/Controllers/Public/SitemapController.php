@@ -47,7 +47,7 @@ class SitemapController extends Controller
         $ownSection = $sections[$brand['default_section']] ?? null;
         $sectionsForSitemap = $ownSection ? [$ownSection] : [];
         $ownScopes = $ownSection['scopes'] ?? $brand['category_scope'];
-        $categories = FacilityCategory::whereIn('brand_scope', $ownScopes)->get();
+        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $ownScopes)->values();
         $bolumQuery = $ownSection ? '?bolum='.$ownSection['slug'] : '';
 
         $urls->push($this->url($prefix, 'daily', '1.0'));
@@ -75,21 +75,43 @@ class SitemapController extends Controller
         $categoryCityCombos = $this->categoryCityCombos();
         $categoryDistrictCombos = $this->categoryCityDistrictCombos();
 
+        // 15 Eylul 2026: kullanicinin talebi - il/ilce rehberi sayfalarinin
+        // lastmod'u $city->updated_at kullaniyordu, ama City kaydi neredeyse
+        // hic degismiyor (isim/slug sabit) - sayfanin GERCEK icerigi (kurum
+        // sayisi/fiyat araligi) surekli degistigi halde Google'a "bu sayfa
+        // aylardir ayni" sinyali veriliyordu, yeniden taranma sıklığını
+        // azaltiyordu. O ildeki kurumlarin EN SON guncellenme tarihi cok
+        // daha dogru bir tazelik sinyali - tek gruplu sorguyla (N+1 degil)
+        // hesaplanir, zaten 6 saatlik sitemap onbellegi icinde calisir.
+        $cityFreshness = Facility::discoverable()->forBrand($ownScopes)
+            ->selectRaw('city_id, MAX(updated_at) as last_updated')
+            ->groupBy('city_id')
+            ->pluck('last_updated', 'city_id');
+
         foreach ($sectionsForSitemap as $section) {
             $urls->push($this->url($prefix.'?bolum='.$section['slug'], 'daily', '0.9'));
             $urls->push($this->url($prefix.'/kurumlar?bolum='.$section['slug'], 'daily', '0.9'));
             $urls->push($this->url($prefix.'/rehber/'.$section['slug'], 'weekly', '0.7'));
 
             foreach ($cities as $city) {
-                $urls->push($this->url($prefix.'/rehber/'.$section['slug'].'/'.$city->slug, 'weekly', '0.6', $city->updated_at));
-                $urls->push($this->url($prefix.'/fiyat-rehberi/'.$section['slug'].'/'.$city->slug, 'weekly', '0.6', $city->updated_at));
+                // 15 Eylul 2026: selectRaw ile gelen MAX(updated_at) ham bir
+                // metin (string) olarak donuyor, Facility::updated_at gibi
+                // otomatik Carbon'a cevrilmiyor - url() metodu Carbon
+                // bekledigi icin (->toAtomString() cagiriyor) burada acikca
+                // Carbon::parse() ile cevirmezsek "string uzerinde metot
+                // cagirilamaz" hatasi cikardi.
+                $cityLastmod = isset($cityFreshness[$city->id])
+                    ? \Illuminate\Support\Carbon::parse($cityFreshness[$city->id])
+                    : $city->updated_at;
+                $urls->push($this->url($prefix.'/rehber/'.$section['slug'].'/'.$city->slug, 'weekly', '0.6', $cityLastmod));
+                $urls->push($this->url($prefix.'/fiyat-rehberi/'.$section['slug'].'/'.$city->slug, 'weekly', '0.6', $cityLastmod));
 
                 foreach ($districtCombos[$section['slug']][$city->slug] ?? [] as $district) {
                     $urls->push($this->url(
                         $prefix.'/rehber/'.$section['slug'].'/'.$city->slug.'/'.$district['slug'],
                         $district['has_facilities'] ? 'weekly' : 'monthly',
                         $district['has_facilities'] ? '0.55' : '0.35',
-                        $city->updated_at
+                        $cityLastmod
                     ));
                     // 26 Agustos 2026: kullanicinin talebi - "il+ilce olarak
                     // maksimum kapsamli olmali", ozellikle fiyat odakli
@@ -102,7 +124,7 @@ class SitemapController extends Controller
                         $prefix.'/fiyat-rehberi/'.$section['slug'].'/'.$city->slug.'/'.$district['slug'],
                         $district['has_facilities'] ? 'weekly' : 'monthly',
                         $district['has_facilities'] ? '0.55' : '0.35',
-                        $city->updated_at
+                        $cityLastmod
                     ));
                 }
             }

@@ -53,6 +53,8 @@
       @endforeach
     </div>
 
+    @include('themes._shared.partials.broker-incentive-banner')
+
     {{-- 12 Agustos 2026: kullanicinin talebi - metin kutusunda her harfte,
          secimlerde degisince, sayfa yenilenmeden asagidaki ana sonuc
          alaninda (buyuk kurum kartlari + sayfalama) sonuclar ANINDA
@@ -123,6 +125,7 @@
 @include('themes._shared.partials.trust-stats')
 
 @include('themes._shared.partials.discover-links')
+@include('themes._shared.partials.broker-map-script')
 @include('themes._shared.partials.location-filter-script')
 {{-- 2 Eylul 2026: kullanicinin bildirdigi gercek hata - anasayfadaki kurum
      kartlarinin (facility-card.blade.php) favori/karsilastir/toplu-fiyat

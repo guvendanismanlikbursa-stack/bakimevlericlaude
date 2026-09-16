@@ -153,6 +153,8 @@ class ProfileController extends Controller
             'city_id' => 'required|exists:cities,id',
             'district' => 'nullable|string|max:120',
             'address' => 'nullable|string|max:500',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
             'phone' => 'nullable|string|max:30',
             'description' => 'nullable|string|max:5000',
             'capacity' => 'nullable|integer|min:0',
@@ -337,16 +339,29 @@ class ProfileController extends Controller
      * (3 domain'de birden) yemek listesi kirilir. Sadece kurum-basina
      * ozel (facilities/demo/ ile baslamayan) eski dosyalar silinir.
      */
+    /**
+     * 9 Eylul 2026: kullanicinin talebi - bazi kurumlarin yemek listesi
+     * 2 sayfa oluyor, tek gorsel yeterli olmuyordu. PDF de kabul edilir
+     * artik - PDF ise sikistirma servisinden GECIRILMEZ (o servis sadece
+     * gorsel formatlari icin, PDF verirse hata firlatir), dosya oldugu
+     * gibi saklanir. Genel gosterim (public sayfa + bu panel) PDF icin
+     * <img> yerine "goruntule" linkine donusur (bkz. show.blade.php,
+     * facility/profile.blade.php - .pdf uzantisina gore ayirt edilir).
+     */
     public function uploadMenuImage(Request $request, \App\Services\CrossDomainImageSync $imageSync)
     {
         $user = FacilityUser::findOrFail(session('facility_user_id'));
         $facility = $user->facility;
 
         $request->validate([
-            'menu_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'menu_image' => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
 
-        $path = app(ImageCompressionService::class)->store($request->file('menu_image'), 'facilities');
+        $file = $request->file('menu_image');
+        $path = strtolower($file->getClientOriginalExtension()) === 'pdf'
+            ? $file->store('facilities', 'public')
+            : app(ImageCompressionService::class)->store($file, 'facilities');
+
         if (! $path || ! Storage::disk('public')->exists($path)) {
             \Illuminate\Support\Facades\Log::error('Yemek listesi gorseli diske yazildiktan sonra dogrulanamadi.', ['facility_id' => $facility->id]);
 
@@ -360,11 +375,26 @@ class ProfileController extends Controller
             'menu_image_updated_at' => now(),
         ]);
 
-        $imageSync->syncStore($path);
+        // 9 Eylul 2026: kullanicinin canli hatasi - asil yukleme/kayit
+        // burada ZATEN basariyla tamamlanmis oluyordu, ama syncStore()
+        // (diger 2 domain'e kopyalama) icinde beklenmeyen bir hata
+        // disariya sizip kullaniciya "hata olustu" sayfasi gosteriyordu -
+        // oysa kendi kurumu icin islem tamamen basariliydi. GUVENLIK:
+        // bu adim BASARISIZ olsa bile kullanici deneyimini ASLA
+        // bozmamali, sadece log'a dusup sessizce devam etmeli.
+        try {
+            $imageSync->syncStore($path);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Yemek listesi cross-domain sync basarisiz: '.$e->getMessage(), ['facility_id' => $facility->id]);
+        }
 
         if ($oldPath && ! str_starts_with($oldPath, 'facilities/demo/')) {
             Storage::disk('public')->delete($oldPath);
-            $imageSync->syncDelete($oldPath);
+            try {
+                $imageSync->syncDelete($oldPath);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Eski yemek listesi cross-domain silme basarisiz: '.$e->getMessage(), ['facility_id' => $facility->id]);
+            }
         }
 
         return back()->with('success', 'Yemek listesi güncellendi.');

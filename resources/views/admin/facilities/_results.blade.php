@@ -90,6 +90,10 @@
                 @csrf
                 <button class="text-orange-600">Ön Kayıt</button>
               </form>
+              <form method="POST" action="{{ route('admin.facilities.reset-registration', $f) }}" class="inline" onsubmit="return confirm('Bu kurumun sahiplenme kaydı SİLİNECEK (kurum yetkilisi hesabı kalıcı olarak silinir, bonus geri alınır) ve kurum ön kayıtlı hale gelecek - yeniden sahiplendirebilirsiniz. Emin misiniz?');">
+                @csrf
+                <button class="text-red-700" title="Yanlış bilgiyle sahiplenildiyse, hesabı silip sıfırdan sahiplendirmek için">Kaydı Sıfırla</button>
+              </form>
             @endif
             <form method="POST" action="{{ route('admin.facilities.destroy', $f) }}" class="inline" onsubmit="return confirm('Silinsin mi?');">
               @csrf @method('DELETE')

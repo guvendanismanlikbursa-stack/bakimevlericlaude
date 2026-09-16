@@ -172,6 +172,16 @@ class DashboardController extends Controller
         $total = array_sum($bySection);
         $oldestEventAt = \Illuminate\Support\Facades\DB::table('facility_engagement_events')->where('type', 'real_view')->min('created_at');
 
+        $topFacilities = \Illuminate\Support\Facades\DB::table('facility_engagement_events')
+            ->join('facilities', 'facilities.id', '=', 'facility_engagement_events.facility_id')
+            ->where('facility_engagement_events.type', 'real_view')
+            ->where('facility_engagement_events.created_at', '>=', $since)
+            ->selectRaw('facilities.id, facilities.name, count(*) as toplam')
+            ->groupBy('facilities.id', 'facilities.name')
+            ->orderByDesc('toplam')
+            ->limit(15)
+            ->get();
+
         return [
             'total' => $total,
             'tracking_since' => $oldestEventAt,
@@ -180,6 +190,7 @@ class DashboardController extends Controller
                 'count' => $count,
                 'percent' => $total > 0 ? round($count / $total * 100, 1) : 0,
             ])->values()->all(),
+            'top_facilities' => $topFacilities,
         ];
     }
 

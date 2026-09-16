@@ -23,7 +23,8 @@
         @csrf
         <div class="md:col-span-2">
           <label class="text-sm font-medium">Arama cümlesi</label>
-          <input type="text" name="query" required maxlength="255" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="Örn: huzurevi nilufer bursa">
+          <input type="text" name="query" required maxlength="255" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="Örn: kreş beşevler nilüfer bursa">
+          <p class="text-xs text-gray-400 mt-1">Büyük ilçelerde Google Maps ilçe bazlı aramada tüm kurumları döndürmez — cümleye <b>mahalle adını</b> ekleyin (ör: "kreş beşevler nilüfer bursa") ve aşağıya da o mahalleyi yazın.</p>
         </div>
         <div>
           <label class="text-sm font-medium">Çekilecek kurum sayısı</label>
@@ -31,7 +32,7 @@
         </div>
         <div>
           <label class="text-sm font-medium">Şehir</label>
-          <select name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+          <select name="city_id" required class="js-vc-city border rounded-lg px-3 py-2 w-full mt-1 bg-white" data-form="run">
             @foreach($cities as $city)
               <option value="{{ $city->id }}">{{ $city->name }}</option>
             @endforeach
@@ -39,7 +40,16 @@
         </div>
         <div>
           <label class="text-sm font-medium">İlçe</label>
-          <input type="text" name="district" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="Örn: Nilüfer">
+          <select name="district" class="js-vc-district border rounded-lg px-3 py-2 w-full mt-1 bg-white" data-form="run">
+            <option value="">İlçe seçin</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Mahalle <span class="text-xs font-normal text-gray-400">(isteğe bağlı)</span></label>
+          <select name="neighborhood" class="js-vc-neighborhood border rounded-lg px-3 py-2 w-full mt-1 bg-white" data-form="run">
+            <option value="">Önce ilçe seçin</option>
+          </select>
+          <p class="text-xs text-gray-400 mt-1">İlçe seçince o ilçenin mahalleleri yüklenir. Seçilirse çekilen kurumların adresinin başına "… Mahallesi" olarak eklenir, konum bulma isabetli olur.</p>
         </div>
         <div>
           <label class="text-sm font-medium">Kurum Kategorisi</label>
@@ -67,7 +77,7 @@
         </div>
         <div>
           <label class="text-sm font-medium">Şehir</label>
-          <select name="city_id" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+          <select name="city_id" required class="js-vc-city border rounded-lg px-3 py-2 w-full mt-1 bg-white" data-form="import">
             @foreach($cities as $city)
               <option value="{{ $city->id }}">{{ $city->name }}</option>
             @endforeach
@@ -75,7 +85,16 @@
         </div>
         <div>
           <label class="text-sm font-medium">İlçe</label>
-          <input type="text" name="district" class="border rounded-lg px-3 py-2 w-full mt-1" placeholder="Örn: Nilüfer">
+          <select name="district" class="js-vc-district border rounded-lg px-3 py-2 w-full mt-1 bg-white" data-form="import">
+            <option value="">İlçe seçin</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Mahalle <span class="text-xs font-normal text-gray-400">(isteğe bağlı)</span></label>
+          <select name="neighborhood" class="js-vc-neighborhood border rounded-lg px-3 py-2 w-full mt-1 bg-white" data-form="import">
+            <option value="">Önce ilçe seçin</option>
+          </select>
+          <p class="text-xs text-gray-400 mt-1">İlçe seçince o ilçenin mahalleleri yüklenir.</p>
         </div>
         <div class="md:col-span-2">
           <label class="text-sm font-medium">Kurum Kategorisi</label>
@@ -180,4 +199,75 @@
     </div>
   </aside>
 </div>
+
+{{-- 10 Eylul 2026: kullanicinin talebi - il/ilce/mahalle secmeli. Ilce
+     config/turkiye.php'den (sehir_id -> ilce adlari), mahalle mevcut
+     kurumlarin adreslerinden (ilce -> daha once kullanilmis mahalleler). --}}
+<script>
+(function () {
+  var districtMap = @json($districtMap);
+  var learnedMap = @json($neighborhoodMap);
+  var mahalleUrl = "{{ route('admin.data-extractor.neighborhoods') }}";
+
+  function el(form, cls) { return document.querySelector('.' + cls + '[data-form="' + form + '"]'); }
+
+  function fillDistricts(citySel) {
+    var form = citySel.dataset.form;
+    var districtSel = el(form, 'js-vc-district');
+    if (!districtSel) return;
+    var list = districtMap[citySel.value] || [];
+    districtSel.innerHTML = '<option value="">İlçe seçin</option>';
+    list.forEach(function (d) {
+      var o = document.createElement('option');
+      o.value = d; o.textContent = d;
+      districtSel.appendChild(o);
+    });
+    resetNeighborhoods(form);
+  }
+
+  function resetNeighborhoods(form) {
+    var n = el(form, 'js-vc-neighborhood');
+    if (n) n.innerHTML = '<option value="">Önce ilçe seçin</option>';
+  }
+
+  function loadNeighborhoods(districtSel) {
+    var form = districtSel.dataset.form;
+    var citySel = el(form, 'js-vc-city');
+    var nSel = el(form, 'js-vc-neighborhood');
+    if (!nSel || !citySel) return;
+    if (!districtSel.value) { resetNeighborhoods(form); return; }
+
+    nSel.innerHTML = '<option value="">Yükleniyor…</option>';
+    fetch(mahalleUrl + '?city_id=' + encodeURIComponent(citySel.value) + '&district=' + encodeURIComponent(districtSel.value), { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var list = (data.neighborhoods && data.neighborhoods.length) ? data.neighborhoods : (learnedMap[districtSel.value] || []);
+        nSel.innerHTML = '<option value="">Mahalle seçin (isteğe bağlı)</option>';
+        list.forEach(function (name) {
+          var o = document.createElement('option');
+          o.value = name; o.textContent = name;
+          nSel.appendChild(o);
+        });
+        if (!list.length) nSel.innerHTML = '<option value="">Bu ilçe için mahalle listesi bulunamadı</option>';
+      })
+      .catch(function () {
+        var list = learnedMap[districtSel.value] || [];
+        nSel.innerHTML = '<option value="">Mahalle seçin (isteğe bağlı)</option>';
+        list.forEach(function (name) {
+          var o = document.createElement('option');
+          o.value = name; o.textContent = name;
+          nSel.appendChild(o);
+        });
+      });
+  }
+
+  document.querySelectorAll('.js-vc-city').forEach(function (c) {
+    c.addEventListener('change', function () { fillDistricts(c); });
+    fillDistricts(c);
+  });
+  document.querySelectorAll('.js-vc-district').forEach(function (d) {
+    d.addEventListener('change', function () { loadNeighborhoods(d); });
+  });
+})();
+</script>
 @endsection

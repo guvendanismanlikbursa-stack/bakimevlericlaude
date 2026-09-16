@@ -150,6 +150,28 @@ class ChatController extends Controller
     }
 
     /**
+     * 9 Eylul 2026: kullanicinin talebi - "sohbeti komple silme yok"
+     * bildirimi. Mesajlar chat_messages FK'sinde cascadeOnDelete oldugu
+     * icin thread silinince otomatik silinir (bkz. migration), burada
+     * SADECE diskteki ek dosyalar (varsa) once temizlenir ki orphan
+     * dosya kalmasin.
+     */
+    public function destroy(ChatThread $thread)
+    {
+        foreach ($thread->messages as $message) {
+            if ($message->attachment_path) {
+                Storage::disk('public')->delete($message->attachment_path);
+            }
+        }
+
+        $threadId = $thread->id;
+        log_admin_event('chat_thread_deleted', $thread);
+        $thread->delete();
+
+        return redirect()->route('admin.chat.index')->with('success', "Sohbet #{$threadId} kalıcı olarak silindi.");
+    }
+
+    /**
      * @return array{0: ?string, 1: ?string, 2: ?string, 3: ?int}
      */
     private function storeAttachmentIfAny(Request $request): array

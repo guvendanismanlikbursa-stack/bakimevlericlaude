@@ -22,10 +22,19 @@ class GoogleMapsDataExtractorService
             mkdir(dirname($runner), 0777, true);
         }
 
-        file_put_contents($runner, <<<'PY'
+        // 10 Eylul 2026: kullanicinin bildirdigi canli hata -
+        // "ModuleNotFoundError: No module named 'google_maps_scraper'".
+        // Kok neden: runner script'i storage/framework/cache/ altinda
+        // duruyor, Python import'lari icin sys.path[0] = SCRIPT'in dizini
+        // (cwd DEGIL), o yuzden tools/veri-cekici/ altindaki
+        // google_maps_scraper.py'yi hic gormüyordu. Cozum: tool dizinini
+        // acikca sys.path'e ekliyoruz.
+        $toolPathJson = json_encode($toolPath);
+        file_put_contents($runner, <<<PY
 import json
 import sys
 import threading
+sys.path.insert(0, {$toolPathJson})
 from google_maps_scraper import scrape_google_maps
 
 query = sys.argv[1]

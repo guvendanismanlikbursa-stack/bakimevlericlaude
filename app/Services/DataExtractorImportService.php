@@ -27,7 +27,7 @@ class DataExtractorImportService
         'lng' => ['boylam', 'lng', 'longitude'],
     ];
 
-    public function import(string $path, City $city, FacilityCategory $category, ?string $district, bool $publish, ?int $adminId = null, ?string $fileName = null): array
+    public function import(string $path, City $city, FacilityCategory $category, ?string $district, bool $publish, ?int $adminId = null, ?string $fileName = null, ?string $neighborhood = null): array
     {
         $rows = app(SimpleXlsxReader::class)->rows($path);
         $districtModel = $this->districtModel($city, $district);
@@ -81,13 +81,20 @@ class DataExtractorImportService
 
             $phoneType = classify_phone_type($item['phone']);
 
+            // 10 Eylul 2026: bkz. DataImportRowApprovalService ayni tarihli
+            // yorum - mahalle verilmisse adresin basina eklenir.
+            $address = $item['address'];
+            if (filled($neighborhood) && stripos($address, $neighborhood) === false) {
+                $address = trim($neighborhood.' Mahallesi'.($address !== '' ? ', '.$address : ''));
+            }
+
             // 17 Agustos 2026: bkz. DataImportRowApprovalService ayni tarihli
             // yorum - bu dogrudan-yayinlama yolu (xlsx yukleme, onay bekletmez)
             // icin de ayni otomatik geocoding fallback'i uygulanir.
             $lat = $this->coordinate($item['lat']);
             $lng = $this->coordinate($item['lng']);
-            if ($lat === null && $lng === null && filled($item['address'])) {
-                $coords = $this->geocodingService->geocodeAddress($item['address'], $districtModel?->name ?? $district, $city->name);
+            if ($lat === null && $lng === null && filled($address)) {
+                $coords = $this->geocodingService->geocodeAddress($address, $districtModel?->name ?? $district, $city->name);
                 if ($coords) {
                     $lat = $coords['lat'];
                     $lng = $coords['lng'];
@@ -103,7 +110,7 @@ class DataExtractorImportService
                     'facility_category_id' => $category->id,
                     'ownership_type' => $ownershipType,
                     'district' => $districtModel?->name ?? $district,
-                    'address' => $item['address'],
+                    'address' => $address,
                     'lat' => $lat,
                     'lng' => $lng,
                     'phone' => $item['phone'],

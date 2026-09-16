@@ -41,6 +41,7 @@ class CityController extends Controller
         $data = $request->validate(['name' => 'required|string|max:120|unique:cities,name']);
         $data['slug'] = Str::slug($data['name']);
         City::create($data);
+        City::forgetCache();
 
         return back()->with('success', 'Şehir eklendi.');
     }
@@ -62,6 +63,7 @@ class CityController extends Controller
         }
 
         $city->delete();
+        City::forgetCache();
 
         return back()->with('success', 'Şehir silindi.');
     }

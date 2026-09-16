@@ -410,6 +410,59 @@ class Facility extends Model
     }
 
     /**
+     * 10 Eylul 2026: kullanicinin talebi - bakimevleri.com, anlasmali
+     * (is_broker_managed) KRES ve ANAOKULLARINA kayit yaptiran cocuklar
+     * icin 1 yillik ferdi kaza sigortasini UCRETSIZ yaptiriyor. Bu bir
+     * pazarlama/guven unsuru olarak kurum kartinda ve detay sayfasinda
+     * ozel bir etiket + aciklama ile gosterilir. SADECE anlasmali
+     * kurumlar icin gecerli; kategori 'kres-ve-anaokulu' İSE VEYA kurum
+     * adinda "anaokulu" geciyorsa uygulanir.
+     *
+     * 16 Eylul 2026: kullanicinin bildirdigi gercek hata - veri cekiciyle
+     * toplu eklenen yuzlerce kurum (ismi "... Anaokulu" olsa bile) yanlis
+     * kategoride ('Çocuk Bakım Merkezi', #3) kaydedilmisti, kategori
+     * 'kres-ve-anaokulu' (#4) DEGILDI - tek tek kategori duzeltmeden
+     * anlasmali isaretlenen boyle bir kurumda rozet hic cikmiyordu.
+     * Kullanicinin acik talebi: "kategori VEYA isim ikisinden biri
+     * yeterli" - kategori dogru girilmemis olsa bile isminde "anaokulu"
+     * gecen anlasmali kurumlar artik otomatik uygun sayilir.
+     */
+    public function hasFreeChildAccidentInsurance(): bool
+    {
+        if (! $this->is_broker_managed) {
+            return false;
+        }
+
+        if ($this->category?->slug === 'kres-ve-anaokulu') {
+            return true;
+        }
+
+        return str_contains(mb_strtolower($this->name), 'anaokulu');
+    }
+
+    /**
+     * 15 Eylul 2026: kullanicinin talebi - gorsel SEO. Kurum gorsellerindeki
+     * alt metni sadece kurum adiyla sinirliydi ("ÖZEL DİLEK ANAOKULU" gibi),
+     * il/ilce/kategori bilgisi eklenmiyordu - bu da Google Görseller'de
+     * "Bursa anaokulu" gibi aramalarda gorsellerin yakalanma sansini
+     * azaltiyordu. Bu metot city/category iliskileri ZATEN yuklu oldugu
+     * (with(['city','category'])) her yerde kullanilir; yeni bir sorgu
+     * tetiklemez, sadece mevcut veriyi birlestirir. Herhangi bir alan
+     * eksikse (ör. city null) o kismi sessizce atlar, hicbir zaman "null"
+     * metni gorunmez.
+     */
+    public function imageAltText(): string
+    {
+        $parts = array_filter([
+            $this->name,
+            $this->category?->name,
+            $this->city?->name,
+        ]);
+
+        return implode(' - ', $parts);
+    }
+
+    /**
      * "Kurum Performans Sayfasi" icin guven/istatistik ozeti.
      * Yalnizca gercekten var olan verilerle hesaplanir; uydurma alan yok.
      */

@@ -8,6 +8,7 @@ use App\Models\Facility;
 use App\Models\FacilityImage;
 use App\Models\SearchQuery;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 // "Ben olsam eklerdim" onerilerinden kesif/vitrin sayfalari:
@@ -29,17 +30,31 @@ class DiscoveryController extends Controller
         return [$activeSection, $activeSection['scopes'] ?? $brand['category_scope']];
     }
 
+    /**
+     * 11 Eylul 2026: kullanicinin bildirdigi tekrarlayan "Too many
+     * connections" hatasi - bu vitrin sayfalari botlar tarafindan derinlemesine
+     * (page=259 gibi) taraniyor, her sayfa 2 ayri sorgu (sayim + liste)
+     * calistiriyordu. Sonuc 15 dakikalik kisa sureli onbellege alindi.
+     */
+    private function cachedListing(string $key, array $brand, array $scopes, Request $request, \Closure $build)
+    {
+        $page = (int) $request->query('page', 1);
+        $cacheKey = "discovery:{$key}:v1:".md5(implode('|', [$brand['slug'], implode(',', $scopes), $page]));
+
+        return Cache::remember($cacheKey, now()->addMinutes(15), $build);
+    }
+
     public function verified(Request $request)
     {
         $this->abortIfPageTooDeep($request);
 
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::discoverable()->claimed()
+        $facilities = $this->cachedListing('verified', $brand, $scopes, $request, fn () => Facility::discoverable()->claimed()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('claimed_at')
-            ->paginate(15)->withQueryString();
+            ->paginate(15)->withQueryString());
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Doğrulanmış Kurumlar',
@@ -57,11 +72,11 @@ class DiscoveryController extends Controller
 
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::discoverable()
+        $facilities = $this->cachedListing('recently-updated', $brand, $scopes, $request, fn () => Facility::discoverable()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('updated_at')
-            ->paginate(15)->withQueryString();
+            ->paginate(15)->withQueryString());
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Son Güncellenen Kurumlar',
@@ -79,11 +94,11 @@ class DiscoveryController extends Controller
 
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::discoverable()
+        $facilities = $this->cachedListing('newly-added', $brand, $scopes, $request, fn () => Facility::discoverable()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('created_at')
-            ->paginate(15)->withQueryString();
+            ->paginate(15)->withQueryString());
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Yeni Eklenen Kurumlar',
@@ -101,11 +116,11 @@ class DiscoveryController extends Controller
 
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::discoverable()->claimed()
+        $facilities = $this->cachedListing('recently-claimed', $brand, $scopes, $request, fn () => Facility::discoverable()->claimed()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('claimed_at')
-            ->paginate(15)->withQueryString();
+            ->paginate(15)->withQueryString());
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'Son Sahiplenilen Kurumlar',
@@ -123,11 +138,11 @@ class DiscoveryController extends Controller
 
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $facilities = Facility::discoverable()
+        $facilities = $this->cachedListing('most-viewed', $brand, $scopes, $request, fn () => Facility::discoverable()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
             ->orderByDesc('views_count')
-            ->paginate(15)->withQueryString();
+            ->paginate(15)->withQueryString());
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'En Çok Görüntülenen Kurumlar',
@@ -177,12 +192,12 @@ class DiscoveryController extends Controller
 
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
-        $images = FacilityImage::whereHas('facility', function ($q) use ($scopes) {
+        $images = $this->cachedListing('recent-photos', $brand, $scopes, $request, fn () => FacilityImage::whereHas('facility', function ($q) use ($scopes) {
                 $q->discoverable()->forBrand($scopes);
             })
             ->with('facility.city')
             ->latest()
-            ->paginate(24)->withQueryString();
+            ->paginate(24)->withQueryString());
 
         $sections = service_sections();
 

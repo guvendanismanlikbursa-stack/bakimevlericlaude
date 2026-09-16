@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class FacilityCategory extends Model
 {
@@ -14,6 +15,35 @@ class FacilityCategory extends Model
     public function facilities()
     {
         return $this->hasMany(Facility::class);
+    }
+
+    /**
+     * 10 Eylul 2026: kullanicinin talebi - "Too many connections" yukunu
+     * azaltmak. facility_categories ~7 satir ve neredeyse hic degismiyor;
+     * her sayfada slug/brand_scope'a gore ayri sorgulanmasi gereksiz.
+     * Butun tabloyu 6 saatlik dosya-onbellegine alip filtrelemeyi bellekte
+     * yapiyoruz. Admin\FacilityCategoryController degisiklikte onbellegi
+     * temizler; /_ops/cache-refresh de temizler.
+     */
+    public static function cachedAll()
+    {
+        return Cache::remember('facility_categories:all:v1', now()->addHours(6), fn () => static::orderBy('name')->get());
+    }
+
+    public static function findBySlugCached(?string $slug, ?array $brandScopes = null): ?self
+    {
+        if (! filled($slug)) {
+            return null;
+        }
+
+        return static::cachedAll()->first(
+            fn (self $c) => $c->slug === $slug && ($brandScopes === null || in_array($c->brand_scope, $brandScopes, true))
+        );
+    }
+
+    public static function forgetCache(): void
+    {
+        Cache::forget('facility_categories:all:v1');
     }
 
     /**

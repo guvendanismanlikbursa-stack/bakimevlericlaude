@@ -8,7 +8,14 @@
       <img src="{{ $thread->guest_avatar_url }}" alt="" class="w-10 h-10 rounded-full shrink-0">
     @endif
     <div>
-      <h1 class="text-2xl font-bold">{{ $thread->guest_name ?? 'Sohbet #'.$thread->id }} · {{ $thread->brand }}</h1>
+      <h1 class="text-2xl font-bold flex items-center gap-2">
+        {{ $thread->guest_name ?? 'Sohbet #'.$thread->id }} · {{ $thread->brand }}
+        @if($thread->status === 'closed')
+          <span class="text-xs font-bold bg-gray-200 text-gray-700 rounded-full px-2 py-1">Kapalı</span>
+        @else
+          <span class="text-xs font-bold bg-green-100 text-green-700 rounded-full px-2 py-1">Açık</span>
+        @endif
+      </h1>
       <div class="text-sm text-gray-500 mt-1">
         {{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }}
         · Tercih: {{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }}
@@ -17,10 +24,19 @@
       </div>
     </div>
   </div>
-  <form method="POST" action="{{ route('admin.chat.close', $thread) }}" onsubmit="return confirm('Bu sohbeti kapatmak istediğinize emin misiniz?');">
-    @csrf
-    <button class="text-sm text-red-600 border border-red-200 rounded-lg px-3 py-2 hover:bg-red-50">Sohbeti Kapat</button>
-  </form>
+  <div class="flex items-center gap-2">
+    @if($thread->status !== 'closed')
+      <form method="POST" action="{{ route('admin.chat.close', $thread) }}" onsubmit="return confirm('Bu sohbeti kapatmak istediğinize emin misiniz?');">
+        @csrf
+        <button class="text-sm text-red-600 border border-red-200 rounded-lg px-3 py-2 hover:bg-red-50">Sohbeti Kapat</button>
+      </form>
+    @endif
+    <form method="POST" action="{{ route('admin.chat.destroy', $thread) }}" onsubmit="return confirm('Bu sohbeti ve tüm mesajlarını KALICI OLARAK silmek istediğinize emin misiniz? Bu işlem geri alınamaz.');">
+      @csrf
+      @method('DELETE')
+      <button class="text-sm text-white bg-red-600 rounded-lg px-3 py-2 hover:bg-red-700">Sohbeti Sil</button>
+    </form>
+  </div>
 </div>
 
 @php $intentLabels = ['sohbet' => '💬 Sohbet', 'dertlesme' => '🤍 Dertleşme', 'fikir' => '💡 Fikir', 'temsilci' => '🎧 Temsilci']; @endphp

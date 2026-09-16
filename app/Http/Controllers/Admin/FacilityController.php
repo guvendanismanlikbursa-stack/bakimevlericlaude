@@ -437,6 +437,58 @@ class FacilityController extends Controller
     }
 
     /**
+     * 9 Eylul 2026: kullanicinin talebi - "Ön Kayıt" butonu hesabi sadece
+     * ASKIYA ALIYOR (bkz. revertToPreRegistered), SILMIYOR - kurum sahibi
+     * veya admin sahiplendirme sirasinda e-posta/telefon gibi bir bilgiyi
+     * yanlis girdiyse, o yanlis veri askida da olsa ORTADA KALIYORDU ve
+     * yeniden sahiplendirmede karisikliga yol aciyordu (bkz. bugunku
+     * Akıllı Afacanlar e-posta duzeltme vakasi). Bu, revertToPreRegistered
+     * ile AYNI temel sifirlamayi yapar, TEK FARKI: hesabi askiya almak
+     * yerine TAMAMEN SILER - boylece "Yerinde Sahiplendirme" sifirdan,
+     * hicbir eski/yanlis veri kalintisi olmadan tekrar calistirilabilir.
+     * GUVENLIK: sadece SAHIPLENILMIS kurumlar icin calisir, yanlislikla
+     * bos/on-kayitli bir kuruma calisip hicbir sey silmemesi saglanir.
+     */
+    public function resetRegistration(Facility $facility)
+    {
+        abort_if(! $facility->is_claimed, 400, 'Bu kurum zaten sahiplenilmemiş, sıfırlanacak bir kayıt yok.');
+
+        $deletedCount = 0;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($facility, &$deletedCount) {
+            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+
+            if ((float) $locked->balance != 0 || (int) $locked->free_quote_credits != 0) {
+                \App\Models\BalanceLog::create([
+                    'facility_id' => $locked->id,
+                    'type' => 'claim_reverted',
+                    'amount' => -1 * (float) $locked->balance,
+                    'credits_amount' => -1 * (int) $locked->free_quote_credits,
+                    'balance_after' => 0,
+                    'credits_after' => 0,
+                    'admin_id' => session('admin_id'),
+                    'note' => 'Kurum kaydı sıfırlandı (yanlış girilen bilgiler yüzünden yeniden sahiplendirme için).',
+                ]);
+            }
+
+            $locked->update([
+                'is_claimed' => false,
+                'claimed_at' => null,
+                'source' => 'google_maps_veri_cekici',
+                'balance' => 0,
+                'free_quote_credits' => 0,
+            ]);
+
+            $deletedCount = \App\Models\FacilityUser::where('facility_id', $facility->id)->count();
+            \App\Models\FacilityUser::where('facility_id', $facility->id)->delete();
+        });
+
+        log_admin_event('facility_registration_reset', $facility);
+
+        return back()->with('success', "Kurum kaydı sıfırlandı: sahiplenme bonusu geri alındı, {$deletedCount} kurum yetkilisi hesabı kalıcı olarak silindi. Kurum artık ön kayıtlı, yeniden sahiplendirilebilir.");
+    }
+
+    /**
      * 19 Agustos 2026: kullanicinin talebi - kurumlari yerinde ziyaret edip
      * fotograf/durum kontrolu yapan admin, kurum yetkilisi o an sahiplenmek
      * isterse normal akistaki (basvuru + belge yukleme + admin onayi + mail

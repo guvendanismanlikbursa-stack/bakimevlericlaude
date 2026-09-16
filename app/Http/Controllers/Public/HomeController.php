@@ -8,6 +8,7 @@ use App\Models\City;
 use App\Models\Facility;
 use App\Models\FacilityCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
@@ -25,59 +26,94 @@ class HomeController extends Controller
         // (2., 3. sayfa...). Ayri bir 'featured_page' parametresi
         // kullaniliyor ki asagidaki $filteredFacilities->paginate()
         // (varsayilan 'page' parametresi) ile cakismasin.
-        $featured = Facility::discoverable()
-            ->forBrand($sectionScopes)
-            ->where('is_featured', true)
-            ->with(['city', 'category', 'images'])
-            // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
-            // ONCEKI hata: bu ANA "Öne Çıkanlar" sorgusu degil, sadece filtre
-            // uygulaninca kullanilan $filteredFacilities guncellenmisti - kullanicinin
-            // gordugu asil bolum hic degismemisti.
-            ->orderByDesc('is_broker_managed')
-            ->orderByDesc('rating')
-            ->orderByDesc('id')
-            ->paginate(6, ['*'], 'featured_page')
-            ->withQueryString();
+        // 11 Eylul 2026: kullanicinin bildirdigi tekrarlayan "Too many
+        // connections" hatasi - anasayfa TUM sitenin en cok ziyaret edilen
+        // sayfasi ama her acilisinda 7-8 ayri sorgu calistiriyordu (öne
+        // cikanlar + sahiplenilmis + on kayitli + 3 ayri sayac). Bu blok
+        // her ziyaretcide/bottа AYNI sonucu urettigi icin 10 dakikalik kisa
+        // sureli onbellege alindi - veri en fazla 10 dakika eskiyebilir,
+        // karsiliginda anasayfadaki DB yuku neredeyse sifira iner. Filtre
+        // sonuclari (asagidaki $isFiltering blogu) bu onbellegin DISINDA,
+        // her zaman canli kalir.
+        $homeCacheKey = 'home:sections:v1:'.md5(implode('|', [
+            $brand['slug'], $activeSection['slug'], (string) $request->query('featured_page', 1),
+        ]));
 
-        // 28 Agustos 2026: kullanicinin talebi - "sahiplenilmis kurumlar"
-        // (is_claimed=true ama Öne Çıkanlar'da zaten gosterilenler haric)
-        // Öne Çıkanlar ile Ön Kayıtlı Kurumlar arasinda ayri bir bolum.
-        $claimedFacilities = Facility::discoverable()
-            ->forBrand($sectionScopes)
-            ->where('is_claimed', true)
-            ->where('is_featured', false)
-            ->with(['city', 'category', 'images'])
-            ->latest('claimed_at')
-            ->limit(6)
-            ->get();
+        $homeData = Cache::remember($homeCacheKey, now()->addMinutes(10), function () use ($sectionScopes, $brand) {
+            $featured = Facility::discoverable()
+                ->forBrand($sectionScopes)
+                ->where('is_featured', true)
+                ->with(['city', 'category', 'images'])
+                // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
+                // ONCEKI hata: bu ANA "Öne Çıkanlar" sorgusu degil, sadece filtre
+                // uygulaninca kullanilan $filteredFacilities guncellenmisti - kullanicinin
+                // gordugu asil bolum hic degismemisti.
+                ->orderByDesc('is_broker_managed')
+                ->orderByDesc('rating')
+                ->orderByDesc('id')
+                ->paginate(6, ['*'], 'featured_page')
+                ->withQueryString();
 
-        // 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
-        // Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ - hangisinin
-        // kendi verisi varsa o gorunur, digerlerinin doluluk durumundan
-        // BAGIMSIZ (once denenen "sadece digerleri boşsa goster" yedek
-        // mantigi kaldirildi).
-        $preRegistered = Facility::discoverable()
-            ->forBrand($sectionScopes)
-            ->where('is_claimed', false)
-            ->where('source', 'google_maps_veri_cekici')
-            ->with(['city', 'category', 'images'])
-            ->latest()
-            ->limit(12)
-            ->get();
+            // 28 Agustos 2026: kullanicinin talebi - "sahiplenilmis kurumlar"
+            // (is_claimed=true ama Öne Çıkanlar'da zaten gosterilenler haric)
+            // Öne Çıkanlar ile Ön Kayıtlı Kurumlar arasinda ayri bir bolum.
+            $claimedFacilities = Facility::discoverable()
+                ->forBrand($sectionScopes)
+                ->where('is_claimed', true)
+                ->where('is_featured', false)
+                ->with(['city', 'category', 'images'])
+                ->latest('claimed_at')
+                ->limit(6)
+                ->get();
 
-        $categories = FacilityCategory::whereIn('brand_scope', $sectionScopes)->orderBy('name')->get();
-        $cities = City::orderBy('name')->get();
+            // 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
+            // Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ - hangisinin
+            // kendi verisi varsa o gorunur, digerlerinin doluluk durumundan
+            // BAGIMSIZ (once denenen "sadece digerleri boşsa goster" yedek
+            // mantigi kaldirildi).
+            $preRegistered = Facility::discoverable()
+                ->forBrand($sectionScopes)
+                ->where('is_claimed', false)
+                ->where('source', 'google_maps_veri_cekici')
+                ->with(['city', 'category', 'images'])
+                ->latest()
+                ->limit(12)
+                ->get();
+
+            // 12 Agustos 2026: kullanicinin talebi - anasayfa "maksimum premium"
+            // seviyeye tasinirken guven veren gercek, canli rakamlar eklendi
+            // (Hakkimizda sayfasindaki ayni yaklasim).
+            $facilityCount = Facility::discoverable()->forBrand($brand['category_scope'])->count();
+            $cityCount = Facility::discoverable()->forBrand($brand['category_scope'])
+                ->join('cities', 'cities.id', '=', 'facilities.city_id')
+                ->distinct('cities.id')->count('cities.id');
+            $claimedCount = Facility::discoverable()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
+
+            return compact('featured', 'claimedFacilities', 'preRegistered', 'facilityCount', 'cityCount', 'claimedCount');
+        });
+
+        ['featured' => $featured, 'claimedFacilities' => $claimedFacilities, 'preRegistered' => $preRegistered,
+            'facilityCount' => $facilityCount, 'cityCount' => $cityCount, 'claimedCount' => $claimedCount] = $homeData;
+
+        // 14 Eylul 2026: kullanicinin talebi - anlaşmalı (is_broker_managed)
+        // kurumlari il secilmemisse Turkiye genelinde, il secilmisse SADECE
+        // o ile ait pin'lerle haritada gosterir. Su an cok az sayida
+        // (birkaç düzine) anlaşmalı kurum oldugu icin bu sorgu cok hafif -
+        // ayrica onbelleklemeye gerek yok, her zaman canli/guncel kalir ki
+        // yeni bir kurum anlaşmalı yapildiginda haritada ANINDA gorunsun.
+        $brokerCitySlug = $request->query('city');
+        $brokerFacilities = Facility::discoverable()
+            ->forBrand($sectionScopes)
+            ->where('is_broker_managed', true)
+            ->whereNotNull('lat')->whereNotNull('lng')
+            ->when($brokerCitySlug, fn ($q) => $q->whereHas('city', fn ($c) => $c->where('slug', $brokerCitySlug)))
+            ->with('city:id,name,slug')
+            ->get(['id', 'name', 'slug', 'lat', 'lng', 'city_id']);
+
+        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $sectionScopes)->values();
+        $cities = City::cachedAll();
         $districtsByCity = turkey_provinces();
         $sectionServices = $activeSection['features'];
-
-        // 12 Agustos 2026: kullanicinin talebi - anasayfa "maksimum premium"
-        // seviyeye tasinirken guven veren gercek, canli rakamlar eklendi
-        // (Hakkimizda sayfasindaki ayni yaklasim).
-        $facilityCount = Facility::discoverable()->forBrand($brand['category_scope'])->count();
-        $cityCount = Facility::discoverable()->forBrand($brand['category_scope'])
-            ->join('cities', 'cities.id', '=', 'facilities.city_id')
-            ->distinct('cities.id')->count('cities.id');
-        $claimedCount = Facility::discoverable()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
 
         // 12 Agustos 2026: kullanicinin acik talebi - filtre formu
         // doldurulup gonderildiginde ayni sayfada, "Bilgi merkezi/Makale ve
@@ -125,6 +161,7 @@ class HomeController extends Controller
                     'featured',
                     'claimedFacilities',
                     'preRegistered',
+                    'brokerFacilities',
                     'sectionBreakdown'
                 ))->render(),
             ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -134,6 +171,7 @@ class HomeController extends Controller
             'featured',
             'claimedFacilities',
             'preRegistered',
+            'brokerFacilities',
             'categories',
             'cities',
             'sections',

@@ -37,6 +37,8 @@
       @endforeach
     </div>
 
+    @include('themes._shared.partials.broker-incentive-banner')
+
     {{-- 12 Agustos 2026: form (GERCEK filtre) bilerek 3 bolum kartindan
          HEMEN SONRA - onceki halde buraya sadece dekoratif "hero gorsel
          kutusu" tasinmisti, GERCEK form hala en altta kalmisti; kullanici
@@ -121,6 +123,7 @@
 @include('themes._shared.partials.trust-stats')
 
 @include('themes._shared.partials.discover-links')
+@include('themes._shared.partials.broker-map-script')
 @include('themes._shared.partials.location-filter-script')
 {{-- 2 Eylul 2026: bkz. bakimevleri/home.blade.php ayni tarihli yorum -
      anasayfa favori/karsilastir butonlari bu script olmadan calismiyordu. --}}

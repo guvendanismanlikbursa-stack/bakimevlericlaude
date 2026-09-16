@@ -26,8 +26,8 @@ class FacilityController extends Controller
         $activeSection = $request->query('bolum') ? active_service_section($request->query('bolum'), $brand) : null;
         $scope = $activeSection ? $activeSection['scopes'] : $brand['category_scope'];
 
-        $cities = City::orderBy('name')->get();
-        $categories = FacilityCategory::whereIn('brand_scope', $scope)->orderBy('name')->get();
+        $cities = City::cachedAll();
+        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $scope)->values();
         $districtsByCity = turkey_provinces();
         $sectionServices = $activeSection
             ? $activeSection['features']
@@ -263,17 +263,35 @@ class FacilityController extends Controller
         // tutulur, ayni tarayici oturumu 24 saatte SADECE 1 kez sayilir -
         // trackContactClick() ile AYNI, kanitlanmis oturum-tekillestirme
         // deseni. Admin dashboard'da ayri bir bolumde gosterilir.
+        //
+        // 9 Eylul 2026: kullanicinin "sayac dogru mu" sorusu uzerine bulundu
+        // - SADECE session'a dayanan tekillestirme, cerez saklamayan bot/
+        // otomatik araclar icin calismiyordu (canli kanit: bir kurumda 67
+        // saniyede 3 ayri "gercek tiklama"). Session'dan BAGIMSIZ, IP'ye
+        // dayali (ham IP degil, APP_KEY ile tuzlanmis hash - gizlilik icin
+        // ham IP hic saklanmiyor) ikinci bir kontrol eklendi - ikisinden
+        // HERHANGI biri son 24 saatte bu kurum icin zaten kayitliysa
+        // yeni olay yazilmaz.
         if (! is_bot_user_agent($request->userAgent())) {
             $realViewSessionKey = "real_view_{$facility->id}";
             $lastRealViewAt = session($realViewSessionKey);
-            if (! $lastRealViewAt || now()->diffInHours($lastRealViewAt) >= 24) {
+            $sessionSaysNew = ! $lastRealViewAt || now()->diffInHours($lastRealViewAt) >= 24;
+
+            $ipHash = hash('sha256', $request->ip().config('app.key'));
+            $ipSaysNew = ! $facility->engagementEvents()
+                ->where('type', 'real_view')
+                ->where('ip_hash', $ipHash)
+                ->where('created_at', '>=', now()->subDay())
+                ->exists();
+
+            if ($sessionSaysNew && $ipSaysNew) {
                 try {
-                    $facility->engagementEvents()->create(['type' => 'real_view']);
+                    $facility->engagementEvents()->create(['type' => 'real_view', 'ip_hash' => $ipHash]);
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Gercek tiklama olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
                 }
-                session([$realViewSessionKey => now()]);
             }
+            session([$realViewSessionKey => now()]);
         }
 
         $serviceSection = service_section_for_scope($facility->category?->brand_scope);

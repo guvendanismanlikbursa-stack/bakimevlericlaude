@@ -3850,11 +3850,22 @@ class PlatformFeatureTest extends TestCase
         ]);
         $unknownExplanation = $unknownError->plainExplanation();
         $this->assertStringContainsString('çözemedim', $unknownExplanation['detail']);
+        $this->assertSame('yuksek', $unknownExplanation['severity']);
+
+        $tooManyConnectionsError = \App\Models\PlatformError::create([
+            'source' => 'exception', 'title' => 'PDOException — bakimevleri.com',
+            'message' => 'Hata: PDOException'."\n".'Mesaj: SQLSTATE[HY000] [1040] Too many connections',
+            'context' => ['exception_class' => 'PDOException'],
+        ]);
+        $connectionsExplanation = $tooManyConnectionsError->plainExplanation();
+        $this->assertStringContainsString('bağlantı isteği aldığı', $connectionsExplanation['summary']);
+        $this->assertSame('orta', $connectionsExplanation['severity']);
 
         $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/hatalar');
         $response->assertOk()
             ->assertSee('otomatik test kontrolü')
             ->assertSee('Sistemde teknik bir hata oluştu')
+            ->assertSee('İzlenmeli')
             ->assertSee('Teknik detay');
     }
 

@@ -8,7 +8,7 @@ class FacilityEngagementEvent extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['facility_id', 'type', 'created_at'];
+    protected $fillable = ['facility_id', 'type', 'ip_hash', 'created_at'];
 
     protected $casts = [
         'created_at' => 'datetime',

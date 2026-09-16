@@ -17,8 +17,8 @@ class FacilityRegistrationController extends Controller
     public function create(Request $request)
     {
         $brand = current_brand();
-        $categories = FacilityCategory::whereIn('brand_scope', $brand['category_scope'])->orderBy('name')->get();
-        $cities = City::orderBy('name')->get();
+        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $brand['category_scope'])->values();
+        $cities = City::cachedAll();
 
         return view("themes.{$brand['theme']}.facility-register", compact('categories', 'cities'));
     }
@@ -100,8 +100,8 @@ class FacilityRegistrationController extends Controller
         $this->authorizeEdit($registration, $hash);
 
         $brand = current_brand();
-        $categories = FacilityCategory::whereIn('brand_scope', $brand['category_scope'])->orderBy('name')->get();
-        $cities = City::orderBy('name')->get();
+        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $brand['category_scope'])->values();
+        $cities = City::cachedAll();
 
         return view("themes.{$brand['theme']}.facility-register-edit", compact('registration', 'categories', 'cities'));
     }
