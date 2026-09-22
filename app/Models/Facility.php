@@ -19,7 +19,7 @@ class Facility extends Model
         'allows_visit_service', 'video_path', 'video_updated_at',
         'vacancy_male', 'vacancy_female', 'vacancy_general', 'vacancy_updated_at',
         'site_visited_at', 'google_maps_url', 'google_reviews_fetched_at',
-        'is_subscribed', 'subscription_plan', 'subscription_started_at', 'subscription_paid_until',
+        'is_subscribed', 'subscription_plan', 'subscription_started_at', 'subscription_paid_until', 'subscription_amount',
     ];
 
     protected function casts(): array
@@ -65,6 +65,7 @@ class Facility extends Model
             'is_subscribed' => 'boolean',
             'subscription_started_at' => 'datetime',
             'subscription_paid_until' => 'date',
+            'subscription_amount' => 'float',
         ];
     }
 

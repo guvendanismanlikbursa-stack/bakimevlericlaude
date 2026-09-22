@@ -59,7 +59,7 @@
             @if($f->is_subscribed)
               <div class="mt-1">
                 <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">
-                  ★ Abone{{ $f->isActiveSubscriber() ? '' : ' (süresi geçti)' }}
+                  ★ Abone{{ $f->isActiveSubscriber() ? '' : ' (süresi geçti)' }}{{ $f->subscription_amount ? ' · '.number_format($f->subscription_amount, 0, ',', '.').' TL' : '' }}
                 </span>
               </div>
             @endif
@@ -126,6 +126,7 @@
                     <option value="monthly">Aylık</option>
                     <option value="yearly">Yıllık</option>
                   </select>
+                  <input type="number" name="amount" step="0.01" min="0" placeholder="TL" class="text-xs border rounded w-16" onclick="event.stopPropagation()">
                   <button style="color:#a21caf;">Abone Yap</button>
                 </form>
               @endif

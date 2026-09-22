@@ -743,6 +743,9 @@ class FacilityController extends Controller
 
         $data = $request->validate([
             'plan' => 'required|in:monthly,yearly',
+            // 22 Eylul 2026: kullanicinin talebi - ucret SABIT degil, kurum
+            // bazinda degisken - her kurumun kendi ucreti burada girilir.
+            'amount' => 'nullable|numeric|min:0',
         ]);
 
         $paidUntil = $data['plan'] === 'yearly' ? now()->addYear() : now()->addMonth();
@@ -750,11 +753,12 @@ class FacilityController extends Controller
         $facility->update([
             'is_subscribed' => true,
             'subscription_plan' => $data['plan'],
+            'subscription_amount' => $data['amount'] ?? null,
             'subscription_started_at' => now(),
             'subscription_paid_until' => $paidUntil->toDateString(),
         ]);
 
-        log_admin_event('facility_subscription_enabled', $facility, ['plan' => $data['plan'], 'paid_until' => $paidUntil->toDateString()]);
+        log_admin_event('facility_subscription_enabled', $facility, ['plan' => $data['plan'], 'amount' => $data['amount'] ?? null, 'paid_until' => $paidUntil->toDateString()]);
 
         return back()->with('success', "{$facility->name} abone yapıldı, ödemesi {$paidUntil->format('d.m.Y')} tarihine kadar geçerli.");
     }
@@ -762,11 +766,17 @@ class FacilityController extends Controller
     /**
      * "Ödeme aldım" - mevcut plana gore 1 ay/1 yil ekler. Odeme suresi
      * henuz dolmadiysa KALAN GUNLER kaybolmaz, mevcut bitis tarihinin
-     * ustune eklenir (erken odemede kurum magdur olmaz).
+     * ustune eklenir (erken odemede kurum magdur olmaz). Ucret DEGISKEN
+     * oldugu icin her odemede yeniden girilebilir - bos birakilirsa
+     * mevcut tutar aynen korunur.
      */
-    public function subscriptionExtend(Facility $facility)
+    public function subscriptionExtend(Request $request, Facility $facility)
     {
         abort_unless($facility->is_subscribed, 400, 'Bu kurum abone değil.');
+
+        $data = $request->validate([
+            'amount' => 'nullable|numeric|min:0',
+        ]);
 
         $base = ($facility->subscription_paid_until && ! $facility->subscription_paid_until->copy()->endOfDay()->isPast())
             ? $facility->subscription_paid_until->copy()
@@ -774,9 +784,13 @@ class FacilityController extends Controller
 
         $paidUntil = $facility->subscription_plan === 'yearly' ? $base->addYear() : $base->addMonth();
 
-        $facility->update(['subscription_paid_until' => $paidUntil->toDateString()]);
+        $update = ['subscription_paid_until' => $paidUntil->toDateString()];
+        if ($request->filled('amount')) {
+            $update['subscription_amount'] = $data['amount'];
+        }
+        $facility->update($update);
 
-        log_admin_event('facility_subscription_payment', $facility, ['paid_until' => $paidUntil->toDateString()]);
+        log_admin_event('facility_subscription_payment', $facility, ['paid_until' => $paidUntil->toDateString(), 'amount' => $facility->subscription_amount]);
 
         return back()->with('success', "{$facility->name} için ödeme kaydedildi, yeni bitiş tarihi: {$paidUntil->format('d.m.Y')}.");
     }

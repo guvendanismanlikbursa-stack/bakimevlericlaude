@@ -2596,6 +2596,13 @@ class PlatformFeatureTest extends TestCase
 
     public function test_health_check_endpoint_reports_ok(): void
     {
+        // 22 Eylul 2026: bkz. test_health_check_ignores_never_run_jobs_but_
+        // fails_on_truly_overdue_ones ayni tarihli yorum - tam paket
+        // calisirken baska bir testten kalintili bir "gecikmis" ScheduledJobRun
+        // satiri sizip bu testi arada 503'e dusurebiliyordu. Ayni acik
+        // temizlik burada da uygulanir.
+        \App\Models\ScheduledJobRun::query()->delete();
+
         $this->get('/_saglik')
             ->assertOk()
             ->assertJson(['status' => 'ok'])
@@ -3302,30 +3309,34 @@ class PlatformFeatureTest extends TestCase
         $this->assertFalse((bool) $facility->is_broker_managed);
 
         $this->withSession(['admin_id' => $this->admin->id])
-            ->post(route('admin.facilities.subscription.enable', $facility), ['plan' => 'monthly'])
+            ->post(route('admin.facilities.subscription.enable', $facility), ['plan' => 'monthly', 'amount' => 250])
             ->assertRedirect();
 
         $facility->refresh();
         $this->assertTrue($facility->is_subscribed);
         $this->assertSame('monthly', $facility->subscription_plan);
+        $this->assertSame(250.0, $facility->subscription_amount);
         $this->assertTrue($facility->isActiveSubscriber());
         $this->assertEqualsWithDelta(now()->addMonth()->timestamp, $facility->subscription_paid_until->timestamp, 86400);
 
         // "Ödeme aldım" - kalan gunler kaybolmadan uzatilmali (mevcut
-        // bitis tarihinin ustune eklenir, bugunun degil).
+        // bitis tarihinin ustune eklenir, bugunun degil). Ucret DEGISKEN
+        // oldugu icin her odemede yeniden girilebilir.
         $previousPaidUntil = $facility->subscription_paid_until->copy();
         $this->withSession(['admin_id' => $this->admin->id])
-            ->post(route('admin.facilities.subscription.extend', $facility))
+            ->post(route('admin.facilities.subscription.extend', $facility), ['amount' => 300])
             ->assertRedirect();
 
         $facility->refresh();
         $this->assertEqualsWithDelta($previousPaidUntil->copy()->addMonth()->timestamp, $facility->subscription_paid_until->timestamp, 86400);
+        $this->assertSame(300.0, $facility->subscription_amount);
 
-        // Abone kurumlar sayfasinda gorunmeli.
+        // Abone kurumlar sayfasinda gorunmeli, guncel ucretle birlikte.
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/abone-kurumlar')
             ->assertOk()
             ->assertSee($facility->name)
+            ->assertSee('300 TL')
             ->assertSee('Aktif');
 
         // Iptal edince aboneler listesinden dusmeli.
@@ -3393,7 +3404,10 @@ class PlatformFeatureTest extends TestCase
             ->assertDontSee('WhatsApp\'tan Yaz', false);
     }
 
-    public function test_active_subscriber_shows_priority_badge_on_mini_card(): void
+    // 22 Eylul 2026: kullanicinin talebi - aktif abone kurumlar artik
+    // anlasmali/sahiplenilmis kurumlarla AYNI buyuk karti kullanir (kucuk
+    // mini-karta dusmez), "Yardımsever Kurum" rozetiyle.
+    public function test_active_subscriber_shows_full_card_with_charitable_badge(): void
     {
         $facility = $this->rehabFacility;
         $facility->update([
@@ -3403,9 +3417,11 @@ class PlatformFeatureTest extends TestCase
             'subscription_paid_until' => now()->addYear()->toDateString(),
         ]);
 
-        $this->get('/site/bakimeviara/kurumlar?bolum=rehabilitasyon')
-            ->assertOk()
-            ->assertSee('Öncelikli Kurum', false);
+        $response = $this->get('/site/bakimeviara/kurumlar?bolum=rehabilitasyon')->assertOk();
+        $response->assertSee('Yardımsever Kurum', false);
+        // Buyuk kart kullanildigini (mini-kartin kendine ozgu sarmalayicisi
+        // DEGIL) dogrular - bkz. test_claimed_facility_card_uses_full_layout...
+        $response->assertSee('Hemen Ücret Sor', false);
     }
 
     public function test_data_quality_page_detects_and_fixes_issues(): void

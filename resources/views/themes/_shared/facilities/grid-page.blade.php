@@ -39,7 +39,7 @@
       <a href="{{ brand_route('facilities.index') }}" class="text-primary underline mt-2 inline-block">Tüm kurumlara git</a>
     </div>
   @else
-    <div class="grid md:grid-cols-4 gap-6">
+    <div class="grid grid-cols-2 gap-3 md:gap-6 md:grid-cols-4">
       @foreach($facilities as $facility)
         @include('themes._shared.partials.facility-card', ['facility' => $facility, 'badge' => $badges[$facility->id] ?? null])
       @endforeach

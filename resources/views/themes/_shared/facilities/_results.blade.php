@@ -21,7 +21,11 @@
   </div>
 @endif
 
-<div class="grid md:grid-cols-4 gap-6">
+{{-- 22 Eylul 2026: kullanicinin talebi - mobilde buyuk kurum kartlari
+     tek sutun halinde alt alta diziliyordu (grid'in mobil karsiligi
+     tanimlanmamisti, sadece md: ve uzeri vardi) - artik mobilde de
+     yan yana 2'li grid. --}}
+<div class="grid grid-cols-2 gap-3 md:gap-6 md:grid-cols-4">
   @foreach($facilities as $facility)
     @include('themes._shared.partials.facility-card', ['facility' => $facility])
   @endforeach

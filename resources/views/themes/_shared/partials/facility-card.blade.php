@@ -15,7 +15,12 @@
   // gercekten hicbir iliskimiz olmayan rastgele bir kurum gibi. Facility::
   // scopeAcceptsFamilyRequests() ile AYNI kural: anlasmali kurumlar da
   // artik buyuk, aksiyon butonlu karti kullanir.
-  $isPreRegisteredCard = ! $facility->is_claimed && ! $facility->is_broker_managed;
+  // 22 Eylul 2026: kullanicinin talebi - odemesi GECERLI olan abone
+  // kurumlar da artik anlasmali/sahiplenilmis kurumlarla AYNI buyuk,
+  // aksiyon butonlu karti kullanir (kucuk mini-karta dusmez) - "Yardımsever
+  // Kurum" rozetiyle one cikarilirlar.
+  $isActiveSubscriberCard = $facility->isActiveSubscriber();
+  $isPreRegisteredCard = ! $facility->is_claimed && ! $facility->is_broker_managed && ! $isActiveSubscriberCard;
 @endphp
 @if($isPreRegisteredCard)
   {{-- 17 Agustos 2026: kullanicinin talebi - on kayitli kurumlar buyuk
@@ -42,17 +47,11 @@
       </div>
       <div class="min-w-0">
         {{-- 22 Eylul 2026: kullanicinin talebi - "Ön Kayıtlı" etiketi
-             kaldirildi (kafa karistirici/itici bulundu, "kayitli kurum"
-             ifadesi de anlamsiz - bu kurumlar artik hicbir ozel etiket
-             tasimadan digerleriyle ayni sekilde listelenir). Sadece
-             abonelik odemesi GECERLI olan kurumlarda "Öncelikli Kurum"
-             rozeti gorunur (fuchsia - siteki diger tum rozet renklerinden
-             kasitli olarak farkli, bkz. facility-card ÖNE ÇIKAN amber
-             ribbon'iyla karismasin diye). --}}
+             kaldirildi (kafa karistirici/itici bulundu). Aktif abone
+             kurumlar artik bu mini karta hic dusmuyor (bkz. yukaridaki
+             $isPreRegisteredCard hesaplamasi) - buyuk kartta "Yardımsever
+             Kurum" rozetiyle gosteriliyorlar. --}}
         <div class="flex items-center gap-1.5 flex-wrap">
-          @if($facility->isActiveSubscriber())
-            <span class="text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0" style="background:#fae8ff;color:#a21caf;">★ Öncelikli Kurum</span>
-          @endif
           @if($facility->is_featured)<span class="text-[10px] font-black text-amber-700 shrink-0">⭐</span>@endif
         </div>
         <div class="text-sm font-black text-gray-950 line-clamp-1">{{ $facility->name }}</div>
@@ -149,7 +148,13 @@
         @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>@endif
         @if($facility->hasFreeChildAccidentInsurance())<span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
-        @if($isPreRegisteredCard)<span class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">Ön Kayıtlı</span>@endif
+        {{-- 22 Eylul 2026: kullanicinin talebi - abonelik odemesi GECERLI
+             olan (ama sahiplenilmemis/anlasmasiz) kurumlar artik anlasmali/
+             sahiplenilmis kurumlarla ayni buyuk kartta, "Yardımsever Kurum"
+             rozetiyle gosterilir. --}}
+        @if($isActiveSubscriberCard && ! $facility->is_claimed && ! $facility->is_broker_managed)
+          <span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">💜 Yardımsever Kurum</span>
+        @endif
         @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
         @isset($badge){!! $badge !!}@endisset
       </div>
@@ -192,8 +197,10 @@
        gorsel olarak degil, AILEYI GERCEKTEN TEKLIF ISTEMEYE tesvik edecek
        sekilde one cikmali. Buyuk, tek basina, ikonlu bir birincil CTA -
        diger 4 buton (İncele/Karşılaştır/Toplu Fiyat Al dahil "Fiyat Al")
-       kucuk/ikincil kalir, tekrar etmez. --}}
-  @if($facility->is_broker_managed)
+       kucuk/ikincil kalir, tekrar etmez.
+       22 Eylul 2026: kullanicinin talebi - aktif abone (Yardımsever Kurum)
+       kurumlar da ayni tesvik edici CTA'yi alir. --}}
+  @if($facility->is_broker_managed || $isActiveSubscriberCard)
     <div class="px-4 pb-3">
       <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black text-white text-center bg-gradient-to-r from-blue-600 to-sky-500 shadow-md shadow-blue-400/40 hover:shadow-lg hover:shadow-blue-400/60 transition">
         💬 Hemen Ücret Sor <span class="font-normal opacity-90">· Öncelikli Yanıt</span>

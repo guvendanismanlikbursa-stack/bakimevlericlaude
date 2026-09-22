@@ -31,7 +31,7 @@
 
     @if($filteredFeatured->isNotEmpty())
       <div class="text-sm font-bold text-gray-500 mb-3">Öne çıkanlar</div>
-      <div class="grid md:grid-cols-4 gap-5 mb-8">
+      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4 mb-8">
         @foreach($filteredFeatured as $facility)
           @include('themes._shared.partials.facility-card', ['facility' => $facility])
         @endforeach
@@ -45,7 +45,7 @@
       </div>
     @elseif($filteredFacilities->isNotEmpty())
       <div class="text-sm font-bold text-gray-500 mb-3">Filtreye uygun kurumlar</div>
-      <div class="grid md:grid-cols-4 gap-5">
+      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4">
         @foreach($filteredFacilities as $facility)
           @include('themes._shared.partials.facility-card', ['facility' => $facility])
         @endforeach
@@ -59,7 +59,7 @@
     <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div>
     <h2 class="text-3xl font-black text-gray-950">Ailelerin incelediği kurumlar</h2>
   </div>
-  <div class="grid md:grid-cols-4 gap-6">
+  <div class="grid grid-cols-2 gap-3 md:gap-6 md:grid-cols-4">
     @forelse($featured as $facility)
       {{-- 4 Eylul 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum (ic ice <a> onlemek icin dis eleman <div>'e cevrildi). --}}
       <div class="group bg-white rounded-2xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">

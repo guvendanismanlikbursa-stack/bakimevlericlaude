@@ -33,7 +33,7 @@
 
     @if($filteredFeatured->isNotEmpty())
       <div class="text-sm font-black text-gray-500 mb-3">Öne çıkanlar</div>
-      <div class="grid md:grid-cols-4 gap-5 mb-8">
+      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4 mb-8">
         @foreach($filteredFeatured as $facility)
           @include('themes._shared.partials.facility-card', ['facility' => $facility])
         @endforeach
@@ -48,7 +48,7 @@
     @else
       @if($filteredFacilities->isNotEmpty())
         <div class="text-sm font-black text-gray-500 mb-3">Filtreye uygun kurumlar</div>
-        <div class="grid md:grid-cols-4 gap-5">
+        <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4">
           @foreach($filteredFacilities as $facility)
             @include('themes._shared.partials.facility-card', ['facility' => $facility])
           @endforeach

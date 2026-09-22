@@ -36,6 +36,7 @@
         <th class="p-3 w-56">Kurum</th>
         <th class="p-3">Şehir</th>
         <th class="p-3">Plan</th>
+        <th class="p-3">Ücret</th>
         <th class="p-3">Başlangıç</th>
         <th class="p-3">Ödeme Bitiş Tarihi</th>
         <th class="p-3">Durum</th>
@@ -50,6 +51,7 @@
           </td>
           <td class="p-3">{{ $f->city->name }}</td>
           <td class="p-3">{{ $f->subscription_plan === 'yearly' ? 'Yıllık' : 'Aylık' }}</td>
+          <td class="p-3 text-gray-700 whitespace-nowrap">{{ $f->subscription_amount ? number_format($f->subscription_amount, 0, ',', '.').' TL' : '—' }}</td>
           <td class="p-3 text-gray-500 whitespace-nowrap">{{ $f->subscription_started_at?->format('d.m.Y') ?? '—' }}</td>
           <td class="p-3 text-gray-700 whitespace-nowrap">{{ $f->subscription_paid_until?->format('d.m.Y') ?? '—' }}</td>
           <td class="p-3">
@@ -59,9 +61,10 @@
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Süresi Geçti</span>
             @endif
           </td>
-          <td class="p-3 text-right space-x-2 whitespace-nowrap">
-            <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? Bitiş tarihi 1 {{ $f->subscription_plan === 'yearly' ? 'yıl' : 'ay' }} uzatılacak.');">
+          <td class="p-3 text-right whitespace-nowrap">
+            <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline flex items-center gap-1 justify-end" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? Bitiş tarihi 1 {{ $f->subscription_plan === 'yearly' ? 'yıl' : 'ay' }} uzatılacak.');">
               @csrf
+              <input type="number" name="amount" step="0.01" min="0" value="{{ $f->subscription_amount }}" placeholder="TL" class="text-xs border rounded w-20" onclick="event.stopPropagation()">
               <button class="text-green-700 font-semibold">Ödeme Aldım</button>
             </form>
             <form method="POST" action="{{ route('admin.facilities.subscription.cancel', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} aboneliği iptal edilsin mi?');">
@@ -71,7 +74,7 @@
           </td>
         </tr>
       @empty
-        <tr><td class="p-3 text-gray-400" colspan="7">Henüz abone kurum yok.</td></tr>
+        <tr><td class="p-3 text-gray-400" colspan="8">Henüz abone kurum yok.</td></tr>
       @endforelse
     </tbody>
   </table>
