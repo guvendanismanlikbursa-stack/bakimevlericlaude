@@ -71,7 +71,7 @@
            kullaniyordu, diger 2 marka (bakimeviara/bakimevibul) buyuk,
            dikey (gorsel ustte, md:grid-cols-3) kart kullaniyor. Ayni
            gorsel dile getirildi - 3 marka artik tutarli buyuklukte. --}}
-      <div class="grid md:grid-cols-4 gap-5">
+      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4">
         @forelse($featured as $facility)
           {{-- 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlara ayri
                bir "Hemen Ücret Sor" CTA'si eklenecekti, ama tum kart TEK bir
