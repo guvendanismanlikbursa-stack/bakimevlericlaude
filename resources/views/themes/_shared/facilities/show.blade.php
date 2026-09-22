@@ -62,9 +62,11 @@
         <span class="bg-white/15 border border-white/20 text-white text-xs font-semibold px-2 py-1 rounded-full">✓ Onaylı / sahiplenilmiş kurum</span>
       @elseif($facility->is_broker_managed)
         <span class="bg-blue-500/25 border border-blue-300/40 text-white text-xs font-semibold px-2 py-1 rounded-full">🤝 Anlaşmalı kurum</span>
-      @else
-        <span class="bg-white/10 border border-white/15 text-white/80 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
       @endif
+      {{-- 20 Eylul 2026: kullanicinin talebi - "Ön kayıtlı profil" etiketi
+           (ve benzer "ön kayit/henuz sahiplenilmedi" ifadeleri) sayfanin
+           "isE yaramaz/guvenilmez" hissettirmesine, ailenin formu
+           gondermekten vazgecmesine yol aciyordu - kaldirildi. --}}
       @if($facility->is_featured)
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
@@ -84,6 +86,9 @@
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full bg-white text-gray-950">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
       @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-1 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
+      {{-- 18 Eylul 2026: kullanicinin talebi - rakip site kiyasindan gelen
+           sosyal kanit rozeti, bkz. Facility::reviewRankLabel() yorumu. --}}
+      @if($rankLabel = $facility->reviewRankLabel())<span class="bg-slate-200 text-slate-800 text-xs font-semibold px-2 py-1 rounded-full">🏆 {{ $rankLabel }}</span>@endif
     </div>
     <h1 class="text-3xl md:text-4xl font-black text-balance">{{ $facility->name }}</h1>
     <p class="text-white/80 mt-2">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
@@ -99,8 +104,6 @@
         <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">Onaylı / sahiplenilmiş kurum</span>
       @elseif($facility->is_broker_managed)
         <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">🤝 Anlaşmalı kurum</span>
-      @else
-        <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-1 rounded-full">Ön kayıtlı profil</span>
       @endif
       @if($facility->is_featured)
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
@@ -118,6 +121,9 @@
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
       @include('themes._shared.partials.segment-info-icon', ['categories' => [$facility->category], 'id' => 'segment-info-facility-'.$facility->id])
       @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-1 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
+      {{-- 18 Eylul 2026: kullanicinin talebi - rakip site kiyasindan gelen
+           sosyal kanit rozeti, bkz. Facility::reviewRankLabel() yorumu. --}}
+      @if($rankLabel = $facility->reviewRankLabel())<span class="bg-slate-200 text-slate-800 text-xs font-semibold px-2 py-1 rounded-full">🏆 {{ $rankLabel }}</span>@endif
     </div>
     <h1 class="text-3xl font-black text-gray-950">{{ $facility->name }}</h1>
     <p class="text-gray-500 mt-1">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
@@ -405,7 +411,13 @@
          ek talebi: "farkli bir alanda yayinlanmali, dikkat cekmeli" -
          galeriden/diger kartlardan bilerek farkli (turuncu/amber vurgulu,
          rozetli) bir tasarim; sade beyaz kart yerine goze carpsin. --}}
-    @if($facility->menu_image_path)
+    {{-- 20 Eylul 2026: kullanicinin bildirdigi gercek mantik hatasi -
+         Rehabilitasyon bolumundeki bir kurumda (fizik tedavi merkezi vb.)
+         "Yemek Listesi" karti anlamsiz gorunuyordu, kategoriden bagimsiz
+         SADECE menu_image_path doluysa gosteriliyordu. Artik sadece yemek
+         hizmetinin gercekten anlamli oldugu bolumlerde (yasli bakim,
+         cocuk) gosterilir. --}}
+    @if($facility->menu_image_path && in_array($sectionSlug, ['yasli-bakim', 'cocuk'], true))
       @php
         $menuGalleryId = 'ps-menu-'.$facility->id;
         $menuIsPdf = str_ends_with(strtolower($facility->menu_image_path), '.pdf');
@@ -479,8 +491,6 @@
           <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Yetkilisi tarafından doğrulandı{{ $perf['claimed_at'] ? ' · '.$perf['claimed_at']->format('d.m.Y') : '' }}</span>
         @elseif($facility->is_broker_managed)
           <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">🤝 Anlaşmalı kurum</span>
-        @else
-          <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">Henüz doğrulanmadı (ön kayıtlı profil)</span>
         @endif
       </div>
     </div>
@@ -565,7 +575,12 @@
       </div>
     @endif
 
-    <p class="mt-6 text-gray-700 leading-relaxed">{{ $facility->description }}</p>
+    {{-- 22 Eylul 2026: kullanicinin talebi - yorum bazli aciklamalar birden
+         fazla cumle/satirdan olusuyor (bkz. OpsController::generateDescriptions
+         FromReviews), ama duz bir <p> icindeki "\n\n" tarayicida gorunmez
+         hale geliyordu (HTML bosluklari birlestirir) - hepsi TEK satira
+         yapisiyordu. white-space:pre-line satir sonlarini KORUR. --}}
+    <p class="mt-6 text-gray-700 leading-relaxed" style="white-space: pre-line;">{{ $facility->description }}</p>
 
     <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -697,6 +712,41 @@
     @include('themes._shared.partials.price-options-table', ['optionsTitle' => 'Yaş Grubuna Göre Fiyat Aralığı', 'optionsItems' => $facility->ageGroups])
     @include('themes._shared.partials.price-options-table', ['optionsTitle' => 'Program Süresine Göre Fiyat Aralığı', 'optionsItems' => $facility->programTypes])
 
+    {{-- 20 Eylul 2026: kullanicinin talebi - Google Haritalar'da kuruma
+         yapilan son yorumlar. Veri cekici (Playwright tabanli tarayici
+         otomasyonu) ile toplanir - resmi/ucretli Google API DEGIL, bkz.
+         FacilityGoogleReview modeli ve OpsController::veriCekiciImportGoogleReviews()
+         ayni tarihli yorumlar. Platformun kendi aile yorumlarindan
+         (asagidaki "Kurum yorumları" bolumu) BILEREK AYRI ve farkli
+         basliklandirilmis - karistirilmamali. --}}
+    @if($facility->googleReviews->isNotEmpty())
+      <section class="mt-10 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 class="text-xl font-black text-gray-950">🅖 Google'da Yapılan Son Yorumlar</h2>
+          <span class="text-xs text-gray-400">Google Haritalar'dan alınmıştır</span>
+        </div>
+        <div class="space-y-3">
+          @foreach($facility->googleReviews as $gReview)
+            <div class="rounded-lg bg-gray-50 border border-gray-100 p-4">
+              <div class="flex items-center justify-between flex-wrap gap-1">
+                <div class="font-black text-gray-950">{{ $gReview->author_name }}</div>
+                <div class="text-amber-700 font-black">★ {{ $gReview->rating }}</div>
+              </div>
+              @if($gReview->relative_time_text)
+                <div class="text-xs text-gray-400 mt-0.5">{{ $gReview->relative_time_text }}</div>
+              @endif
+              @if($gReview->body)
+                <p class="text-sm text-gray-600 mt-2">{{ $gReview->body }}</p>
+              @endif
+            </div>
+          @endforeach
+        </div>
+        @if($facility->google_maps_url)
+          <a href="{{ $facility->google_maps_url }}" target="_blank" rel="noopener nofollow" class="block text-center mt-4 text-sm font-black text-primary hover:underline">Devamını oku (Google Haritalar'da görüntüle) →</a>
+        @endif
+      </section>
+    @endif
+
     @php
       // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali
       // (is_broker_managed) bir kurumdan gercekten teklif istemis bir
@@ -724,7 +774,11 @@
           @empty
             <div class="rounded-lg p-5 text-sm text-gray-600 flex items-center gap-3" style="background: {{ $colors['soft'] }};">
               <span class="text-2xl">💬</span>
-              <span>Bu kurum için henüz onaylı bir yorum yok — ilk yorumu bırakan siz olabilirsiniz.</span>
+              {{-- 20 Eylul 2026: kullanicinin bildirdigi gercek mantik hatasi
+                   - bu yazinin hemen ustunde Google yorumlari gorunuyor
+                   olabilir, "hic yorum yok" ifadesi kafa karistiriyordu.
+                   Artik acikca SITEMIZ UZERINDEN diye belirtiliyor. --}}
+              <span>Sitemiz üzerinden henüz yorum yapılmamıştır — ilk yorumu bırakan siz olabilirsiniz.</span>
             </div>
           @endforelse
         </div>
@@ -740,7 +794,10 @@
             <p class="text-xs text-gray-400">Yorumlar admin onayından sonra yayınlanır.</p>
           </form>
         @elseif(! $acceptsFamilyRequests)
-          <p class="text-sm text-gray-500">Bu kurum henüz sahiplenilmedi. Yorum yapabilmek için kurumun onaylanmış olması gerekir.</p>
+          {{-- 20 Eylul 2026: kullanicinin talebi - "henuz sahiplenilmedi"
+               ifadesi kaldirildi, formu isaret eden ayni yumusak yonlendirme
+               (asagidaki @else dalindaki AYNI desen) kullanildi. --}}
+          <p class="text-sm text-gray-500">Yorum yapabilmek için önce bu kurumdan <a href="#teklif-talebi" class="font-black text-primary underline">bilgi/fiyat talebi</a> göndermelisiniz.</p>
         @else
           <p class="text-sm text-gray-500">Yorum yapabilmek için önce bu kurumdan <a href="#teklif-talebi" class="font-black text-primary underline">ücret/teklif bilgisi</a> istemelisiniz.</p>
         @endif
@@ -773,14 +830,30 @@
           <button class="btn-primary rounded-lg px-5 py-2 text-sm font-black whitespace-nowrap">Soru Sor</button>
         </form>
       @else
-        <p class="text-sm text-gray-500">Bu kurum henüz sahiplenilmedi; soru sorabilmek için kurumun onaylanmış olması gerekir.</p>
+        {{-- 20 Eylul 2026: kullanicinin talebi - "henuz sahiplenilmedi"
+             ifadesi kaldirildi, formu isaret eden yumusak bir yonlendirme
+             kullanildi. --}}
+        <p class="text-sm text-gray-500">Soru sorabilmek için önce bu kurumdan <a href="#teklif-talebi" class="font-black text-primary underline">bilgi/fiyat talebi</a> göndermelisiniz.</p>
       @endif
     </section>
 
   </div>
 
   <div>
-    <div id="teklif-talebi" class="bg-white p-6 rounded-xl shadow-sm sticky top-24 border border-gray-100">
+    {{-- 20 Eylul 2026: kullanicinin bildirdigi gercek hata - "sticky" hicbir
+         breakpoint on eki olmadan TUM ekran boyutlarinda uygulaniyordu;
+         mobilde (tek sutuna donusen grid'de) bu, formun ana icerigin
+         (galeri/harita) UZERINE yapisip "harita henuz yuklenmeden form
+         onde" gibi bir his verdigine yol aciyordu. md:sticky Tailwind
+         class'i bu projede daha once hic kullanilmamis oldugu icin
+         derlenmis CSS'te YOK (bkz. 18 Eylul 2026 ayni koklu hata) - class
+         yerine, derlemeye bagli olmayan kucuk bir <style> blogu ile
+         SADECE md+ ekranlarda sticky uygulanir, mobilde normal akista
+         haritanin/galerinin ALTINDA duz bir blok olarak kalir. --}}
+    <style>
+      @media (min-width: 768px) { #teklif-talebi { position: sticky; top: 6rem; } }
+    </style>
+    <div id="teklif-talebi" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       {{-- 31 Agustos 2026: kullanicinin talebi - anlasmali (is_broker_managed)
            bir kurum, sahiplenilmemis olsa bile ZATEN yonetiliyor - "bu
            kurumun yetkilisi misiniz" sorusu artik anlamsiz/kafa karistirici.
@@ -909,11 +982,11 @@
           </form>
         </div>
       @else
-        <h3 class="font-black mb-2 text-gray-950">Bu kurum henüz sahiplenilmedi</h3>
-        {{-- 17 Agustos 2026: kullanicinin talebi - "otomatik toplanmis"
-             ifadesi kazima/scraping cagrisimi yaptigi icin sakincali
-             olabilir, "olusturulmus" ile degistirildi. --}}
-        <p class="text-sm text-gray-500 mb-4">Ücret/teklif bilgisi, ziyaret talebi ve kontenjan sorgusu ancak kurum yetkilisi profili sahiplenip onayladıktan sonra kullanılabilir. Bu bilgiler Google Maps verilerinden oluşturulmuş ön kayıt profilidir.</p>
+        {{-- 20 Eylul 2026: kullanicinin talebi - "Bu kurum henüz
+             sahiplenilmedi" basligi ve "ön kayit profilidir" aciklamasi
+             sayfayi "isE yaramaz" hissettirip ailenin asagidaki formu
+             gondermekten vazgecmesine yol aciyordu - kaldirildi. Form
+             dogrudan, hicbir olumsuz on bilgi olmadan gosterilir. --}}
         {{-- 17 Agustos 2026: kullanicinin talebi - sahiplenilmemis kurumda
              platform-ici teklif/ziyaret akisi olmadigi icin, ziyaretcinin
              kuruma DOGRUDAN ulasabilecegi 2 buton (arama+WhatsApp) eklendi.
@@ -926,12 +999,41 @@
              gidiyordu. facility_public_contact_phone()/facility_public_whatsapp_url()
              anlasmali (is_broker_managed) kurumlarda Guven Bakim
              numarasina yonlendirir, aile-hitapli normal bir mesaj kullanir. --}}
-        @if($contactPhoneUnclaimed = facility_public_contact_phone($facility))
-          <a href="tel:{{ $contactPhoneUnclaimed }}" data-contact-track="phone_click" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mb-2" style="background: {{ $colors['primary'] }};">📞 Kurumu Ara</a>
+        {{-- 20 Eylul 2026: kullanicinin talebi - on kayitli (sahiplenilmemis
+             VE anlasmali olmayan) kurumlarda artik dogrudan telefon/WhatsApp
+             butonu YOK (aile kurumla platform disinda, takipsiz iletisime
+             geciyordu). Tek bir "Bilgi ve Fiyat Talep Et" formu var - bu
+             veri admin panelinde (Kurum İlgi Talepleri) toplanip kurumu
+             anlasmali olmaya ikna etmek icin kullanilacak. bkz.
+             FacilityInterestLeadController. --}}
+        {{-- 22 Eylul 2026: kullanicinin talebi - abonelik ozelligi. Odemesi
+             GECERLI ("aktif") olan kurumlarda dogrudan telefon/WhatsApp
+             butonu goruntulenir - odeme suresi dolunca (isActiveSubscriber()
+             canli hesaplanir, ayri bir "aktif" bayragi YOK) bu blok bir
+             sonraki sayfa yuklemesinde otomatik kaybolur, sadece asagidaki
+             form kalir. --}}
+        @if($facility->isActiveSubscriber())
+          @if($subscriberPhone = facility_public_contact_phone($facility))
+            <a href="tel:{{ $subscriberPhone }}" data-contact-track="phone" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mb-3" style="background: {{ $colors['primary'] }};">📞 Hemen Ara</a>
+          @endif
+          @if($subscriberWhatsapp = facility_public_whatsapp_url($facility))
+            <a href="{{ $subscriberWhatsapp }}" target="_blank" rel="noopener" data-contact-track="whatsapp" class="block text-sm font-black text-center mb-4" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
+          @endif
         @endif
-        @if($facilityWhatsappUrl = facility_public_whatsapp_url($facility))
-          <a href="{{ $facilityWhatsappUrl }}" target="_blank" rel="noopener" data-contact-track="whatsapp_click" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-center border-2" style="border-color:#25D366; color:#128C4A;">💬 WhatsApp'tan Yaz</a>
-        @endif
+        <form method="POST" action="{{ route('facility-interest-leads.store') }}" class="space-y-3">
+          @csrf
+          @include('themes._shared.partials.honeypot')
+          <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+          <label for="lead-full-name" class="sr-only">Adınız Soyadınız</label>
+          <input type="text" id="lead-full-name" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
+          <label for="lead-phone" class="sr-only">Telefon</label>
+          <input type="text" id="lead-phone" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+          <label for="lead-email" class="sr-only">E-posta (opsiyonel)</label>
+          <input type="email" id="lead-email" name="email" value="{{ old('email') }}" placeholder="E-posta (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+          <label for="lead-message" class="sr-only">Mesajınız (opsiyonel)</label>
+          <textarea id="lead-message" name="message" placeholder="Mesajınız (opsiyonel)" rows="2" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
+          <button class="w-full flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition" style="background: {{ $colors['primary'] }};">📩 Bilgi ve Fiyat Talep Et</button>
+        </form>
         <script>
         document.querySelectorAll('[data-contact-track]').forEach(function (el) {
           el.addEventListener('click', function () {

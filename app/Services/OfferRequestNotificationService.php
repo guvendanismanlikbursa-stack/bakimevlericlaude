@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BrokerReferral;
 use App\Models\Facility;
 use App\Models\FacilityUser;
 use App\Models\OfferRequest;
@@ -112,9 +113,34 @@ class OfferRequestNotificationService
     // ayni desen: sadece o kurumun tum yetkililerine.
     public function notifyQuoteAccepted(Quote $quote): void
     {
-        $quote->loadMissing('facility');
+        $quote->loadMissing('facility', 'offerRequest');
         if (! $quote->facility) {
             return;
+        }
+
+        // 19 Eylul 2026: kullanicinin bildirdigi gercek mantik hatasi -
+        // sitenin ürettigi gercek talepler (OfferRequest) ile komisyon
+        // takip edilen "Yönlendirmeler" (BrokerReferral) arasinda hicbir
+        // baglanti yoktu; admin hatirlayip elle girmezse yerlesim/komisyon
+        // hic takip edilmiyordu. Aile bir teklifi kabul ettigi an (yani
+        // gercek bir eslesme oldugu an) anlasmali kurum icin otomatik
+        // bir Yönlendirme kaydi olusturulur - ücret tutari/durumu hala
+        // admin tarafindan (gercek yerlesim/fatura bilgisine göre) elle
+        // girilir, bu SADECE kaydin unutulmamasini garanti eder.
+        if ($quote->facility->is_broker_managed && $quote->offer_request_id) {
+            BrokerReferral::firstOrCreate(
+                ['offer_request_id' => $quote->offer_request_id],
+                [
+                    'facility_id' => $quote->facility_id,
+                    'family_name' => $quote->offerRequest?->full_name ?? 'Site talebi #'.$quote->offer_request_id,
+                    'family_phone' => $quote->offerRequest?->phone,
+                    'patient_name' => $quote->offerRequest?->patient_name,
+                    'status' => 'yonlendirildi',
+                    'fee_status' => 'bekliyor',
+                    'referred_at' => $quote->created_at?->toDateString() ?? now()->toDateString(),
+                    'notes' => 'Otomatik: aile siteden teklifi kabul etti (teklif #'.$quote->id.').',
+                ]
+            );
         }
 
         $this->notifyFacilityOrBrokerAdmins(

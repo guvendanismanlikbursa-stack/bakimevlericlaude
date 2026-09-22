@@ -5,7 +5,7 @@
 <div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-2xl font-bold">Veri Çekici Satır İncele</h1>
-    <p class="text-sm text-gray-500 mt-1">Çekilen satırın ayrıntılarını gözden geçirin, düzenleyin veya ön kayıt olarak kuruma çevirin.</p>
+    <p class="text-sm text-gray-500 mt-1">Çekilen satırın ayrıntılarını gözden geçirin, düzenleyin veya kuruma çevirin.</p>
   </div>
   <a href="{{ route('admin.data-extractor.index') }}" class="text-sm font-semibold text-gray-700 underline">Geri dön</a>
 </div>
@@ -104,7 +104,7 @@
           <button type="submit" class="rounded-lg bg-gray-900 text-white px-4 py-2 text-sm font-semibold">Onayla ve Düzenle</button>
         </form>
 
-        <a href="{{ route('admin.facilities.create', array_filter($prefill)) }}" class="rounded-lg border border-gray-300 bg-white text-gray-700 px-4 py-2 text-sm font-semibold">Ön Kayıt Oluştur</a>
+        <a href="{{ route('admin.facilities.create', array_filter($prefill)) }}" class="rounded-lg border border-gray-300 bg-white text-gray-700 px-4 py-2 text-sm font-semibold">Kurum Oluştur</a>
       </div>
     </div>
 
@@ -121,7 +121,7 @@
         <li>Veri satırı kontrol edin ve gerekli ise önce düzenleyin.</li>
         <li>Otomatik doldurma ile ek alanları tamamlayın.</li>
         <li>Onayla veya Onayla ve Düzenle ile kurum oluşturun.</li>
-        <li>Ön kayıt oluşturmak için doğrudan yeni kurum formunu kullanabilirsiniz.</li>
+        <li>Kurum oluşturmak için doğrudan yeni kurum formunu kullanabilirsiniz.</li>
       </ol>
     </div>
   </aside>

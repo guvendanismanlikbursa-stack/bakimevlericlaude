@@ -40,7 +40,7 @@
           </p>
         @endforeach
       @else
-        <p class="text-sm text-gray-500 mb-3">Bu kurum henüz sahiplenilmedi (ön kayıtlı profil).</p>
+        <p class="text-sm text-gray-500 mb-3">Bu kurum henüz sahiplenilmedi.</p>
 
         {{-- 19 Agustos 2026: kullanicinin talebi - kurumu yerinde ziyaret
              edip kurum yetkilisi o an sahiplenmek isterse, normal basvuru+
@@ -393,8 +393,23 @@
       <span class="text-xs font-semibold rounded-full px-3 py-1 {{ $remainingImages > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500' }}">{{ $imageCount }}/10 yüklü</span>
     </div>
     @if($remainingImages > 0)
-      <input type="file" name="images[]" multiple accept="image/*" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
-      <p class="text-xs text-gray-500 mt-1">En fazla 10 görsel olabilir. Bu kurum için kalan yükleme hakkı: {{ $remainingImages }}.</p>
+      {{-- 21 Eylul 2026: kullanicinin bildirdigi hata - "teker teker cok
+           zaman aliyor" dedi ama input zaten multiple destekliyordu; asil
+           sorun dosya secme penceresinde TEK dosya seciyor olmasiydi
+           (Ctrl/Shift ile coklu secim gerektigini bilmiyordu). Hem acik bir
+           talimat hem de sectikten hemen sonra "X gorsel secildi" geri
+           bildirimi eklendi ki coklu secimin gercekten calistigini gorsun. --}}
+      <input type="file" name="images[]" id="facility-images-input" multiple accept="image/*" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
+      <p id="facility-images-selected-count" class="text-xs font-semibold text-blue-600 mt-1"></p>
+      <p class="text-xs text-gray-500 mt-1">En fazla 10 görsel olabilir. Bu kurum için kalan yükleme hakkı: {{ $remainingImages }}. <strong>Birden fazla görsel seçmek için</strong>, açılan pencerede görsellere <strong>Ctrl tuşunu basılı tutarak</strong> tek tek tıklayın (veya ilk görsele tıklayıp <strong>Shift ile son görsele</strong> tıklayın), sonra "Aç"a basın — hepsi tek seferde yüklenir.</p>
+      <script>
+      document.getElementById('facility-images-input')?.addEventListener('change', function (e) {
+        var n = e.target.files.length;
+        var el = document.getElementById('facility-images-selected-count');
+        if (!n) { el.textContent = ''; return; }
+        el.textContent = n + ' görsel seçildi' + (n > {{ $remainingImages }} ? ' — DİKKAT: kalan hakkınızdan ({{ $remainingImages }}) fazla, fazlası kaydedilmeyecek.' : '.');
+      });
+      </script>
     @else
       <div class="rounded-lg bg-white border border-gray-100 p-3 text-sm text-gray-500">10 görsel limiti doldu. Yeni görsel eklemek için önce mevcut görsellerden birini silin.</div>
     @endif

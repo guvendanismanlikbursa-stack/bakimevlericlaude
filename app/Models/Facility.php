@@ -18,7 +18,8 @@ class Facility extends Model
         'is_broker_managed', 'vacant_beds_male', 'vacant_beds_female', 'vacant_beds_updated_at',
         'allows_visit_service', 'video_path', 'video_updated_at',
         'vacancy_male', 'vacancy_female', 'vacancy_general', 'vacancy_updated_at',
-        'site_visited_at',
+        'site_visited_at', 'google_maps_url', 'google_reviews_fetched_at',
+        'is_subscribed', 'subscription_plan', 'subscription_started_at', 'subscription_paid_until',
     ];
 
     protected function casts(): array
@@ -61,7 +62,23 @@ class Facility extends Model
             'balance' => 'float',
             'quote_price_override' => 'float',
             'invitation_status_at' => 'datetime',
+            'is_subscribed' => 'boolean',
+            'subscription_started_at' => 'datetime',
+            'subscription_paid_until' => 'date',
         ];
+    }
+
+    // 22 Eylul 2026: kullanicinin talebi - "abonelik" ozelligi. Kasitli
+    // olarak ayri bir "aktif" alani TUTULMUYOR - abonelik durumu HER ZAMAN
+    // subscription_paid_until tarihine canli bakilarak hesaplanir, boylece
+    // odeme suresi dolunca telefon/WhatsApp butonlari otomatik (bir sonraki
+    // sayfa yuklemesinde, ek bir gece gorevi beklemeden) gizlenir - ayri bir
+    // "aktif" bayragi olsaydi bunu ayrica senkronlamak gerekirdi.
+    public function isActiveSubscriber(): bool
+    {
+        return $this->is_subscribed
+            && $this->subscription_paid_until
+            && ! $this->subscription_paid_until->copy()->endOfDay()->isPast();
     }
 
     public function city()
@@ -201,6 +218,37 @@ class Facility extends Model
     public function approvedReviews()
     {
         return $this->hasMany(FacilityReview::class)->where('status', 'approved')->latest();
+    }
+
+    // 20 Eylul 2026: kullanicinin talebi - veri cekici ile toplanan Google
+    // yorumlari, platformun kendi aile yorumlarindan (yukarida) AYRI.
+    public function googleReviews()
+    {
+        return $this->hasMany(FacilityGoogleReview::class)->orderBy('position');
+    }
+
+    /**
+     * 20 Eylul 2026: kullanicinin talebi - kurum kartinda "💬 X yorum"
+     * rozeti icin. SADECE anlasmali/sahiplenilmis kartlarda (facility-card
+     * partial'inin buyuk kart dalinda) cagirilir - on kayitli kurumlarin
+     * kucuk mini-kartinda hic yok, N+1 riski o yuzden sinirli.
+     */
+    public function totalReviewCount(): int
+    {
+        // 22 Eylul 2026: kullanicinin bildirdigi gercek hata (N+1 testi) -
+        // bu metot listeleme sayfalarinda HER kart icin 2 ayri COUNT
+        // sorgusu tetikliyordu (10 kartlik bir sayfada +20 sorgu).
+        // withCount(['approvedReviews', 'googleReviews']) ile onceden
+        // yuklenmisse (bkz. Public\FacilityController/HomeController
+        // ->with(...) cagrilari) o degerler burada sorgusuz kullanilir.
+        if (array_key_exists('approved_reviews_count', $this->attributes) || array_key_exists('google_reviews_count', $this->attributes)) {
+            return (int) ($this->attributes['approved_reviews_count'] ?? 0) + (int) ($this->attributes['google_reviews_count'] ?? 0);
+        }
+
+        $approved = $this->relationLoaded('approvedReviews') ? $this->approvedReviews->count() : $this->approvedReviews()->count();
+        $google = $this->relationLoaded('googleReviews') ? $this->googleReviews->count() : $this->googleReviews()->count();
+
+        return $approved + $google;
     }
 
     public function visitRequests()
@@ -604,6 +652,43 @@ class Facility extends Model
             'kamu_vakif' => ['label' => 'Bakanlık: Kamu/Belediye/Vakıf', 'classes' => 'bg-slate-200 text-slate-800'],
             default => null,
         };
+    }
+
+    /**
+     * 18 Eylul 2026: kullanicinin talebi - rakip site (okul.com.tr)
+     * kiyasinda goze carpan bir sosyal kanit unsuru: "bu ilcede en cok
+     * yorum alan #X kurum". SADECE kurum DETAY sayfasinda cagirilir (bkz.
+     * facilities/show.blade.php) - liste/kart dongulerinde ASLA
+     * kullanilmamali, her kurum icin ayri bir sorgu calistirir (N+1 riski).
+     * En az 3 onayli yorumu olmayan ya da ilcesinde ilk 5'e giremeyen
+     * kurumlar icin null doner (rozet hic gosterilmez).
+     */
+    public function reviewRankLabel(): ?string
+    {
+        if (! $this->district || ! $this->facility_category_id) {
+            return null;
+        }
+
+        $myCount = $this->relationLoaded('approvedReviews') ? $this->approvedReviews->count() : $this->approvedReviews()->count();
+        if ($myCount < 3) {
+            return null;
+        }
+
+        $betterCount = self::query()
+            ->where('facility_category_id', $this->facility_category_id)
+            ->where('district', $this->district)
+            ->whereNull('deleted_at')
+            ->where('id', '!=', $this->id)
+            ->withCount('approvedReviews')
+            ->having('approved_reviews_count', '>', $myCount)
+            ->count();
+
+        $rank = $betterCount + 1;
+        if ($rank > 5) {
+            return null;
+        }
+
+        return "Bu ilçede en çok yorum alan #{$rank} kurum";
     }
 
 }

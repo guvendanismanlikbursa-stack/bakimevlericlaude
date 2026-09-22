@@ -51,11 +51,27 @@
             @elseif($f->is_claimed)
               <span class="text-green-700 text-xs font-semibold">✓ Sahiplenilmiş</span>
             @else
-              <span class="text-gray-400 text-xs">Ön Kayıtlı</span>
+              <span class="text-gray-400 text-xs">Sahiplenilmemiş</span>
+            @endif
+            {{-- 22 Eylul 2026: kullanicinin talebi - abonelik durumu admin
+                 tablosunda tek bakista gorulsun (fuchsia, "Öncelikli Kurumlar"
+                 rozetiyle ayni renk - bkz. facility-card.blade.php). --}}
+            @if($f->is_subscribed)
+              <div class="mt-1">
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">
+                  ★ Abone{{ $f->isActiveSubscriber() ? '' : ' (süresi geçti)' }}
+                </span>
+              </div>
             @endif
             @php($mv = $f->ministryVerificationBadge())
             @if($mv)
               <div class="mt-1"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full {{ $mv['classes'] }}">{{ $mv['label'] }}</span></div>
+            @endif
+            {{-- 22 Eylul 2026: kullanicinin talebi - konumvericekici'nin
+                 Google'da net eslesme bulamadigi icin atladigi kurumlar
+                 admin panelinde tek bakista secilsin diye. --}}
+            @if(! $f->lat)
+              <div class="mt-1"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">📍 Konum eksik</span></div>
             @endif
           </td>
           <td class="p-3">
@@ -86,14 +102,33 @@
               </form>
             @endif
             @if($f->is_claimed)
-              <form method="POST" action="{{ route('admin.facilities.revert', $f) }}" class="inline" onsubmit="return confirm('Bu kurumu ön kayıtlı hale getirmek istediğinize emin misiniz?');">
+              <form method="POST" action="{{ route('admin.facilities.revert', $f) }}" class="inline" onsubmit="return confirm('Bu kurumun sahiplenmesini geri almak istediğinize emin misiniz?');">
                 @csrf
-                <button class="text-orange-600">Ön Kayıt</button>
+                <button class="text-orange-600">Sahiplenmeyi Geri Al</button>
               </form>
-              <form method="POST" action="{{ route('admin.facilities.reset-registration', $f) }}" class="inline" onsubmit="return confirm('Bu kurumun sahiplenme kaydı SİLİNECEK (kurum yetkilisi hesabı kalıcı olarak silinir, bonus geri alınır) ve kurum ön kayıtlı hale gelecek - yeniden sahiplendirebilirsiniz. Emin misiniz?');">
+              <form method="POST" action="{{ route('admin.facilities.reset-registration', $f) }}" class="inline" onsubmit="return confirm('Bu kurumun sahiplenme kaydı SİLİNECEK (kurum yetkilisi hesabı kalıcı olarak silinir, bonus geri alınır) ve kurum yeniden sahiplenilebilir hale gelecek. Emin misiniz?');">
                 @csrf
                 <button class="text-red-700" title="Yanlış bilgiyle sahiplenildiyse, hesabı silip sıfırdan sahiplendirmek için">Kaydı Sıfırla</button>
               </form>
+            @endif
+            {{-- 22 Eylul 2026: kullanicinin talebi - "abonelik" ozelligi,
+                 sadece sahiplenilmemis VE anlasmali olmayan kurumlarda. --}}
+            @if(! $f->is_claimed && ! $f->is_broker_managed)
+              @if($f->is_subscribed)
+                <form method="POST" action="{{ route('admin.facilities.subscription.cancel', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} aboneliği iptal edilsin mi?');">
+                  @csrf
+                  <button style="color:#a21caf;">Aboneliği İptal Et</button>
+                </form>
+              @else
+                <form method="POST" action="{{ route('admin.facilities.subscription.enable', $f) }}" class="inline flex items-center gap-1" onsubmit="return confirm('{{ $f->name }} abone yapılsın mı?');">
+                  @csrf
+                  <select name="plan" class="text-xs border rounded" onclick="event.stopPropagation()">
+                    <option value="monthly">Aylık</option>
+                    <option value="yearly">Yıllık</option>
+                  </select>
+                  <button style="color:#a21caf;">Abone Yap</button>
+                </form>
+              @endif
             @endif
             <form method="POST" action="{{ route('admin.facilities.destroy', $f) }}" class="inline" onsubmit="return confirm('Silinsin mi?');">
               @csrf @method('DELETE')

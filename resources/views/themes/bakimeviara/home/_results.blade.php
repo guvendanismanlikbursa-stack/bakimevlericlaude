@@ -31,7 +31,7 @@
 
     @if($filteredFeatured->isNotEmpty())
       <div class="text-sm font-bold text-gray-500 mb-3">Öne çıkanlar</div>
-      <div class="grid md:grid-cols-3 gap-5 mb-8">
+      <div class="grid md:grid-cols-4 gap-5 mb-8">
         @foreach($filteredFeatured as $facility)
           @include('themes._shared.partials.facility-card', ['facility' => $facility])
         @endforeach
@@ -45,7 +45,7 @@
       </div>
     @elseif($filteredFacilities->isNotEmpty())
       <div class="text-sm font-bold text-gray-500 mb-3">Filtreye uygun kurumlar</div>
-      <div class="grid md:grid-cols-3 gap-5">
+      <div class="grid md:grid-cols-4 gap-5">
         @foreach($filteredFacilities as $facility)
           @include('themes._shared.partials.facility-card', ['facility' => $facility])
         @endforeach
@@ -59,13 +59,13 @@
     <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div>
     <h2 class="text-3xl font-black text-gray-950">Ailelerin incelediği kurumlar</h2>
   </div>
-  <div class="grid md:grid-cols-3 gap-6">
+  <div class="grid md:grid-cols-4 gap-6">
     @forelse($featured as $facility)
       {{-- 4 Eylul 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum (ic ice <a> onlemek icin dis eleman <div>'e cevrildi). --}}
       <div class="group bg-white rounded-2xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
-        <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
+        <div class="absolute -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md pointer-events-none" style="top: 20px;">⭐ ÖNE ÇIKAN</div>
         @if($facility->is_broker_managed)
-          <div class="absolute top-3 -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md tracking-wider pointer-events-none">🤝 ANLAŞMALI</div>
+          <div class="absolute -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md pointer-events-none" style="top: 20px;">🤝 ANLAŞMALI</div>
         @endif
         @php $cardImage = facility_card_image($facility, $section); @endphp
         <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">

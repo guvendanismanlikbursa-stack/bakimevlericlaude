@@ -30,7 +30,11 @@ return [
             // Bu, sadece o kucuk kart icin onceden kucultulmus ayri bir dosya.
             'hero_image_card' => '/images/hero-yasli-bakim-card.webp',
             'theme' => ['primary' => '#1e6f5c', 'secondary' => '#f4a259', 'soft' => '#ecfdf5'],
-            'features' => ['7/24 hemşire', 'Doktor kontrolü', 'Alzheimer bakımı', 'Demans bakımı', 'Palyatif bakım', 'Gündüz bakım', 'Tam zamanlı bakım', 'Fizik tedavi', 'Fiziksel aktivite', 'Diyetisyen', 'Sosyal etkinlik', 'Özel oda', 'Bahçe alanı'],
+            // 18 Eylul 2026: kullanicinin talebi - rakip site kiyasi sonrasi
+            // filtre derinligini artirmak icin listeye eklendi, mevcut
+            // filtre/dropdown mekanizmasina HICBIR kod degisikligi
+            // gerekmiyor (zaten bu diziyi oldugu gibi okuyor) - sadece veri.
+            'features' => ['7/24 hemşire', 'Doktor kontrolü', 'Alzheimer bakımı', 'Demans bakımı', 'Palyatif bakım', 'Gündüz bakım', 'Tam zamanlı bakım', 'Fizik tedavi', 'Fiziksel aktivite', 'Diyetisyen', 'Sosyal etkinlik', 'Özel oda', 'Bahçe alanı', 'Psikolog desteği', 'Fizyoterapi seansı', 'Yatalak hasta bakımı', 'Kamera sistemi', 'Aile ziyaret programı', 'Engelli erişimi'],
             'profile_fields' => ['Kapasite', 'Oda tipleri', 'Hemşire/doktor desteği', 'Demans/Alzheimer bakımı', 'Ziyaret saatleri', 'Beslenme planı'],
             'advisor_concerns' => [
                 ['key' => 'has_dementia', 'label' => 'Demans/Alzheimer var', 'keywords' => ['demans' => 'Demans/Alzheimer bakımı', 'alzheimer' => 'Demans/Alzheimer bakımı']],
@@ -53,7 +57,7 @@ return [
             // bkz. yasli-bakim bolumundeki 24 Agustos 2026 yorumu - ayni sebep.
             'hero_image_card' => '/images/hero-cocuk-card.webp',
             'theme' => ['primary' => '#5b3a8e', 'secondary' => '#ffd166', 'soft' => '#faf5ff'],
-            'features' => ['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı'],
+            'features' => ['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı', 'Kamera sistemi', 'Bahçe/oyun parkı', 'Müzik/spor atölyesi', 'Psikolojik danışmanlık', 'Sağlık kontrolü'],
             'profile_fields' => ['Yaş aralığı', 'Sınıf mevcudu', 'Eğitim programı', 'Rehberlik/psikolog', 'Servis güzergahı', 'Yemek/uyku düzeni'],
             'advisor_concerns' => [
                 ['key' => 'needs_special_education', 'label' => 'Özel eğitim ihtiyacı var', 'keywords' => ['özel eğitim' => 'Özel eğitim', 'otizm' => 'Otizm/gelişimsel destek', 'gelişim' => 'Gelişimsel destek']],
@@ -77,7 +81,7 @@ return [
             // bkz. yasli-bakim bolumundeki 24 Agustos 2026 yorumu - ayni sebep.
             'hero_image_card' => '/images/hero-rehabilitasyon-card.webp',
             'theme' => ['primary' => '#0b5d8c', 'secondary' => '#e63946', 'soft' => '#eaf4fb'],
-            'features' => ['Fizyoterapist', 'Nörolojik rehabilitasyon', 'Ortopedik rehabilitasyon', 'Hidroterapi', 'Ergoterapi', 'Konuşma terapisi', 'Evde takip', 'Cihaz desteği'],
+            'features' => ['Fizyoterapist', 'Nörolojik rehabilitasyon', 'Ortopedik rehabilitasyon', 'Hidroterapi', 'Ergoterapi', 'Konuşma terapisi', 'Evde takip', 'Cihaz desteği', 'Solunum terapisi', 'Psikolojik destek', 'Spor rehabilitasyonu', 'Grup terapisi'],
             'profile_fields' => ['Terapi branşları', 'Uzman kadro', 'Seans süresi', 'Cihaz/ekipman', 'Raporlama', 'Evde hizmet'],
             'advisor_concerns' => [
                 ['key' => 'needs_physio', 'label' => 'Fizik tedavi gerekiyor', 'keywords' => ['fizik tedavi' => 'Fizik tedavi', 'fizyoterap' => 'Fizik tedavi']],

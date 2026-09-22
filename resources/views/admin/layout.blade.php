@@ -77,6 +77,8 @@
         {{-- 25 Agustos 2026: kullanicinin talebi - kisisel aracilik/komisyon takibi icin kucuk bir CRM. --}}
         <a href="{{ route('admin.broker.facilities') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.facilities*') ? 'bg-gray-700 text-white' : '' }}">Anlaşmalı Kurumlar</a>
         <a href="{{ route('admin.broker.referrals') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.referrals*') ? 'bg-gray-700 text-white' : '' }}">Aracılık Yönlendirmeleri</a>
+        {{-- 20 Eylul 2026: kullanicinin talebi - on kayitli kurumlardaki "Bilgi ve Fiyat Talep Et" formu kayitlari. --}}
+        <a href="{{ route('admin.facility-interest-leads.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facility-interest-leads.*') ? 'bg-gray-700 text-white' : '' }}">Kurum İlgi Talepleri</a>
         <a href="{{ route('admin.occupancy.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.occupancy.*') ? 'bg-gray-700 text-white' : '' }}">Doluluk Durumu</a>
         <a href="{{ route('admin.job-applications.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.job-applications.*') ? 'bg-gray-700 text-white' : '' }}">İş Başvuruları</a>
         <a href="{{ route('admin.categories.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.categories.*') ? 'bg-gray-700 text-white' : '' }}">Kategoriler</a>

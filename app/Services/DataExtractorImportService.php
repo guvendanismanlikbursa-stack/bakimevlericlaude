@@ -25,6 +25,14 @@ class DataExtractorImportService
         'rating' => ['puan', 'rating'],
         'lat' => ['enlem', 'lat', 'latitude'],
         'lng' => ['boylam', 'lng', 'longitude'],
+        // 20 Eylul 2026: kullanicinin talebi - veri cekici artik yeni kurum
+        // tararken ayni sayfadan Google yorumlarini da cekebiliyor (bkz.
+        // google_maps_scraper.py). Yorumlar facility_id olusmadan once
+        // (import ANINDA henuz yok) ayri bir JSON'da toplandigi icin, bu
+        // linki facilities.google_maps_url'e kaydediyoruz ki import SONRASI
+        // yorumlar bu link ile eslestirilip ice aktarilabilsin (bkz.
+        // OpsController::veriCekiciImportGoogleReviewsByMapsUrl).
+        'maps_url' => ['google haritalar linki', 'maps url', 'google maps url', 'harita linki'],
     ];
 
     public function import(string $path, City $city, FacilityCategory $category, ?string $district, bool $publish, ?int $adminId = null, ?string $fileName = null, ?string $neighborhood = null): array
@@ -118,6 +126,7 @@ class DataExtractorImportService
                     'invitation_status' => $phoneType === 'mobile' ? 'not_started' : ($phoneType === 'landline' ? 'landline_only' : 'contact_missing'),
                     'email' => $item['email'],
                     'rating' => $this->rating($item['rating']),
+                    'google_maps_url' => filled($item['maps_url'] ?? null) ? $item['maps_url'] : null,
                     'description' => $this->description($item, $category),
                     'services' => [$category->name],
                     'is_published' => $publish,

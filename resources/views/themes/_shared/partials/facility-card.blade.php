@@ -25,19 +25,58 @@
        kullanildi - tiklaninca yine ayni tam kurum detay sayfasi acilir,
        ayrica bir aksiyon butonu yok. Sahiplenilmis kurumlarda buyuk kart
        (asagida) DEGISMEDEN kaliyor. --}}
-  <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition group">
-    <div class="w-14 h-14 shrink-0 rounded-md overflow-hidden bg-gray-50 relative">
-      <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition">
-    </div>
-    <div class="min-w-0">
-      <div class="flex items-center gap-1.5">
-        <span class="bg-amber-100 text-amber-700 text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0">Ön Kayıtlı</span>
-        @if($facility->is_featured)<span class="text-[10px] font-black text-amber-700 shrink-0">⭐</span>@endif
+  {{-- 18 Eylul 2026: kullanicinin bildirdigi gercek hata - listeleme
+       sayfasinda buyuk kartlarla ayni CSS grid satirinda bu kucuk kart
+       varsayilan olarak (align-items:stretch) satir yuksekligine
+       geriliyordu, kenarligi de gerilince kartin altinda buyuk bos beyaz
+       bir kutu gorunuyordu. self-start ile kart artik sadece kendi gercek
+       icerigi kadar yer kaplar, gerilmez. --}}
+  {{-- 20 Eylul 2026: kullanicinin talebi - on kayitli kurumlarda da
+       Karşılaştır ozelligi kullanilabilmeli. Buton <a> disina, kardes
+       olarak eklendi (buton icinde <a>/<button> ic ice OLAMAZ - bkz.
+       nested-form/nested-link sinifi hatalar, gecmiste sorun cikarmisti). --}}
+  <div class="self-start bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition group">
+    <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="flex items-center gap-3">
+      <div class="w-14 h-14 shrink-0 rounded-md overflow-hidden bg-gray-50 relative">
+        <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition">
       </div>
-      <div class="text-sm font-black text-gray-950 line-clamp-1">{{ $facility->name }}</div>
-      <div class="text-xs text-gray-500 line-clamp-1">{{ $facility->city->name }} · {{ $facility->district }}</div>
+      <div class="min-w-0">
+        {{-- 22 Eylul 2026: kullanicinin talebi - "Ön Kayıtlı" etiketi
+             kaldirildi (kafa karistirici/itici bulundu, "kayitli kurum"
+             ifadesi de anlamsiz - bu kurumlar artik hicbir ozel etiket
+             tasimadan digerleriyle ayni sekilde listelenir). Sadece
+             abonelik odemesi GECERLI olan kurumlarda "Öncelikli Kurum"
+             rozeti gorunur (fuchsia - siteki diger tum rozet renklerinden
+             kasitli olarak farkli, bkz. facility-card ÖNE ÇIKAN amber
+             ribbon'iyla karismasin diye). --}}
+        <div class="flex items-center gap-1.5 flex-wrap">
+          @if($facility->isActiveSubscriber())
+            <span class="text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0" style="background:#fae8ff;color:#a21caf;">★ Öncelikli Kurum</span>
+          @endif
+          @if($facility->is_featured)<span class="text-[10px] font-black text-amber-700 shrink-0">⭐</span>@endif
+        </div>
+        <div class="text-sm font-black text-gray-950 line-clamp-1">{{ $facility->name }}</div>
+        <div class="text-xs text-gray-500 line-clamp-1 flex items-center gap-1.5">
+          <span>{{ $facility->city->name }} · {{ $facility->district }}</span>
+          {{-- 20 Eylul 2026: kullanicinin talebi - il/ilce satirinin yanina,
+               salt sayi degil "X yorumu var" seklinde, platform + Google
+               yorumlari toplami (canli hesaplanir, yeni yorum eklendikce
+               otomatik guncellenir - sabit/onbelleklenmis bir sayi degil). --}}
+          @if(($miniReviewCount = $facility->totalReviewCount()) > 0)
+            <span class="text-gray-400 shrink-0">· 💬 {{ $miniReviewCount }} yorumu var</span>
+          @endif
+        </div>
+      </div>
+    </a>
+    <div class="mt-2 pt-2 border-t border-gray-50">
+      {{-- 20 Eylul 2026: kullanicinin talebi - buton "belli olmuyordu" (duz
+           gri kenarlik digerlerinden ayirt edilmiyordu); 2px mavi kenarlik +
+           mavi metin ile digerlerinden aciyor ama dolgu yok (asiri degil).
+           Sadece zaten derlenmis (app-*.css'de dogrulandi) siniflar
+           kullanildi: border-2, border-blue-400, text-blue-700. --}}
+      <button type="button" class="js-engagement-toggle w-full rounded-md border-2 border-blue-400 px-2 py-1.5 text-xs font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
     </div>
-  </a>
+  </div>
 @else
 {{--
   14 Agustos 2026: kullanicinin talebi - "one cikan" kurumlar gorsel
@@ -64,7 +103,19 @@
           ? 'border-2 border-blue-400 shadow-lg shadow-blue-300/60 hover:shadow-xl hover:shadow-blue-400/60 bg-gradient-to-b from-blue-50/70 via-white to-white'
           : 'border border-gray-100 shadow-sm hover:shadow-lg') }}">
   @if($facility->is_featured)
-    <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">
+    {{-- 18 Eylul 2026: kullanicinin bildirdigi gercek hata - "ÖNE ÇIKAN"
+         yazisinin son harfi (N) kesiliyordu (rotate-[-45deg] + kartin
+         overflow-hidden'i yuzunden rozetin "yuksek" ucu kartin ust
+         kenarinin disinda kaliyordu). Once top-5 class'i denendi ama
+         canliya yansimadi - bu proje FTP-only deploy edildiginde CSS
+         YENIDEN DERLENMIYOR, derlenmis app-*.css dosyasinda daha once hic
+         kullanilmamis Tailwind class'lari (top-5, top-9, -left-11 vb.)
+         HICBIR KURALA sahip degil, yani class degisikligi sessizce
+         etkisiz kalıyordu (dogrulandi: /build/assets/app-*.css icinde
+         .top-5{ hic yok, .top-3{ var). Bu yuzden Tailwind class'i yerine,
+         derlemeye bagli olmayan satir ici style ile kesin calisan bir
+         konum kullanildi - emoji/genislik/pozisyon aynen korunuyor. --}}
+    <div class="absolute -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md pointer-events-none" style="top: 20px;">
       ⭐ ÖNE ÇIKAN
     </div>
   @endif
@@ -73,7 +124,10 @@
        ikinci bir kurdele lazimdi - karsi kosede (sag ust), mavi/lacivert,
        BEYAZ kalin yazi ile en az onun kadar dikkat cekici. --}}
   @if($facility->is_broker_managed)
-    <div class="absolute top-3 -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md tracking-wider pointer-events-none">
+    {{-- 18 Eylul 2026: ayni tarihli "ÖNE ÇIKAN" duzeltmesiyle ayni kok
+         neden ve ayni cozum (derlenmemis Tailwind class yerine satir ici
+         style), bkz. o yorumu. --}}
+    <div class="absolute -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md pointer-events-none" style="top: 20px;">
       🤝 ANLAŞMALI
     </div>
   @endif
@@ -100,7 +154,15 @@
         @isset($badge){!! $badge !!}@endisset
       </div>
       <h2 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h2>
-      <p class="text-sm text-gray-500 mb-1">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
+      <p class="text-sm text-gray-500 mb-1 flex items-center gap-1.5 flex-wrap">
+        <span>{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</span>
+        {{-- 20 Eylul 2026: kullanicinin talebi - yorum ikon+sayisi il/ilce
+             satirinin yanina; platform + Google yorumlari toplami, canli
+             hesaplanir (bkz. mini-kartla ayni yorum, yukarida). --}}
+        @if(($totalReviewCount = $facility->totalReviewCount()) > 0)
+          <span class="text-gray-400 shrink-0">· 💬 {{ $totalReviewCount }} yorumu var</span>
+        @endif
+      </p>
       @if($facility->views_count > 0)
         <p class="text-xs text-gray-400 mb-3 flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path d="M10 3.5c-4.5 0-7.5 3.5-8.5 6.5 1 3 4 6.5 8.5 6.5s7.5-3.5 8.5-6.5c-1-3-4-6.5-8.5-6.5Zm0 10.5a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/><circle cx="10" cy="10" r="2"/></svg>
@@ -141,11 +203,11 @@
   <div class="px-4 pb-4 grid grid-cols-2 gap-2">
     <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 text-center hover:bg-gray-50">İncele</a>
     @if($facility->is_broker_managed)
-      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      <button type="button" class="js-engagement-toggle rounded-lg border-2 border-blue-400 px-3 py-2 text-sm font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
       <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50 col-span-2" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
     @else
       <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="rounded-lg px-3 py-2 text-sm font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Fiyat Al</a>
-      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      <button type="button" class="js-engagement-toggle rounded-lg border-2 border-blue-400 px-3 py-2 text-sm font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
       <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
     @endif
   </div>

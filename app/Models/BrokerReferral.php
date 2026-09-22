@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class BrokerReferral extends Model
 {
     protected $fillable = [
-        'facility_id', 'family_name', 'family_phone',
+        'facility_id', 'offer_request_id', 'family_name', 'family_phone',
         'patient_name', 'patient_age', 'patient_mobility', 'wants_visit',
         'status', 'fee_amount', 'fee_status', 'referred_at', 'placed_at', 'notes',
     ];
@@ -26,5 +26,10 @@ class BrokerReferral extends Model
     public function facility()
     {
         return $this->belongsTo(Facility::class);
+    }
+
+    public function offerRequest()
+    {
+        return $this->belongsTo(OfferRequest::class);
     }
 }

@@ -4,10 +4,11 @@
 @section('content')
 <div class="flex items-center justify-between mb-3">
   <div class="flex items-center gap-3">
-    <h1 class="text-2xl font-bold">{{ request('status') === 'pre_registered' ? 'Ön Kayıtlı Kurumlar' : (request('status') === 'broker_managed' ? 'Anlaşmalı Kurumlar' : (request('status') === 'claimed' ? 'Sahipli Kurumlar' : 'Kurumlar')) }}</h1>
+    <h1 class="text-2xl font-bold">{{ request('status') === 'pre_registered' ? 'Sahiplenilmemiş Kurumlar' : (request('status') === 'broker_managed' ? 'Anlaşmalı Kurumlar' : (request('status') === 'claimed' ? 'Sahipli Kurumlar' : 'Kurumlar')) }}</h1>
     <span class="inline-flex items-center rounded-full bg-gray-900 text-white text-sm font-semibold px-3 py-1"><span id="js-result-count">{{ number_format($facilities->total(), 0, ',', '.') }}</span> kurum bulundu</span>
   </div>
   <div class="flex items-center gap-3">
+    <a href="{{ route('admin.facilities.subscriptions.index') }}" class="border-2 px-4 py-2 rounded-lg text-sm font-semibold" style="border-color:#c026d3;color:#a21caf;">★ Abone Kurumlar</a>
     <a href="{{ route('admin.facilities.create') }}" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">+ Yeni Kurum</a>
     @if(request('status'))
       <a href="{{ route('admin.facilities.index') }}" class="text-sm font-semibold text-gray-700 underline">Tüm kurumlara dön</a>
@@ -75,11 +76,22 @@
        ayni tarihli yorum). --}}
   <select name="status" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Kurum Durumu: Tümü</option>
-    <option value="pre_registered" @selected(request('status')==='pre_registered')>Ön Kayıt</option>
+    <option value="pre_registered" @selected(request('status')==='pre_registered')>Sahiplenilmemiş</option>
     <option value="broker_managed" @selected(request('status')==='broker_managed')>Anlaşmalı</option>
     <option value="claimed" @selected(request('status')==='claimed')>Sahipli</option>
   </select>
-  @if(request('city') || request('district') || request('category') || request('brand') || request('status') || request('q'))
+  {{-- 22 Eylul 2026: kullanicinin talebi - konumvericekici'nin Google'da
+       net eslesme bulamadigi icin BILEREK atladigi kurumlari admin elle
+       tamamlayabilsin diye. --}}
+  {{-- 22 Eylul 2026 (2): "onchange=this.form.submit()" kaldirildi - form
+       zaten "data-instant-filter" AJAX mekanizmasini kullaniyor
+       (location-filter-script.blade.php, TUM select'lere 'change'
+       dinleyicisi ekliyor), ikisi birlikte cift-gonderime yol aciyordu. --}}
+  <select name="konum" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="">Konum: Tümü</option>
+    <option value="eksik" @selected(request('konum')==='eksik')>📍 Konumu Eksik</option>
+  </select>
+  @if(request('city') || request('district') || request('category') || request('brand') || request('status') || request('q') || request('konum'))
     <a href="{{ route('admin.facilities.index', array_filter(['status' => request('status')])) }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreleri temizle</a>
   @endif
 </form>

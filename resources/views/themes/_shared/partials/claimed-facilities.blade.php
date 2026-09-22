@@ -15,7 +15,7 @@
       <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-black whitespace-nowrap" style="color: {{ $colors['primary'] }};">Tüm kurumları gör</a>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-5">
+    <div class="grid md:grid-cols-4 gap-5">
       @foreach($claimedFacilities as $facility)
         @include('themes._shared.partials.facility-card', ['facility' => $facility])
       @endforeach

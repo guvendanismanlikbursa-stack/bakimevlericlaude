@@ -147,6 +147,16 @@ ScheduledJobMonitor::attach(
     60
 );
 
+// 22 Eylul 2026: kullanicinin talebi - abonelik ozelligi. Telefon/WhatsApp
+// butonlarinin gizlenmesi bu gorevden BAGIMSIZ, canli hesaplanir (bkz.
+// Facility::isActiveSubscriber()) - bu sadece admin'in odeme suresi
+// yaklasan/yeni dolan abonelikleri fark edip kuruma ulasabilmesi icin.
+ScheduledJobMonitor::attach(
+    Schedule::command('subscriptions:notify-expiring')->dailyAt('09:00'),
+    'subscriptions:notify-expiring',
+    60 * 24
+);
+
 // 20 Agustos 2026: storage/framework/sessions'ta Laravel'in lottery-tabanli
 // otomatik GC'si calismamis, dosyalar haftalarca birikip hesabin 500.000
 // dosya (inode) sinirini doldurmustu (bkz. App\Console\Commands\

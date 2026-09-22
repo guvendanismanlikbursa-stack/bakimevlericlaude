@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -98,8 +98,22 @@ class OpsController extends Controller
             'name-cleanup-audit' => $this->nameCleanupAudit(),
             'name-cleanup-fix' => $this->nameCleanupFix(),
             'facility-lookup' => $this->facilityLookup($request),
+            'facility-source-payload' => $this->facilitySourcePayload($request),
+            'veri-cekici-google-review-targets' => $this->veriCekiciGoogleReviewTargets($request),
+            'veri-cekici-import-google-reviews' => $this->veriCekiciImportGoogleReviews($request),
+            'veri-cekici-import-google-reviews-by-maps-url' => $this->veriCekiciImportGoogleReviewsByMapsUrl($request),
+            'gorsel-cekici-bursa-targets' => $this->gorselCekiciBursaTargets($request),
+            'gorsel-cekici-import-images' => $this->gorselCekiciImportImages($request),
+            'gorsel-cekici-debug-facility' => $this->gorselCekiciDebugFacility($request),
+            'gorsel-cekici-cleanup-duplicates' => $this->gorselCekiciCleanupDuplicates($request),
+            'gorsel-cekici-cleanup-demo-where-real-exists' => $this->gorselCekiciCleanupDemoWhereRealExists(),
+            'generate-descriptions-from-reviews' => $this->generateDescriptionsFromReviews($request),
+            'batch-status-check' => $this->batchStatusCheck($request),
+            'konum-cekici-bursa-targets' => $this->konumCekiciBursaTargets($request),
+            'konum-cekici-import-coords' => $this->konumCekiciImportCoords($request),
             'facility-borrow-demo-images' => $this->facilityBorrowDemoImages($request),
             'facility-borrow-demo-images-bulk' => $this->facilityBorrowDemoImagesBulk($request),
+            'facility-clean-unfixable-broken-images' => $this->facilityCleanUnfixableBrokenImages($request),
             'ownership-verify' => $this->ownershipVerify($request),
             'ownership-fix-bulk' => $this->ownershipFixBulk($request),
             'facility-remove-by-ownership' => $this->facilityRemoveByOwnership($request),
@@ -1775,6 +1789,20 @@ class OpsController extends Controller
     // 12 Agustos 2026: kurum adiyla hizli arama - id, sahiplenme, kategori,
     // her galeri gorselinin diskte var/yok durumunu tek ekranda gosterir.
     // Salt-okunur, hicbir sey degistirmez.
+    // 20 Eylul 2026: kullanicinin talebi - Google yorumlari ozelligi icin
+    // her kurumda Google Place ID kayitli mi diye kontrol amacli, salt
+    // okunur, gecici bir tanılama araci.
+    private function facilitySourcePayload(Request $request): string
+    {
+        $id = (int) $request->query('facility_id', 0);
+        $facility = Facility::withTrashed()->find($id);
+        if (! $facility) {
+            return "facility_id={$id}: bulunamadi.";
+        }
+
+        return "#{$facility->id} {$facility->name}\nsource: {$facility->source}\nsource_payload:\n".json_encode($facility->source_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
     private function facilityLookup(Request $request): string
     {
         $q = (string) $request->query('q', '');
@@ -1846,9 +1874,16 @@ class OpsController extends Controller
             ->where('facility_images.path', 'like', 'facilities/demo/%')
             ->select('facility_images.path')
             ->distinct()
-            ->limit(50)
+            // 19 Eylul 2026: kullanicinin bildirdigi gercek hata - limit(50)
+            // ONCEDEN (exists filtresinden ONCE) uygulaniyordu. Kategoride
+            // 50'den fazla FARKLI (cogu kirik) demo path'i varsa, tek
+            // calisan olan o ilk 50'ye hic girmeyebiliyordu - donor
+            // GERCEKTEN VARKEN "bulunamadi" donuyordu. Filtreden SONRA
+            // limit uygulanacak sekilde duzeltildi (asagida ->take(50)).
+            ->limit(1000)
             ->get()
             ->filter(fn ($row) => \Illuminate\Support\Facades\Storage::disk('public')->exists($row->path))
+            ->take(50)
             ->values();
 
         if ($donorImages->isEmpty()) {
@@ -1927,6 +1962,86 @@ class OpsController extends Controller
 
         if ($rows->count() >= $limit) {
             $out .= "\nNOT: bu pencere limite ulasti, tum tabloyu kapsamak icin offset=" . ($offset + $limit) . " ile tekrar cagirin.";
+        }
+
+        return $out;
+    }
+
+    // 19 Eylul 2026: kullanicinin bildirdigi gercek hata - facilityBorrowDemoImagesBulk()
+    // AYNI kategoride calisan bir donor bulamayinca hicbir sey yapmadan
+    // atliyordu (borrowDemoImagesForFacility() donorImages bossa erken
+    // donuyor, kirik kaydi SILMIYOR bile) - bu kurumlar sonsuza kadar
+    // kirik kaliyor, her tekrar taramada AYNI sayida "kirik kayit" olarak
+    // cikiyordu. Bu araç SADECE o durumdaki (kategorisinde HICBIR calisan
+    // demo gorseli olmayan) kirik kayitlari SILER - yeni bir sey eklemez.
+    // facility_card_image() path yoksa zaten otomatik genel kategori
+    // gorseline (demo-cards/{kategori}.png) duser - kurum artik "kirik
+    // kutu" degil en azindan dogru kategoriye ait bir gorsel gosterir.
+    // Kategorisinde calisan bir donor VARSA bu araç dokunmaz, o zaten
+    // mevcut facility-borrow-demo-images-bulk ile cozulur. dry_run=1
+    // (varsayilan) sadece sayar, siler sadece dry_run=0 ile.
+    private function facilityCleanUnfixableBrokenImages(Request $request): string
+    {
+        $dryRun = $request->query('dry_run', '1') !== '0';
+        $limit = (int) $request->query('limit', 3000);
+        $offset = (int) $request->query('offset', 0);
+
+        $rows = DB::table('facility_images')
+            ->join('facilities', 'facilities.id', '=', 'facility_images.facility_id')
+            ->where('facilities.is_claimed', false)
+            ->where('facility_images.path', 'like', 'facilities/demo/%')
+            ->whereNull('facilities.deleted_at')
+            ->select('facility_images.id as image_id', 'facilities.id as facility_id', 'facilities.name', 'facilities.facility_category_id', 'facility_images.path')
+            ->orderBy('facilities.id')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
+
+        $broken = $rows->filter(fn ($r) => ! \Illuminate\Support\Facades\Storage::disk('public')->exists($r->path));
+
+        $out = "Bu pencerede taranan satir: {$rows->count()} (offset={$offset}, limit={$limit})\n";
+        $out .= "Kirik kayit: {$broken->count()}\n";
+        $out .= $dryRun ? "MOD: dry_run (hicbir sey degistirilmedi)\n\n" : "MOD: UYGULANDI\n\n";
+
+        $deleted = 0;
+        $skipped = 0;
+        $donorCache = [];
+
+        foreach ($broken->groupBy('facility_category_id') as $categoryId => $imgs) {
+            if (! array_key_exists($categoryId, $donorCache)) {
+                // 19 Eylul 2026: ayni tarihli borrowDemoImagesForFacility()
+                // duzeltmesiyle ayni kok neden - limit exists'ten ONCE degil
+                // SONRA uygulanmali, bkz. o yorumu.
+                $donorCache[$categoryId] = DB::table('facility_images')
+                    ->join('facilities', 'facilities.id', '=', 'facility_images.facility_id')
+                    ->where('facilities.facility_category_id', $categoryId)
+                    ->where('facility_images.path', 'like', 'facilities/demo/%')
+                    ->select('facility_images.path')
+                    ->distinct()
+                    ->limit(1000)
+                    ->get()
+                    ->contains(fn ($row) => \Illuminate\Support\Facades\Storage::disk('public')->exists($row->path));
+            }
+
+            if ($donorCache[$categoryId]) {
+                // Bu kategoride calisan bir donor VAR - mevcut
+                // facility-borrow-demo-images-bulk bunu zaten cozer, dokunma.
+                $skipped += $imgs->count();
+                continue;
+            }
+
+            foreach ($imgs as $img) {
+                if (! $dryRun) {
+                    DB::table('facility_images')->where('id', $img->image_id)->delete();
+                }
+                $deleted++;
+            }
+            $out .= "Kategori #{$categoryId}: {$imgs->count()} kirik kayit (donor yok) ".($dryRun ? 'silinecek' : 'silindi').".\n";
+        }
+
+        $out .= "\nToplam silinen: {$deleted}, donoru olan (dokunulmadi, diger araç cozer): {$skipped}\n";
+        if ($rows->count() >= $limit) {
+            $out .= "\nNOT: bu pencere limite ulasti, offset=".($offset + $limit)." ile tekrar cagirin.";
         }
 
         return $out;
@@ -2991,6 +3106,737 @@ class OpsController extends Controller
      * uygulayabilmek amaciyla mukerrer kontrolu Excel tarafinda, import()
      * servisine HIC dokunmadan yapabilmek icin salt-okunur bir liste.
      */
+    /**
+     * 20 Eylul 2026: kullanicinin talebi - "Google'da Yapilan Son Yorumlar"
+     * ozelligi icin veri cekiciye VERILECEK hedef kurum listesi. Kapsam:
+     * anlasmali (is_broker_managed) VEYA sahiplenilmis (is_claimed) TUM
+     * kurumlar + Bursa'daki (city_id=16) on kayitli (ikisi de false)
+     * kurumlar. Cikti veri cekicinin okuyacagi basit bir format:
+     * facility_id|isim|adres|il|ilce (satir basina bir kurum).
+     */
+    private function veriCekiciGoogleReviewTargets(Request $request): string
+    {
+        $bursaCityId = (int) $request->query('bursa_city_id', 16);
+
+        $rows = \App\Models\Facility::with('city')
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($bursaCityId) {
+                $q->where('is_broker_managed', true)
+                    ->orWhere('is_claimed', true)
+                    ->orWhere(function ($q2) use ($bursaCityId) {
+                        $q2->where('city_id', $bursaCityId)
+                            ->where('is_claimed', false)
+                            ->where('is_broker_managed', false);
+                    });
+            })
+            ->get(['id', 'name', 'address', 'city_id', 'district']);
+
+        return $rows->map(function ($f) {
+            return $f->id.'|'.$f->name.'|'.($f->address ?: '').'|'.($f->city?->name ?: '').'|'.($f->district ?: '');
+        })->implode("\n");
+    }
+
+    /**
+     * 20 Eylul 2026: kullanicinin talebi - veri cekicinin ciktisi (JSON) bu
+     * uctan iceri alinir. Beklenen format: [{"facility_id":123,
+     * "maps_url":"https://...","reviews":[{"author_name":"...",
+     * "rating":5,"body":"...","relative_time_text":"2 hafta önce"}, ...
+     * en fazla 5 tane]}, ...]. Her kurum icin ESKI google yorumlari
+     * SILINIP yenileriyle degistirilir (idempotent - ayni dosya tekrar
+     * yuklenirse kopya olusmaz).
+     */
+    private function veriCekiciImportGoogleReviews(Request $request): string
+    {
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki json dosya yolu) gerekli.';
+        }
+
+        $data = json_decode(file_get_contents($path), true);
+        if (! is_array($data)) {
+            return 'HATA: dosya gecerli bir JSON dizisi degil.';
+        }
+
+        $now = now();
+        $updatedFacilities = 0;
+        $totalReviews = 0;
+        $skipped = [];
+
+        foreach ($data as $entry) {
+            $facilityId = (int) ($entry['facility_id'] ?? 0);
+            $facility = \App\Models\Facility::find($facilityId);
+            if (! $facility) {
+                $skipped[] = "facility_id={$facilityId}: bulunamadi";
+                continue;
+            }
+
+            $reviews = array_slice($entry['reviews'] ?? [], 0, 5);
+            if (empty($reviews)) {
+                $skipped[] = "#{$facilityId} {$facility->name}: yorum yok, atlandi";
+                continue;
+            }
+
+            \App\Models\FacilityGoogleReview::where('facility_id', $facilityId)->delete();
+            foreach ($reviews as $i => $r) {
+                \App\Models\FacilityGoogleReview::create([
+                    'facility_id' => $facilityId,
+                    'author_name' => (string) ($r['author_name'] ?? 'Google Kullanıcısı'),
+                    'rating' => max(1, min(5, (int) ($r['rating'] ?? 5))),
+                    'body' => $r['body'] ?? null,
+                    'relative_time_text' => $r['relative_time_text'] ?? null,
+                    'position' => $i,
+                    'fetched_at' => $now,
+                ]);
+                $totalReviews++;
+            }
+
+            $facility->update([
+                'google_maps_url' => $entry['maps_url'] ?? $facility->google_maps_url,
+                'google_reviews_fetched_at' => $now,
+            ]);
+            $updatedFacilities++;
+        }
+
+        $out = "Guncellenen kurum: {$updatedFacilities}\nEklenen yorum: {$totalReviews}\nAtlanan: ".count($skipped);
+        if ($skipped) {
+            $out .= "\n".implode("\n", $skipped);
+        }
+
+        return $out;
+    }
+
+    /**
+     * 20 Eylul 2026: kullanicinin talebi - google_maps_scraper.py artik YENI
+     * kurum tararken AYNI ACIK sayfadan yorumlari da cekiyor (bkz.
+     * google_review_extract.py). Ama o an facility_id HENUZ YOK (kurum
+     * Excel'den import edilmeden once), bu yuzden veriCekiciImportGoogleReviews
+     * (facility_id ile eslesen) burada kullanilamaz - onun yerine
+     * "<excel>_yorumlar.json" ([{"maps_url":...,"name":...,"reviews":[...]},
+     * ...]) dosyasi, Excel import EDILDIKTEN SONRA facilities.google_maps_url
+     * TAM ESLESMESI ile eslestirilir (bkz. DataExtractorImportService - Excel
+     * "Google Haritalar Linki" sutunu bu alana kaydediliyor).
+     */
+    private function veriCekiciImportGoogleReviewsByMapsUrl(Request $request): string
+    {
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki json dosya yolu) gerekli.';
+        }
+
+        $data = json_decode(file_get_contents($path), true);
+        if (! is_array($data)) {
+            return 'HATA: dosya gecerli bir JSON dizisi degil.';
+        }
+
+        $now = now();
+        $updatedFacilities = 0;
+        $totalReviews = 0;
+        $skipped = [];
+
+        foreach ($data as $entry) {
+            $mapsUrl = (string) ($entry['maps_url'] ?? '');
+            $name = (string) ($entry['name'] ?? '(isimsiz)');
+            if ($mapsUrl === '') {
+                $skipped[] = "{$name}: maps_url bos, atlandi";
+                continue;
+            }
+
+            $facility = \App\Models\Facility::where('google_maps_url', $mapsUrl)->first();
+            if (! $facility) {
+                $skipped[] = "{$name}: bu maps_url ile eslesen kurum bulunamadi (henuz import edilmemis olabilir)";
+                continue;
+            }
+
+            $reviews = array_slice($entry['reviews'] ?? [], 0, 5);
+            if (empty($reviews)) {
+                $skipped[] = "#{$facility->id} {$facility->name}: yorum yok, atlandi";
+                continue;
+            }
+
+            \App\Models\FacilityGoogleReview::where('facility_id', $facility->id)->delete();
+            foreach ($reviews as $i => $r) {
+                \App\Models\FacilityGoogleReview::create([
+                    'facility_id' => $facility->id,
+                    'author_name' => (string) ($r['author_name'] ?? 'Google Kullanıcısı'),
+                    'rating' => max(1, min(5, (int) ($r['rating'] ?? 5))),
+                    'body' => $r['body'] ?? null,
+                    'relative_time_text' => $r['relative_time_text'] ?? null,
+                    'position' => $i,
+                    'fetched_at' => $now,
+                ]);
+                $totalReviews++;
+            }
+
+            $facility->update(['google_reviews_fetched_at' => $now]);
+            $updatedFacilities++;
+        }
+
+        $out = "Guncellenen kurum: {$updatedFacilities}\nEklenen yorum: {$totalReviews}\nAtlanan: ".count($skipped);
+        if ($skipped) {
+            $out .= "\n".implode("\n", $skipped);
+        }
+
+        return $out;
+    }
+
+    /**
+     * 21 Eylul 2026: kullanicinin talebi - "gorselvericekici" (yeni, BAGIMSIZ
+     * bir arac - mevcut google_maps_scraper.py/google_yorum_cekici.py'ye HIC
+     * dokunulmadi) icin hedef listesi. KESIN KURAL: SADECE Bursa'daki ON
+     * KAYITLI (is_claimed=false VE is_broker_managed=false) kurumlar, VE
+     * SADECE profilinde 5'ten AZ gorseli olanlar. Cikti: facility_id|isim|
+     * adres|il|ilce (satir basina bir kurum) - review-hedef listesiyle AYNI
+     * format, ayni desen.
+     */
+    private function gorselCekiciBursaTargets(Request $request): string
+    {
+        $bursaCityId = (int) $request->query('bursa_city_id', 16);
+
+        $rows = \App\Models\Facility::with('city')
+            ->withCount('images')
+            ->whereNull('deleted_at')
+            ->where('city_id', $bursaCityId)
+            ->where('is_claimed', false)
+            ->where('is_broker_managed', false)
+            ->having('images_count', '<', 5)
+            ->get(['id', 'name', 'address', 'city_id', 'district']);
+
+        return $rows->map(function ($f) {
+            return $f->id.'|'.$f->name.'|'.($f->address ?: '').'|'.($f->city?->name ?: '').'|'.($f->district ?: '');
+        })->implode("\n");
+    }
+
+    /**
+     * 21 Eylul 2026: kullanicinin talebi - gorselvericekici'nin indirdigi
+     * gorselleri (sunucuya FTP'lenmis, her ALT KLASOR bir facility_id, icinde
+     * 1.jpg..5.jpg gibi dosyalar) ice alir. KESIN KURAL burada da (export'taki
+     * ayni tarihli yorumla AYNI) TEKRAR dogrulanir: sadece ON KAYITLI ve
+     * SU AN 5'ten az gorseli olan kurumlara, MEVCUT gorselleri SILMEDEN,
+     * SADECE 5'e tamamlanacak kadar eklenir - export'tan bu yana veri
+     * degismis olabilir (ör. kurum bu arada sahiplenilmis olabilir).
+     */
+    /**
+     * 21 Eylul 2026: kullanicinin bildirdigi gercek hata - 379 klasor/913
+     * gorseli TEK istekte (her biri Imagick ile sikistirilarak) islemeye
+     * calisinca sunucunun PHP calisma suresi/bellek siniri asiliyordu -
+     * istek yarida kesiliyor, sadece ilk birkac kurum (6) tamamlaniyordu,
+     * HTTP yaniti da BOZUK (yarim yazilmis bir gorselin ham baytlari)
+     * donuyordu. Artik `limit` parametresiyle KUCUK GRUPLAR halinde
+     * cagirilir (varsayilan 20 kurum/istek) - zaten tamamlanmis kurumlar
+     * (5+ gorseli olan) HIZLICA atlandigi icin, AYNI "folder" ile TEKRAR
+     * TEKRAR cagirmak dogal olarak sirada kalan kurumlara ilerler.
+     */
+    /**
+     * 21 Eylul 2026: kullanicinin bildirdigi supheli durumu dogrulamak icin
+     * tanilama - bir kurumun TUM facility_images kayitlarini (path,
+     * sort_order, olusturulma zamani) doker.
+     */
+    /**
+     * 22 Eylul 2026: kullanicinin talebi - konumu ELLE duzeltilen kurumlarin
+     * gorsel/yorum/aciklama durumunu TOPLU gormek icin. Virgulle ayrilmis
+     * facility_id listesi alir, her biri icin ozet satir doner.
+     */
+    private function batchStatusCheck(Request $request): string
+    {
+        $ids = array_filter(array_map('intval', explode(',', (string) $request->input('ids'))));
+        if (! $ids) {
+            return 'HATA: gecerli bir "ids" parametresi (virgulle ayrilmis facility_id listesi) gerekli.';
+        }
+
+        $facilities = \App\Models\Facility::whereIn('id', $ids)->with(['images', 'googleReviews'])->get();
+        $out = '';
+        foreach ($facilities as $f) {
+            $gercekGorsel = $f->images->filter(fn ($img) => ! str_starts_with($img->path, 'facilities/demo/'))->count();
+            $demoGorsel = $f->images->count() - $gercekGorsel;
+            $yorumSayisi = $f->googleReviews->count();
+            $yeniAciklama = $f->description && ! str_contains($f->description, 'için oluşturulan ön kayıt profilidir');
+            $out .= "#{$f->id} {$f->name} | lat=".($f->lat ?? 'YOK')." | gercek_gorsel={$gercekGorsel} demo_gorsel={$demoGorsel} | yorum={$yorumSayisi} | yeni_aciklama=".($yeniAciklama ? 'EVET' : 'HAYIR')."\n";
+        }
+
+        return $out;
+    }
+
+    private function gorselCekiciDebugFacility(Request $request): string
+    {
+        $facilityId = (int) $request->query('facility_id');
+        $facility = \App\Models\Facility::find($facilityId);
+        if (! $facility) {
+            return 'HATA: kurum bulunamadi.';
+        }
+
+        $images = $facility->images()->orderBy('sort_order')->get(['id', 'path', 'sort_order', 'is_primary', 'created_at']);
+        $out = "#{$facilityId} {$facility->name} (slug: {$facility->slug}) - toplam gorsel: {$images->count()}\n";
+        foreach ($images as $img) {
+            $out .= "  id={$img->id} sort={$img->sort_order} primary=".($img->is_primary ? '1' : '0')." created={$img->created_at} path={$img->path}\n";
+        }
+        $out .= "\n--- Aciklama ---\n{$facility->description}\n";
+
+        return $out;
+    }
+
+    /**
+     * 21 Eylul 2026: kullanicinin bildirdigi gercek hata - gorsel-cekici-
+     * import-images ayni facility_id'yi (5'ten az gorseli olan kurumlar
+     * icin, foto klasoru KUCUKTU ve "5-mevcutSayi" mantigi klasordeki AYNI
+     * dosyalari TEKRAR TEKRAR ekleyebiliyordu) BIRDEN FAZLA batch'te tekrar
+     * islemis olabilir - mukerrer gorsel riski. Bu eylem, verilen zaman
+     * damgasindan SONRA olusturulmus TUM facility_images kayitlarini
+     * (SADECE verilen facility_id listesi icin) SILER - temiz bir baslangic
+     * icin, kod duzeltildikten sonra ice aktarma GUVENLI sekilde TEKRAR
+     * calistirilabilsin diye.
+     */
+    private function gorselCekiciCleanupDuplicates(Request $request): string
+    {
+        $since = (string) $request->input('since');
+        if (! $since) {
+            return 'HATA: gecerli bir "since" parametresi (ör. 2026-09-21 15:00:00) gerekli.';
+        }
+
+        $folder = (string) $request->input('folder');
+        if (! $folder || ! is_dir($folder)) {
+            return 'HATA: gecerli bir "folder" parametresi gerekli.';
+        }
+
+        $facilityIds = collect(scandir($folder))
+            ->reject(fn ($f) => in_array($f, ['.', '..'], true) || ! is_dir($folder.'/'.$f))
+            ->map(fn ($f) => (int) $f)
+            ->values();
+
+        $silinen = \App\Models\FacilityImage::whereIn('facility_id', $facilityIds)
+            ->where('created_at', '>=', $since)
+            ->delete();
+
+        return "Silinen gorsel sayisi: {$silinen} (facility_id sayisi: {$facilityIds->count()}, since: {$since})";
+    }
+
+    /**
+     * 22 Eylul 2026: kullanicinin talebi - artik cogu on kayitli kurumda
+     * GERCEK Google gorseli var ama eski "demo/ornektir" (baska bir
+     * kurumdan ODUNC alinmis) gorseller HALA galeride kaliyor, ikisi
+     * karisik gorunuyordu. KESIN KURAL: bir kurumun EN AZ BIR gercek
+     * (demo-olmayan) gorseli varsa demo gorselleri TAMAMEN silinir; hic
+     * gercek gorseli YOKSA demo gorseller (tek gorsel bile olsa bos
+     * kartla gostermemek icin) DOKUNULMADAN kalir. Sadece ON KAYITLI
+     * (is_claimed=false VE is_broker_managed=false) kurumlar etkilenir -
+     * sahiplenilmis/anlasmali kurumlara ASLA dokunulmaz.
+     */
+    private function gorselCekiciCleanupDemoWhereRealExists(): string
+    {
+        $silinenGorsel = 0;
+        $etkilenenKurum = 0;
+
+        \App\Models\Facility::where('is_claimed', false)
+            ->where('is_broker_managed', false)
+            ->whereHas('images', fn ($q) => $q->where('path', 'like', 'facilities/demo/%'))
+            ->whereHas('images', fn ($q) => $q->where('path', 'not like', 'facilities/demo/%'))
+            ->chunkById(200, function ($facilities) use (&$silinenGorsel, &$etkilenenKurum) {
+                foreach ($facilities as $facility) {
+                    $silinen = $facility->images()->where('path', 'like', 'facilities/demo/%')->delete();
+                    $silinenGorsel += $silinen;
+                    $etkilenenKurum++;
+                }
+            });
+
+        return "Etkilenen kurum: {$etkilenenKurum}\nSilinen demo gorsel: {$silinenGorsel}\n(Hic gercek gorseli olmayan kurumlarin demo gorseli KORUNDU.)";
+    }
+
+    /**
+     * 22 Eylul 2026: kullanicinin talebi - ON KAYITLI (is_claimed=false VE
+     * is_broker_managed=false) kurumlarin aciklamalarini, GERCEK 5 yildizli
+     * Google yorumlarindan alinti yaparak, aileyi fiyat talep etmeye tesvik
+     * edecek 7-8 satirlik bir metinle degistirir. KESIN KURALLAR:
+     * (1) sadece yorumu OLAN on kayitli kurumlar islenir (yorumu olmayanlar
+     *     bu turda hic degistirilmez - kullanicinin acikca sectigi kapsam),
+     * (2) sahiplenilmis/anlasmali kurumlara ASLA dokunulmaz,
+     * (3) her kurumun metni FARKLI olmali (kullanicinin acik talebi) -
+     *     baglayici cumleler facility_id'ye gore SABIT ama FARKLI bir
+     *     havuzdan secilir (ayni kurum tekrar calistirilinca ayni metni
+     *     uretir - rastgele degil, DETERMINISTIK), asil icerik ise zaten
+     *     GERCEK ve FARKLI insan yorumlarindan geldigi icin dogal olarak
+     *     benzersizdir - iki kurumun metni ayni sablonu paylassa bile
+     *     alintilar FARKLI oldugu icin kopya olmaz.
+     * `limit` ile kucuk gruplar halinde cagrilir (sunucu 30sn calisma
+     * suresi siniri - bkz. gorselCekiciImportImages ayni tarihli yorum,
+     * ayni cozum).
+     */
+    private function generateDescriptionsFromReviews(Request $request): string
+    {
+        $limit = max(1, (int) $request->input('limit', 25));
+        // 22 Eylul 2026: kullanicinin bildirdigi gercek hata - orderBy('id')
+        // ->limit() TEK BASINA her cagrida AYNI en dusuk id'li kurumlari
+        // tekrar tekrar isliyordu (sonuc ayni oldugu icin veri BOZULMUYOR
+        // ama daha YUKSEK id'li kurumlara HIC ULASILAMIYORDU). `after_id`
+        // ile anahtar-tabanli sayfalama: her cagrinin sonunda donen son
+        // id, bir sonraki cagriya bu parametre olarak verilir.
+        $afterId = (int) $request->input('after_id', 0);
+
+        $odakCumleleri = [
+            'yasli-bakim' => [
+                'huzurevi ortamında güvenli bakım, düzenli sağlık takibi ve zengin sosyal yaşam imkanları sunmaktadır',
+                'yaşlı bireylerin huzurlu, güvenli ve sosyal açıdan aktif bir yaşam sürmesini hedeflemektedir',
+                'sağlık takibi ve günlük yaşam desteğini bir arada sunan bir bakım anlayışına sahiptir',
+            ],
+            'cocuk' => [
+                'çocuğunuzun gelişimini destekleyen güvenli bir ortam ve düzenli veli iletişimi sunmaktadır',
+                'çocukların güvenli, eğlenceli ve gelişim odaklı bir ortamda vakit geçirmesini önceliklendirmektedir',
+                'deneyimli bir kadro eşliğinde çocuğunuzun sosyal ve bilişsel gelişimini desteklemeyi amaçlamaktadır',
+            ],
+            'rehabilitasyon' => [
+                'uzman kadrosu ve kişiye özel terapi planlarıyla rehabilitasyon sürecinde yanınızda olmaktadır',
+                'her danışanına özel hazırlanan tedavi planlarıyla rehabilitasyon hizmeti sunmaktadır',
+                'alanında deneyimli uzmanlarıyla düzenli takip ve raporlama esasına dayalı bir hizmet vermektedir',
+            ],
+        ];
+
+        $girisKaliplari = [
+            '{isim}, {ilce}/{il} bölgesinde {kategori} alanında hizmet veren bir kurumdur ve {odak}.',
+            '{ilce}, {il}\'de faaliyet gösteren {isim}, {kategori} alanında {odak}.',
+            '{il} {ilce}\'de bulunan {isim}, ailelere {kategori} hizmeti sunmakta ve {odak}.',
+            '{isim} isimli kurum, {ilce}/{il} bölgesinde {kategori} alanında hizmet vermekte, bu doğrultuda {odak}.',
+        ];
+
+        $puanKaliplari = [
+            'Google Haritalar üzerinde {puanMetni}{yorumSayisi} değerlendirme ile takip edilmektedir.',
+            'Kurum, Google\'daki profilinde {puanMetni}{yorumSayisi} yorum almıştır.',
+            '{yorumSayisi} aile tarafından Google üzerinden değerlendirilen kurumun {puanMetni2} bulunmaktadır.',
+        ];
+
+        $alintiKaliplari1 = [
+            'Bir veli yorumunda şunları paylaşmış: "{alinti}"',
+            'Ailelerden biri deneyimini şöyle aktarmış: "{alinti}"',
+            'Kurumu tercih eden bir aile şu ifadeleri kullanmış: "{alinti}"',
+            'Yorumlardan birinde şöyle denilmiş: "{alinti}"',
+        ];
+
+        $alintiKaliplari2 = [
+            'Başka bir yorumda ise şu satırlar dikkat çekiyor: "{alinti}"',
+            'Bir başka veli de şunları belirtmiş: "{alinti}"',
+            'Farklı bir değerlendirmede şu ifadelere yer verilmiş: "{alinti}"',
+        ];
+
+        $tekYorumYedek = [
+            'Kurumu tercih eden aileler, aldıkları hizmetten memnuniyetlerini yorumlarına yansıtmaktadır.',
+            'Google\'daki değerlendirmelerde ailelerin genel eğilimi olumlu yöndedir.',
+        ];
+
+        $kapanisKaliplari = [
+            'Bu tür geri bildirimler, kurumu değerlendirirken size somut bir fikir verebilir.',
+            'Bu paylaşımlar, kurum hakkında karar verirken size yol gösterici olabilir.',
+            'Gerçek aile deneyimleri, kurumu tanımanıza yardımcı olabilir.',
+        ];
+
+        $ctaKaliplari = [
+            'Güncel fiyat bilgisi ve uygunluk durumu için aşağıdaki formu doldurarak bu kurumdan hızlıca bilgi talep edebilirsiniz.',
+            'Fiyat ve kontenjan bilgisi almak için aşağıdaki formu kullanarak kuruma doğrudan ulaşabilirsiniz.',
+            'Detaylı bilgi ve güncel fiyat için aşağıdaki formu doldurmanız yeterlidir, kurum sizinle iletişime geçecektir.',
+            'Aşağıdaki formu doldurarak bu kurumdan fiyat ve bilgi talebinde bulunabilir, size dönüş yapılmasını sağlayabilirsiniz.',
+        ];
+
+        $facilities = \App\Models\Facility::where('is_claimed', false)
+            ->where('is_broker_managed', false)
+            ->where('id', '>', $afterId)
+            ->whereHas('googleReviews', fn ($q) => $q->where('rating', 5)->whereNotNull('body')->where('body', '!=', ''))
+            ->with(['googleReviews', 'category', 'city'])
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+
+        $updated = 0;
+        $skipped = [];
+        $guncellenenIdler = [];
+        $sonIslenenId = $afterId;
+
+        foreach ($facilities as $facility) {
+            // 22 Eylul 2026: kullanicinin bildirdigi hata icin - GUNCELLENSIN
+            // ya da ATLANSIN, her kurum "islendi" sayilir ki bir sonraki
+            // cagri (after_id ile) bu kurumu TEKRAR getirmesin, ilerlesin.
+            $sonIslenenId = $facility->id;
+
+            if ($facility->is_claimed || $facility->is_broker_managed) {
+                $skipped[] = "#{$facility->id} {$facility->name}: artik on kayitli degil, atlandi";
+                continue;
+            }
+
+            $besYildizlilar = $facility->googleReviews
+                ->filter(fn ($r) => $r->rating === 5 && filled($r->body) && mb_strlen(trim($r->body)) >= 25)
+                ->values();
+
+            if ($besYildizlilar->isEmpty()) {
+                $skipped[] = "#{$facility->id} {$facility->name}: uygun (yeterince uzun) 5 yildizli yorum yok";
+                continue;
+            }
+
+            $sec = fn (array $havuz) => $havuz[$facility->id % count($havuz)];
+            $kisalt = function (string $s, int $max = 200) {
+                $s = trim(preg_replace('/\s+/', ' ', $s));
+                return mb_strlen($s) > $max ? mb_substr($s, 0, $max).'…' : $s;
+            };
+
+            $section = service_section_for_scope($facility->category->brand_scope ?? '');
+            $sectionSlug = $section['slug'] ?? null;
+            $odakHavuzu = $odakCumleleri[$sectionSlug] ?? ['alanında güvenilir ve titiz bir hizmet sunmaktadır'];
+            $odak = $sec($odakHavuzu);
+
+            $yorumSayisi = $facility->googleReviews->count();
+            $puanMetni = $facility->rating > 0 ? number_format((float) $facility->rating, 1, ',', '.').'/5 puan ve ' : '';
+            $puanMetni2 = $facility->rating > 0 ? number_format((float) $facility->rating, 1, ',', '.').'/5 puanı' : 'olumlu bir profili';
+
+            $degistir = fn (string $kalip, array $yer) => strtr($kalip, $yer);
+
+            $satirlar = [];
+            $satirlar[] = $degistir($sec($girisKaliplari), [
+                '{isim}' => $facility->name,
+                '{ilce}' => $facility->district ?: ($facility->city->name ?? ''),
+                '{il}' => $facility->city->name ?? '',
+                '{kategori}' => $facility->category->name ?? '',
+                '{odak}' => $odak,
+            ]);
+
+            $satirlar[] = $degistir($sec($puanKaliplari), [
+                '{puanMetni}' => $puanMetni,
+                '{puanMetni2}' => $puanMetni2,
+                '{yorumSayisi}' => $yorumSayisi,
+            ]);
+
+            $satirlar[] = $degistir($sec($alintiKaliplari1), [
+                '{alinti}' => $kisalt($besYildizlilar[0]->body),
+            ]);
+
+            if ($besYildizlilar->count() > 1) {
+                $satirlar[] = $degistir($sec($alintiKaliplari2), [
+                    '{alinti}' => $kisalt($besYildizlilar[1]->body),
+                ]);
+            } else {
+                $satirlar[] = $sec($tekYorumYedek);
+            }
+
+            $satirlar[] = $sec($kapanisKaliplari);
+            $satirlar[] = $sec($ctaKaliplari);
+
+            $facility->update(['description' => implode("\n\n", $satirlar)]);
+            $updated++;
+            $guncellenenIdler[] = $facility->id;
+        }
+
+        // Ilk satir bash dongusunun kolayca ayristirabilmesi icin sade
+        // makine-okunur formatta (bkz. bu eylemi tekrar tekrar cagiran
+        // dongu) - son_id bir sonraki cagriya after_id olarak verilir.
+        $out = "son_id={$sonIslenenId}|islenen=".$facilities->count()."|guncellenen={$updated}\n";
+        $out .= "Guncellenen kurum: {$updated} (id: ".implode(',', $guncellenenIdler).")\nAtlanan: ".count($skipped);
+        if ($skipped) {
+            $out .= "\n".implode("\n", array_slice($skipped, 0, 30));
+        }
+
+        return $out;
+    }
+
+    private function gorselCekiciImportImages(Request $request): string
+    {
+        $folder = (string) $request->input('folder');
+        if (! $folder || ! is_dir($folder)) {
+            return 'HATA: gecerli bir "folder" parametresi (sunucudaki klasor yolu) gerekli.';
+        }
+        $limit = max(1, (int) $request->input('limit', 20));
+
+        $updatedFacilities = 0;
+        $totalImages = 0;
+        $skipped = [];
+        $islenenKurumSayisi = 0;
+
+        foreach (scandir($folder) as $sub) {
+            if ($islenenKurumSayisi >= $limit) {
+                break;
+            }
+            if ($sub === '.' || $sub === '..' || ! is_dir($folder.'/'.$sub)) {
+                continue;
+            }
+
+            $facilityId = (int) $sub;
+            $facility = \App\Models\Facility::find($facilityId);
+            if (! $facility) {
+                $skipped[] = "{$sub}: kurum bulunamadi";
+                continue;
+            }
+
+            // KESIN KURAL - tekrar dogrulama (bkz. yorum yukarida).
+            if ($facility->is_claimed || $facility->is_broker_managed) {
+                $skipped[] = "#{$facilityId} {$facility->name}: artik on kayitli degil (sahiplenilmis/anlasmali), atlandi";
+                continue;
+            }
+
+            $mevcutSayi = $facility->images()->count();
+            if ($mevcutSayi >= 5) {
+                $skipped[] = "#{$facilityId} {$facility->name}: zaten 5+ gorseli var, atlandi";
+                continue;
+            }
+
+            $eklenecekMax = 5 - $mevcutSayi;
+
+            $dosyalar = collect(scandir($folder.'/'.$sub))
+                ->reject(fn ($f) => in_array($f, ['.', '..'], true))
+                ->sort()
+                ->values();
+
+            if ($dosyalar->isEmpty()) {
+                $skipped[] = "#{$facilityId} {$facility->name}: klasor bos";
+                continue;
+            }
+
+            $hicPrimaryYok = ! $facility->images()->where('is_primary', true)->exists();
+            $saved = 0;
+            $sortOrder = $mevcutSayi;
+
+            foreach ($dosyalar as $dosyaAdi) {
+                if ($saved >= $eklenecekMax) {
+                    break;
+                }
+                $dosyaYolu = $folder.'/'.$sub.'/'.$dosyaAdi;
+                if (! is_file($dosyaYolu)) {
+                    continue;
+                }
+
+                try {
+                    $mime = mime_content_type($dosyaYolu) ?: 'image/jpeg';
+                    $yuklenen = new \Illuminate\Http\UploadedFile($dosyaYolu, $dosyaAdi, $mime, null, true);
+                    $path = app(\App\Services\ImageCompressionService::class)->store($yuklenen, 'facilities');
+                } catch (\Throwable $e) {
+                    continue;
+                }
+
+                \App\Models\FacilityImage::create([
+                    'facility_id' => $facilityId,
+                    'path' => $path,
+                    'sort_order' => $sortOrder,
+                    'is_primary' => $hicPrimaryYok && $saved === 0,
+                ]);
+                // 21 Eylul 2026: kullanicinin bildirdigi gercek hata -
+                // 5'ten AZ gorseli olan (klasordeki dosya sayisi hedefe
+                // yetmeyen) bir kurum "mevcutSayi>=5" sartina HIC
+                // ulasamiyordu, bu yuzden SONRAKI her batch cagrisinda
+                // AYNI dosyalar TEKRAR TEKRAR eklenip mukerrer gorsel
+                // olusuyordu. Basariyla ice alinan kaynak dosya HEMEN
+                // SILINIR - bir sonraki taramada bu kurumun klasoru bos
+                // bulunur ("klasor bos" ile atlanir), ayni dosya bir DAHA
+                // ASLA eklenmez - kac kere cagrilirsa cagrilsin guvenli
+                // (idempotent).
+                @unlink($dosyaYolu);
+                $saved++;
+                $sortOrder++;
+            }
+
+            if ($saved > 0) {
+                $updatedFacilities++;
+                $totalImages += $saved;
+            } else {
+                $skipped[] = "#{$facilityId} {$facility->name}: hicbir gorsel kaydedilemedi";
+            }
+            // sadece GERCEKTEN gorsel sikistirma/kaydetme islemi yapilan
+            // kurumlar limit'e sayilir - zaten tamamlanmis/uygunsuz olanlarin
+            // hizli atlanmasi bu sayaci artirmaz.
+            $islenenKurumSayisi++;
+        }
+
+        $out = "Guncellenen kurum: {$updatedFacilities}\nEklenen gorsel: {$totalImages}\nAtlanan: ".count($skipped);
+        if ($skipped) {
+            $out .= "\n".implode("\n", $skipped);
+        }
+
+        return $out;
+    }
+
+    /**
+     * 21 Eylul 2026: kullanicinin talebi - "konumvericekici" (yeni, BAGIMSIZ
+     * bir arac - digerlerine HIC dokunulmadi) icin hedef listesi. KESIN
+     * KURAL: SADECE Bursa'daki ON KAYITLI (is_claimed=false VE
+     * is_broker_managed=false) kurumlar - lat/lng DOLU olsun olmasin HEPSI
+     * (kullanicinin bildirdigi gercek hata: bazi ONCEDEN YUKLENEN
+     * konumlar YANLISTI, sadece bos olanlari degil HEPSINI Google
+     * Haritalar'dan taze/dogrulanmis koordinatla GUNCELLEMEK gerekiyor).
+     * Cikti: facility_id|isim|adres|il|ilce - digerleriyle AYNI format.
+     */
+    private function konumCekiciBursaTargets(Request $request): string
+    {
+        $bursaCityId = (int) $request->query('bursa_city_id', 16);
+
+        $rows = \App\Models\Facility::with('city')
+            ->whereNull('deleted_at')
+            ->where('city_id', $bursaCityId)
+            ->where('is_claimed', false)
+            ->where('is_broker_managed', false)
+            ->get(['id', 'name', 'address', 'city_id', 'district']);
+
+        return $rows->map(function ($f) {
+            return $f->id.'|'.$f->name.'|'.($f->address ?: '').'|'.($f->city?->name ?: '').'|'.($f->district ?: '');
+        })->implode("\n");
+    }
+
+    /**
+     * 21 Eylul 2026: kullanicinin talebi - konumvericekici'nin Google
+     * Haritalar'in KENDI sayfa linkinden (page.url, "@enlem,boylam,zoom"
+     * kalibi) okudugu KESIN koordinatlari ice alir. Beklenen JSON:
+     * [{"facility_id":123,"lat":40.123,"lng":29.456,"maps_url":"..."}, ...].
+     * KESIN KURAL - iki kez dogrulanir (export'taki ayni tarihli yorumla
+     * AYNI mantik): sadece ON KAYITLI kurumlara yazilir, sahiplenilmis/
+     * anlasmali olanlara ASLA DOKUNULMAZ - export'tan bu yana durum
+     * degismis olabilir. facility_id=6713 (kullanicinin daha once elle
+     * dogruladigi, facility-geo-set'teki AYNI koruma) burada da atlanir.
+     */
+    private function konumCekiciImportCoords(Request $request): string
+    {
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki json dosya yolu) gerekli.';
+        }
+
+        $data = json_decode(file_get_contents($path), true);
+        if (! is_array($data)) {
+            return 'HATA: dosya gecerli bir JSON dizisi degil.';
+        }
+
+        $updated = 0;
+        $skipped = [];
+
+        foreach ($data as $entry) {
+            $facilityId = (int) ($entry['facility_id'] ?? 0);
+            if ($facilityId === 6713) {
+                $skipped[] = "#6713: kullanicinin elle dogruladigi kurum, dokunulmaz";
+                continue;
+            }
+
+            $lat = $entry['lat'] ?? null;
+            $lng = $entry['lng'] ?? null;
+            if ($lat === null || $lng === null || ! is_numeric($lat) || ! is_numeric($lng)) {
+                $skipped[] = "#{$facilityId}: gecerli lat/lng yok";
+                continue;
+            }
+
+            $facility = \App\Models\Facility::find($facilityId);
+            if (! $facility) {
+                $skipped[] = "#{$facilityId}: kurum bulunamadi";
+                continue;
+            }
+
+            // KESIN KURAL - tekrar dogrulama.
+            if ($facility->is_claimed || $facility->is_broker_managed) {
+                $skipped[] = "#{$facilityId} {$facility->name}: artik on kayitli degil (sahiplenilmis/anlasmali), atlandi";
+                continue;
+            }
+
+            $facility->update([
+                'lat' => round((float) $lat, 7),
+                'lng' => round((float) $lng, 7),
+            ]);
+            $updated++;
+        }
+
+        $out = "Guncellenen kurum: {$updated}\nAtlanan: ".count($skipped);
+        if ($skipped) {
+            $out .= "\n".implode("\n", $skipped);
+        }
+
+        return $out;
+    }
+
     private function veriCekiciBursaExistingList(Request $request): string
     {
         $cityId = (int) $request->query('city_id', 16);

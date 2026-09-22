@@ -5,7 +5,7 @@
 <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
   <div>
     <h1 class="text-2xl font-bold">Kurum Davetleri</h1>
-    <p class="text-sm text-gray-500 mt-1">Ön kayıtlı özel/vakıf kurumlara WhatsApp ile sahiplenme daveti gönderme takibi. Gönderim insan tarafından WhatsApp üzerinden yapılır — bu ekran sadece durumu izler.</p>
+    <p class="text-sm text-gray-500 mt-1">Sahiplenilmemiş özel/vakıf kurumlara WhatsApp ile sahiplenme daveti gönderme takibi. Gönderim insan tarafından WhatsApp üzerinden yapılır — bu ekran sadece durumu izler.</p>
   </div>
   <a href="{{ route('admin.invitations.quick-send') }}" class="bg-green-600 text-white rounded-lg px-5 py-2.5 text-sm font-bold whitespace-nowrap">⚡ Hızlı Gönderim</a>
 </div>

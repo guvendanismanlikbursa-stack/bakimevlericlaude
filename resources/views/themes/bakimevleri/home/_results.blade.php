@@ -33,7 +33,7 @@
 
     @if($filteredFeatured->isNotEmpty())
       <div class="text-sm font-black text-gray-500 mb-3">Öne çıkanlar</div>
-      <div class="grid md:grid-cols-3 gap-5 mb-8">
+      <div class="grid md:grid-cols-4 gap-5 mb-8">
         @foreach($filteredFeatured as $facility)
           @include('themes._shared.partials.facility-card', ['facility' => $facility])
         @endforeach
@@ -48,7 +48,7 @@
     @else
       @if($filteredFacilities->isNotEmpty())
         <div class="text-sm font-black text-gray-500 mb-3">Filtreye uygun kurumlar</div>
-        <div class="grid md:grid-cols-3 gap-5">
+        <div class="grid md:grid-cols-4 gap-5">
           @foreach($filteredFacilities as $facility)
             @include('themes._shared.partials.facility-card', ['facility' => $facility])
           @endforeach
@@ -63,15 +63,7 @@
      arada "Bilgi merkezi" tanitim blogu OLMADAN gorunmeli - o blog asagiya,
      bu 3 bolumden SONRA tasindi. --}}
 <section class="max-w-6xl mx-auto px-4 py-12">
-  <div class="grid lg:grid-cols-[280px_1fr] gap-8">
-    <aside class="bg-white border border-gray-100 rounded-xl p-5 h-fit shadow-sm">
-      <div class="font-black text-gray-950 mb-3">{{ $section['title'] }} özellikleri</div>
-      <div class="space-y-2">
-        @foreach(array_slice($section['features'], 0, 6) as $feature)
-          <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug'], 'service' => $feature]) }}" class="block rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700 hover:shadow-sm">{{ $feature }}</a>
-        @endforeach
-      </div>
-    </aside>
+  <div>
     <div id="one-cikanlar">
       <div class="flex items-end justify-between mb-6"><div><div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Seçilmiş kurumlar</div><h2 class="text-3xl font-black text-gray-950">Öne çıkanlar</h2></div><a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-black" style="color: {{ $colors['primary'] }};">Listeye git →</a></div>
       {{-- 31 Agustos 2026: kullanicinin bildirdigi gercek fark - bu marka
@@ -79,7 +71,7 @@
            kullaniyordu, diger 2 marka (bakimeviara/bakimevibul) buyuk,
            dikey (gorsel ustte, md:grid-cols-3) kart kullaniyor. Ayni
            gorsel dile getirildi - 3 marka artik tutarli buyuklukte. --}}
-      <div class="grid md:grid-cols-3 gap-5">
+      <div class="grid md:grid-cols-4 gap-5">
         @forelse($featured as $facility)
           {{-- 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlara ayri
                bir "Hemen Ücret Sor" CTA'si eklenecekti, ama tum kart TEK bir
@@ -88,9 +80,9 @@
                sinif hata). Dis eleman <div>'e cevrildi, tiklanabilir alan
                ic <a>'ya tasindi, CTA kardes bir <a> olarak eklendi. --}}
           <div class="group bg-white rounded-xl overflow-hidden transition relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
-            <div class="absolute top-3 -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md tracking-wider pointer-events-none">⭐ ÖNE ÇIKAN</div>
+            <div class="absolute -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md pointer-events-none" style="top: 20px;">⭐ ÖNE ÇIKAN</div>
             @if($facility->is_broker_managed)
-              <div class="absolute top-3 -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md tracking-wider pointer-events-none">🤝 ANLAŞMALI</div>
+              <div class="absolute -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md pointer-events-none" style="top: 20px;">🤝 ANLAŞMALI</div>
             @endif
             @php $cardImage = facility_card_image($facility, $section); @endphp
             <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
@@ -161,6 +153,21 @@
 
 @include('themes._shared.partials.claimed-facilities')
 @include('themes._shared.partials.broker-map')
+
+{{-- 17 Eylul 2026: kullanicinin talebi - "özellikleri" kutusu daha once
+     Öne Çıkanlar'in yanindaki dar kenar cubugundaydi, artik Ön Kayıtlı
+     Kurumlar'in HEMEN USTUNDE, kendi genis bolumu olarak duruyor. --}}
+<section class="max-w-6xl mx-auto px-4 pt-4">
+  <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+    <div class="font-black text-gray-950 mb-3">{{ $section['title'] }} özellikleri</div>
+    <div class="flex flex-wrap gap-2">
+      @foreach(array_slice($section['features'], 0, 6) as $feature)
+        <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug'], 'service' => $feature]) }}" class="rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700 hover:shadow-sm">{{ $feature }}</a>
+      @endforeach
+    </div>
+  </div>
+</section>
+
 @include('themes._shared.partials.pre-registered-facilities')
 
 <section class="max-w-6xl mx-auto px-4 py-12">

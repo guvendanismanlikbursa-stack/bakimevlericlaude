@@ -48,7 +48,7 @@ class FacilityController extends Controller
             ));
         }
 
-        $query = $this->filteredQuery($request, $scope, $brand['category_scope'])->with(['city', 'category', 'images']);
+        $query = $this->filteredQuery($request, $scope, $brand['category_scope'])->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews']);
 
         // 12 Agustos 2026: kullanicinin talebi - her sayfada tutarli 21
         // kurum (3 sutunlu gride tam sigan bir sayi), fazlasi icin normal
@@ -135,7 +135,7 @@ class FacilityController extends Controller
             $candidates = Facility::discoverable()
                 ->forBrand($scope)
                 ->whereNotNull('lat')->whereNotNull('lng')
-                ->with(['city', 'category', 'images'])
+                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 ->get();
 
             $nearbyFacilities = $geo->nearestFacilities($candidates, (float) $request->lat, (float) $request->lng);
@@ -175,7 +175,7 @@ class FacilityController extends Controller
         $count = (clone $query)->count();
 
         $preview = (clone $query)
-            ->with(['city', 'category', 'images'])
+            ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
             ->orderByDesc('is_broker_managed')
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')
@@ -250,7 +250,16 @@ class FacilityController extends Controller
             // engagementEvents()->create() sarilmisti. Simdi GERCEKTEN ikisi
             // de sarili.
             try {
+                // 19 Eylul 2026: kullanicinin bildirdigi gercek hata - admin
+                // kurum listesindeki "Son Guncelleme" sutunu, kurum hic
+                // duzenlenmeden sadece sayfa GORUNTULENDIGINDE (bot dahil,
+                // her istek) "bugun guncellendi" gosteriyordu. Sebep:
+                // Eloquent increment() varsayilan olarak updated_at'i de
+                // dokunuyor. Sayac davranisi (her istegi sayma) AYNEN
+                // koruniyor, sadece bu satir updated_at'i artik etkilemiyor.
+                $facility->timestamps = false;
                 $facility->increment('views_count');
+                $facility->timestamps = true;
                 $facility->engagementEvents()->create(['type' => 'view']);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Goruntulenme olayi kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
@@ -312,7 +321,7 @@ class FacilityController extends Controller
             ->forBrand($serviceSection['scopes'] ?? $brand['category_scope'])
             ->where('city_id', $facility->city_id)
             ->where('id', '!=', $facility->id)
-            ->with(['city', 'category', 'images'])
+            ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
             ->orderByRaw('CASE WHEN district = ? THEN 0 ELSE 1 END', [$facility->district])
             ->orderByRaw('CASE WHEN facility_category_id = ? THEN 0 ELSE 1 END', [$facility->facility_category_id])
             // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
@@ -327,7 +336,7 @@ class FacilityController extends Controller
                 ->where('facility_category_id', $facility->facility_category_id)
                 ->where('id', '!=', $facility->id)
                 ->whereNotIn('id', $related->pluck('id'))
-                ->with(['city', 'category', 'images'])
+                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 ->limit(3 - $related->count())
                 ->get();
             $related = $related->concat($fallback);

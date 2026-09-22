@@ -136,7 +136,7 @@ class PriceGuideController extends Controller
             }
 
             $facilities = (clone $baseQuery)
-                ->with(['city', 'category', 'images'])
+                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 ->orderByDesc('is_featured')
                 ->orderByDesc('rating')
                 ->paginate(12)

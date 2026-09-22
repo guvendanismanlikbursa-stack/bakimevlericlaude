@@ -46,9 +46,13 @@
     if (alreadyInstalled || dismissed) return;
     deferredPrompt = event;
     if (wrapEl) { wrapEl.hidden = false; wrapEl.style.display = 'flex'; }
-    // Kullanici hicbir sey yapmazsa 13 saniye sonra kendiliginden kaybolur
-    // (kalici gizleme isareti koymadan - bir sonraki sayfa yuklemesinde
-    // tekrar gorunebilir), takilip kalan bir uyari olmasin diye.
+    // 17 Eylul 2026: kullanicinin talebi - "surekli cikiyor" sikayeti.
+    // Once sadece capraz/yukle tiklaninca kalici isaretleniyordu; kullanici
+    // hicbir sey yapmadan (cogu ziyaretci boyle) 13sn sonra kendiliginden
+    // kaybolunca kalici isaret hic konmuyordu, bir sonraki sayfada tekrar
+    // cikiyordu. Artik banner gosterildigi an cihaz basina kalici olarak
+    // isaretleniyor - kullanici dokunmasa da bir daha cikmaz.
+    try { localStorage.setItem('pwa_install_dismissed', '1'); } catch (e) {}
     autoHideTimer = setTimeout(hideWrap, 13000);
   });
 

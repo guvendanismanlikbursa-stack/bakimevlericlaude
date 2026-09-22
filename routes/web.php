@@ -117,6 +117,10 @@ $siteRoutes = function () {
     Route::post('/kurumlar/{slug}/iletisim-tiklama', [EngagementController::class, 'trackContactClick'])->middleware('throttle:public-light')->name('facilities.contact-click');
     Route::post('/kurumlar/{slug}/gorsel/{image}/goruntulendi', [\App\Http\Controllers\Public\FacilityImageController::class, 'markViewed'])->middleware('throttle:public-light')->name('facilities.image.viewed');
     Route::post('/teklif-talebi', [OfferRequestController::class, 'store'])->middleware('throttle:public-form')->name('offer-requests.store');
+    // 20 Eylul 2026: kullanicinin talebi - on kayitli kurumlarda telefon/
+    // WhatsApp yerine tek "Bilgi ve Fiyat Talep Et" formu, bkz.
+    // FacilityInterestLeadController ayni tarihli yorum.
+    Route::post('/kurum-ilgi-talebi', [\App\Http\Controllers\Public\FacilityInterestLeadController::class, 'store'])->middleware('throttle:public-form')->name('facility-interest-leads.store');
     Route::get('/toplu-fiyat-al', [EngagementController::class, 'bulkQuote'])->name('engagement.bulk-quote');
     Route::post('/toplu-teklif-talebi', [OfferRequestController::class, 'storeBulk'])->middleware('throttle:public-form')->name('offer-requests.store-bulk');
     Route::get('/iletisim', [ContactController::class, 'create'])->name('contact.create');
@@ -412,6 +416,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/kurumlar/{facility}/yerinde-sahiplendir', [AdminFacilityController::class, 'instantClaim'])->name('facilities.instant-claim');
         Route::post('/kurumlar/{facility}/panelde-gor', [AdminFacilityController::class, 'impersonate'])->name('facilities.impersonate');
 
+        Route::get('/abone-kurumlar', [AdminFacilityController::class, 'subscriptions'])->name('facilities.subscriptions.index');
+        Route::post('/kurumlar/{facility}/abone-yap', [AdminFacilityController::class, 'subscriptionEnable'])->name('facilities.subscription.enable');
+        Route::post('/kurumlar/{facility}/abone-odeme-al', [AdminFacilityController::class, 'subscriptionExtend'])->name('facilities.subscription.extend');
+        Route::post('/kurumlar/{facility}/abone-iptal', [AdminFacilityController::class, 'subscriptionCancel'])->name('facilities.subscription.cancel');
+
         Route::get('/kurum-davetleri', [AdminFacilityInvitationController::class, 'index'])->name('invitations.index');
         Route::get('/kurum-davetleri/hizli-gonderim', [AdminFacilityInvitationController::class, 'quickSend'])->name('invitations.quick-send');
         Route::get('/kurum-davetleri/{facility}/whatsapp-ac', [AdminFacilityInvitationController::class, 'openWhatsapp'])->name('invitations.whatsapp');
@@ -424,6 +433,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/aracilik/yonlendirmeler', [AdminBrokerController::class, 'storeReferral'])->name('broker.referrals.store');
         Route::post('/aracilik/yonlendirmeler/{referral}', [AdminBrokerController::class, 'updateReferral'])->name('broker.referrals.update');
         Route::delete('/aracilik/yonlendirmeler/{referral}', [AdminBrokerController::class, 'destroyReferral'])->name('broker.referrals.destroy');
+
+        // 20 Eylul 2026: kullanicinin talebi - on kayitli kurumlardaki "Bilgi
+        // ve Fiyat Talep Et" formundan gelen kayitlarin listesi.
+        Route::get('/kurum-ilgi-talepleri', [\App\Http\Controllers\Admin\FacilityInterestLeadController::class, 'index'])->name('facility-interest-leads.index');
+        Route::put('/kurum-ilgi-talepleri/{facilityInterestLead}', [\App\Http\Controllers\Admin\FacilityInterestLeadController::class, 'update'])->name('facility-interest-leads.update');
 
         Route::get('/doluluk-durumu', [AdminOccupancyController::class, 'index'])->name('occupancy.index');
         Route::post('/doluluk-durumu/{facility}', [AdminOccupancyController::class, 'update'])->name('occupancy.update');

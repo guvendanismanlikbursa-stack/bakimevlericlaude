@@ -61,7 +61,6 @@
         @if(session('family_user_id'))
           <a href="{{ brand_route('engagement.favorites') }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm font-black text-white">Favoriler</a>
         @endif
-        <a href="{{ brand_route('facilities.index', array_filter(['bolum' => $activeSection['slug'] ?? null, 'pre_registered' => 1])) }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm font-black text-white">Ön Kayıtlı Kurumlar</a>
         <button type="button" id="js-nearby-button" class="rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-sm font-black text-white">📍 Yakınımdaki Kurumlar</button>
       </div>
     </div>

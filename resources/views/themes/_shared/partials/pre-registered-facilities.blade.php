@@ -1,10 +1,10 @@
 <section class="max-w-6xl mx-auto px-4 py-10">
   <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
     <div>
-      <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Yeni eklenen ön kayıtlar</div>
-      <h2 class="text-2xl md:text-3xl font-black text-gray-950">Ön Kayıtlı Kurumlar<span class="sr-only">On Kayitli Kurumlar</span></h2>
+      <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Yeni eklenen kurumlar</div>
+      <h2 class="text-2xl md:text-3xl font-black text-gray-950">Kurumlar<span class="sr-only">Kurumlar</span></h2>
       {{-- 24 Agustos 2026: PageSpeed Insights kontrast uyarisi - bkz. trust-stats.blade.php ayni tarihli yorum --}}
-      <p class="text-sm text-gray-600 mt-1">Admin onayından geçen, yetkili sahiplenmesi bekleyen kurum profilleri burada listelenir.</p>
+      <p class="text-sm text-gray-600 mt-1">Admin onayından geçen kurum profilleri burada listelenir.</p>
     </div>
     <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug'], 'pre_registered' => 1]) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-black whitespace-nowrap" style="color: {{ $colors['primary'] }};">Filtreli listeyi aç</a>
   </div>
@@ -24,9 +24,9 @@
     </div>
   @else
     <div class="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center shadow-sm">
-      <div class="text-lg font-black text-gray-950">Bu bölüm için henüz onaylı ön kayıt yok.</div>
+      <div class="text-lg font-black text-gray-950">Bu bölüm için henüz onaylı kurum yok.</div>
       <p class="text-sm text-gray-500 mt-2">Bu bölgedeki kurumlar tespit edilip ekibimiz tarafından onaylandığında kartlar burada otomatik görünür.</p>
-      <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug'], 'pre_registered' => 1]) }}" class="mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-black text-white" style="background: {{ $colors['primary'] }};">Ön kayıt listesini aç</a>
+      <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug'], 'pre_registered' => 1]) }}" class="mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-black text-white" style="background: {{ $colors['primary'] }};">Kurum listesini aç</a>
     </div>
   @endif
 </section>

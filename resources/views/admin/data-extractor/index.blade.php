@@ -5,7 +5,7 @@
 <div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-2xl font-bold">Veri Çekici<span class="sr-only">Veri Cekici</span></h1>
-    <p class="text-sm text-gray-500 mt-1">Google Maps verilerini önce inceleme listesine alır; admin onaylayınca ön kayıtlı kurum oluşturur.</p>
+    <p class="text-sm text-gray-500 mt-1">Google Maps verilerini önce inceleme listesine alır; admin onaylayınca kurum oluşturur.</p>
   </div>
 </div>
 
@@ -73,7 +73,7 @@
         <div class="md:col-span-2">
           <label class="text-sm font-medium">Veri Çekici Excel dosyası (.xlsx)</label>
           <input type="file" name="file" accept=".xlsx" required class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
-          <p class="text-xs text-gray-400 mt-1">Excel import eski hızlı akıştır; satırları doğrudan ön kayıtlı kuruma çevirir.</p>
+          <p class="text-xs text-gray-400 mt-1">Excel import eski hızlı akıştır; satırları doğrudan kuruma çevirir.</p>
         </div>
         <div>
           <label class="text-sm font-medium">Şehir</label>

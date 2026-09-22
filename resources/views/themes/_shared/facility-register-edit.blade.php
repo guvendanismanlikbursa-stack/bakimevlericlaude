@@ -37,12 +37,10 @@
     <input type="text" name="phone" value="{{ old('phone', $registration->phone) }}" placeholder="Kurum Telefonu" class="border rounded-lg px-3 py-2 w-full">
     <textarea name="description" placeholder="Kurum hakkında kısa açıklama" rows="4" class="border rounded-lg px-3 py-2 w-full">{{ old('description', $registration->description) }}</textarea>
 
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <input type="number" name="capacity" value="{{ old('capacity', $registration->capacity) }}" placeholder="Kapasite" min="0" class="border rounded-lg px-3 py-2 w-full">
-      <div class="grid grid-cols-2 gap-2">
-        <input type="number" name="price_min" value="{{ old('price_min', $registration->price_min) }}" placeholder="Min. Fiyat" min="0" class="border rounded-lg px-3 py-2 w-full">
-        <input type="number" name="price_max" value="{{ old('price_max', $registration->price_max) }}" placeholder="Maks. Fiyat" min="0" class="border rounded-lg px-3 py-2 w-full">
-      </div>
+      <input type="number" name="price_min" value="{{ old('price_min', $registration->price_min) }}" placeholder="Min. Fiyat" min="0" class="border rounded-lg px-3 py-2 w-full">
+      <input type="number" name="price_max" value="{{ old('price_max', $registration->price_max) }}" placeholder="Maks. Fiyat" min="0" class="border rounded-lg px-3 py-2 w-full">
     </div>
 
     <hr class="my-2">

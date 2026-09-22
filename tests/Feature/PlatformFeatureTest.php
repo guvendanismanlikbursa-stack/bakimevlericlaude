@@ -561,11 +561,15 @@ class PlatformFeatureTest extends TestCase
         // (bkz. rehabFacilityClaimed) "Benzer Kurumlar" bolumunde MESRU sekilde
         // kendi Karsilastir butonuyla goruntuleniyor. Asil kontrol edilmesi
         // gereken, SADECE rehabFacility'nin KENDI butonunun gizli olmasi.
+        // 20 Eylul 2026'dan itibaren (bkz. facilities/show.blade.php ayni
+        // tarihli yorum) "Bu kurum henüz sahiplenilmedi" basligi kaldirildi,
+        // sahiplenilmemis/anlasmasiz kurumda artik SADECE "Bilgi ve Fiyat
+        // Talep Et" formu (FacilityInterestLeadController) gorunur.
         $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)
             ->assertOk()
             ->assertDontSee('data-mode="compare" data-id="'.$this->rehabFacility->id.'"', false)
             ->assertDontSee('Ücret / Teklif Bilgisi Al')
-            ->assertSee('Bu kurum henüz sahiplenilmedi');
+            ->assertSee('Bilgi ve Fiyat Talep Et');
     }
 
     public function test_broker_managed_unclaimed_facility_accepts_offer_visit_and_question_requests(): void
@@ -891,9 +895,11 @@ class PlatformFeatureTest extends TestCase
         // cakismayan 3 ayri varsayilan bolume sahip (bkz. config/brands.php);
         // bakimevleri'nin varsayilani rehabilitasyon'dan yasli-bakim'a
         // tasindi, bu yuzden burada da bolum acikca belirtiliyor.
+        // 22 Eylul 2026: kullanicinin talebi - "Ön Kayıtlı Kurumlar" basligi
+        // (sr-only dahil) kaldirildi, bolum artik notr "Kurumlar" basligini kullanir.
         $this->get('/site/bakimevleri?bolum=rehabilitasyon')
             ->assertOk()
-            ->assertSee('On Kayitli Kurumlar')
+            ->assertSee('Kurumlar')
             ->assertSee('Veri Cekici Rehab Merkezi');
     }
 
@@ -1577,13 +1583,16 @@ class PlatformFeatureTest extends TestCase
             'balance' => 0,
         ]);
 
-        // 2) Ana sayfada/listede "Ön Kayıtlı" etiketi gorunmeli, "Onaylı" gorunmemeli.
+        // 2) Ana sayfada/listede gorunmeli - 22 Eylul 2026'dan itibaren
+        // "Ön Kayıtlı" etiketi hicbir yerde gosterilmiyor (kullanicinin
+        // talebi - kafa karistirici/itici bulundu), kurum digerleriyle
+        // aynı sekilde, ozel bir etiket olmadan listelenir.
         $listing = $this->get('/site/bakimevibul/kurumlar?bolum=yasli-bakim');
         $listing->assertOk()
             ->assertSee('Uskudar Ornek Huzurevi')
-            ->assertSee('Ön Kayıtlı', false);
+            ->assertDontSee('Ön Kayıtlı', false);
 
-        // 3) Admin panelinde "Ön Kayıtlı Kurumlar" filtresinde gorunmeli, "Onaylı Kurumlar" filtresinde gorunmemeli.
+        // 3) Admin panelinde "Sahiplenilmemiş" filtresinde gorunmeli, "Onaylı Kurumlar" filtresinde gorunmemeli.
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/kurumlar?status=pre_registered')
             ->assertOk()
@@ -1629,7 +1638,7 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue($preRegistered->is_claimed);
         $this->assertSame('approved', $claim->fresh()->status);
 
-        // 9) Admin panelinde artik "Onaylı Kurumlar" filtresinde gorunmeli, "Ön Kayıtlı" filtresinde gorunmemeli.
+        // 9) Admin panelinde artik "Onaylı Kurumlar" filtresinde gorunmeli, "Sahiplenilmemiş" filtresinde gorunmemeli.
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/kurumlar?status=claimed')
             ->assertOk()
@@ -3281,6 +3290,124 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Kurum Durumu: Tümü');
     }
 
+    // 22 Eylul 2026: kullanicinin talebi - "abonelik" ozelligi. Sahiplenilmemis
+    // VE anlasmali olmayan bir kurum, admin tarafindan abone yapilinca
+    // odeme suresi boyunca telefon/WhatsApp butonlari aktif olur, suresi
+    // dolunca (ayri bir "aktif" bayragi olmadan, canli hesaplanarak) otomatik
+    // gizlenir.
+    public function test_admin_can_enable_and_extend_facility_subscription(): void
+    {
+        $facility = $this->rehabFacility;
+        $this->assertFalse($facility->is_claimed);
+        $this->assertFalse((bool) $facility->is_broker_managed);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.facilities.subscription.enable', $facility), ['plan' => 'monthly'])
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertTrue($facility->is_subscribed);
+        $this->assertSame('monthly', $facility->subscription_plan);
+        $this->assertTrue($facility->isActiveSubscriber());
+        $this->assertEqualsWithDelta(now()->addMonth()->timestamp, $facility->subscription_paid_until->timestamp, 86400);
+
+        // "Ödeme aldım" - kalan gunler kaybolmadan uzatilmali (mevcut
+        // bitis tarihinin ustune eklenir, bugunun degil).
+        $previousPaidUntil = $facility->subscription_paid_until->copy();
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.facilities.subscription.extend', $facility))
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertEqualsWithDelta($previousPaidUntil->copy()->addMonth()->timestamp, $facility->subscription_paid_until->timestamp, 86400);
+
+        // Abone kurumlar sayfasinda gorunmeli.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/abone-kurumlar')
+            ->assertOk()
+            ->assertSee($facility->name)
+            ->assertSee('Aktif');
+
+        // Iptal edince aboneler listesinden dusmeli.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.facilities.subscription.cancel', $facility))
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertFalse($facility->is_subscribed);
+        $this->assertFalse($facility->isActiveSubscriber());
+
+        // 22 Eylul 2026: "$facility->name" sayfada baska bir yerde de
+        // (ör. admin layout'taki son islemler/aktivite widget'inda,
+        // log_admin_event() cagrilarindan) MESRU sekilde gorunebilir -
+        // burada SADECE abone tablosunun bos oldugunu ("Henüz abone kurum
+        // yok.") kontrol etmek dogru/spesifik sinama.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/abone-kurumlar')
+            ->assertOk()
+            ->assertSee('Henüz abone kurum yok.');
+    }
+
+    public function test_subscription_cannot_be_enabled_for_claimed_or_broker_managed_facility(): void
+    {
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.facilities.subscription.enable', $this->childFacility), ['plan' => 'monthly'])
+            ->assertStatus(400);
+
+        $this->rehabFacility->update(['is_broker_managed' => true]);
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.facilities.subscription.enable', $this->rehabFacility), ['plan' => 'monthly'])
+            ->assertStatus(400);
+    }
+
+    public function test_active_subscriber_shows_phone_and_whatsapp_lapsed_subscriber_does_not(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->update(['phone' => '05321234567']);
+
+        // Abone degilken: sadece talep formu, telefon/WhatsApp yok.
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
+            ->assertOk()
+            ->assertDontSee('Hemen Ara')
+            ->assertDontSee('WhatsApp\'tan Yaz', false);
+
+        $facility->update([
+            'is_subscribed' => true,
+            'subscription_plan' => 'monthly',
+            'subscription_started_at' => now(),
+            'subscription_paid_until' => now()->addMonth()->toDateString(),
+        ]);
+
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
+            ->assertOk()
+            ->assertSee('Hemen Ara')
+            ->assertSee('WhatsApp\'tan Yaz', false);
+
+        // Odeme suresi GECMISSE (dun dolmus) butonlar otomatik gizlenmeli -
+        // ayri bir gece gorevi beklemeden, sayfa her yuklendiginde canli kontrol edilir.
+        $facility->update(['subscription_paid_until' => now()->subDay()->toDateString()]);
+
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
+            ->assertOk()
+            ->assertDontSee('Hemen Ara')
+            ->assertDontSee('WhatsApp\'tan Yaz', false);
+    }
+
+    public function test_active_subscriber_shows_priority_badge_on_mini_card(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->update([
+            'is_subscribed' => true,
+            'subscription_plan' => 'yearly',
+            'subscription_started_at' => now(),
+            'subscription_paid_until' => now()->addYear()->toDateString(),
+        ]);
+
+        $this->get('/site/bakimeviara/kurumlar?bolum=rehabilitasyon')
+            ->assertOk()
+            ->assertSee('Öncelikli Kurum', false);
+    }
+
     public function test_data_quality_page_detects_and_fixes_issues(): void
     {
         $kresCategory = FacilityCategory::create(['name' => 'Kreş ve Anaokulu', 'slug' => 'kres-ve-anaokulu', 'brand_scope' => 'cocuk-bakim']);
@@ -3575,13 +3702,16 @@ class PlatformFeatureTest extends TestCase
         $response->assertSee('wa.me/908503087991', false);
         $response->assertDontSee('şu ana kadar');
 
-        // Anlasmasiz (normal) sahiplenilmemis bir kurumda ESKI davranis
-        // (kurumun kendi numarasi) korunmali, sadece davet metni yerine
-        // aileye uygun bir mesaj gelmeli.
+        // 20 Eylul 2026'dan itibaren (bkz. facilities/show.blade.php ayni
+        // tarihli yorum) anlasmasiz VE sahiplenilmemis kurumda artik NE
+        // kurumun kendi numarasi NE de platform numarasi dogrudan gorunur -
+        // sadece "Bilgi ve Fiyat Talep Et" formu var (abone olmadikca, bkz.
+        // Facility::isActiveSubscriber()).
         $this->rehabFacility->update(['is_broker_managed' => false]);
         $response = $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacility->slug)->assertOk();
-        $response->assertSee('tel:05551112233', false);
-        $response->assertSee('wa.me/905551112233', false);
+        $response->assertDontSee('tel:05551112233', false);
+        $response->assertDontSee('wa.me/905551112233', false);
+        $response->assertSee('Bilgi ve Fiyat Talep Et');
         $response->assertDontSee('şu ana kadar');
     }
 
@@ -3675,21 +3805,39 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()->assertDontSee('Öne Çıkan Kurum');
     }
 
-    public function test_home_featured_section_paginates_six_per_page(): void
+    public function test_home_featured_section_paginates_twelve_per_page(): void
     {
         // 14 Agustos 2026: kullanicinin talebi - anasayfadaki "Öne
-        // Çıkanlar" bolumu sinirsiz uzamamali, 6'sar sayfalanmali (bkz.
+        // Çıkanlar" bolumu sinirsiz uzamamali, sayfalanmali (bkz.
         // HomeController::index() - 'featured_page' parametresi).
+        // 21 Eylul 2026: kart grid'i 4 sutuna cikinca (md:grid-cols-4)
+        // sayfa boyutu 6'dan 12'ye ("tam 3 satir") cikarildi - bu test o
+        // degisiklikten sonra guncellenmemisti, hala eski 6 degerini
+        // bekliyordu.
+        // HomeController::index() anasayfa bloklarini 10 dakikalik kisa
+        // sureli onbellege alir (bkz. ayni tarihli yorum orada) - tam test
+        // paketi calisirken (array cache driver surec omru boyunca kalici)
+        // BASKA bir testin AYNI marka/bolum/sayfa icin daha once doldurdugu
+        // stale bir sonuc bu testi yanlislikla etkilemesin diye temizlenir.
+        \Illuminate\Support\Facades\Cache::flush();
+
+        // 22 Eylul 2026: kok neden bulundu - duz "{$i}" isimlendirmesi
+        // (1..13) "Cikan 1" gibi TEK HANELI bir adin "Cikan 10/11/12/13"
+        // gibi CIFT HANELI adlarin ICINDE alt-dize (substring) olarak
+        // yanlislikla "bulunmasina" yol aciyordu (str_contains), bu da
+        // sayfalama dogru calissa bile testin 12 yerine 13 saymasina
+        // sebep oluyordu. Sifir dolgulu (01..13) isimlerde hicbir ad
+        // digerinin alt-dizesi olamaz.
         $names = [];
-        for ($i = 1; $i <= 7; $i++) {
-            $name = "Rehab One Cikan {$i}";
+        for ($i = 1; $i <= 13; $i++) {
+            $name = 'Rehab One Cikan '.sprintf('%02d', $i);
             $names[] = $name;
             $this->facility($name, $this->rehabCategory, true)->update(['is_featured' => true]);
         }
 
         $page1Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon')->assertOk()->getContent();
         $onPage1 = collect($names)->filter(fn ($n) => str_contains($page1Body, $n))->count();
-        $this->assertSame(6, $onPage1, 'Anasayfada bir sayfada tam 6 one cikan kurum gorunmeli.');
+        $this->assertSame(12, $onPage1, 'Anasayfada bir sayfada tam 12 one cikan kurum gorunmeli.');
 
         $page2Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon&featured_page=2')->assertOk()->getContent();
         $onPage2 = collect($names)->filter(fn ($n) => str_contains($page2Body, $n))->count();
@@ -4782,18 +4930,30 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(3, DB::table('facility_engagement_events')->where('facility_id', $facility->id)->where('type', 'view')->count());
     }
 
-    public function test_unclaimed_facility_page_shows_direct_contact_buttons_and_tracks_clicks(): void
+    // 22 Eylul 2026: bu test eskiden sahiplenilmemis/anlasmasiz HER kurumda
+    // gorunen "kilitli/teaser" telefon-WhatsApp butonlarini sinardi - bu UI
+    // 20 Eylul 2026'da (bkz. facilities/show.blade.php ayni tarihli yorum)
+    // kaldirilip yerine sadece bir talep formu kondu. Tiklama izleme
+    // mekanizmasi (data-contact-track + facilities.contact-click) simdi
+    // SADECE abonelik odemesi GECERLI olan (Facility::isActiveSubscriber())
+    // kurumlarda gorunen dogrudan butonlara bagli - test o senaryoyu kapsar.
+    public function test_active_subscriber_facility_page_shows_direct_contact_buttons_and_tracks_clicks(): void
     {
         $facility = $this->rehabFacility;
         // facility_whatsapp_url() sadece mobil (05xx) formatli numaralarda
         // link uretir - fixture'in varsayilan sabit hatti bunun disinda kalir.
-        $facility->update(['phone' => '05321234567']);
+        $facility->update([
+            'phone' => '05321234567',
+            'is_subscribed' => true,
+            'subscription_plan' => 'monthly',
+            'subscription_started_at' => now(),
+            'subscription_paid_until' => now()->addMonth()->toDateString(),
+        ]);
 
         $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
             ->assertOk()
-            ->assertSee('Kurumu Ara')
-            ->assertSee('WhatsApp')
-            ->assertSee('🔒');
+            ->assertSee('Hemen Ara')
+            ->assertSee('WhatsApp');
 
         $this->postJson('/site/bakimeviara/kurumlar/'.$facility->slug.'/iletisim-tiklama', ['type' => 'phone_click'])
             ->assertOk()
@@ -4811,10 +4971,11 @@ class PlatformFeatureTest extends TestCase
         $response = $this->get('/site/bakimeviara/kurumlar?bolum=rehabilitasyon');
 
         $response->assertOk();
-        // Sahiplenilmis kart: "Fiyat Al" ve "Karşılaştır" butonlari sadece buyuk kartta var.
         $response->assertSee('Karşılaştır');
-        // On kayitli kart: kompakt kart rozeti.
-        $response->assertSee('Ön Kayıtlı');
+        // On kayitli kart: kompakt kart sarmalayicisi. 22 Eylul 2026'dan
+        // itibaren "Ön Kayıtlı" rozeti kaldirildigi icin (kullanicinin
+        // talebi) artik mini-karta OZGU CSS sinifi kontrol edilir.
+        $response->assertSee('self-start bg-white border border-gray-100 rounded-lg p-2', false);
     }
 
     public function test_has_precise_location_rejects_city_centroid_fallback(): void
@@ -5453,8 +5614,14 @@ class PlatformFeatureTest extends TestCase
 
         $html = $response->getContent();
         $this->assertStringNotContainsString('Sahiplen<', $html, 'Anasayfadaki on kayitli kurum hala eski buyuk kart+Sahiplen butonuyla gorunuyor.');
+        // 22 Eylul 2026: regex, mini-kartin GERCEK DOM sirasiyla (dis
+        // sarmalayici "self-start bg-white..." -> ic <a class="flex items-
+        // center gap-3"> -> gorsel div'i "w-14 h-14") eslesecek sekilde
+        // duzeltildi - eski hali bu sirayi ters varsayiyordu, hicbir
+        // gecerli DOM ile eslesmiyordu (kart yapisindan BAGIMSIZ, onceden
+        // de kirikti).
         $this->assertMatchesRegularExpression(
-            '/flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2[^"]*"[^>]*>\s*<div class="w-14 h-14/s',
+            '/self-start bg-white border border-gray-100 rounded-lg p-2.*?class="flex items-center gap-3".*?<div class="w-14 h-14/s',
             $html,
         );
     }

@@ -22,8 +22,10 @@ class HomeController extends Controller
         $sectionScopes = $activeSection['scopes'];
 
         // 14 Agustos 2026: kullanicinin talebi - anasayfada "Öne Çıkanlar"
-        // sayisi arttikca liste uzayip gitmemeli, 6'sar 6'sar sayfalanmali
-        // (2., 3. sayfa...). Ayri bir 'featured_page' parametresi
+        // sayisi arttikca liste uzayip gitmemeli, 12'şer 12'şer sayfalanmali
+        // (2., 3. sayfa...) - 21 Eylul 2026: kart grid'i 4 sutuna cikinca
+        // (md:grid-cols-4) 6, sadece 1.5 satir doldurup 2. satiri yarim
+        // birakiyordu; 12 = tam 3 satir. Ayri bir 'featured_page' parametresi
         // kullaniliyor ki asagidaki $filteredFacilities->paginate()
         // (varsayilan 'page' parametresi) ile cakismasin.
         // 11 Eylul 2026: kullanicinin bildirdigi tekrarlayan "Too many
@@ -43,7 +45,7 @@ class HomeController extends Controller
             $featured = Facility::discoverable()
                 ->forBrand($sectionScopes)
                 ->where('is_featured', true)
-                ->with(['city', 'category', 'images'])
+                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
                 // ONCEKI hata: bu ANA "Öne Çıkanlar" sorgusu degil, sadece filtre
                 // uygulaninca kullanilan $filteredFacilities guncellenmisti - kullanicinin
@@ -51,7 +53,7 @@ class HomeController extends Controller
                 ->orderByDesc('is_broker_managed')
                 ->orderByDesc('rating')
                 ->orderByDesc('id')
-                ->paginate(6, ['*'], 'featured_page')
+                ->paginate(12, ['*'], 'featured_page')
                 ->withQueryString();
 
             // 28 Agustos 2026: kullanicinin talebi - "sahiplenilmis kurumlar"
@@ -61,9 +63,11 @@ class HomeController extends Controller
                 ->forBrand($sectionScopes)
                 ->where('is_claimed', true)
                 ->where('is_featured', false)
-                ->with(['city', 'category', 'images'])
+                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 ->latest('claimed_at')
-                ->limit(6)
+                // 21 Eylul 2026: kullanicinin talebi - bkz. $featured ayni
+                // tarihli yorum, ayni sebep (4 sutunlu grid, tam 3 satir).
+                ->limit(12)
                 ->get();
 
             // 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
@@ -75,7 +79,7 @@ class HomeController extends Controller
                 ->forBrand($sectionScopes)
                 ->where('is_claimed', false)
                 ->where('source', 'google_maps_veri_cekici')
-                ->with(['city', 'category', 'images'])
+                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 ->latest()
                 ->limit(12)
                 ->get();
@@ -110,6 +114,23 @@ class HomeController extends Controller
             ->with('city:id,name,slug')
             ->get(['id', 'name', 'slug', 'lat', 'lng', 'city_id']);
 
+        // 22 Eylul 2026: kullanicinin talebi - bir il SECILDIGINDE harita
+        // sadece anlaşmalı degil, o ildeki KAYITLI (ön kayıt + sahipli +
+        // anlaşmalı) TUM kurumlari 3 farkli renk tonunda gostermeli. Il
+        // SECILMEMISKEN eski davranis (sadece anlaşmalı, Turkiye geneli)
+        // AYNEN korunur - kullanicinin "cok karisiklik olur mu" endisesi
+        // icin, ulke genelinde binlerce pin BIRDEN asla gosterilmez, sadece
+        // bir il secilince o ile ozel gorunur (bkz. broker-map.blade.php).
+        $registeredMapFacilities = collect();
+        if ($brokerCitySlug) {
+            $registeredMapFacilities = Facility::discoverable()
+                ->forBrand($sectionScopes)
+                ->whereNotNull('lat')->whereNotNull('lng')
+                ->whereHas('city', fn ($c) => $c->where('slug', $brokerCitySlug))
+                ->with('city:id,name,slug')
+                ->get(['id', 'name', 'slug', 'lat', 'lng', 'city_id', 'is_claimed', 'is_broker_managed']);
+        }
+
         $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $sectionScopes)->values();
         $cities = City::cachedAll();
         $districtsByCity = turkey_provinces();
@@ -127,7 +148,7 @@ class HomeController extends Controller
         $sectionBreakdown = [];
 
         if ($isFiltering) {
-            $baseQuery = $this->filteredQuery($request, $sectionScopes, $brand['category_scope'])->with(['city', 'category', 'images']);
+            $baseQuery = $this->filteredQuery($request, $sectionScopes, $brand['category_scope'])->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews']);
 
             $filteredFeatured = (clone $baseQuery)->where('is_featured', true)->limit(3)->get();
 
@@ -162,6 +183,7 @@ class HomeController extends Controller
                     'claimedFacilities',
                     'preRegistered',
                     'brokerFacilities',
+                    'registeredMapFacilities',
                     'sectionBreakdown'
                 ))->render(),
             ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -172,6 +194,7 @@ class HomeController extends Controller
             'claimedFacilities',
             'preRegistered',
             'brokerFacilities',
+            'registeredMapFacilities',
             'categories',
             'cities',
             'sections',

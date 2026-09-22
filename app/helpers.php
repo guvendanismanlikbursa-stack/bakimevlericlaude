@@ -784,7 +784,7 @@ if (! function_exists('facility_invitation_message_default')) {
 
         return "Merhaba, {kurum_adi} için bakimevibul.com / bakimeviara.com / bakimevleri.com üzerinde ücretsiz kurum profiliniz oluşturuldu.\n\n"
             .'Kurumunuz şu ana kadar {goruntulenme} kez görüntülendi, ama profilinizi henüz siz yönetmediğiniz için ailelerden gelen fiyat/ziyaret taleplerini göremiyorsunuz.'
-            ."\n\n{$deadline} tarihine kadar sahiplenirseniz, kurumunuz yıl başına kadar ÜCRETSİZ olarak \"Öne Çıkan\" kurumlar arasında listelenir ve tamamen ücretsiz kullanabilirsiniz. Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak ön kayıtlı kurumlardan kolayca sahiplenme başvurusu yapabilirsiniz."
+            ."\n\n{$deadline} tarihine kadar sahiplenirseniz, kurumunuz yıl başına kadar ÜCRETSİZ olarak \"Öne Çıkan\" kurumlar arasında listelenir ve tamamen ücretsiz kullanabilirsiniz. Bilgilerinizi kontrol etmek, fotoğraf eklemek ve kurumunuzu sahiplenmek için bakimevleri.com sitesini açarak kolayca sahiplenme başvurusu yapabilirsiniz."
             ."\n\nBu mesajı almak istemiyorsanız lütfen \"istemiyorum\" yazmanız yeterlidir.";
     }
 }

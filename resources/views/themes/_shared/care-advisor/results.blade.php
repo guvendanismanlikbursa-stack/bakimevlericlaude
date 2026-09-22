@@ -15,7 +15,7 @@
       <a href="{{ brand_route('care-advisor.form', ['bolum' => $activeSection['slug']]) }}" class="text-primary underline mt-2 inline-block">Kriterleri değiştir</a>
     </div>
   @else
-    <div class="grid md:grid-cols-3 gap-6">
+    <div class="grid md:grid-cols-4 gap-6">
       @foreach($results as $item)
         @php
           $facility = $item['facility'];

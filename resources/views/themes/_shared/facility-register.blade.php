@@ -84,20 +84,22 @@
       <label for="reg-description" class="sr-only">Kurum hakkında kısa açıklama</label>
       <textarea id="reg-description" name="description" placeholder="Kurum hakkında kısa açıklama" rows="4" class="border rounded-lg px-3 py-2.5 w-full">{{ old('description') }}</textarea>
 
-      <div class="grid grid-cols-2 gap-3">
+      {{-- 18 Eylul 2026: kullanicinin bildirdigi gercek hata - Min./Maks.
+           Fiyat alanlari ic ice iki grid (2x2) yuzunden satir genisliginin
+           sadece ceyregini aliyordu, yazi kesiliyordu ("Maks. Fiya"). Tek
+           katmanli 3 esit sutuna cevrildi, mobilde tek sutuna diziliyor. --}}
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label for="reg-capacity" class="sr-only">Kapasite</label>
           <input type="number" id="reg-capacity" name="capacity" value="{{ old('capacity') }}" placeholder="Kapasite" min="0" class="border rounded-lg px-3 py-2.5 w-full">
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label for="reg-price-min" class="sr-only">Minimum Fiyat</label>
-            <input type="number" id="reg-price-min" name="price_min" value="{{ old('price_min') }}" placeholder="Min. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
-          </div>
-          <div>
-            <label for="reg-price-max" class="sr-only">Maksimum Fiyat</label>
-            <input type="number" id="reg-price-max" name="price_max" value="{{ old('price_max') }}" placeholder="Maks. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
-          </div>
+        <div>
+          <label for="reg-price-min" class="sr-only">Minimum Fiyat</label>
+          <input type="number" id="reg-price-min" name="price_min" value="{{ old('price_min') }}" placeholder="Min. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
+        </div>
+        <div>
+          <label for="reg-price-max" class="sr-only">Maksimum Fiyat</label>
+          <input type="number" id="reg-price-max" name="price_max" value="{{ old('price_max') }}" placeholder="Maks. Fiyat" min="0" class="border rounded-lg px-3 py-2.5 w-full">
         </div>
       </div>
 

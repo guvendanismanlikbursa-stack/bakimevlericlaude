@@ -99,7 +99,7 @@
       <p>Bu il için henüz yayında kurum yok.</p>
     </div>
   @else
-    <div class="grid md:grid-cols-3 gap-6">
+    <div class="grid md:grid-cols-4 gap-6">
       @foreach($facilities as $facility)
         @include('themes._shared.partials.facility-card', ['facility' => $facility])
       @endforeach

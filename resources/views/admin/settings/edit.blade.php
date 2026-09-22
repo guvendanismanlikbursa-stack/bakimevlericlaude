@@ -62,7 +62,7 @@
 
   <div class="md:col-span-2 border-t border-gray-100 pt-4 mt-2">
     <h2 class="text-lg font-bold mb-1">Kurum Davet Mesajı (WhatsApp)</h2>
-    <p class="text-sm text-gray-500 mb-4">Kurum Davetleri ekranındaki "WhatsApp Aç" ve "Hızlı Gönderim" ile ön kayıtlı kurumlara gönderilen hazır mesaj. <strong>{kurum_adi}</strong> yazan yer otomatik olarak o kurumun adıyla değişir. Gönderim WhatsApp'ın kendi politikası gereği elle yapılır — bu ayar sadece hazır mesajın metnini belirler, otomatik gönderim yapmaz.</p>
+    <p class="text-sm text-gray-500 mb-4">Kurum Davetleri ekranındaki "WhatsApp Aç" ve "Hızlı Gönderim" ile sahiplenilmemiş kurumlara gönderilen hazır mesaj. <strong>{kurum_adi}</strong> yazan yer otomatik olarak o kurumun adıyla değişir. Gönderim WhatsApp'ın kendi politikası gereği elle yapılır — bu ayar sadece hazır mesajın metnini belirler, otomatik gönderim yapmaz.</p>
     <textarea name="facility_invitation_message" rows="5" required class="border rounded-lg px-3 py-2 w-full">{{ old('facility_invitation_message', $settings['facility_invitation_message']) }}</textarea>
   </div>
 

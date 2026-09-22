@@ -126,6 +126,15 @@ class FacilityController extends Controller
             $query->where('name', 'like', '%'.$request->string('q').'%');
         }
 
+        // 22 Eylul 2026: kullanicinin talebi - Google Haritalar'dan otomatik
+        // koordinat cekilirken (konumvericekici) bazi kurumlar Google'da
+        // net/tekil bir eslesme bulunamadigi icin BILEREK atlandi (yanlis
+        // konum yazmamak icin) - kullanici bunlari admin panelinde gorup
+        // elle tamamlamak istiyor.
+        if ($request->filled('konum') && $request->konum === 'eksik') {
+            $query->whereNull('lat');
+        }
+
         return $query;
     }
 
@@ -699,6 +708,86 @@ class FacilityController extends Controller
         session(['facility_user_id' => $facilityUser->id, 'facility_user_name' => $facilityUser->name]);
 
         return redirect(brand_route('facility.dashboard'));
+    }
+
+    /**
+     * 22 Eylul 2026: kullanicinin talebi - "abonelik" ozelligi. Sadece
+     * sahiplenilmemis VE anlasmali olmayan kurumlar abone yapilabilir -
+     * bu iki durumdan biri zaten kurumun panelinde tam kontrol/telefon-
+     * WhatsApp erisimi sagliyor, abonelik onlarin yerine gecmez.
+     */
+    public function subscriptions(Request $request)
+    {
+        $query = Facility::where('is_subscribed', true)->with(['city']);
+
+        if ($request->filled('plan')) {
+            $query->where('subscription_plan', $request->string('plan'));
+        }
+
+        if ($request->filled('durum')) {
+            match ($request->durum) {
+                'aktif' => $query->whereDate('subscription_paid_until', '>=', now()->toDateString()),
+                'suresi_gecti' => $query->whereDate('subscription_paid_until', '<', now()->toDateString()),
+                default => null,
+            };
+        }
+
+        $subscriptions = $query->orderBy('subscription_paid_until')->paginate(20)->withQueryString();
+
+        return view('admin.facilities.subscriptions', compact('subscriptions'));
+    }
+
+    public function subscriptionEnable(Request $request, Facility $facility)
+    {
+        abort_if($facility->is_claimed || $facility->is_broker_managed, 400, 'Bu kurum zaten sahiplenilmiş veya anlaşmalı, abonelik gerekmez.');
+
+        $data = $request->validate([
+            'plan' => 'required|in:monthly,yearly',
+        ]);
+
+        $paidUntil = $data['plan'] === 'yearly' ? now()->addYear() : now()->addMonth();
+
+        $facility->update([
+            'is_subscribed' => true,
+            'subscription_plan' => $data['plan'],
+            'subscription_started_at' => now(),
+            'subscription_paid_until' => $paidUntil->toDateString(),
+        ]);
+
+        log_admin_event('facility_subscription_enabled', $facility, ['plan' => $data['plan'], 'paid_until' => $paidUntil->toDateString()]);
+
+        return back()->with('success', "{$facility->name} abone yapıldı, ödemesi {$paidUntil->format('d.m.Y')} tarihine kadar geçerli.");
+    }
+
+    /**
+     * "Ödeme aldım" - mevcut plana gore 1 ay/1 yil ekler. Odeme suresi
+     * henuz dolmadiysa KALAN GUNLER kaybolmaz, mevcut bitis tarihinin
+     * ustune eklenir (erken odemede kurum magdur olmaz).
+     */
+    public function subscriptionExtend(Facility $facility)
+    {
+        abort_unless($facility->is_subscribed, 400, 'Bu kurum abone değil.');
+
+        $base = ($facility->subscription_paid_until && ! $facility->subscription_paid_until->copy()->endOfDay()->isPast())
+            ? $facility->subscription_paid_until->copy()
+            : now();
+
+        $paidUntil = $facility->subscription_plan === 'yearly' ? $base->addYear() : $base->addMonth();
+
+        $facility->update(['subscription_paid_until' => $paidUntil->toDateString()]);
+
+        log_admin_event('facility_subscription_payment', $facility, ['paid_until' => $paidUntil->toDateString()]);
+
+        return back()->with('success', "{$facility->name} için ödeme kaydedildi, yeni bitiş tarihi: {$paidUntil->format('d.m.Y')}.");
+    }
+
+    public function subscriptionCancel(Facility $facility)
+    {
+        $facility->update(['is_subscribed' => false]);
+
+        log_admin_event('facility_subscription_cancelled', $facility);
+
+        return back()->with('success', "{$facility->name} aboneliği iptal edildi.");
     }
 
     /**

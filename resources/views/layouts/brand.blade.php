@@ -510,7 +510,11 @@
 </footer>
 
 @include('themes._shared.partials.support-chat-widget')
-@include('themes._shared.partials.pwa-install-button')
+{{-- 17 Eylul 2026: kullanicinin talebi - "Uygulamayi Yukle" bannerinin
+     bazi tarayici ortamlarinda kalici kapatma isaretine ragmen tekrar
+     tekrar cikmasi sikayet edildi, kok neden bulunamadan komple kaldirildi.
+     Push bildirim icin service worker kaydi notification-permission.blade.php
+     icinde ayrica yapiliyor, bu kaldirma onu etkilemez. --}}
 @include('themes._shared.partials.cookie-consent')
 @include('themes._shared.partials.panel-notification-alerts')
 @include('themes._shared.partials.organization-jsonld')
