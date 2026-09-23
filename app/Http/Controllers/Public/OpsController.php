@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -111,6 +111,7 @@ class OpsController extends Controller
             'batch-status-check' => $this->batchStatusCheck($request),
             'facility-geo-clear' => $this->facilityGeoClear($request),
             'city-geo-outliers' => $this->cityGeoOutliers($request),
+            'facility-images-symlink-to-shared' => $this->facilityImagesSymlinkToShared($request),
             'konum-cekici-bursa-targets' => $this->konumCekiciBursaTargets($request),
             'konum-cekici-import-coords' => $this->konumCekiciImportCoords($request),
             'facility-borrow-demo-images' => $this->facilityBorrowDemoImages($request),
@@ -2544,6 +2545,58 @@ class OpsController extends Controller
         }
 
         return $out;
+    }
+
+    // 23 Eylul 2026: gercek (demo olmayan) kurum gorselleri storage/app/public/
+    // facilities/ kokune DUZ yaziliyordu ama 3 domain (public_html,
+    // public_html_bakimevibul, bakimeviara.com) AYRI fiziksel klasorlere sahip -
+    // bu yuzden hangi domain'e yuklenirse/import edilirse sadece ORADA
+    // gorunuyordu, digger 2 markada kirik cikiyordu (bkz. 23 Eylul 2026
+    // gallery:check-health cokmesi arastirmasi - 3225 vs 969 vs 978 dosya).
+    // Kopyalamak yerine (surekli buyuyen, yer israf eden bir cozum) bu eylem
+    // KENDI storage/app/public/facilities klasorunu, verilen mutlak 'target'
+    // yoluna (bakimevleri.com'un GERCEK klasoru) isaret eden bir symlink'e
+    // cevirir - boylece TEK fiziksel kopya kalir, hangi domain'den yuklenirse
+    // yuklensin aninda ucunde de gorunur, bir daha senkrona gerek kalmaz.
+    // Guvenlik: mevcut GERCEK klasor asla silinmez, .bak-<zaman> olarak
+    // yeniden adlandirilir (geri donus gerekirse elle geri alinabilir).
+    private function facilityImagesSymlinkToShared(Request $request): string
+    {
+        $target = (string) $request->query('target', '');
+        if (! $target) {
+            return 'HATA: target (mutlak yol) gerekli.';
+        }
+        if (! is_dir($target)) {
+            return "HATA: hedef klasor bulunamadi ya da klasor degil: {$target}";
+        }
+
+        $local = storage_path('app/public/facilities');
+        $realLocal = realpath($local);
+        $realTarget = realpath($target);
+
+        if (is_link($local)) {
+            $current = readlink($local);
+            if ($current === $target || ($realLocal !== false && $realLocal === $realTarget)) {
+                return "Zaten dogru hedefe symlink kurulu: {$local} -> {$current}";
+            }
+            if (! @unlink($local)) {
+                return "HATA: mevcut symlink kaldirilamadi: {$local}";
+            }
+        } elseif (is_dir($local)) {
+            if ($realLocal !== false && $realLocal === $realTarget) {
+                return "HATA: local klasor zaten hedefle ayni fiziksel yol, symlink'e gerek yok: {$local}";
+            }
+            $backup = $local.'.bak-'.now()->format('Ymd_His');
+            if (! @rename($local, $backup)) {
+                return "HATA: {$local} -> {$backup} yeniden adlandirilamadi (izin sorunu olabilir).";
+            }
+        }
+
+        if (! @symlink($target, $local)) {
+            return "HATA: symlink olusturulamadi: {$local} -> {$target}";
+        }
+
+        return "OK: {$local} artik symlink -> {$target}";
     }
 
     private function facilityGeoSet(Request $request): string

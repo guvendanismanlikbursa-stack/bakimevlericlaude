@@ -43,7 +43,17 @@ class CheckGalleryHealth extends Command
         } else {
             $this->error("{$broken->count()} kirik gorsel bulundu (taranan: {$images->count()}).");
 
-            $list = $broken->map(fn ($img) => "- {$img->facility_name} (kurum #{$img->facility_id}), gorsel #{$img->id}, yuklenme: {$img->created_at}, yol: {$img->path}")->implode("\n");
+            // 23 Eylul 2026: kirik gorsel sayisi buyuk oldugunda (or. 1018) sinirsiz
+            // uzunluktaki liste 'message' TEXT sutununun 64KB sinirini asip INSERT'in
+            // kendisini patlatiyordu - bu da record_platform_error()'un hic calismadan
+            // ham bir QueryException'in mail olarak gitmesine yol aciyordu (asil bulgu
+            // /admin/hatalar'a hic dusmuyordu). Listeyi ilk 50 ile sinirliyoruz, tam
+            // liste zaten context->broken_ids icinde kalicidir.
+            $listLimit = 50;
+            $list = $broken->take($listLimit)->map(fn ($img) => "- {$img->facility_name} (kurum #{$img->facility_id}), gorsel #{$img->id}, yuklenme: {$img->created_at}, yol: {$img->path}")->implode(PHP_EOL);
+            if ($broken->count() > $listLimit) {
+                $list .= PHP_EOL . PHP_EOL . "... ve " . ($broken->count() - $listLimit) . " tane daha (tam liste icin context->broken_ids).";
+            }
 
             record_platform_error(
                 'gallery-health-check',

@@ -1093,12 +1093,20 @@ if (! function_exists('record_platform_error')) {
      */
     function record_platform_error(string $source, string $title, string $message, array $context = []): void
     {
-        \App\Models\PlatformError::create([
-            'source' => $source,
-            'title' => $title,
-            'message' => $message,
-            'context' => $context,
-        ]);
+        // 23 Eylul 2026: cok sayida kirik gorsel gibi buyuk bulgularda mesaj metni
+        // DB sutun sinirini asip INSERT'i patlatabiliyordu (bkz. CheckGalleryHealth) -
+        // bu durumda artik kayit basarisiz olsa BILE admin mail'i yine de gonderilir,
+        // sessizce kaybolmaz ya da ham bir SQL hatasi olarak sizmaz.
+        try {
+            \App\Models\PlatformError::create([
+                'source' => $source,
+                'title' => $title,
+                'message' => $message,
+                'context' => $context,
+            ]);
+        } catch (\Throwable $dbError) {
+            \Illuminate\Support\Facades\Log::warning('platform_errors kaydi olusturulamadi: '.$dbError->getMessage(), ['source' => $source]);
+        }
 
         \App\Models\Admin::all()->each(function (\App\Models\Admin $admin) use ($title, $message, $source) {
             try {
