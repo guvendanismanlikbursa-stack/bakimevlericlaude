@@ -1913,10 +1913,29 @@ class OpsController extends Controller
             if ($donorImages->isNotEmpty()) {
                 break;
             }
+
+            // 23 Eylul 2026: kullanicinin bildirdigi gercek hata - kategori
+            // 3 ve 4 icin storage/app/public/facilities/demo/{id}/ altinda
+            // GERCEK dosyalar varken (ör. kategori 4'te 4 dosya) HICBIR
+            // facility_images kaydi bu dosyalara ISARET ETMIYORDU (hicbir
+            // kurum daha once bu kategoriden odunc almamis) - yukaridaki
+            // DB satir taramasi bu yuzden HER ZAMAN bos donuyordu, disk
+            // dolu olsa bile. Bu son care: DB'de kayit yoksa dogrudan
+            // diskteki demo/{kategori}/ klasorunu tarar - boylece "ilk"
+            // odunc alis burada gerceklesir, ondan sonraki kurumlar normal
+            // (yukaridaki, hizli) DB satir taramasiyla bu ilk kayittan
+            // odunc alabilir.
+            $diskFiles = collect(\Illuminate\Support\Facades\Storage::disk('public')->files("facilities/demo/{$categoryId}"))
+                ->filter(fn ($p) => \Illuminate\Support\Facades\Storage::disk('public')->exists($p))
+                ->values();
+            if ($diskFiles->isNotEmpty()) {
+                $donorImages = $diskFiles->map(fn ($p) => (object) ['path' => $p]);
+                break;
+            }
         }
 
         if ($donorImages->isEmpty()) {
-            return "#{$facility->id} {$facility->name}: bu kategoride (ve varsa yakin kategoride) diskte gercekten var olan bir demo gorsel bulunamadi, odunc alinacak kaynak yok.";
+            return "#{$facility->id} {$facility->name}: bu kategoride (ve varsa yakin kategoride) ne kayitli ne de diskte gercekten var olan bir demo gorsel bulunamadi, odunc alinacak kaynak yok.";
         }
 
         $brokenDeleted = DB::table('facility_images')
@@ -2050,7 +2069,7 @@ class OpsController extends Controller
         $noDonor = 0;
         foreach ($facilities as $facility) {
             if ($dryRun) {
-                $out .= "#{$facility->id} {$facility->name}: 1 demo gorsel eklenecek.
+                $out .= "#{$facility->id} {$facility->name} (kategori {$facility->facility_category_id}): 1 demo gorsel eklenecek.
 ";
                 continue;
             }
@@ -2223,6 +2242,17 @@ Ilk 30 hic gorseli olmayan kurum:
                 $out .= "  #{$id} ".($names[$id] ?? '?')."
 ";
             }
+        }
+
+        $demoPathCounts = DB::table('facility_images')
+            ->where('path', 'like', 'facilities/demo/%')
+            ->selectRaw("SUBSTRING_INDEX(SUBSTRING_INDEX(path, '/', 3), '/', -1) as demo_cat, COUNT(*) as cnt")
+            ->groupBy('demo_cat')
+            ->orderBy('demo_cat')
+            ->get();
+        $out .= PHP_EOL . "Demo path'inde (facilities/demo/N/...) N'ye gore MEVCUT KAYIT sayisi:" . PHP_EOL;
+        foreach ($demoPathCounts as $row) {
+            $out .= "  demo/{$row->demo_cat}/: {$row->cnt} kayit" . PHP_EOL;
         }
 
         return $out;
