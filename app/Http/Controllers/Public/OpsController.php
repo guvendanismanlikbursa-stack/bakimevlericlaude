@@ -1870,29 +1870,53 @@ class OpsController extends Controller
         return $this->borrowDemoImagesForFacility($facility, $count);
     }
 
+    // 23 Eylul 2026: kullanicinin bildirdigi gercek hata - kategori 3
+    // (Çocuk Bakım Merkezi) icin storage/app/public/facilities/demo/3/
+    // klasorunde HIC dosya yok (digger tum kategorilerde var) - bu yuzden
+    // bu kategorideki ~2500 bos kurum HICBIR ZAMAN donor bulamiyordu.
+    // Bu harita, tam olarak boyle bir "kategoride hic calisan demo yok"
+    // durumunda hangi YAKIN/benzer kategoriden odunc alinacagini tanimlar -
+    // "her kuruma uygun demo gorsel eklenmeli" talebiyle, hicbir kurum
+    // sonsuza kadar gorselsiz kalmasin diye.
+    private const CATEGORY_DEMO_FALLBACK = [
+        3 => 4, // Çocuk Bakım Merkezi -> Kreş ve Anaokulu (ayni yas grubu/ortam)
+    ];
+
     private function borrowDemoImagesForFacility(object $facility, int $count): string
     {
-        $donorImages = DB::table('facility_images')
-            ->join('facilities', 'facilities.id', '=', 'facility_images.facility_id')
-            ->where('facilities.facility_category_id', $facility->facility_category_id)
-            ->where('facility_images.facility_id', '!=', $facility->id)
-            ->where('facility_images.path', 'like', 'facilities/demo/%')
-            ->select('facility_images.path')
-            ->distinct()
-            // 19 Eylul 2026: kullanicinin bildirdigi gercek hata - limit(50)
-            // ONCEDEN (exists filtresinden ONCE) uygulaniyordu. Kategoride
-            // 50'den fazla FARKLI (cogu kirik) demo path'i varsa, tek
-            // calisan olan o ilk 50'ye hic girmeyebiliyordu - donor
-            // GERCEKTEN VARKEN "bulunamadi" donuyordu. Filtreden SONRA
-            // limit uygulanacak sekilde duzeltildi (asagida ->take(50)).
-            ->limit(1000)
-            ->get()
-            ->filter(fn ($row) => \Illuminate\Support\Facades\Storage::disk('public')->exists($row->path))
-            ->take(50)
-            ->values();
+        $categoryIdsToTry = array_values(array_unique(array_filter([
+            $facility->facility_category_id,
+            self::CATEGORY_DEMO_FALLBACK[$facility->facility_category_id] ?? null,
+        ])));
+
+        $donorImages = collect();
+        foreach ($categoryIdsToTry as $categoryId) {
+            $donorImages = DB::table('facility_images')
+                ->join('facilities', 'facilities.id', '=', 'facility_images.facility_id')
+                ->where('facilities.facility_category_id', $categoryId)
+                ->where('facility_images.facility_id', '!=', $facility->id)
+                ->where('facility_images.path', 'like', 'facilities/demo/%')
+                ->select('facility_images.path')
+                ->distinct()
+                // 19 Eylul 2026: kullanicinin bildirdigi gercek hata - limit(50)
+                // ONCEDEN (exists filtresinden ONCE) uygulaniyordu. Kategoride
+                // 50'den fazla FARKLI (cogu kirik) demo path'i varsa, tek
+                // calisan olan o ilk 50'ye hic girmeyebiliyordu - donor
+                // GERCEKTEN VARKEN "bulunamadi" donuyordu. Filtreden SONRA
+                // limit uygulanacak sekilde duzeltildi (asagida ->take(50)).
+                ->limit(1000)
+                ->get()
+                ->filter(fn ($row) => \Illuminate\Support\Facades\Storage::disk('public')->exists($row->path))
+                ->take(50)
+                ->values();
+
+            if ($donorImages->isNotEmpty()) {
+                break;
+            }
+        }
 
         if ($donorImages->isEmpty()) {
-            return "#{$facility->id} {$facility->name}: ayni kategoride diskte gercekten var olan baska bir demo gorsel bulunamadi, odunc alinacak kaynak yok.";
+            return "#{$facility->id} {$facility->name}: bu kategoride (ve varsa yakin kategoride) diskte gercekten var olan bir demo gorsel bulunamadi, odunc alinacak kaynak yok.";
         }
 
         $brokenDeleted = DB::table('facility_images')
