@@ -59,7 +59,7 @@
             @if($f->is_subscribed)
               <div class="mt-1">
                 <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">
-                  ★ Abone{{ $f->isActiveSubscriber() ? '' : ' (süresi geçti)' }}{{ $f->subscription_amount ? ' · '.number_format($f->subscription_amount, 0, ',', '.').' TL' : '' }}
+                  ★ Abone{{ $f->isActiveSubscriber() ? '' : ($f->subscription_paid_until ? ' (süresi geçti)' : ' (ödeme bekliyor)') }}{{ $f->subscription_amount ? ' · '.number_format($f->subscription_amount, 0, ',', '.').' TL' : '' }}
                 </span>
               </div>
             @endif

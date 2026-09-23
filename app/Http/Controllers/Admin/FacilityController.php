@@ -718,7 +718,7 @@ class FacilityController extends Controller
      */
     public function subscriptions(Request $request)
     {
-        $query = Facility::where('is_subscribed', true)->with(['city']);
+        $query = Facility::where('is_subscribed', true)->with(['city', 'category']);
 
         if ($request->filled('plan')) {
             $query->where('subscription_plan', $request->string('plan'));
@@ -726,15 +726,35 @@ class FacilityController extends Controller
 
         if ($request->filled('durum')) {
             match ($request->durum) {
-                'aktif' => $query->whereDate('subscription_paid_until', '>=', now()->toDateString()),
-                'suresi_gecti' => $query->whereDate('subscription_paid_until', '<', now()->toDateString()),
+                'aktif' => $query->whereNotNull('subscription_paid_until')->whereDate('subscription_paid_until', '>=', now()->toDateString()),
+                'suresi_gecti' => $query->whereNotNull('subscription_paid_until')->whereDate('subscription_paid_until', '<', now()->toDateString()),
+                'odeme_bekliyor' => $query->whereNull('subscription_paid_until'),
                 default => null,
             };
         }
 
+        // 23 Eylul 2026: kullanicinin talebi - il/ilce/bolum filtresi. Ana
+        // kurumlar listesindeki (filteredQuery()) AYNI parametre isimleri ve
+        // eslesme mantigi kullanildi ki admin panelinde tutarli davransin.
+        if ($request->filled('city')) {
+            $query->whereHas('city', fn ($q) => $q->where('slug', $request->city));
+        }
+
+        if ($request->filled('district')) {
+            $query->where('district', $request->district);
+        }
+
+        if ($request->filled('category')) {
+            $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
+        }
+
         $subscriptions = $query->orderBy('subscription_paid_until')->paginate(20)->withQueryString();
 
-        return view('admin.facilities.subscriptions', compact('subscriptions'));
+        $cities = City::orderBy('name')->get();
+        $categories = FacilityCategory::orderBy('name')->get();
+        $districtMap = $cities->mapWithKeys(fn ($city) => [$city->slug => districts_for_city($city->name)]);
+
+        return view('admin.facilities.subscriptions', compact('subscriptions', 'cities', 'categories', 'districtMap'));
     }
 
     public function subscriptionEnable(Request $request, Facility $facility)
@@ -748,19 +768,29 @@ class FacilityController extends Controller
             'amount' => 'nullable|numeric|min:0',
         ]);
 
-        $paidUntil = $data['plan'] === 'yearly' ? now()->addYear() : now()->addMonth();
-
+        // 23 Eylul 2026: kullanicinin bildirdigi gercek hata - burada
+        // subscription_paid_until'e HEMEN "simdi + 1 ay/yil" yaziliyordu,
+        // SONRA admin ayrica "Odemeyi Aldim" (subscriptionExtend) da
+        // tikleyince o da ustune 1 ay/yil daha ekliyordu - ayni kurum ilk
+        // gunde 2 aylik sureye sahip oluyordu. Kullanicinin net talebi:
+        // "Abone Yap" SADECE kurumu abone paneline atar (plan+ucret
+        // kaydedilir), suresiz/beklemede kalir - telefon/WhatsApp butonlari
+        // AKTIF OLMAZ (bkz. Facility::isActiveSubscriber(), paid_until
+        // null oldugu surece hep false doner). Ilk suresi SADECE ilk
+        // "Odemeyi Aldim" tiklamasinda baslar (subscriptionExtend zaten
+        // paid_until bos/gecmisse "simdi"den baslatiyor, degisiklik
+        // gerekmedi).
         $facility->update([
             'is_subscribed' => true,
             'subscription_plan' => $data['plan'],
             'subscription_amount' => $data['amount'] ?? null,
             'subscription_started_at' => now(),
-            'subscription_paid_until' => $paidUntil->toDateString(),
+            'subscription_paid_until' => null,
         ]);
 
-        log_admin_event('facility_subscription_enabled', $facility, ['plan' => $data['plan'], 'amount' => $data['amount'] ?? null, 'paid_until' => $paidUntil->toDateString()]);
+        log_admin_event('facility_subscription_enabled', $facility, ['plan' => $data['plan'], 'amount' => $data['amount'] ?? null]);
 
-        return back()->with('success', "{$facility->name} abone yapıldı, ödemesi {$paidUntil->format('d.m.Y')} tarihine kadar geçerli.");
+        return back()->with('success', "{$facility->name} abone paneline eklendi. Telefon/WhatsApp butonlarının aktif olması için ilk ödeme alındığında Ödeme Aldım butonuna basın.");
     }
 
     /**

@@ -12,7 +12,27 @@
 
 <p class="text-sm text-gray-500 mb-6">Aylık/yıllık ücret karşılığında telefon/WhatsApp butonları aktif olan ve içerikleri admin tarafından güncellenen kurumlar. Ödeme süresi dolan kurumların butonları otomatik olarak (bir sonraki sayfa yüklemesinde) gizlenir.</p>
 
-<form method="GET" class="mb-4 flex gap-2 flex-wrap">
+<form method="GET" data-district-map='@json($districtMap)' class="js-location-filter mb-4 flex gap-2 flex-wrap">
+  <select name="city" class="js-city border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+    <option value="">Tüm İller</option>
+    @foreach($cities as $city)
+      <option value="{{ $city->slug }}" @selected(request('city') === $city->slug)>{{ $city->name }}</option>
+    @endforeach
+  </select>
+  <select name="district" data-selected="{{ request('district') }}" class="js-district border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()" @if(! request('city')) disabled @endif>
+    <option value="">{{ request('city') ? 'Tüm İlçeler' : 'Önce il seçin' }}</option>
+    @if(request('city'))
+      @foreach(districts_for_city(optional($cities->firstWhere('slug', request('city')))->name ?? '') as $districtName)
+        <option value="{{ $districtName }}" @selected(request('district') === $districtName)>{{ $districtName }}</option>
+      @endforeach
+    @endif
+  </select>
+  <select name="category" class="border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+    <option value="">Tüm Bölümler</option>
+    @foreach($categories as $category)
+      <option value="{{ $category->slug }}" @selected(request('category') === $category->slug)>{{ $category->name }}</option>
+    @endforeach
+  </select>
   <select name="plan" class="border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
     <option value="">Plan: Tümü</option>
     <option value="monthly" @selected(request('plan')==='monthly')>Aylık</option>
@@ -21,12 +41,15 @@
   <select name="durum" class="border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
     <option value="">Durum: Tümü</option>
     <option value="aktif" @selected(request('durum')==='aktif')>Aktif</option>
+    <option value="odeme_bekliyor" @selected(request('durum')==='odeme_bekliyor')>Ödeme Bekliyor</option>
     <option value="suresi_gecti" @selected(request('durum')==='suresi_gecti')>Süresi Geçti</option>
   </select>
-  @if(request('plan') || request('durum'))
+  @if(request('city') || request('district') || request('category') || request('plan') || request('durum'))
     <a href="{{ route('admin.facilities.subscriptions.index') }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreleri temizle</a>
   @endif
 </form>
+
+@include('themes._shared.partials.location-filter-script')
 
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
   <div class="admin-table-scroll overflow-x-auto">
@@ -57,12 +80,14 @@
           <td class="p-3">
             @if($f->isActiveSubscriber())
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#dcfce7;color:#15803d;">Aktif</span>
-            @else
+            @elseif($f->subscription_paid_until)
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Süresi Geçti</span>
+            @else
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">Ödeme Bekliyor</span>
             @endif
           </td>
           <td class="p-3 text-right whitespace-nowrap">
-            <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline flex items-center gap-1 justify-end" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? Bitiş tarihi 1 {{ $f->subscription_plan === 'yearly' ? 'yıl' : 'ay' }} uzatılacak.');">
+            <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline flex items-center gap-1 justify-end" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? {{ $f->subscription_paid_until ? 'Bitiş tarihi 1 '.($f->subscription_plan === 'yearly' ? 'yıl' : 'ay').' uzatılacak.' : 'Abonelik süresi bu ödemeyle başlayıp 1 '.($f->subscription_plan === 'yearly' ? 'yıl' : 'ay').' geçerli olacak.' }}');">
               @csrf
               <input type="number" name="amount" step="0.01" min="0" value="{{ $f->subscription_amount }}" placeholder="TL" class="text-xs border rounded w-20" onclick="event.stopPropagation()">
               <button class="text-green-700 font-semibold">Ödeme Aldım</button>

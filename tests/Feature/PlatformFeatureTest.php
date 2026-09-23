@@ -3308,6 +3308,12 @@ class PlatformFeatureTest extends TestCase
         $this->assertFalse($facility->is_claimed);
         $this->assertFalse((bool) $facility->is_broker_managed);
 
+        // 23 Eylul 2026: kullanicinin bildirdigi gercek hata - "Abone Yap"
+        // eskiden HEMEN "simdi+1 ay" yaziyordu, "Odeme Aldim" da AYRICA
+        // ustune 1 ay daha ekleyince ayni kurum ilk gunde 2 aylik sureye
+        // sahip oluyordu. Artik "Abone Yap" SADECE panele ekler (suresiz),
+        // butonlar HENUZ aktif olmaz - sure sadece ilk "Odeme Aldim"
+        // tiklamasinda baslar.
         $this->withSession(['admin_id' => $this->admin->id])
             ->post(route('admin.facilities.subscription.enable', $facility), ['plan' => 'monthly', 'amount' => 250])
             ->assertRedirect();
@@ -3316,12 +3322,21 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue($facility->is_subscribed);
         $this->assertSame('monthly', $facility->subscription_plan);
         $this->assertSame(250.0, $facility->subscription_amount);
+        $this->assertNull($facility->subscription_paid_until);
+        $this->assertFalse($facility->isActiveSubscriber());
+
+        // Ilk "Odeme aldim" - sure BURADA baslar (simdiden +1 ay).
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.facilities.subscription.extend', $facility), ['amount' => 300])
+            ->assertRedirect();
+
+        $facility->refresh();
         $this->assertTrue($facility->isActiveSubscriber());
         $this->assertEqualsWithDelta(now()->addMonth()->timestamp, $facility->subscription_paid_until->timestamp, 86400);
+        $this->assertSame(300.0, $facility->subscription_amount);
 
-        // "Ödeme aldım" - kalan gunler kaybolmadan uzatilmali (mevcut
-        // bitis tarihinin ustune eklenir, bugunun degil). Ucret DEGISKEN
-        // oldugu icin her odemede yeniden girilebilir.
+        // Ikinci "Odeme aldim" - kalan gunler kaybolmadan uzatilmali (mevcut
+        // bitis tarihinin ustune eklenir, bugunun degil).
         $previousPaidUntil = $facility->subscription_paid_until->copy();
         $this->withSession(['admin_id' => $this->admin->id])
             ->post(route('admin.facilities.subscription.extend', $facility), ['amount' => 300])
