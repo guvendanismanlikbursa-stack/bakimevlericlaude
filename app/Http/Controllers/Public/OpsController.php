@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -112,6 +112,8 @@ class OpsController extends Controller
             'facility-geo-clear' => $this->facilityGeoClear($request),
             'city-geo-outliers' => $this->cityGeoOutliers($request),
             'facility-images-symlink-to-shared' => $this->facilityImagesSymlinkToShared($request),
+            'facility-image-coverage-stats' => $this->facilityImageCoverageStats(),
+            'facility-borrow-demo-images-for-empty' => $this->facilityBorrowDemoImagesForEmpty($request),
             'konum-cekici-bursa-targets' => $this->konumCekiciBursaTargets($request),
             'konum-cekici-import-coords' => $this->konumCekiciImportCoords($request),
             'facility-borrow-demo-images' => $this->facilityBorrowDemoImages($request),
@@ -1983,6 +1985,74 @@ class OpsController extends Controller
     // Kategorisinde calisan bir donor VARSA bu araç dokunmaz, o zaten
     // mevcut facility-borrow-demo-images-bulk ile cozulur. dry_run=1
     // (varsayilan) sadece sayar, siler sadece dry_run=0 ile.
+    // 23 Eylul 2026: kullanicinin talebi - hic gorseli (ne gercek ne demo)
+    // olmayan kurumlara (bkz. facility-image-coverage-stats) bolumune uygun
+    // TEK bir demo gorsel eklenir. facilityBorrowDemoImagesBulk'dan farki:
+    // o zaten bir demo kaydi (kirik da olsa) OLAN kurumlari onarir, bu ise
+    // HICBIR facility_images kaydi olmayan kurumlari bulur (NOT EXISTS).
+    // Sahiplenilmis/anlasmali kurumlara HIC dokunmaz. dry_run=1 (varsayilan)
+    // sadece sayar, ekler sadece dry_run=0 ile.
+    private function facilityBorrowDemoImagesForEmpty(Request $request): string
+    {
+        $limit = (int) $request->query('limit', 500);
+        $dryRun = $request->query('dry_run', '1') !== '0';
+
+        $facilities = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->where('is_claimed', false)
+            ->where('is_broker_managed', false)
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('facility_images')
+                    ->whereColumn('facility_images.facility_id', 'facilities.id');
+            })
+            ->select('id', 'name', 'facility_category_id')
+            ->limit($limit)
+            ->get();
+
+        if ($facilities->isEmpty()) {
+            return 'Hic gorseli olmayan kurum kalmadi (bu pencerede).';
+        }
+
+        $out = "Hic gorseli olmayan kurum (bu pencerede): {$facilities->count()}
+";
+        $out .= $dryRun ? "MOD: dry_run (hicbir sey eklenmedi)
+
+" : "MOD: UYGULANDI
+
+";
+
+        $added = 0;
+        $noDonor = 0;
+        foreach ($facilities as $facility) {
+            if ($dryRun) {
+                $out .= "#{$facility->id} {$facility->name}: 1 demo gorsel eklenecek.
+";
+                continue;
+            }
+            $result = $this->borrowDemoImagesForFacility($facility, 1);
+            $out .= $result."
+";
+            if (str_contains($result, 'odunc alindi')) {
+                $added++;
+            } else {
+                $noDonor++;
+            }
+        }
+
+        if (! $dryRun) {
+            $out .= "
+Toplam eklenen: {$added}, donoru bulunamayan: {$noDonor}
+";
+        }
+        if ($facilities->count() >= $limit) {
+            $out .= "
+NOT: bu pencere limite ulasti, ayni cagriyi tekrar edin (dolan kurumlar artik NOT EXISTS'e uymadigi icin otomatik atlanir).";
+        }
+
+        return $out;
+    }
+
     private function facilityCleanUnfixableBrokenImages(Request $request): string
     {
         $dryRun = $request->query('dry_run', '1') !== '0';
@@ -2083,6 +2153,55 @@ class OpsController extends Controller
         DB::table('facility_images')->whereIn('id', $rows->pluck('id'))->delete();
 
         return "SILINDI: {$rows->count()} demo gorsel kaydi, {$affectedFacilities} sahiplenilmis kurumdan.";
+    }
+
+    // 23 Eylul 2026: kullanicinin sorusu - 'gercek gorseli olmayan butun
+    // kurumlarda bir demo gorseli var degil mi'. Bu salt-okunur tanilama
+    // ucu 3 grubu ayirir: gercek gorseli olan, gercegi yok ama en az 1 demo
+    // gorseli olan, ve HIC gorseli (ne gercek ne demo) olmayan kurumlar -
+    // sonuncusu varsa listelenir ki hangi kurumlarin kategori-varsayilan
+    // gorsele dustugu gorulebilsin.
+    private function facilityImageCoverageStats(): string
+    {
+        $totalFacilities = DB::table('facilities')->whereNull('deleted_at')->count();
+
+        $perFacility = DB::table('facilities')
+            ->leftJoin('facility_images', 'facility_images.facility_id', '=', 'facilities.id')
+            ->whereNull('facilities.deleted_at')
+            ->groupBy('facilities.id')
+            ->select('facilities.id')
+            ->selectRaw("MAX(CASE WHEN facility_images.path IS NOT NULL AND facility_images.path NOT LIKE 'facilities/demo/%' THEN 1 ELSE 0 END) as has_real")
+            ->selectRaw("MAX(CASE WHEN facility_images.path LIKE 'facilities/demo/%' THEN 1 ELSE 0 END) as has_demo")
+            ->get();
+
+        $withReal = $perFacility->where('has_real', 1)->count();
+        $withDemoOnly = $perFacility->where('has_real', 0)->where('has_demo', 1)->count();
+        $withNoImageAtAll = $perFacility->where('has_real', 0)->where('has_demo', 0);
+        $realWithLeftoverDemo = $perFacility->where('has_real', 1)->where('has_demo', 1)->count();
+
+        $out = "Toplam kurum (silinmemis): {$totalFacilities}
+";
+        $out .= "En az 1 GERCEK gorseli olan: {$withReal}
+";
+        $out .= "Gercek gorseli YOK ama en az 1 demo gorseli olan: {$withDemoOnly}
+";
+        $out .= "HIC gorseli olmayan (ne gercek ne demo - kategori varsayilanina duser): {$withNoImageAtAll->count()}
+";
+        $out .= "Gercek gorseli olup icinde HALA eski demo gorsel de kalan (temizlenmesi gereken): {$realWithLeftoverDemo}" . PHP_EOL;
+
+        if ($withNoImageAtAll->count() > 0) {
+            $ids = $withNoImageAtAll->pluck('id')->take(30);
+            $names = DB::table('facilities')->whereIn('id', $ids)->pluck('name', 'id');
+            $out .= "
+Ilk 30 hic gorseli olmayan kurum:
+";
+            foreach ($ids as $id) {
+                $out .= "  #{$id} ".($names[$id] ?? '?')."
+";
+            }
+        }
+
+        return $out;
     }
 
     // 19 Agustos 2026: kullanicinin acik talebi uzerine geri alma - bir onceki
@@ -3799,9 +3918,17 @@ class OpsController extends Controller
                 continue;
             }
 
-            $mevcutSayi = $facility->images()->count();
+            // 23 Eylul 2026: kullanicinin bildirdigi gercek hata - sayim TUM
+            // gorselleri (demo dahil) sayiyordu. Bir kurumun 1 demo gorseli
+            // varsa mevcutSayi=1 oluyor, bu yuzden sadece 4 GERCEK gorsel
+            // eklenebiliyordu (5 degil) VE eski demo gorsel yeni gercek
+            // gorsellerin arasinda kalici olarak kaliyordu - hicbir yerde
+            // temizlenmiyordu. Sayim artik SADECE gercek gorselleri sayar,
+            // demo gorsel asagida en az 1 gercek gorsel basariyla eklenince
+            // silinir.
+            $mevcutSayi = $facility->images()->where('path', 'not like', 'facilities/demo/%')->count();
             if ($mevcutSayi >= 5) {
-                $skipped[] = "#{$facilityId} {$facility->name}: zaten 5+ gorseli var, atlandi";
+                $skipped[] = "#{$facilityId} {$facility->name}: zaten 5+ gercek gorseli var, atlandi";
                 continue;
             }
 
@@ -3860,6 +3987,12 @@ class OpsController extends Controller
             }
 
             if ($saved > 0) {
+                // en az 1 gercek gorsel basariyla eklendi - artik placeholder
+                // demo gorsele gerek yok, kalici olarak siliniyor.
+                DB::table('facility_images')
+                    ->where('facility_id', $facilityId)
+                    ->where('path', 'like', 'facilities/demo/%')
+                    ->delete();
                 $updatedFacilities++;
                 $totalImages += $saved;
             } else {
