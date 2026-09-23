@@ -375,80 +375,18 @@ def upload_tree(ftp, doc_root, rel_dir):
     return count
 
 
-# 19 Agustos 2026: canli olayin kok nedeni - 'veri cekici' (odunc demo
-# gorsel) havuzu storage/app/public/facilities/demo/ altinda, ama bu klasor
-# .gitignore'da (storage/app/public/facilities) oldugu icin normal dosya
-# diff'i onu HICBIR ZAMAN yakalamiyor. Havuz gecmiste sadece bakimevibul.com
-# ve bakimeviara.com'a manuel yuklenmisti; bakimevleri.com (facility_asset()
-# ile TUM gorsellerin kanonik/tek kaynagi) 42 dosyadan sadece 10'una
-# sahipti - 261 kurumun gorseli canlida kirikti. Bu fonksiyon HER deploy'da
-# calisir, 3 doc root'u karsilastirip eksik olani nereden varsa oradan
-# indirip diger(ler)ine yukler - kucuk/sabit bir dosya kumesi oldugu icin
-# maliyeti dusuk, ve havuz asla tek bir domain'de "yalniz" kalamaz.
-DEMO_IMAGES_REL_DIR = 'storage/app/public/facilities/demo'
-
-
-def step3b_sync_demo_images(env):
-    info("Adim 3b/7: 'veri cekici' demo gorsel havuzu 3 domain arasinda senkronize ediliyor...")
-    ftp = connect_ftp(env)
-
-    per_root_files = {}
-    for doc_root in env['DOC_ROOTS']:
-        found = {}
-        try:
-            subdirs = [d for d in ftp.nlst(f'{doc_root}/{DEMO_IMAGES_REL_DIR}')
-                       if not d.endswith('/.') and not d.endswith('/..')]
-        except ftplib.error_perm:
-            subdirs = []
-        for sd in subdirs:
-            try:
-                entries = ftp.nlst(sd)
-            except ftplib.error_perm:
-                continue
-            for entry in entries:
-                fname = entry.split('/')[-1]
-                if fname in ('.', '..'):
-                    continue
-                rel = sd.split('/')[-1] + '/' + fname
-                try:
-                    size = ftp.size(entry)
-                except ftplib.error_perm:
-                    size = None
-                found[rel] = size
-        per_root_files[doc_root] = found
-
-    all_rel_paths = set()
-    for files in per_root_files.values():
-        all_rel_paths |= set(files.keys())
-
-    synced = 0
-    for rel in sorted(all_rel_paths):
-        source_root = None
-        for doc_root in env['DOC_ROOTS']:
-            if rel in per_root_files[doc_root]:
-                source_root = doc_root
-                break
-        if source_root is None:
-            continue
-
-        buf = None
-        for doc_root in env['DOC_ROOTS']:
-            if rel in per_root_files[doc_root]:
-                continue
-            if buf is None:
-                buf = io.BytesIO()
-                ftp.retrbinary(f'RETR {source_root}/{DEMO_IMAGES_REL_DIR}/{rel}', buf.write)
-            ensure_dirs(ftp, doc_root, f'{DEMO_IMAGES_REL_DIR}/{rel}')
-            buf.seek(0)
-            ftp.storbinary(f'STOR {doc_root}/{DEMO_IMAGES_REL_DIR}/{rel}', buf)
-            synced += 1
-            print(f'    - {doc_root}: eksikti, {source_root}\'dan kopyalandi -> {rel}')
-
-    ftp.quit()
-    if synced:
-        ok(f'Demo gorsel havuzu senkronize edildi ({synced} dosya kopyalandi).')
-    else:
-        ok('Demo gorsel havuzu zaten 3 domain\'de de tam - kopyalanacak dosya yoktu.')
+# 23 Eylul 2026: eski adim buradaydi (step3b_sync_demo_images) - 19
+# Agustos'ta yasanan olayin cozumu olarak facilities/demo/ havuzunu FTP
+# ile 3 doc root arasinda kopyalayan bir fonksiyondu. ARTIK GEREKSIZ VE
+# ZARARLI: 23 Eylul 2026'da tum GERCEK kurum gorsellerinin (demo dahil,
+# cunku demo/ klasoru facilities/ icinde) tek bir kalici coze
+# kavusturuldu - bakimevibul.com ve bakimeviara.com'un storage/app/
+# public/facilities klasoru artik bakimevleri.com'daki GERCEK klasore
+# symlink (bkz. OpsController::facilityImagesSymlinkToShared). Yani demo/
+# havuzu da dahil TUM gorseller zaten HER ZAMAN 3 domain'de otomatik ayni -
+# bu adima artik gerek yok. Symlink kurulu domainlerde bu fonksiyon FTP
+# STOR/MKD hatasi veriyordu (ayni fiziksel klasore iki farkli yoldan
+# yazmaya calisinca), bu yuzden tamamen kaldirildi.
 
 
 VENDOR_AUTOLOAD_FILES = [
@@ -646,7 +584,6 @@ def main():
     autoload_regenerated = step2_prepare_autoload(changed_files)
     step2b_local_boot_smoke_test()
     step3_upload(env, changed_files, autoload_regenerated, from_sha)
-    step3b_sync_demo_images(env)
     step4_run_ops(env)
     step5_health_check(env)
     step6_update_marker()
