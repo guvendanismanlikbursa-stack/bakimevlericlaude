@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
+// mode=stale: sayfa HER ZAMAN canli uretilir (filtre/sayac bozulmaz), sadece son iyi kopya saklanir ve 5xx'te gosterilir.
 // Sabit/herkese acik sayfalar (rehber, SSS, footer sayfalari...) icin misafir ziyaretcilere
 // HTML onbellegi: 1 saat taze + "son bilinen iyi" kopya. Veritabani/sunucu hatasi (5xx) olursa
 // son iyi kopya gosterilir. CSRF jetonu her gosterimde ziyaretcinin kendi jetonuyla degistirilir.
@@ -15,15 +16,16 @@ class CacheStaticPage
     private const FRESH_MINUTES = 60;
     private const TOKEN_PLACEHOLDER = '__CSRF_TOKEN__';
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $mode = 'full'): Response
     {
         if (! $request->isMethod('GET') || $this->hasPersonalState($request)) {
             return $next($request);
         }
 
-        $key = 'static-page:v1:'.md5($request->getHost().'|'.$request->getRequestUri());
+        $key = 'static-page:v1:'.md5($request->getHost().'|'.$request->getRequestUri().'|'.($request->ajax() ? 'ajax' : ''));
+        $staleOnly = $mode === 'stale';
 
-        $fresh = Cache::get($key);
+        $fresh = $staleOnly ? null : Cache::get($key);
         if (is_string($fresh)) {
             return $this->htmlResponse($fresh);
         }
@@ -32,8 +34,10 @@ class CacheStaticPage
 
         if ($response->getStatusCode() === 200 && $this->isPlainHtml($response) && $this->hasCsrfToken($request)) {
             $html = str_replace(csrf_token(), self::TOKEN_PLACEHOLDER, (string) $response->getContent());
-            Cache::put($key, $html, now()->addMinutes(self::FRESH_MINUTES));
-            Cache::forever($key.':stale', $html);
+            if (! $staleOnly) {
+                Cache::put($key, $html, now()->addMinutes(self::FRESH_MINUTES));
+            }
+            Cache::put($key.':stale', $html, $staleOnly ? now()->addDays(7) : now()->addDays(30));
         } elseif ($response->getStatusCode() >= 500) {
             $stale = Cache::get($key.':stale');
             if (is_string($stale)) {

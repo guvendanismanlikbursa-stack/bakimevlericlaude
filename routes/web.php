@@ -107,9 +107,9 @@ $siteRoutes = function () {
     Route::get('/rehber/{sectionSlug}', [LocationGuideController::class, 'index'])->middleware('static.cache')->name('location-guide.index');
     Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->middleware('static.cache')->name('location-guide.category');
     Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->middleware('static.cache')->name('location-guide.show');
-    Route::get('/kurumlar', [FacilityController::class, 'index'])->middleware('throttle:public-browse')->name('facilities.index');
+    Route::get('/kurumlar', [FacilityController::class, 'index'])->middleware('throttle:public-browse')->middleware('static.cache:stale')->name('facilities.index');
     Route::get('/kurumlar-sayisi', [FacilityController::class, 'count'])->middleware('throttle:public-light')->name('facilities.count');
-    Route::get('/kurumlar/{slug}', [FacilityController::class, 'show'])->middleware('throttle:public-browse')->name('facilities.show');
+    Route::get('/kurumlar/{slug}', [FacilityController::class, 'show'])->middleware('throttle:public-browse')->middleware('static.cache:stale')->name('facilities.show');
     Route::post('/kurumlar/{slug}/yorum', [FacilityReviewController::class, 'store'])->middleware('throttle:public-form')->name('reviews.store');
     Route::post('/kurumlar/{slug}/ziyaret-talebi', [VisitRequestController::class, 'store'])->middleware('throttle:public-form')->name('visit-requests.store');
     Route::post('/kurumlar/{slug}/kontenjan-sor', [VisitRequestController::class, 'storeAvailability'])->middleware('throttle:public-form')->name('visit-requests.availability');
