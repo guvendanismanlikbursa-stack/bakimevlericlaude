@@ -3348,7 +3348,7 @@ Ilk 30 hic gorseli olmayan kurum:
             ->filter(function ($r) use ($norm) {
                 $n = $norm((string) $r->name);
                 $ana = str_contains($n, 'anaokul') || str_contains($n, 'ana okul') || str_contains($n, 'anasinif') || str_contains($n, 'ana sinif');
-                return $ana && ! str_contains($n, 'kres') && ! str_contains($n, 'gunduz bak');
+                return $ana;   // 24 Eylul 2026: anaokulu+kres karisik adlilar da dahil (kullanicinin talebi)
             })->pluck('id')->values();
         $total = $ids->count();
         $page = $ids->slice($offset, $limit)->values()->all();
@@ -3357,6 +3357,7 @@ Ilk 30 hic gorseli olmayan kurum:
                 $strip = fn ($c) => $c->map(fn ($x) => collect($x->toArray())->except(['created_at', 'updated_at', 'facility_id', 'pivot'])->all())->values()->all();
                 return [
                     'id' => $f->id, 'name' => $f->name, 'slug' => $f->slug,
+                    'tur' => (function ($ad) { $t = mb_strtolower(strtr((string) $ad, ['İ' => 'i', 'I' => 'i', 'ı' => 'i', 'Ş' => 's', 'ş' => 's', 'Ç' => 'c', 'ç' => 'c'])); return (str_contains($t, 'kres') || str_contains($t, 'gunduz bak')) ? 'anaokulu_kres_karisik' : 'sadece_anaokulu'; })($f->name),
                     'il' => $f->city?->name, 'ilce' => $f->district, 'adres' => $f->address,
                     'enlem' => $f->lat, 'boylam' => $f->lng,
                     'telefon' => $f->phone, 'eposta' => $f->email,
