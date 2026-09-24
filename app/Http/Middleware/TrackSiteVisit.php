@@ -16,7 +16,7 @@ class TrackSiteVisit
 {
     public function handle(Request $request, Closure $next)
     {
-        if (app()->bound('currentBrand') && $request->isMethod('get')) {
+        if (app()->bound('currentBrand') && $request->isMethod('get') && ! str_contains((string) $request->userAgent(), 'BakimCacheWarm')) {
             $brand = app('currentBrand')['slug'];
             $flagKey = "site_visit_counted:{$brand}:".now()->toDateString();
 

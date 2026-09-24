@@ -141,6 +141,13 @@ ScheduledJobMonitor::attach(
 // zorunlu olmaktan cikarildi, suistimali onlemek icin 24 saat icinde
 // belge eklenmezse basvuru otomatik silinir (bkz. App\Console\Commands\
 // ExpireUndocumentedClaims).
+// 24 Eylul 2026: veritabani kopmalarina karsi sabit sayfalarin son-iyi-kopyasini onceden doldurur.
+ScheduledJobMonitor::attach(
+    Schedule::command('pages:warm-cache')->everyFifteenMinutes()->withoutOverlapping(),
+    'pages:warm-cache',
+    30
+);
+
 ScheduledJobMonitor::attach(
     Schedule::command('claims:expire-undocumented')->hourly(),
     'claims:expire-undocumented',

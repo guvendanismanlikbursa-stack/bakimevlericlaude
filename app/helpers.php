@@ -1102,6 +1102,17 @@ if (! function_exists('record_platform_error')) {
         // DB sutun sinirini asip INSERT'i patlatabiliyordu (bkz. CheckGalleryHealth) -
         // bu durumda artik kayit basarisiz olsa BILE admin mail'i yine de gonderilir,
         // sessizce kaybolmaz ya da ham bir SQL hatasi olarak sizmaz.
+        // 24 Eylul 2026: hosting kaynakli kisa MySQL kopmalarinda (Connection refused vb.) her
+        // hata icin ayri mail yagmuru yerine 30 dakikada TEK ozet mail gonderilir.
+        $isDbOutage = (bool) preg_match('/SQLSTATE\[HY000\] \[2002\]|Connection refused|server has gone away|Too many connections/i', $message.' '.$title);
+        if ($isDbOutage) {
+            if (! \Illuminate\Support\Facades\Cache::add('db-outage-mail-lock', 1, now()->addMinutes(30))) {
+                return;
+            }
+            $title = 'Veritabani gecici olarak erisilemedi (hosting kaynakli)';
+            $message = 'Kisa sureli MySQL baglanti kopmasi tespit edildi. Bu 30 dakika icindeki benzer hatalar icin ayrica mail gonderilmeyecek. Ornek hata: '.mb_substr($message, 0, 300);
+        }
+
         try {
             \App\Models\PlatformError::create([
                 'source' => $source,
