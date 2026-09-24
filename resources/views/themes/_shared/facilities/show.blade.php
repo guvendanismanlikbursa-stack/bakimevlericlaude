@@ -557,7 +557,7 @@
          her zaman listelenir, kurumda VARSA vurgulu/isaretli, YOKSA soluk
          gorunur - "hicbir sey girilmemis" ile "hicbir ozelligi yok" farki
          artik gorunur, bilgi eksikligi gizlenmiyor. --}}
-    @if(!empty($section['features']))
+    @if(!empty($section['features']) && !empty($facility->services))
       <div class="mt-5">
         <div class="text-sm font-black text-gray-950 mb-2">{{ $section['title'] ?? 'Kurum' }} Özellikleri</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -589,10 +589,12 @@
     <p class="mt-6 text-gray-700 leading-relaxed" style="white-space: pre-line;">{{ $facility->description }}</p>
 
     <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
+      @if($facility->capacity)
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div class="text-gray-500">Kapasite</div>
-        <div class="font-black text-gray-950">{{ $facility->capacity ?? '-' }} kişi</div>
+        <div class="font-black text-gray-950">{{ $facility->capacity }} kişi</div>
       </div>
+      @endif
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div class="text-gray-500">Fiyat Aralığı</div>
         <div class="font-black text-gray-950">
@@ -699,6 +701,10 @@
         'key' => \Illuminate\Support\Str::slug($label),
         'label' => $label,
       ]);
+      // Hic detay girilmemisse blok tamamen gizlenir; en az biri doluysa (31 Agustos talebi) hepsi listelenir.
+      if ($sectionDetailFieldList->filter(fn ($f) => filled($sectionDetailValues[$f['key']] ?? null))->isEmpty()) {
+        $sectionDetailFieldList = collect();
+      }
     @endphp
     @if($sectionDetailFieldList->isNotEmpty())
       <div class="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -778,8 +784,7 @@
               @endif
             </div>
           @empty
-            <div class="rounded-lg p-5 text-sm text-gray-600 flex items-center gap-3" style="background: {{ $colors['soft'] }};">
-              <span class="text-2xl">💬</span>
+            <div class="text-sm text-gray-500">
               {{-- 20 Eylul 2026: kullanicinin bildirdigi gercek mantik hatasi
                    - bu yazinin hemen ustunde Google yorumlari gorunuyor
                    olabilir, "hic yorum yok" ifadesi kafa karistiriyordu.
@@ -819,8 +824,7 @@
             <div class="text-sm text-gray-600">C: {{ $question->answer }}</div>
           </div>
         @empty
-          <div class="rounded-lg p-5 text-sm text-gray-600 flex items-center gap-3" style="background: {{ $colors['soft'] }};">
-            <span class="text-2xl">❓</span>
+          <div class="text-sm text-gray-500">
             <span>Henüz yanıtlanmış soru yok.@if($acceptsFamilyRequests) İlk soruyu siz sorabilirsiniz; kurum yetkilisi cevapladığında burada görünür.@endif</span>
           </div>
         @endforelse

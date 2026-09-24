@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-place-ids', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-place-ids', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-fix-locative'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -126,6 +126,7 @@ class OpsController extends Controller
             'elitokullar-anaokulu-export' => $this->elitokullarAnaokuluExport($request),
             'bursa-description-audit' => $this->bursaDescriptionAudit($request),
             'bursa-description-complete' => $this->bursaDescriptionComplete($request),
+            'description-fix-locative' => $this->descriptionFixLocative($request),
             'konum-cekici-bursa-targets' => $this->konumCekiciBursaTargets($request),
             'konum-cekici-import-coords' => $this->konumCekiciImportCoords($request),
             'facility-borrow-demo-images' => $this->facilityBorrowDemoImages($request),
@@ -3383,6 +3384,46 @@ Ilk 30 hic gorseli olmayan kurum:
         return json_encode(['toplam' => $total, 'offset' => $offset, 'adet' => count($items), 'kurumlar' => $items], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     }
 
+    // Uretilen aciklamalardaki "Bursa'de faaliyet" gibi hatali bulunma eklerini duzeltir (Bursa'da, Gursu'da, Kayseri'de).
+    private function fixLocative(string $text): string
+    {
+        return preg_replace_callback("/([\p{L}]+)'de(?= faaliyet| bulunan)/u", function ($m) {
+            $w = $m[1];
+            $lower = mb_strtolower(strtr($w, ['I' => 'ı', 'İ' => 'i']), 'UTF-8');
+            $vowel = 'e';
+            for ($i = mb_strlen($lower) - 1; $i >= 0; $i--) {
+                $ch = mb_substr($lower, $i, 1);
+                if (mb_strpos('aıoueiöü', $ch) !== false) {
+                    $vowel = mb_strpos('aıou', $ch) !== false ? 'a' : 'e';
+                    break;
+                }
+            }
+            $hard = mb_strpos('fstkçşhp', mb_substr($lower, -1)) !== false ? 't' : 'd';
+
+            return $w."'".$hard.$vowel;
+        }, $text);
+    }
+
+    // dry_run=1 (varsayilan) sadece sayar; dry_run=0 sahipsiz/anlasmasiz kurumlarin aciklamalarini duzeltir.
+    private function descriptionFixLocative(Request $request): string
+    {
+        $apply = $request->query('dry_run', '1') === '0';
+        $n = 0; $ornek = [];
+        \App\Models\Facility::whereNull('deleted_at')->where('is_claimed', false)->where('is_broker_managed', false)->where('id', '!=', 6713)
+            ->where(function ($q) { $q->where('description', 'like', "%'de faaliyet%")->orWhere('description', 'like', "%'de bulunan%"); })
+            ->orderBy('id')->chunkById(200, function ($rows) use (&$n, &$ornek, $apply) {
+                foreach ($rows as $f) {
+                    $yeni = $this->fixLocative((string) $f->description);
+                    if ($yeni === $f->description) { continue; }
+                    if ($apply) { DB::table('facilities')->where('id', $f->id)->update(['description' => $yeni]); }
+                    $n++;
+                    if (count($ornek) < 6) { $ornek[] = '#'.$f->id.' '.strtok($yeni, "\n"); }
+                }
+            });
+
+        return ($apply ? 'DUZELTILDI' : 'ONIZLEME').": {$n} kurum".PHP_EOL.implode(PHP_EOL, $ornek);
+    }
+
     // 24 Eylul 2026: kullanicinin talebi - Bursa'da hala "on kayit profilidir / admin dogrulayabilir /
     // telefon-adres" SABLON aciklamasi olan kurumlara TEMIZ aciklama yazar. Uygun (>=4 yildiz, >=25 karakter)
     // Google yorumu varsa olumlu yorumdan alinti, yoksa YORUM UYDURMADAN sadece dogru bilgiler
@@ -3429,7 +3470,7 @@ Ilk 30 hic gorseli olmayan kurum:
                 break;
             }
             $parts[] = $sec($cta);
-            $yeni = implode("\n\n", $parts);
+            $yeni = $this->fixLocative(implode("\n\n", $parts));
             if ($apply) { DB::table('facilities')->where('id', $f->id)->update(['description' => $yeni, 'updated_at' => now()]); }
             $n++;
             if (count($out) < 3) { $out[] = "#{$f->id} ".$f->name.PHP_EOL.$yeni; }
@@ -4335,7 +4376,7 @@ Ilk 30 hic gorseli olmayan kurum:
             $satirlar[] = $sec($kapanisKaliplari);
             $satirlar[] = $sec($ctaKaliplari);
 
-            $facility->update(['description' => implode("\n\n", $satirlar)]);
+            $facility->update(['description' => $this->fixLocative(implode("\n\n", $satirlar))]);
             $updated++;
             $guncellenenIdler[] = $facility->id;
         }

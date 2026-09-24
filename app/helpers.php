@@ -636,8 +636,13 @@ if (! function_exists('facility_brand_framing')) {
 
         $replace = [':category' => $category, ':location' => $location ?: 'bölgenizde'];
 
+        $intro = strtr($voice['facility_intro'], $replace);
+        if (($brand['slug'] ?? '') === 'bakimevleri' && ! $facility->is_claimed && ! $facility->is_broker_managed) {
+            $intro = strtr(':category kararınızı bakimevleri.com’un bilgi merkezi kriterleriyle değerlendirin; fiyat ve kontenjan için kuruma doğrudan soru sorabilirsiniz.', $replace);
+        }
+
         return [
-            'intro' => strtr($voice['facility_intro'], $replace),
+            'intro' => $intro,
             'meta_suffix' => strtr($voice['meta_suffix'], $replace),
         ];
     }
