@@ -88,9 +88,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 $siteRoutes = function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::get('/karar-sihirbazi', [EngagementController::class, 'wizard'])->name('engagement.wizard');
-    Route::get('/bakim-danismani', [CareAdvisorController::class, 'form'])->name('care-advisor.form');
+    Route::get('/', [HomeController::class, 'index'])->middleware('static.cache')->name('home');
+    Route::get('/karar-sihirbazi', [EngagementController::class, 'wizard'])->middleware('static.cache')->name('engagement.wizard');
+    Route::get('/bakim-danismani', [CareAdvisorController::class, 'form'])->middleware('static.cache')->name('care-advisor.form');
     Route::get('/bakim-danismani/sonuclar', [CareAdvisorController::class, 'results'])->name('care-advisor.results');
     Route::get('/karsilastir', [EngagementController::class, 'compare'])->name('engagement.compare');
     Route::get('/favoriler', [EngagementController::class, 'favorites'])->middleware('family.auth')->name('engagement.favorites');
@@ -104,9 +104,9 @@ $siteRoutes = function () {
 
         return redirect(brand_route('location-guide.index', ['sectionSlug' => $defaultSection]));
     });
-    Route::get('/rehber/{sectionSlug}', [LocationGuideController::class, 'index'])->name('location-guide.index');
-    Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->name('location-guide.category');
-    Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->name('location-guide.show');
+    Route::get('/rehber/{sectionSlug}', [LocationGuideController::class, 'index'])->middleware('static.cache')->name('location-guide.index');
+    Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->middleware('static.cache')->name('location-guide.category');
+    Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->middleware('static.cache')->name('location-guide.show');
     Route::get('/kurumlar', [FacilityController::class, 'index'])->middleware('throttle:public-browse')->name('facilities.index');
     Route::get('/kurumlar-sayisi', [FacilityController::class, 'count'])->middleware('throttle:public-light')->name('facilities.count');
     Route::get('/kurumlar/{slug}', [FacilityController::class, 'show'])->middleware('throttle:public-browse')->name('facilities.show');
@@ -123,35 +123,35 @@ $siteRoutes = function () {
     Route::post('/kurum-ilgi-talebi', [\App\Http\Controllers\Public\FacilityInterestLeadController::class, 'store'])->middleware('throttle:public-form')->name('facility-interest-leads.store');
     Route::get('/toplu-fiyat-al', [EngagementController::class, 'bulkQuote'])->name('engagement.bulk-quote');
     Route::post('/toplu-teklif-talebi', [OfferRequestController::class, 'storeBulk'])->middleware('throttle:public-form')->name('offer-requests.store-bulk');
-    Route::get('/iletisim', [ContactController::class, 'create'])->name('contact.create');
+    Route::get('/iletisim', [ContactController::class, 'create'])->middleware('static.cache')->name('contact.create');
     Route::post('/iletisim', [ContactController::class, 'store'])->middleware('throttle:public-form')->name('contact.store');
     // 12 Agustos 2026: kullanicinin talebi - "Hakkımızda" ozel, zengin
     // tasarimli bir sayfa olmali; genel {slug} joker route'undan ONCE
     // tanimlanmali ki ContentPage'deki eski duz metin/markdown kaydi
     // yerine bu ozel controller devreye girsin.
-    Route::get('/sayfa/hakkimizda', [\App\Http\Controllers\Public\AboutController::class, 'show'])->name('pages.about');
-    Route::get('/sayfa/{slug}', [PageController::class, 'show'])->name('pages.show');
-    Route::get('/sss', [FaqController::class, 'index'])->name('faq.index');
+    Route::get('/sayfa/hakkimizda', [\App\Http\Controllers\Public\AboutController::class, 'show'])->middleware('static.cache')->name('pages.about');
+    Route::get('/sayfa/{slug}', [PageController::class, 'show'])->middleware('static.cache')->name('pages.show');
+    Route::get('/sss', [FaqController::class, 'index'])->middleware('static.cache')->name('faq.index');
 
     // Kesif / vitrin sayfalari
-    Route::get('/dogrulanmis-kurumlar', [DiscoveryController::class, 'verified'])->name('discovery.verified');
-    Route::get('/son-guncellenen-kurumlar', [DiscoveryController::class, 'recentlyUpdated'])->name('discovery.recent-updated');
-    Route::get('/yeni-eklenen-kurumlar', [DiscoveryController::class, 'newlyAdded'])->name('discovery.new');
-    Route::get('/son-sahiplenilen-kurumlar', [DiscoveryController::class, 'recentlyClaimed'])->name('discovery.recent-claimed');
-    Route::get('/en-cok-goruntulenen-kurumlar', [DiscoveryController::class, 'mostViewed'])->name('discovery.most-viewed');
-    Route::get('/en-cok-aranan-bolgeler', [DiscoveryController::class, 'mostSearched'])->name('discovery.most-searched');
-    Route::get('/son-eklenen-fotograflar', [DiscoveryController::class, 'recentPhotos'])->name('discovery.recent-photos');
+    Route::get('/dogrulanmis-kurumlar', [DiscoveryController::class, 'verified'])->middleware('static.cache')->name('discovery.verified');
+    Route::get('/son-guncellenen-kurumlar', [DiscoveryController::class, 'recentlyUpdated'])->middleware('static.cache')->name('discovery.recent-updated');
+    Route::get('/yeni-eklenen-kurumlar', [DiscoveryController::class, 'newlyAdded'])->middleware('static.cache')->name('discovery.new');
+    Route::get('/son-sahiplenilen-kurumlar', [DiscoveryController::class, 'recentlyClaimed'])->middleware('static.cache')->name('discovery.recent-claimed');
+    Route::get('/en-cok-goruntulenen-kurumlar', [DiscoveryController::class, 'mostViewed'])->middleware('static.cache')->name('discovery.most-viewed');
+    Route::get('/en-cok-aranan-bolgeler', [DiscoveryController::class, 'mostSearched'])->middleware('static.cache')->name('discovery.most-searched');
+    Route::get('/son-eklenen-fotograflar', [DiscoveryController::class, 'recentPhotos'])->middleware('static.cache')->name('discovery.recent-photos');
 
     // Ucret rehberi
-    Route::get('/fiyat-rehberi', [PriceGuideController::class, 'index'])->name('price-guide.index');
-    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [PriceGuideController::class, 'showCategory'])->name('price-guide.category');
-    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/{districtSlug?}', [PriceGuideController::class, 'show'])->name('price-guide.show');
+    Route::get('/fiyat-rehberi', [PriceGuideController::class, 'index'])->middleware('static.cache')->name('price-guide.index');
+    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [PriceGuideController::class, 'showCategory'])->middleware('static.cache')->name('price-guide.category');
+    Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/{districtSlug?}', [PriceGuideController::class, 'show'])->middleware('static.cache')->name('price-guide.show');
 
     // Turkiye istatistikleri
-    Route::get('/istatistikler', [StatsController::class, 'index'])->name('stats.index');
+    Route::get('/istatistikler', [StatsController::class, 'index'])->middleware('static.cache')->name('stats.index');
 
     // Bakim rehberi (makaleler)
-    Route::get('/bakim-rehberi', [GuideController::class, 'index'])->name('guides.index');
+    Route::get('/bakim-rehberi', [GuideController::class, 'index'])->middleware('static.cache')->name('guides.index');
 
     // Yakinimdaki kurumlar (il bazli yaklasik konum eslesmesi)
     Route::post('/yakinimdaki-kurumlar', [NearbyController::class, 'locate'])->middleware('throttle:public-light')->name('nearby.locate');

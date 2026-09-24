@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'family.auth' => \App\Http\Middleware\FamilyAuth::class,
             'facility.auth' => \App\Http\Middleware\FacilityUserAuth::class,
             'track.visit' => \App\Http\Middleware\TrackSiteVisit::class,
+            'static.cache' => \App\Http\Middleware\CacheStaticPage::class,
         ]);
 
         // /_ops/{action} tarayici formu degil, deploy script'inin Bearer

@@ -59,8 +59,8 @@ class LocationGuideController extends Controller
             $brand['slug'], $section['slug'], $city->id, $districtName ?? '',
         ]));
 
-        ['facilityCount' => $facilityCount, 'facilities' => $facilities, 'priceRange' => $priceRange] = Cache::remember(
-            $guideCacheKey, now()->addMinutes(15), function () use ($section, $city, $districtName) {
+        ['facilityCount' => $facilityCount, 'facilities' => $facilities, 'priceRange' => $priceRange] = $this->cachedGuide(
+            $guideCacheKey, function () use ($section, $city, $districtName) {
                 $query = Facility::discoverable()
                     ->forBrand($section['scopes'])
                     ->where('city_id', $city->id)
@@ -130,8 +130,8 @@ class LocationGuideController extends Controller
             $brand['slug'], $section['slug'], $category->id, $city->id, $districtName ?? '',
         ]));
 
-        ['facilityCount' => $facilityCount, 'facilities' => $facilities, 'priceRange' => $priceRange] = Cache::remember(
-            $guideCacheKey, now()->addMinutes(15), function () use ($section, $category, $city, $districtName) {
+        ['facilityCount' => $facilityCount, 'facilities' => $facilities, 'priceRange' => $priceRange] = $this->cachedGuide(
+            $guideCacheKey, function () use ($section, $category, $city, $districtName) {
                 $query = Facility::discoverable()
                     ->where('facility_category_id', $category->id)
                     ->where('city_id', $city->id)
@@ -186,6 +186,29 @@ class LocationGuideController extends Controller
      * iki sayfa (farkli il/ilce/kategori kombinasyonu oldugu surece) ayni
      * degeri gostermez.
      */
+    // Rehber sayfalari nadiren degisir: 6 saat taze onbellek + "son bilinen iyi" kopya.
+    // Veritabani gecici erisilemezse (hosting kesintisi) sayfa hata vermek yerine son iyi kopyayi gosterir.
+    private function cachedGuide(string $key, \Closure $build): array
+    {
+        $fresh = Cache::get($key);
+        if ($fresh !== null) {
+            return $fresh;
+        }
+        try {
+            $value = $build();
+        } catch (\Illuminate\Database\QueryException $e) {
+            $stale = Cache::get($key.':stale');
+            if ($stale !== null) {
+                return $stale;
+            }
+            throw $e;
+        }
+        Cache::put($key, $value, now()->addHours(6));
+        Cache::forever($key.':stale', $value);
+
+        return $value;
+    }
+
     private function priceRangeFor(array $scopes, int $cityId, ?string $districtName, ?int $categoryId = null): ?array
     {
         $query = Facility::discoverable()

@@ -2741,6 +2741,7 @@ class PlatformFeatureTest extends TestCase
             ->assertDontSee('googletagmanager.com/gtag', false)
             ->assertDontSee('fbevents.js', false);
 
+        \Illuminate\Support\Facades\Cache::flush();
         config(['services.google_analytics.id' => 'G-TEST123', 'services.meta_pixel.id' => '123456789']);
         $this->get('/site/bakimevibul/')
             ->assertOk()
