@@ -84,6 +84,9 @@
             @if($facility->is_broker_managed)
               <span class="inline-block text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 mb-1.5">🤝 Anlaşmalı</span>
             @endif
+            @if($facility->isActiveSubscriber())
+              <span class="text-[10px] font-black rounded-full px-2 py-0.5 whitespace-nowrap" style="background:#fae8ff;color:#a21caf;">💜 Yardımsever Kurum</span>
+            @endif
             @if($facility->hasFreeChildAccidentInsurance())
               <span class="inline-block text-[10px] font-black rounded-full px-2 py-0.5 mb-1.5" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
             @endif

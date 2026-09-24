@@ -152,7 +152,7 @@
              olan (ama sahiplenilmemis/anlasmasiz) kurumlar artik anlasmali/
              sahiplenilmis kurumlarla ayni buyuk kartta, "Yardımsever Kurum"
              rozetiyle gosterilir. --}}
-        @if($isActiveSubscriberCard && ! $facility->is_claimed && ! $facility->is_broker_managed)
+        @if($isActiveSubscriberCard)
           <span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">💜 Yardımsever Kurum</span>
         @endif
         @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])

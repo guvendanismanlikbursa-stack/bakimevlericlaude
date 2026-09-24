@@ -3374,16 +3374,36 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Henüz abone kurum yok.');
     }
 
-    public function test_subscription_cannot_be_enabled_for_claimed_or_broker_managed_facility(): void
+    // 24 Eylul 2026: kullanicinin talebi - sahipli ve anlasmali kurumlar da abone
+    // olabilmeli, odemesi gecerliyken "Yardimsever Kurum" etiketi almali.
+    public function test_claimed_and_broker_managed_facilities_can_subscribe_and_get_badge(): void
     {
-        $this->withSession(['admin_id' => $this->admin->id])
-            ->post(route('admin.facilities.subscription.enable', $this->childFacility), ['plan' => 'monthly'])
-            ->assertStatus(400);
-
         $this->rehabFacility->update(['is_broker_managed' => true]);
-        $this->withSession(['admin_id' => $this->admin->id])
-            ->post(route('admin.facilities.subscription.enable', $this->rehabFacility), ['plan' => 'monthly'])
-            ->assertStatus(400);
+
+        foreach ([$this->childFacility, $this->rehabFacility] as $facility) {
+            $this->withSession(['admin_id' => $this->admin->id])
+                ->post(route('admin.facilities.subscription.enable', $facility), ['plan' => 'monthly'])
+                ->assertRedirect();
+
+            $facility->refresh();
+            $this->assertTrue($facility->is_subscribed);
+            $this->assertFalse($facility->isActiveSubscriber());
+
+            // Odeme alinmadan etiket YOK
+            $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
+                ->assertOk()
+                ->assertDontSee('Yardımsever Kurum');
+
+            $this->withSession(['admin_id' => $this->admin->id])
+                ->post(route('admin.facilities.subscription.extend', $facility), ['amount' => 100])
+                ->assertRedirect();
+
+            $facility->refresh();
+            $this->assertTrue($facility->isActiveSubscriber());
+            $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)
+                ->assertOk()
+                ->assertSee('Yardımsever Kurum');
+        }
     }
 
     public function test_active_subscriber_shows_phone_and_whatsapp_lapsed_subscriber_does_not(): void

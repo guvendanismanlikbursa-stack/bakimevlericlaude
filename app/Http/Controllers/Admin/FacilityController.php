@@ -759,7 +759,8 @@ class FacilityController extends Controller
 
     public function subscriptionEnable(Request $request, Facility $facility)
     {
-        abort_if($facility->is_claimed || $facility->is_broker_managed, 400, 'Bu kurum zaten sahiplenilmiş veya anlaşmalı, abonelik gerekmez.');
+        // 24 Eylul 2026: kullanicinin talebi - sahipli ve anlasmali kurumlar da abone olabilir
+        // (odeme gecerliyken 'Yardimsever Kurum' etiketi alirlar).
 
         $data = $request->validate([
             'plan' => 'required|in:monthly,yearly',

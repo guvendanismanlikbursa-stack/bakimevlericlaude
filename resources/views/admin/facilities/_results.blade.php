@@ -112,8 +112,8 @@
               </form>
             @endif
             {{-- 22 Eylul 2026: kullanicinin talebi - "abonelik" ozelligi,
-                 sadece sahiplenilmemis VE anlasmali olmayan kurumlarda. --}}
-            @if(! $f->is_claimed && ! $f->is_broker_managed)
+                 24 Eylul 2026: sahipli ve anlasmali kurumlarda da. --}}
+            @if(true)
               @if($f->is_subscribed)
                 <form method="POST" action="{{ route('admin.facilities.subscription.cancel', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} aboneliği iptal edilsin mi?');">
                   @csrf
