@@ -119,7 +119,7 @@ class OpsController extends Controller
             'facility-wrong-province-scan' => $this->facilityWrongProvinceScan($request),
             'facility-district-fix-from-address' => $this->facilityDistrictFixFromAddress($request),
             'bursa-google-review-gaps' => $this->bursaGoogleReviewGaps($request),
-            'facility-real-image-gaps' => $this->facilityRealImageGaps(),
+            'facility-real-image-gaps' => $this->facilityRealImageGaps($request),
             'konum-cekici-bursa-targets' => $this->konumCekiciBursaTargets($request),
             'konum-cekici-import-coords' => $this->konumCekiciImportCoords($request),
             'facility-borrow-demo-images' => $this->facilityBorrowDemoImages($request),
@@ -3262,15 +3262,20 @@ Ilk 30 hic gorseli olmayan kurum:
     }
 
     // 24 Eylul 2026: gercek gorseli OLMAYAN on kayitli kurumlar (anlasmali/sahipli haric), il bazinda.
-    private function facilityRealImageGaps(): string
+    private function facilityRealImageGaps(Request $request): string
     {
-        $rows = DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
+        $cityFilter = (string) $request->query('city', '');
+        $q = DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
             ->whereNull('facilities.deleted_at')->where('facilities.is_claimed', false)->where('facilities.is_broker_managed', false)
-            ->whereNotExists(function ($q) {
-                $q->select(DB::raw(1))->from('facility_images')->whereColumn('facility_images.facility_id', 'facilities.id')
+            ->whereNotExists(function ($sq) {
+                $sq->select(DB::raw(1))->from('facility_images')->whereColumn('facility_images.facility_id', 'facilities.id')
                     ->where('facility_images.path', 'not like', 'facilities/demo/%');
-            })
-            ->select('cities.name as city', DB::raw('COUNT(*) as adet'))->groupBy('cities.name')->orderByDesc('adet')->get();
+            });
+        if ($cityFilter !== '') {
+            return (clone $q)->where('cities.name', $cityFilter)->orderBy('facilities.id')->get(['facilities.id', 'facilities.name'])
+                ->map(fn ($r) => $r->id.'|'.$r->name)->implode(PHP_EOL);
+        }
+        $rows = (clone $q)->select('cities.name as city', DB::raw('COUNT(*) as adet'))->groupBy('cities.name')->orderByDesc('adet')->get();
         $out = 'On kayitli, gercek gorseli OLMAYAN toplam: '.$rows->sum('adet').PHP_EOL;
         foreach ($rows as $r) { $out .= $r->city.': '.$r->adet.PHP_EOL; }
         return $out;
