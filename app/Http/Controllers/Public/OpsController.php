@@ -3393,7 +3393,7 @@ Ilk 30 hic gorseli olmayan kurum:
     {
         $cityId = (int) $request->query('city_id', 16);
         $apply = $request->query('dry_run', '1') === '0';
-        $rows = \App\Models\Facility::with(['googleReviews', 'category', 'city'])->where('city_id', $cityId)->whereNull('deleted_at')
+        $rows = \App\Models\Facility::with(['googleReviews', 'category', 'city'])->where('city_id', $cityId)->whereNull('deleted_at')->where('is_claimed', false)->where('is_broker_managed', false)
             ->where('id', '!=', 6713)->orderBy('id')->get()
             ->filter(fn ($f) => str_contains((string) $f->description, 'ön kayıt profilidir') || str_contains((string) $f->description, 'Google Maps verilerinden'));
         $giris = [
@@ -3417,7 +3417,7 @@ Ilk 30 hic gorseli olmayan kurum:
             $il = $f->city->name ?? ''; $ilce = $f->district ?: $il;
             $satir = strtr($sec($giris), ['{isim}' => $f->name, '{ilce}' => $ilce, '{il}' => $il, '{kategori}' => $f->category->name ?? 'çocuk bakım']);
             $parts = [$satir];
-            $iyi = $f->googleReviews->filter(fn ($r) => (int) $r->rating >= 4 && mb_strlen(trim((string) $r->body)) >= 25)
+            $iyi = $f->googleReviews->filter(fn ($r) => (int) $r->rating >= 3 && mb_strlen(trim((string) $r->body)) >= 25)
                 ->sortByDesc(fn ($r) => (int) $r->rating * 1000 + min(mb_strlen((string) $r->body), 300))->values();
             foreach ($iyi as $r) {
                 $q = $temiz((string) $r->body);
