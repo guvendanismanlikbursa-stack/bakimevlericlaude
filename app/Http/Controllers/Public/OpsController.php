@@ -3287,6 +3287,11 @@ Ilk 30 hic gorseli olmayan kurum:
     private function facilityPlaceIds(Request $request): string
     {
         $cityId = (int) $request->query('city_id', 0);
+        if ($request->query('names')) {
+            return DB::table('facilities')->when($cityId, fn ($qq) => $qq->where('city_id', $cityId))
+                ->select('name', 'district')->orderBy('id')->get()
+                ->map(fn ($r) => str_replace('|', ' ', (string) $r->name).'|'.str_replace('|', ' ', (string) $r->district))->implode(PHP_EOL);
+        }
         $q = DB::table('facilities')->select('id', 'city_id', 'google_maps_url', 'source_payload');
         if ($cityId) { $q->where('city_id', $cityId); }
         $out = []; $total = 0; $withId = 0;
