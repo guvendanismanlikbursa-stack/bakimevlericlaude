@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Mail;
 // buildFilesZip()) ve boyutu izin verdigi surece o da e-postaya ekleniyor.
 class BackupDatabase extends Command
 {
-    protected $signature = 'backup:database {--keep-days=14 : Bu gunden eski yedekler silinir}';
+    protected $signature = 'backup:database {--keep-days=14 : Bu gunden eski yedekler silinir} {--if-missing : Bugun icin SQL yedegi zaten varsa hicbir sey yapma} {--with-files : Dosya (gorsel) zip yedegini de al (varsayilan: sadece Pazar)}';
 
     protected $description = 'Veritabanini + yuklenen dosyalari/.env\'i storage/app/private/backups altina yedekler';
 
@@ -37,6 +37,12 @@ class BackupDatabase extends Command
         $dir = storage_path('app/private/backups');
         if (! File::isDirectory($dir)) {
             File::makeDirectory($dir, 0755, true);
+        }
+
+        if ($this->option('if-missing') && count(glob($dir.DIRECTORY_SEPARATOR.'backup-'.now()->format('Y-m-d').'_*.sql.gz') ?: []) > 0) {
+            $this->info('Bugunun yedegi zaten var, atlandi.');
+
+            return self::SUCCESS;
         }
 
         $filename = 'backup-'.now()->format('Y-m-d_His').'.sql.gz';
@@ -59,7 +65,9 @@ class BackupDatabase extends Command
         $sizeLabel = number_format($size / 1024, 1).' KB';
         $this->info("Yedek olusturuldu: {$filename} ({$sizeLabel})");
 
-        [$filesZipPath, $filesZipSize] = $this->buildFilesZip($dir);
+        // 25 Eylul 2026: gorsel klasoru her gece zip'lenince (yuzlerce MB) hosting kaynak sinirina takiliyor ve
+        // gunluk yedek hic tamamlanmiyordu; SQL yedegi gunluk, dosya zip'i haftalik (Pazar) alinir.
+        [$filesZipPath, $filesZipSize] = ($this->option('with-files') || now()->isSunday()) ? $this->buildFilesZip($dir) : [null, 0];
         if ($filesZipPath) {
             $this->info('Dosya yedegi olusturuldu: '.basename($filesZipPath).' ('.number_format($filesZipSize / 1024 / 1024, 1).' MB)');
         }

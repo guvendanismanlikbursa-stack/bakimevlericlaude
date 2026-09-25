@@ -374,7 +374,7 @@ class DataExtractorImportService
         $base = Str::slug($name) ?: 'kurum';
         $slug = $base;
         $i = 1;
-        while (Facility::where('slug', $slug)->exists()) {
+        while (Facility::withTrashed()->where('slug', $slug)->exists()) {
             $slug = $base.'-'.$i;
             $i++;
         }

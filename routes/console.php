@@ -34,6 +34,9 @@ ScheduledJobMonitor::attach(
     60 * 24
 );
 
+// 03:30'da veritabani gecici erisilemezse yedek atlaniyordu; bugun icin yedek yoksa 04:10'da tekrar dener.
+Schedule::command('backup:database --if-missing')->dailyAt('04:10');
+
 // Bakim: 48 saattir cevaplanmamis aile sorulari icin kuruma tek seferlik
 // hatirlatma gonderir (bkz. App\Console\Commands\RemindUnansweredQuestions).
 ScheduledJobMonitor::attach(
