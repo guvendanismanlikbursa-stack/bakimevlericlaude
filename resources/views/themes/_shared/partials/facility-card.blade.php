@@ -94,8 +94,11 @@
 --}}
 @php
   $isBrokerHighlight = $facility->is_broker_managed && ! $facility->is_featured;
+  // 25 Eylul 2026: kullanicinin talebi - sahiplenilmis kurum karti da anlasmali gibi belirgin olsun.
+  // FTP deploy'da Tailwind yeniden derlenmedigi icin renkler SATIR ICI style ile verilir.
+  $isClaimedHighlight = $facility->is_claimed && ! $facility->is_broker_managed && ! $facility->is_featured;
 @endphp
-<article class="bg-white rounded-xl overflow-hidden group relative transition
+<article @if($isClaimedHighlight) style="border:2px solid #34d399;box-shadow:0 10px 25px -5px rgba(16,185,129,.35);background:linear-gradient(to bottom,#ecfdf5,#ffffff 45%,#ffffff);" @endif class="bg-white rounded-xl overflow-hidden group relative transition
   {{ $facility->is_featured
       ? 'border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50'
       : ($isBrokerHighlight
@@ -122,6 +125,11 @@
        ayni gorunuyor") yetersiz kaldi, "Öne Çıkan"in AYNI gorsel gucunde
        ikinci bir kurdele lazimdi - karsi kosede (sag ust), mavi/lacivert,
        BEYAZ kalin yazi ile en az onun kadar dikkat cekici. --}}
+  @if($isClaimedHighlight)
+    <div class="absolute z-10 text-center text-[10px] font-black py-1 shadow-md pointer-events-none" style="top:20px;right:-36px;width:9rem;transform:rotate(45deg);background:linear-gradient(to right,#059669,#10b981,#34d399);color:#ffffff;">
+      ✓ SAHİPLENİLMİŞ
+    </div>
+  @endif
   @if($facility->is_broker_managed)
     {{-- 18 Eylul 2026: ayni tarihli "ÖNE ÇIKAN" duzeltmesiyle ayni kok
          neden ve ayni cozum (derlenmemis Tailwind class yerine satir ici
