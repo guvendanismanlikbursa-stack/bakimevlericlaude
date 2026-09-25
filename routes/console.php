@@ -142,11 +142,8 @@ ScheduledJobMonitor::attach(
 // belge eklenmezse basvuru otomatik silinir (bkz. App\Console\Commands\
 // ExpireUndocumentedClaims).
 // 24 Eylul 2026: veritabani kopmalarina karsi sabit sayfalarin son-iyi-kopyasini onceden doldurur.
-ScheduledJobMonitor::attach(
-    Schedule::command('pages:warm-cache')->everyFifteenMinutes()->withoutOverlapping(),
-    'pages:warm-cache',
-    30
-);
+// 25 Eylul 2026: pages:warm-cache DEVRE DISI - 3 site ayni saniyede sitemap+100'lerce sayfa istegi atip
+// her ceyrek saatte veritabanini yoruyordu; hata zamanlari bu ceyrek saat isaretleriyle birebir ortustu.
 
 ScheduledJobMonitor::attach(
     Schedule::command('claims:expire-undocumented')->hourly(),
