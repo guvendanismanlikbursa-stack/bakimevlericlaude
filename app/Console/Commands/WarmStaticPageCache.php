@@ -25,23 +25,40 @@ class WarmStaticPageCache extends Command
         $deadline = time() + 150;
         $done = 0;
 
-        foreach (self::DOMAINS as $domain) {
-            $sitemap = Http::withUserAgent('BakimCacheWarm')->timeout(30)->get("https://{$domain}/sitemap.xml");
-            if (! $sitemap->successful()) {
-                $this->warn("{$domain}: sitemap alinamadi ({$sitemap->status()})");
-                continue;
-            }
-            preg_match_all('#<loc>([^<]+)</loc>#', $sitemap->body(), $m);
-            $urls = array_values(array_filter($m[1], function ($u) {
-                $path = (string) parse_url(html_entity_decode($u), PHP_URL_PATH);
-                foreach (self::ALLOWED_PREFIXES as $prefix) {
-                    if (str_starts_with($path, $prefix)) {
-                        return true;
-                    }
-                }
+        // Her site kurulumu (3 ayri kod klasoru) kendi gorevini calistirir: sadece KENDI alan adini isitir.
+        $own = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
+        $own = preg_replace('/^www\./', '', $own);
+        $domains = in_array($own, self::DOMAINS, true) ? [$own] : self::DOMAINS;
 
-                return $path === '' || $path === '/';
-            }));
+        foreach ($domains as $domain) {
+            $listKey = 'warm-cache-urls:'.$domain;
+            $urls = Cache::get($listKey);
+            if (! is_array($urls)) {
+                try {
+                    $sitemap = Http::withUserAgent('BakimCacheWarm')->connectTimeout(15)->timeout(45)->get("https://{$domain}/sitemap.xml");
+                } catch (\Throwable $e) {
+                    $this->warn("{$domain}: sitemap alinamadi ({$e->getMessage()}) - bir sonraki turda tekrar denenecek");
+                    continue;
+                }
+                if (! $sitemap->successful()) {
+                    $this->warn("{$domain}: sitemap alinamadi ({$sitemap->status()})");
+                    continue;
+                }
+                preg_match_all('#<loc>([^<]+)</loc>#', $sitemap->body(), $m);
+                $urls = array_values(array_filter($m[1], function ($u) {
+                    $path = (string) parse_url(html_entity_decode($u), PHP_URL_PATH);
+                    foreach (self::ALLOWED_PREFIXES as $prefix) {
+                        if (str_starts_with($path, $prefix)) {
+                            return true;
+                        }
+                    }
+
+                    return $path === '' || $path === '/';
+                }));
+                if ($urls !== []) {
+                    Cache::put($listKey, $urls, now()->addHours(6));
+                }
+            }
             if ($urls === []) {
                 continue;
             }
@@ -54,7 +71,7 @@ class WarmStaticPageCache extends Command
                 }
                 $url = html_entity_decode($urls[($cursor + $i) % count($urls)]);
                 try {
-                    $r = Http::withUserAgent('BakimCacheWarm')->timeout(25)->get($url);
+                    $r = Http::withUserAgent('BakimCacheWarm')->connectTimeout(15)->timeout(30)->get($url);
                 } catch (\Throwable $e) {
                     $this->warn('Istek basarisiz, tur durduruldu: '.$e->getMessage());
                     break 2;
