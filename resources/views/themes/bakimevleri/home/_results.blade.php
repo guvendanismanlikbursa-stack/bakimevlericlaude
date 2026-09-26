@@ -68,7 +68,7 @@
 <section class="max-w-6xl mx-auto px-4 py-12">
   <div>
     <div id="one-cikanlar">
-      <div class="flex items-end justify-between mb-6"><div><div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Seçilmiş kurumlar</div><h2 class="text-3xl font-black text-gray-950">Öne çıkanlar</h2></div><a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-black" style="color: {{ $colors['primary'] }};">Listeye git →</a></div>
+      <div class="flex items-end justify-between mb-6"><div><div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">Seçilmiş kurumlar</div><h2 class="text-3xl font-black text-gray-950">ÖNERİLEN KURUMLAR</h2></div><a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-black" style="color: {{ $colors['primary'] }};">Listeye git →</a></div>
       {{-- 31 Agustos 2026: kullanicinin bildirdigi gercek fark - bu marka
            tek basina kucuk, yatay (sm:grid-cols-[150px_1fr]) kartlar
            kullaniyordu, diger 2 marka (bakimeviara/bakimevibul) buyuk,

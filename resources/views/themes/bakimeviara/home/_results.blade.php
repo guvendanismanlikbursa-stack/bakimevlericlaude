@@ -60,7 +60,7 @@
 <section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
   <div class="text-center max-w-2xl mx-auto mb-8">
     <div class="text-sm font-black mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div>
-    <h2 class="text-3xl font-black text-gray-950">Ailelerin incelediği kurumlar</h2>
+    <h2 class="text-3xl font-black text-gray-950">ÖNERİLEN KURUMLAR</h2>
   </div>
   <div class="grid grid-cols-2 gap-3 md:gap-6 md:grid-cols-4">
     @forelse($featured as $facility)

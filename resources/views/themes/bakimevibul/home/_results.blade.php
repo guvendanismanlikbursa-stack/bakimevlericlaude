@@ -64,7 +64,7 @@
      ONCE) burada duzeltildi - bu temada ters cevrilmisti. --}}
 <section class="max-w-6xl mx-auto px-4 py-12" id="one-cikanlar">
   <div class="flex items-end justify-between mb-6">
-    <div><div class="text-sm font-bold mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div><h2 class="text-2xl font-extrabold text-gray-950">Öne çıkan kurumlar</h2></div>
+    <div><div class="text-sm font-bold mb-1" style="color: {{ $colors['primary'] }};">{{ $section['title'] }}</div><h2 class="text-2xl font-extrabold text-gray-950">ÖNERİLEN KURUMLAR</h2></div>
     <a href="{{ brand_route('facilities.index', ['bolum' => $section['slug']]) }}" class="text-sm font-bold" style="color: {{ $colors['primary'] }};">Tümünü gör →</a>
   </div>
   <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4">
