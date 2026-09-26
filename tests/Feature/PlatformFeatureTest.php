@@ -3884,7 +3884,7 @@ class PlatformFeatureTest extends TestCase
         for ($i = 1; $i <= 13; $i++) {
             $name = 'Rehab One Cikan '.sprintf('%02d', $i);
             $names[] = $name;
-            $this->facility($name, $this->rehabCategory, true)->update(['is_featured' => true]);
+            $this->facility($name, $this->rehabCategory, false)->update(['is_featured' => true]);
         }
 
         $page1Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon')->assertOk()->getContent();

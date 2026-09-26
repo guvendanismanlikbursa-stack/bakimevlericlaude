@@ -104,7 +104,7 @@
       : ($isBrokerHighlight
           ? 'border-2 border-blue-400 shadow-lg shadow-blue-300/60 hover:shadow-xl hover:shadow-blue-400/60 bg-gradient-to-b from-blue-50/70 via-white to-white'
           : 'border border-gray-100 shadow-sm hover:shadow-lg') }}">
-  @if($facility->is_featured)
+  @if($facility->is_featured || $facility->is_broker_managed || $isActiveSubscriberCard)
     {{-- 18 Eylul 2026: kullanicinin bildirdigi gercek hata - "ÖNE ÇIKAN"
          yazisinin son harfi (N) kesiliyordu (rotate-[-45deg] + kartin
          overflow-hidden'i yuzunden rozetin "yuksek" ucu kartin ust
@@ -118,7 +118,7 @@
          derlemeye bagli olmayan satir ici style ile kesin calisan bir
          konum kullanildi - emoji/genislik/pozisyon aynen korunuyor. --}}
     <div class="absolute -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md pointer-events-none" style="top: 20px;">
-      ⭐ ÖNE ÇIKAN
+      {{ ($facility->is_broker_managed || $isActiveSubscriberCard) ? '⭐ ÖNERİLEN' : '⭐ ÖNE ÇIKAN' }}
     </div>
   @endif
   {{-- 4 Eylul 2026: kullanicinin talebi - ince bir cizgi ("kartlar hala

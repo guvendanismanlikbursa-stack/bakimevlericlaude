@@ -54,6 +54,8 @@
     @endif
   </section>
 @else
+{{-- 26 Eylul 2026: kullanicinin talebi - Sahiplenilmis Kurumlar HER ZAMAN en ustte; Öne Çıkan/anlasmali/uye kurumlar altinda. --}}
+@include('themes._shared.partials.claimed-facilities')
 {{-- 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar (ve ardindan
      Sahiplenilmiş Kurumlar/Ön Kayıtlı Kurumlar) filtrenin HEMEN ALTINDA,
      arada bilgilendirme blogu OLMADAN gorunmeli - o blog asagiya, bu 3
@@ -68,7 +70,7 @@
     @forelse($featured as $facility)
       {{-- 4 Eylul 2026: kullanicinin talebi - bkz. bakimevleri temasindaki ayni tarihli yorum (ic ice <a> onlemek icin dis eleman <div>'e cevrildi). --}}
       <div class="bg-white rounded-lg overflow-hidden transition group relative border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50">
-        <div class="absolute -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md pointer-events-none" style="top: 20px;">⭐ ÖNE ÇIKAN</div>
+        <div class="absolute -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md pointer-events-none" style="top: 20px;">{{ ($facility->is_broker_managed || $facility->isActiveSubscriber()) ? '⭐ ÖNERİLEN' : '⭐ ÖNE ÇIKAN' }}</div>
         @if($facility->is_broker_managed)
           <div class="absolute -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md pointer-events-none" style="top: 20px;">🤝 ANLAŞMALI</div>
         @endif
@@ -127,7 +129,6 @@
   </script>
 @endif
 
-@include('themes._shared.partials.claimed-facilities')
 @include('themes._shared.partials.broker-map')
 @include('themes._shared.partials.pre-registered-facilities')
 

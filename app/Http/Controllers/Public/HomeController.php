@@ -37,7 +37,7 @@ class HomeController extends Controller
         // karsiliginda anasayfadaki DB yuku neredeyse sifira iner. Filtre
         // sonuclari (asagidaki $isFiltering blogu) bu onbellegin DISINDA,
         // her zaman canli kalir.
-        $homeCacheKey = 'home:sections:v1:'.md5(implode('|', [
+        $homeCacheKey = 'home:sections:v2:'.md5(implode('|', [
             $brand['slug'], $activeSection['slug'], (string) $request->query('featured_page', 1),
         ]));
 
@@ -45,6 +45,8 @@ class HomeController extends Controller
             $featured = Facility::discoverable()
                 ->forBrand($sectionScopes)
                 ->where('is_featured', true)
+                // Sahiplenilmis (anlasmali olmayan) kurumlar ayri ve EN USTTEKI bolumde gosterilir; burada tekrarlanmaz.
+                ->where(fn ($q) => $q->where('is_claimed', false)->orWhere('is_broker_managed', true))
                 ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
                 // ONCEKI hata: bu ANA "Öne Çıkanlar" sorgusu degil, sadece filtre
@@ -62,7 +64,7 @@ class HomeController extends Controller
             $claimedFacilities = Facility::discoverable()
                 ->forBrand($sectionScopes)
                 ->where('is_claimed', true)
-                ->where('is_featured', false)
+                ->where('is_broker_managed', false)
                 ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
                 ->latest('claimed_at')
                 // 21 Eylul 2026: kullanicinin talebi - bkz. $featured ayni

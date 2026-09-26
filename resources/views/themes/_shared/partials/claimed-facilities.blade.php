@@ -22,7 +22,7 @@
       @endforeach
     </div>
     @else
-      <div class="bg-white border border-dashed rounded-xl p-8 text-center text-gray-500">Bu bölümde şu an ayrı listelenen sahiplenilmiş profil yok; sahiplenilen kurumlar Öne Çıkanlar bölümünde de yer alır.</div>
+      <div class="bg-white border border-dashed rounded-xl p-8 text-center text-gray-500">Bu bölümde henüz sahiplenilmiş bir profil yok. Kurumunuzu sahiplenerek burada, en üstte yer alabilirsiniz.</div>
     @endif
   </section>
 @endif
