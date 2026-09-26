@@ -29,14 +29,6 @@
       </div>
     @endif
 
-    @if($filteredFeatured->isNotEmpty())
-      <div class="text-sm font-bold text-gray-500 mb-3">Öne çıkanlar</div>
-      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4 mb-8">
-        @foreach($filteredFeatured as $facility)
-          @include('themes._shared.partials.facility-card', ['facility' => $facility])
-        @endforeach
-      </div>
-    @endif
 
     @if($filteredFacilities->isEmpty() && $filteredFeatured->isEmpty())
       <div class="bg-white border border-dashed rounded-lg p-10 text-center text-gray-500">
@@ -44,13 +36,22 @@
         <a href="{{ brand_route('home', ['bolum' => $section['slug']]) }}" class="underline mt-2 inline-block" style="color: {{ $colors['primary'] }};">Filtreleri temizle</a>
       </div>
     @elseif($filteredFacilities->isNotEmpty())
-      <div class="text-sm font-bold text-gray-500 mb-3">Filtreye uygun kurumlar</div>
+      <div class="text-sm font-bold text-gray-500 mb-3">ÖNERİLEN KURUMLAR</div>
       <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4">
         @foreach($filteredFacilities as $facility)
           @include('themes._shared.partials.facility-card', ['facility' => $facility])
         @endforeach
       </div>
       <div class="mt-8">{{ $filteredFacilities->links() }}</div>
+    @endif
+
+    @if($filteredFeatured->isNotEmpty())
+      <div class="text-sm font-bold text-gray-500 mb-3">ÖNE ÇIKAN KURUMLAR</div>
+      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4 mb-8 mt-10">
+        @foreach($filteredFeatured as $facility)
+          @include('themes._shared.partials.facility-card', ['facility' => $facility])
+        @endforeach
+      </div>
     @endif
   </section>
 @else
