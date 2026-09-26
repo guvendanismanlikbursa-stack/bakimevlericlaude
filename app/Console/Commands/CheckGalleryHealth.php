@@ -98,8 +98,16 @@ class CheckGalleryHealth extends Command
             $problems[] = "Bugunku veritabani yedegi ({$sqlBackup->getFilename()}) suphesiz kucuk (".$sqlBackup->getSize()." bayt) - yarim kalmis/bozuk olabilir.";
         }
 
+        // 26 Eylul 2026: dosya (gorsel) zip yedegi artik gunluk degil HAFTALIK (Pazar) alinir (bkz. BackupDatabase);
+        // bu yuzden pazar disinda son 8 gun icinde herhangi bir dosya yedegi olmasi yeterlidir.
         if (! $filesBackup) {
-            $problems[] = "Bugun icin dosya yedegi (files-backup-{$today}_*.zip - kurum gorselleri, sahiplenme belgeleri ve .env) bulunamadi.";
+            $cutoff = now()->subDays(8)->getTimestamp();
+            $recentFilesBackup = $files->first(fn ($f) => str_starts_with($f->getFilename(), 'files-backup-') && str_ends_with($f->getFilename(), '.zip') && $f->getMTime() >= $cutoff);
+            if (now()->isSunday() && ! $recentFilesBackup) {
+                $problems[] = "Bugun (Pazar) icin dosya yedegi (files-backup-{$today}_*.zip - kurum gorselleri, sahiplenme belgeleri ve .env) bulunamadi.";
+            } elseif (! $recentFilesBackup) {
+                $problems[] = 'Son 8 gunde hic dosya yedegi (files-backup-*.zip - kurum gorselleri, sahiplenme belgeleri ve .env) bulunamadi.';
+            }
         }
 
         if (empty($problems)) {
