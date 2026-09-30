@@ -4604,12 +4604,19 @@ HTML;
      */
     private function gorselCekiciBursaTargets(Request $request): string
     {
-        $bursaCityId = (int) $request->query('bursa_city_id', 16);
+        // 30 Eylul 2026: kullanicinin talebi - "gorsel cekiciyi eksik
+        // kurumlar icin baslat", 2506 kurum sadece Bursa'da degil TUM
+        // Turkiye'de. bursa_city_id=0 (veya hic verilmezse) artik tum
+        // sehirleri kapsar - having/withCount zaten SQL seviyesinde
+        // calistigi icin (bkz. bursa-description-complete ayni tarihli
+        // 500 hatasi duzeltmesi - BURADA o riske hic girilmedi) tum
+        // Turkiye'yi tek seferde cekmek guvenli.
+        $bursaCityId = (int) $request->query('bursa_city_id', 0);
 
         $rows = \App\Models\Facility::with('city')
             ->withCount('images')
             ->whereNull('deleted_at')
-            ->where('city_id', $bursaCityId)
+            ->when($bursaCityId > 0, fn ($q) => $q->where('city_id', $bursaCityId))
             ->where('is_claimed', false)
             ->where('is_broker_managed', false)
             ->when($request->query('real') === '1', function ($q) {
