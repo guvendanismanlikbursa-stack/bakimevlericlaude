@@ -1071,6 +1071,10 @@
           </form>
         </div>
 
+        {{-- 30 Eylul 2026: kullanicinin talebi - "Kontenjan Sor" bolumu
+             TUM kurumlar icin pasife alindi (silinmedi, gerektiginde
+             yeniden aktif edilebilir). --}}
+        {{--
         <div class="mt-6 pt-6 border-t">
           <h3 class="font-black mb-1 text-gray-950">Kontenjan Sor</h3>
           <p class="text-xs text-gray-500 mb-3">Tek tıkla "Boş yer var mı?" sorusu kuruma iletilir.</p>
@@ -1084,6 +1088,7 @@
             <button class="whitespace-nowrap rounded-lg bg-gray-900 text-white font-black px-3 text-sm">Sor</button>
           </form>
         </div>
+        --}}
       @else
         {{-- 20 Eylul 2026: kullanicinin talebi - "Bu kurum henüz
              sahiplenilmedi" basligi ve "ön kayit profilidir" aciklamasi
