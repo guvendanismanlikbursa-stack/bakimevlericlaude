@@ -239,3 +239,16 @@ ScheduledJobMonitor::attach(
     'queue:work',
     15
 );
+
+// 30 Eylul 2026: kullanicinin talebi - "yorum eklendigi zaman otomatik
+// olarak yoruma gore aciklama yapmali". Google yorumlari VeriCekici botu
+// tarafindan duzensiz araliklarla /_ops uzerinden elle iceri aktarildigi
+// icin ("hemen sonra calis" gibi sabit bir tetikleyici an yok), gunluk
+// sakin bir saatte TUM yeni/degismis yorumlu kurumlari tarar - idempotent
+// oldugu icin (bkz. ReviewBasedDescriptionGenerator) fazladan calismasi
+// zararsizdir, sadece degisen kurumlari gercekten gunceller.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:generate-descriptions-from-reviews')->dailyAt('04:30'),
+    'platform:generate-descriptions-from-reviews',
+    60 * 24
+);

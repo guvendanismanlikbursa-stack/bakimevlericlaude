@@ -3641,24 +3641,13 @@ HTML;
         return json_encode(['toplam' => $total, 'offset' => $offset, 'adet' => count($items), 'kurumlar' => $items], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     }
 
-    // Uretilen aciklamalardaki "Bursa'de faaliyet" gibi hatali bulunma eklerini duzeltir (Bursa'da, Gursu'da, Kayseri'de).
+    // 30 Eylul 2026: mantik app/helpers.php::fix_locative_suffix() global
+    // fonksiyonuna tasindi (App\Services\ReviewBasedDescriptionGenerator da
+    // ayni duzeltmeye ihtiyac duyuyor) - buradaki cagiri yerleri ($this->
+    // fixLocative(...)) bozulmasin diye bu metot ince bir sarmalayici olarak birakildi.
     private function fixLocative(string $text): string
     {
-        return preg_replace_callback("/([\p{L}]+)'de(?= faaliyet| bulunan)/u", function ($m) {
-            $w = $m[1];
-            $lower = mb_strtolower(strtr($w, ['I' => 'ı', 'İ' => 'i']), 'UTF-8');
-            $vowel = 'e';
-            for ($i = mb_strlen($lower) - 1; $i >= 0; $i--) {
-                $ch = mb_substr($lower, $i, 1);
-                if (mb_strpos('aıoueiöü', $ch) !== false) {
-                    $vowel = mb_strpos('aıou', $ch) !== false ? 'a' : 'e';
-                    break;
-                }
-            }
-            $hard = mb_strpos('fstkçşhp', mb_substr($lower, -1)) !== false ? 't' : 'd';
-
-            return $w."'".$hard.$vowel;
-        }, $text);
+        return fix_locative_suffix($text);
     }
 
     // dry_run=1 (varsayilan) sadece sayar; dry_run=0 sahipsiz/anlasmasiz kurumlarin aciklamalarini duzeltir.
@@ -4776,6 +4765,16 @@ HTML;
      * `limit` ile kucuk gruplar halinde cagrilir (sunucu 30sn calisma
      * suresi siniri - bkz. gorselCekiciImportImages ayni tarihli yorum,
      * ayni cozum).
+     * 30 Eylul 2026: kullanicinin talebi - "yorum eklendigi zaman otomatik
+     * olarak yoruma gore aciklama yapmali". Asil mantik artik App\Services\
+     * ReviewBasedDescriptionGenerator icinde (bu metot sadece ince bir HTTP
+     * sarmalayici) - AYNI mantik App\Console\Commands\
+     * GenerateDescriptionsFromReviews tarafindan da gunluk otomatik olarak
+     * cagriliyor, elle /_ops cagrisi beklemeden. Ayrica artik DETERMINISTIK
+     * olmanin yaninda IDEMPOTENT: bir kurumun aciklamasi zaten o kurumun
+     * GUNCEL en iyi yorumunu iceriyorsa (kisaltilmis alinti eslesiyorsa)
+     * tekrar yazilmaz, atlanir - boylece zamanlanmis gorev her gun BUTUN
+     * uygun kurumlari degil, SADECE yeni/degismis yorumu olanlari isler.
      */
     private function generateDescriptionsFromReviews(Request $request): string
     {
@@ -4788,161 +4787,12 @@ HTML;
         // id, bir sonraki cagriya bu parametre olarak verilir.
         $afterId = (int) $request->input('after_id', 0);
 
-        $odakCumleleri = [
-            'yasli-bakim' => [
-                'huzurevi ortamında güvenli bakım, düzenli sağlık takibi ve zengin sosyal yaşam imkanları sunmaktadır',
-                'yaşlı bireylerin huzurlu, güvenli ve sosyal açıdan aktif bir yaşam sürmesini hedeflemektedir',
-                'sağlık takibi ve günlük yaşam desteğini bir arada sunan bir bakım anlayışına sahiptir',
-            ],
-            'cocuk' => [
-                'çocuğunuzun gelişimini destekleyen güvenli bir ortam ve düzenli veli iletişimi sunmaktadır',
-                'çocukların güvenli, eğlenceli ve gelişim odaklı bir ortamda vakit geçirmesini önceliklendirmektedir',
-                'deneyimli bir kadro eşliğinde çocuğunuzun sosyal ve bilişsel gelişimini desteklemeyi amaçlamaktadır',
-            ],
-            'rehabilitasyon' => [
-                'uzman kadrosu ve kişiye özel terapi planlarıyla rehabilitasyon sürecinde yanınızda olmaktadır',
-                'her danışanına özel hazırlanan tedavi planlarıyla rehabilitasyon hizmeti sunmaktadır',
-                'alanında deneyimli uzmanlarıyla düzenli takip ve raporlama esasına dayalı bir hizmet vermektedir',
-            ],
-        ];
+        $r = (new \App\Services\ReviewBasedDescriptionGenerator())->run($limit, $afterId);
 
-        $girisKaliplari = [
-            '{isim}, {ilce}/{il} bölgesinde {kategori} alanında hizmet veren bir kurumdur ve {odak}.',
-            '{ilce}, {il}\'de faaliyet gösteren {isim}, {kategori} alanında {odak}.',
-            '{il} {ilce}\'de bulunan {isim}, ailelere {kategori} hizmeti sunmakta ve {odak}.',
-            '{isim} isimli kurum, {ilce}/{il} bölgesinde {kategori} alanında hizmet vermekte, bu doğrultuda {odak}.',
-        ];
-
-        $puanKaliplari = [
-            'Google Haritalar üzerinde {puanMetni}{yorumSayisi} değerlendirme ile takip edilmektedir.',
-            'Kurum, Google\'daki profilinde {puanMetni}{yorumSayisi} yorum almıştır.',
-            '{yorumSayisi} aile tarafından Google üzerinden değerlendirilen kurumun {puanMetni2} bulunmaktadır.',
-        ];
-
-        $alintiKaliplari1 = [
-            'Bir veli yorumunda şunları paylaşmış: "{alinti}"',
-            'Ailelerden biri deneyimini şöyle aktarmış: "{alinti}"',
-            'Kurumu tercih eden bir aile şu ifadeleri kullanmış: "{alinti}"',
-            'Yorumlardan birinde şöyle denilmiş: "{alinti}"',
-        ];
-
-        $alintiKaliplari2 = [
-            'Başka bir yorumda ise şu satırlar dikkat çekiyor: "{alinti}"',
-            'Bir başka veli de şunları belirtmiş: "{alinti}"',
-            'Farklı bir değerlendirmede şu ifadelere yer verilmiş: "{alinti}"',
-        ];
-
-        $tekYorumYedek = [
-            'Kurumu tercih eden aileler, aldıkları hizmetten memnuniyetlerini yorumlarına yansıtmaktadır.',
-            'Google\'daki değerlendirmelerde ailelerin genel eğilimi olumlu yöndedir.',
-        ];
-
-        $kapanisKaliplari = [
-            'Bu tür geri bildirimler, kurumu değerlendirirken size somut bir fikir verebilir.',
-            'Bu paylaşımlar, kurum hakkında karar verirken size yol gösterici olabilir.',
-            'Gerçek aile deneyimleri, kurumu tanımanıza yardımcı olabilir.',
-        ];
-
-        $ctaKaliplari = [
-            'Güncel fiyat bilgisi ve uygunluk durumu için aşağıdaki formu doldurarak bu kurumdan hızlıca bilgi talep edebilirsiniz.',
-            'Fiyat ve kontenjan bilgisi almak için aşağıdaki formu kullanarak kuruma doğrudan ulaşabilirsiniz.',
-            'Detaylı bilgi ve güncel fiyat için aşağıdaki formu doldurmanız yeterlidir, kurum sizinle iletişime geçecektir.',
-            'Aşağıdaki formu doldurarak bu kurumdan fiyat ve bilgi talebinde bulunabilir, size dönüş yapılmasını sağlayabilirsiniz.',
-        ];
-
-        $facilities = \App\Models\Facility::where('is_claimed', false)
-            ->where('is_broker_managed', false)
-            ->where('id', '>', $afterId)
-            ->whereHas('googleReviews', fn ($q) => $q->where('rating', 5)->whereNotNull('body')->where('body', '!=', ''))
-            ->with(['googleReviews', 'category', 'city'])
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
-
-        $updated = 0;
-        $skipped = [];
-        $guncellenenIdler = [];
-        $sonIslenenId = $afterId;
-
-        foreach ($facilities as $facility) {
-            // 22 Eylul 2026: kullanicinin bildirdigi hata icin - GUNCELLENSIN
-            // ya da ATLANSIN, her kurum "islendi" sayilir ki bir sonraki
-            // cagri (after_id ile) bu kurumu TEKRAR getirmesin, ilerlesin.
-            $sonIslenenId = $facility->id;
-
-            if ($facility->is_claimed || $facility->is_broker_managed) {
-                $skipped[] = "#{$facility->id} {$facility->name}: artik on kayitli degil, atlandi";
-                continue;
-            }
-
-            $besYildizlilar = $facility->googleReviews
-                ->filter(fn ($r) => $r->rating === 5 && filled($r->body) && mb_strlen(trim($r->body)) >= 25)
-                ->values();
-
-            if ($besYildizlilar->isEmpty()) {
-                $skipped[] = "#{$facility->id} {$facility->name}: uygun (yeterince uzun) 5 yildizli yorum yok";
-                continue;
-            }
-
-            $sec = fn (array $havuz) => $havuz[$facility->id % count($havuz)];
-            $kisalt = function (string $s, int $max = 200) {
-                $s = trim(preg_replace('/\s+/', ' ', $s));
-                return mb_strlen($s) > $max ? mb_substr($s, 0, $max).'…' : $s;
-            };
-
-            $section = service_section_for_scope($facility->category->brand_scope ?? '');
-            $sectionSlug = $section['slug'] ?? null;
-            $odakHavuzu = $odakCumleleri[$sectionSlug] ?? ['alanında güvenilir ve titiz bir hizmet sunmaktadır'];
-            $odak = $sec($odakHavuzu);
-
-            $yorumSayisi = $facility->googleReviews->count();
-            $puanMetni = $facility->rating > 0 ? number_format((float) $facility->rating, 1, ',', '.').'/5 puan ve ' : '';
-            $puanMetni2 = $facility->rating > 0 ? number_format((float) $facility->rating, 1, ',', '.').'/5 puanı' : 'olumlu bir profili';
-
-            $degistir = fn (string $kalip, array $yer) => strtr($kalip, $yer);
-
-            $satirlar = [];
-            $satirlar[] = $degistir($sec($girisKaliplari), [
-                '{isim}' => $facility->name,
-                '{ilce}' => $facility->district ?: ($facility->city->name ?? ''),
-                '{il}' => $facility->city->name ?? '',
-                '{kategori}' => $facility->category->name ?? '',
-                '{odak}' => $odak,
-            ]);
-
-            $satirlar[] = $degistir($sec($puanKaliplari), [
-                '{puanMetni}' => $puanMetni,
-                '{puanMetni2}' => $puanMetni2,
-                '{yorumSayisi}' => $yorumSayisi,
-            ]);
-
-            $satirlar[] = $degistir($sec($alintiKaliplari1), [
-                '{alinti}' => $kisalt($besYildizlilar[0]->body),
-            ]);
-
-            if ($besYildizlilar->count() > 1) {
-                $satirlar[] = $degistir($sec($alintiKaliplari2), [
-                    '{alinti}' => $kisalt($besYildizlilar[1]->body),
-                ]);
-            } else {
-                $satirlar[] = $sec($tekYorumYedek);
-            }
-
-            $satirlar[] = $sec($kapanisKaliplari);
-            $satirlar[] = $sec($ctaKaliplari);
-
-            $facility->update(['description' => $this->fixLocative(implode("\n\n", $satirlar))]);
-            $updated++;
-            $guncellenenIdler[] = $facility->id;
-        }
-
-        // Ilk satir bash dongusunun kolayca ayristirabilmesi icin sade
-        // makine-okunur formatta (bkz. bu eylemi tekrar tekrar cagiran
-        // dongu) - son_id bir sonraki cagriya after_id olarak verilir.
-        $out = "son_id={$sonIslenenId}|islenen=".$facilities->count()."|guncellenen={$updated}\n";
-        $out .= "Guncellenen kurum: {$updated} (id: ".implode(',', $guncellenenIdler).")\nAtlanan: ".count($skipped);
-        if ($skipped) {
-            $out .= "\n".implode("\n", array_slice($skipped, 0, 30));
+        $out = "son_id={$r['son_id']}|islenen={$r['islenen']}|guncellenen={$r['guncellenen']}\n";
+        $out .= "Guncellenen kurum: {$r['guncellenen']} (id: ".implode(',', $r['guncellenen_idler']).")\nAtlanan: ".count($r['atlanan']);
+        if ($r['atlanan']) {
+            $out .= "\n".implode("\n", array_slice($r['atlanan'], 0, 30));
         }
 
         return $out;

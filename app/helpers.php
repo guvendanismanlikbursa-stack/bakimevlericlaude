@@ -1279,3 +1279,29 @@ if (! function_exists('message_contains_contact_info')) {
         return false;
     }
 }
+
+if (! function_exists('fix_locative_suffix')) {
+    // 30 Eylul 2026: App\Http\Controllers\Public\OpsController::fixLocative()
+    // (private metot) buraya tasindi - App\Services\ReviewBasedDescriptionGenerator
+    // da AYNI duzeltmeye ihtiyac duyuyor, iki kopyanin birbirinden sapma
+    // riski olmasin diye tek, paylasilan bir global fonksiyon.
+    // Uretilen aciklamalardaki "Bursa'de faaliyet" gibi hatali bulunma eklerini duzeltir (Bursa'da, Gursu'da, Kayseri'de).
+    function fix_locative_suffix(string $text): string
+    {
+        return preg_replace_callback("/([\p{L}]+)'de(?= faaliyet| bulunan)/u", function ($m) {
+            $w = $m[1];
+            $lower = mb_strtolower(strtr($w, ['I' => 'ı', 'İ' => 'i']), 'UTF-8');
+            $vowel = 'e';
+            for ($i = mb_strlen($lower) - 1; $i >= 0; $i--) {
+                $ch = mb_substr($lower, $i, 1);
+                if (mb_strpos('aıoueiöü', $ch) !== false) {
+                    $vowel = mb_strpos('aıou', $ch) !== false ? 'a' : 'e';
+                    break;
+                }
+            }
+            $hard = mb_strpos('fstkçşhp', mb_substr($lower, -1)) !== false ? 't' : 'd';
+
+            return $w."'".$hard.$vowel;
+        }, $text);
+    }
+}
