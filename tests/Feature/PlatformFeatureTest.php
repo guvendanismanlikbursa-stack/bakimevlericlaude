@@ -1226,6 +1226,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_phone' => '05552222222',
             'document' => $this->fakePngUpload('ruhsat.png'),
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::firstOrFail();
@@ -1381,6 +1382,7 @@ class PlatformFeatureTest extends TestCase
             'lat' => 41.01,
             'lng' => 28.98,
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'konumlu@test.local')->firstOrFail();
@@ -1405,6 +1407,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_phone' => '05552223355',
             'document' => $this->fakePngUpload('ruhsat3.png'),
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'konumsuz@test.local')->firstOrFail();
@@ -1472,6 +1475,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'duzeltmetest@test.local',
             'applicant_phone' => '05551112200',
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $registration->refresh();
@@ -1615,6 +1619,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_phone' => '05551119922',
             'document' => $this->fakePngUpload('ruhsat-uskudar.png'),
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'yetkili.uskudar@test.local')->firstOrFail();
@@ -1732,30 +1737,23 @@ class PlatformFeatureTest extends TestCase
         $this->assertNotNull($adminNotif);
     }
 
-    public function test_pending_offer_request_to_broker_managed_facility_is_created_after_registration(): void
+    public function test_offer_request_to_broker_managed_unclaimed_facility_is_created_immediately_as_guest(): void
     {
         // 1 Eylul 2026: kullanicinin talebi uzerine yapilan detayli
         // denetimde bulunan gercek hata - giris yapmadan anlasmali-ama-
         // sahiplenilmemis bir kuruma teklif isteyen aile kayit olunca,
         // pendingOfferRequestIsStillValid() SADECE is_claimed kontrol
         // ettigi icin talep sessizce OLUSMUYORDU.
+        // 30 Eylul 2026: OfferRequestController::store() artik giris sarti
+        // aramiyor (bkz. ayni tarihli yorum) - misafir talebi ARTIK
+        // DOGRUDAN olusturuluyor, "kayit olunca olusur" ara adimi tamamen
+        // kalkti. Bu test artik sadece dogrudan olusumu dogruluyor.
         $this->rehabFacility->update(['is_broker_managed' => true]);
 
         $this->post('/site/bakimevleri/teklif-talebi', [
             'facility_id' => $this->rehabFacility->id,
             'full_name' => 'Kayitsiz Anlasmali Talep',
             'phone' => '05551238888',
-        ])->assertRedirect();
-
-        $this->assertSame(0, OfferRequest::where('full_name', 'Kayitsiz Anlasmali Talep')->count());
-
-        $this->post('/site/bakimevleri/aile/kayit', [
-            'name' => 'Kayitsiz Anlasmali Talep',
-            'email' => 'anlasmalitalep@test.local',
-            'phone' => '05551238888',
-            'password' => 'Sifre12345!',
-            'password_confirmation' => 'Sifre12345!',
-            'consent' => '1',
         ])->assertRedirect();
 
         $this->assertSame(1, OfferRequest::where('full_name', 'Kayitsiz Anlasmali Talep')->count());
@@ -1952,22 +1950,14 @@ class PlatformFeatureTest extends TestCase
 
     public function test_bulk_quote_request_creates_shared_batch_and_notifies_each_facility(): void
     {
+        // 30 Eylul 2026: OfferRequestController::storeBulk() artik giris
+        // sarti aramiyor (bkz. ayni tarihli yorum) - misafir talebi ARTIK
+        // DOGRUDAN olusturuluyor, "kayit olunca olusur" ara adimi tamamen
+        // kalkti.
         $this->post('/site/bakimeviara/toplu-teklif-talebi', [
             'facility_ids' => [$this->childFacility->id, $this->elderlyFacility->id],
             'full_name' => 'Toplu Talep Eden',
             'phone' => '05559998877',
-        ])->assertRedirect('/site/bakimeviara/aile/kayit');
-
-        // Giris yapilmamis, talep henuz olusmamis olmali.
-        $this->assertSame(0, OfferRequest::where('full_name', 'Toplu Talep Eden')->count());
-
-        $this->post('/site/bakimeviara/aile/kayit', [
-            'name' => 'Toplu Talep Eden',
-            'email' => 'toplutalep@test.local',
-            'phone' => '05559998877',
-            'password' => 'Sifre12345!',
-            'password_confirmation' => 'Sifre12345!',
-            'consent' => '1',
         ])->assertRedirect();
 
         $requests = OfferRequest::where('full_name', 'Toplu Talep Eden')->get();
@@ -3607,6 +3597,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_phone' => '05557778899',
             'document' => $this->fakePngUpload('ruhsat-onecikan.png'),
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'onecikan@test.local')->firstOrFail();
@@ -3637,6 +3628,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_phone' => '05557778800',
             'document' => $this->fakePngUpload('ruhsat-kampanyasonrasi.png'),
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'kampanyasonrasi@test.local')->firstOrFail();
@@ -5868,6 +5860,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_phone' => '05551110001',
             'document' => $this->fakePngUpload('ruhsat-riza.png'),
             'consent' => '1',
+            'marketing_consent' => '1',
         ])->assertRedirect();
 
         $claim = FacilityClaim::where('applicant_email', 'rizali@test.local')->firstOrFail();
@@ -5908,6 +5901,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'mukerrer.basvuru@test.local',
             'applicant_phone' => '05551110003',
             'consent' => '1',
+            'marketing_consent' => '1',
         ]);
 
         $response->assertRedirect(brand_route('facility-claim.create', $preRegistered->slug));
@@ -5928,6 +5922,7 @@ class PlatformFeatureTest extends TestCase
             'applicant_email' => 'sahipli.mukerrer@test.local',
             'applicant_phone' => '05551110004',
             'consent' => '1',
+            'marketing_consent' => '1',
         ]);
 
         $response->assertSessionHasErrors('name');

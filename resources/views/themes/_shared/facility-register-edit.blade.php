@@ -64,6 +64,23 @@
       </span>
     </label>
 
+    {{-- 30 Eylul 2026: kullanicinin bildirdigi gercek hata - facility-register.blade.php'ye
+         (29 Eylul 2026) eklenen "Pazarlama Izni" onay kutusu bu duzeltme
+         formuna hic eklenmemisti, ama sunucu tarafi validateData() ikisinde
+         de AYNI ('marketing_consent' => 'required|accepted') kuralini
+         kullaniyor - yukaridaki 1 Eylul yorumundaki AYNI hata deseni
+         tekrarlanmisti: bu form hic gonderilemiyordu, admin "duzeltme iste"
+         dedigi HER basvuru kullanici ne yaparsa yapsin kalici olarak takili
+         kaliyordu. --}}
+    <label class="flex items-start gap-2 text-xs text-gray-600 leading-relaxed">
+      <input type="checkbox" name="marketing_consent" required value="1" class="mt-0.5">
+      <span>
+        <a href="{{ brand_route('pages.show', ['slug' => 'pazarlama-izni']) }}" target="_blank" class="text-primary underline font-semibold">Pazarlama İzni</a>'ni
+        okudum, kurumumun Platform üzerinde tanıtılmasını ve bu kapsamda tarafımla iletişime geçilmesini kabul ediyorum.
+        <span class="font-semibold">Bu kutuyu işaretlemek zorunludur.</span>
+      </span>
+    </label>
+
     <button class="btn-primary w-full py-2 rounded-lg font-semibold">Güncelleyip Tekrar Gönder</button>
   </form>
 </div>
