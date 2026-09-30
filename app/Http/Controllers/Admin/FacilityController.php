@@ -31,7 +31,17 @@ class FacilityController extends Controller
     {
         $query = $this->filteredQuery($request, includeCategory: true)->with(['city', 'category', 'images', 'facilityUsers']);
 
-        $facilities = $query->latest()->paginate(15)->withQueryString();
+        // 30 Eylul 2026: kullanicinin talebi - "hangi kurum ne kadar
+        // GERCEKTEN goruntulenme almis" sorusuna cevap: siralama HER ZAMAN
+        // gercek (lifetime) views_count'a gore yapilir, otomatik eklenen
+        // (boosted_views_count) siralamayi ASLA etkilemez.
+        match ($request->query('sort')) {
+            'views_desc' => $query->orderByDesc('views_count'),
+            'views_asc' => $query->orderBy('views_count'),
+            default => $query->latest(),
+        };
+
+        $facilities = $query->paginate(15)->withQueryString();
         $ownershipTypes = ['ozel' => 'Özel', 'kamu' => 'Kamu', 'belediye' => 'Belediye', 'vakif' => 'Vakıf'];
 
         if ($redirect = $this->redirectIfPageOutOfRange($request, $facilities)) {
@@ -81,6 +91,15 @@ class FacilityController extends Controller
     private function filteredQuery(Request $request, bool $includeCategory)
     {
         $query = Facility::query();
+
+        // 30 Eylul 2026: kullanicinin bildirdigi gercek sikayet - platform:
+        // check-user-flows'un GUNLUK olarak yeniden kullandigi kalici test
+        // kurumlari (qatest-daily-{brand}-claimed/-unclaimed/-broker, bkz.
+        // CheckUserFlows.php ensureClaimedFacility/ensureUnclaimedFacility)
+        // BILEREK HIC SILINMIYOR (testler onlara guvenir) ama admin kurum
+        // listesinde GERCEK kurumlarin arasinda goruntu kirliligi yapiyordu.
+        // Veri silinmiyor, sadece bu listeden gizleniyor.
+        $query->where('name', 'not like', 'QATEST%');
 
         if ($request->filled('brand')) {
             $scope = config("brands.brands.{$request->brand}.category_scope", []);
@@ -133,6 +152,14 @@ class FacilityController extends Controller
         // elle tamamlamak istiyor.
         if ($request->filled('konum') && $request->konum === 'eksik') {
             $query->whereNull('lat');
+        }
+
+        // 30 Eylul 2026: kullanicinin talebi - "hangi kurum ne kadar
+        // GERCEKTEN goruntulenme almis" sorusuna cevap: bu filtre otomatik
+        // eklenen (boosted_views_count) DEGIL, sadece gercek (lifetime)
+        // views_count uzerinden calisir.
+        if ($request->filled('views_min')) {
+            $query->where('views_count', '>=', (int) $request->views_min);
         }
 
         return $query;
@@ -214,7 +241,7 @@ class FacilityController extends Controller
         $cities = City::orderBy('name')->get();
         $categories = FacilityCategory::orderBy('name')->get();
         $serviceSections = service_sections();
-        $facility->load(['images', 'facilityUsers', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category', 'roomTypes', 'ageGroups', 'programTypes']);
+        $facility->load(['images', 'facilityUsers', 'marketingNotes', 'claims' => fn ($q) => $q->latest(), 'balanceLogs', 'category', 'roomTypes', 'ageGroups', 'programTypes']);
         // 18 Agustos 2026: kullanicinin talebi - filtrelenmis listeden gelip
         // ayni kurumda birden fazla gorsel ekleyip/silen admin artik HER
         // kayittan sonra listeye geri atilmiyor (bkz. update() ayni tarihli
@@ -763,7 +790,10 @@ class FacilityController extends Controller
         // (odeme gecerliyken 'Yardimsever Kurum' etiketi alirlar).
 
         $data = $request->validate([
-            'plan' => 'required|in:monthly,yearly',
+            // 27 Eylul 2026: kullanicinin talebi - CRM'den 3/6/12 aylik
+            // paketler (bkz. subscriptionExtend() ayni tarihli yorum,
+            // araliklar orada eklenir).
+            'plan' => 'required|in:monthly,quarterly,semiannual,yearly',
             // 22 Eylul 2026: kullanicinin talebi - ucret SABIT degil, kurum
             // bazinda degisken - her kurumun kendi ucreti burada girilir.
             'amount' => 'nullable|numeric|min:0',
@@ -813,7 +843,12 @@ class FacilityController extends Controller
             ? $facility->subscription_paid_until->copy()
             : now();
 
-        $paidUntil = $facility->subscription_plan === 'yearly' ? $base->addYear() : $base->addMonth();
+        $paidUntil = match ($facility->subscription_plan) {
+            'yearly' => $base->addYear(),
+            'semiannual' => $base->addMonths(6),
+            'quarterly' => $base->addMonths(3),
+            default => $base->addMonth(),
+        };
 
         $update = ['subscription_paid_until' => $paidUntil->toDateString()];
         if ($request->filled('amount')) {
@@ -833,6 +868,102 @@ class FacilityController extends Controller
         log_admin_event('facility_subscription_cancelled', $facility);
 
         return back()->with('success', "{$facility->name} aboneliği iptal edildi.");
+    }
+
+    /**
+     * 27 Eylul 2026: kullanicinin talebi - pazarlamacinin CRM'de telefonla
+     * ikna ettigi, dekont gonderen bir kurumu admin tek adimda hem abone
+     * yapar hem de panele girebilmesi icin hesap acar. Hesap olusturma
+     * kismi instantClaim()'DEKI AYNI (kanitlanmis) desen - ama is_claimed/
+     * claim-bonus-hak/is_featured burada KESINLIKLE ayarlanmaz, bu bir
+     * "sahiplenme" degil, ucretli abonelik. Sadece HENUZ HIC hesabi
+     * olmayan (facilityUsers bos) kurumlar icin kullanilir - zaten hesabi
+     * olan bir kurum icin mevcut subscriptionEnable() yeterlidir.
+     */
+    public function subscribeWithPanelAccount(Request $request, Facility $facility)
+    {
+        abort_if($facility->facilityUsers()->exists(), 400, 'Bu kurumun zaten bir panel hesabı var, normal "Abone Yap" yeterli.');
+
+        $data = $request->validate([
+            'plan' => 'required|in:monthly,quarterly,semiannual,yearly',
+            'amount' => 'nullable|numeric|min:0',
+            'applicant_name' => 'required|string|max:120',
+            'applicant_email' => 'required|email|max:150',
+            'applicant_phone' => 'required|string|max:30',
+        ]);
+
+        if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
+            return back()->withErrors(['applicant_email' => $error]);
+        }
+
+        if (\App\Models\FacilityUser::where('email', $data['applicant_email'])->exists()) {
+            return back()->withErrors(['applicant_email' => 'Bu e-posta zaten bir kurum hesabına ait. Başka bir e-posta gerekiyor.']);
+        }
+
+        $temporaryPassword = Str::password(14, symbols: false);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($facility, $data, $temporaryPassword) {
+            $facility = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+            abort_if($facility->facilityUsers()->exists(), 400, 'Bu kurumun zaten bir panel hesabı var.');
+
+            $facilityUser = \App\Models\FacilityUser::create([
+                'facility_id' => $facility->id,
+                'name' => $data['applicant_name'],
+                'email' => $data['applicant_email'],
+                'phone' => $data['applicant_phone'],
+                'password' => \Illuminate\Support\Facades\Hash::make($temporaryPassword),
+                'must_change_password' => true,
+                'status' => 'active',
+                'email_verified_at' => null,
+            ]);
+
+            $facility->update([
+                'is_subscribed' => true,
+                'subscription_plan' => $data['plan'],
+                'subscription_amount' => $data['amount'] ?? null,
+                'subscription_started_at' => now(),
+                'subscription_paid_until' => null,
+            ]);
+
+            log_admin_event('facility_subscribed_with_panel_account', $facility, [
+                'facility_user_email' => $facilityUser->email, 'plan' => $data['plan'], 'amount' => $data['amount'] ?? null,
+            ]);
+        });
+
+        $facilityUser = \App\Models\FacilityUser::where('email', $data['applicant_email'])->firstOrFail();
+        $brandSlug = facility_login_brand_slug($facility);
+        $loginUrl = facility_brand_login_url($brandSlug);
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($facilityUser->email)->sendNow(
+                new \App\Mail\FacilityPasswordManuallyResetMail($facilityUser, $temporaryPassword, $loginUrl)
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('CRM abonelik giris bilgisi maili gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+            notify_admin_of_exception($e);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($facilityUser->email)->sendNow(
+                new \App\Mail\FacilityWelcomeMail($facility->fresh(), $facilityUser->email, config('brands.brands.'.$brandSlug.'.name', $brandSlug), $loginUrl)
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('CRM abonelik hos geldin maili gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+        }
+
+        try {
+            \App\Http\Controllers\Facility\EmailVerificationController::send($facilityUser, config("brands.brands.{$brandSlug}"));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('CRM abonelik dogrulama maili gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+        }
+
+        return redirect()->route('admin.facilities.edit', $facility)
+            ->with('subscription_account_credentials', [
+                'email' => $facilityUser->email,
+                'password' => $temporaryPassword,
+                'login_url' => $loginUrl,
+                'whatsapp_url' => facility_whatsapp_url_with_message($facility, "Merhaba, \"{$facility->name}\" kurum panelinize giriş bilgileriniz:\n\nGiriş adresi: {$loginUrl}\nE-posta: {$facilityUser->email}\nGeçici şifre: {$temporaryPassword}\n\nİlk girişte yeni bir şifre belirlemeniz istenecektir."),
+            ]);
     }
 
     /**

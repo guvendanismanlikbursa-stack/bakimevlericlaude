@@ -612,6 +612,7 @@ if (! function_exists('notification_action_url')) {
                 'contact_message_submitted' => route('admin.contact-messages.index'),
                 'topup_requested' => route('admin.topups.index'),
                 'chat_message' => isset($data['chat_thread_id']) ? route('admin.chat.show', $data['chat_thread_id']) : route('admin.chat.index'),
+                'marketer_facility_forwarded' => isset($data['facility_id']) ? route('admin.facilities.edit', $data['facility_id']) : route('admin.marketers.conversations'),
                 default => null,
             };
         } catch (\Throwable $e) {
@@ -717,6 +718,29 @@ if (! function_exists('classify_phone_type')) {
         }
 
         return $digits[0] === '5' ? 'mobile' : 'landline';
+    }
+}
+
+if (! function_exists('normalize_phone_digits')) {
+    // 27 Eylul 2026: kullanicinin talebi - telefonla giris (pazarlamaci,
+    // kurum paneli) icin bosluk/tire/0/90 on eki farkli yazilmis AYNI
+    // numarayi eslestirir. classify_phone_type()'daki AYNI on-ek temizleme
+    // mantigi, ama tur siniflandirmasi (mobile/landline) YAPMAZ - sadece
+    // karsilastirilabilir 10 haneli govdeyi dondurur (eslesmezse orijinal
+    // rakamlari dondurur ki bos telefonlar hep birbirine "esit" gorunmesin).
+    function normalize_phone_digits(?string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+        if ($digits === '') {
+            return '';
+        }
+        if (str_starts_with($digits, '90') && strlen($digits) === 12) {
+            $digits = substr($digits, 2);
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        }
+
+        return $digits;
     }
 }
 

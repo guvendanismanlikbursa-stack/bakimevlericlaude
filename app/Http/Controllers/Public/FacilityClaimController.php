@@ -51,6 +51,10 @@ class FacilityClaimController extends Controller
             // kaydinda KVKK acik riza onay kutusu vardi, burada yoktu -
             // kisisel veri (ad/e-posta/telefon) onaysiz toplaniyordu.
             'consent' => 'required|accepted',
+            // 29 Eylul 2026: bkz. FacilityRegistrationController ayni tarihli
+            // yorum - kurumlar Platform'da tanitildiklarindan haberdar
+            // olduklarini ACIKCA kabul etmeli, bu kutu ZORUNLU.
+            'marketing_consent' => 'required|accepted',
             'note' => 'nullable|string|max:1000',
             // 2 Eylul 2026: kullanicinin bildirdigi gercek sorun - 13 Agustos
             // 2026'da surtunmeyi azaltmak icin belge ZORUNLU OLMAKTAN
@@ -67,6 +71,8 @@ class FacilityClaimController extends Controller
         ], [
             'consent.required' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
             'consent.accepted' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
+            'marketing_consent.required' => 'Pazarlama iznini onaylamadan başvuru gönderemezsiniz.',
+            'marketing_consent.accepted' => 'Pazarlama iznini onaylamadan başvuru gönderemezsiniz.',
         ]);
 
         if ($error = email_taken_by_other_account_type($data['applicant_email'])) {
@@ -134,6 +140,7 @@ class FacilityClaimController extends Controller
             'applicant_ip' => $request->ip(),
             'consent_accepted_at' => now(),
             'consent_ip' => $request->ip(),
+            'marketing_consent_at' => now(),
         ]);
 
         if (! in_array($facility->invitation_status, ['approved'], true)) {

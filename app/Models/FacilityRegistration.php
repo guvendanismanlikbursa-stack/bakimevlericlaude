@@ -14,7 +14,7 @@ class FacilityRegistration extends Model
         'description', 'capacity', 'price_min', 'price_max',
         'applicant_name', 'applicant_email', 'applicant_phone',
         'applicant_lat', 'applicant_lng', 'applicant_city_name', 'applicant_ip',
-        'consent_accepted_at', 'consent_ip',
+        'consent_accepted_at', 'consent_ip', 'marketing_consent_at',
         'status', 'admin_note', 'reviewed_by', 'reviewed_at',
     ];
 
@@ -25,6 +25,7 @@ class FacilityRegistration extends Model
             'price_min' => 'float',
             'price_max' => 'float',
             'consent_accepted_at' => 'datetime',
+            'marketing_consent_at' => 'datetime',
         ];
     }
 

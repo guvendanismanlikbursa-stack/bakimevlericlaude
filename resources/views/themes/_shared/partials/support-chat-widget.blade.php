@@ -34,10 +34,9 @@
 
 <div id="js-chat-menu" role="dialog" aria-modal="true" aria-label="Sohbet secenekleri" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
   <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Size nasıl yardımcı olabiliriz?</div>
+  {{-- 30 Eylul 2026: kullanicinin talebi - "Sohbet"/"Dertlesme"/"Fikir"
+       secenekleri kafa karistiriyordu, sadece 2 net secenek kaldi. --}}
   <div class="p-2">
-    <button type="button" class="js-intent-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-800" data-intent="sohbet">💬 Sohbet etmek istiyorum</button>
-    <button type="button" class="js-intent-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-800" data-intent="dertlesme">🤍 Dertleşmek istiyorum</button>
-    <button type="button" class="js-intent-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-800" data-intent="fikir">💡 Fikir almak istiyorum</button>
     <button type="button" class="js-intent-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-800" data-intent="temsilci">🎧 Müşteri temsilcisi lütfen</button>
   </div>
   <a href="https://wa.me/{{ $waNumber }}?text={{ rawurlencode($waMessage) }}" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-3 border-t border-gray-100 text-sm font-semibold text-gray-600 hover:bg-gray-50">
@@ -57,13 +56,18 @@
 
 <div id="js-chat-identity" role="dialog" aria-modal="true" aria-label="Nasil hitap edelim" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
   <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Size nasıl hitap edelim?</div>
-  <div class="p-3 space-y-2">
+  {{-- 30 Eylul 2026: kullanicinin talebi - "bu botu kullanmak icin uyelik/
+       giris yapmis olmak gerekmemeli". "Google ile devam et" ISTEGE BAGLI
+       olsa da bir giris adimi gibi goruldugu icin PASIFE ALINDI (silinmedi -
+       geregi olursa asagidaki blogu geri acmak yeterli):
     <div id="js-chat-identity-google-note" class="hidden text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">✓ <span id="js-chat-identity-google-name-label"></span> olarak Google ile giriş yapıldı</div>
     <button type="button" id="js-chat-identity-google-btn" class="w-full flex items-center justify-center gap-2 rounded-lg border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
       <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.26 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A10.99 10.99 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.85Z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a10.99 10.99 0 0 0-9.82 6.05l3.66 2.85C6.71 7.3 9.14 5.38 12 5.38Z"/></svg>
       Google ile devam et
     </button>
     <div id="js-chat-identity-divider" class="text-center text-[10px] text-gray-400 uppercase tracking-wider">veya</div>
+  --}}
+  <div class="p-3 space-y-2">
     <input type="text" id="js-chat-identity-name" placeholder="Adınız" maxlength="80" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
     <input type="number" id="js-chat-identity-age" placeholder="Yaşınız" min="1" max="120" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
     <div id="js-chat-identity-error" class="hidden text-xs text-red-600"></div>
@@ -237,16 +241,22 @@
     });
   });
 
-  // Google ile devam et: mevcut niyet/cinsiyet secimini query string'e koyup
-  // Google OAuth turune yollar - donuste checkGoogleReturn() bu secimi geri okur.
-  identityGoogleBtn.addEventListener('click', function () {
-    var params = new URLSearchParams();
-    if (state.selectedIntent) params.set('intent', state.selectedIntent);
-    if (state.selectedGender) params.set('gender', state.selectedGender);
-    var savedToken = localStorage.getItem(storageKey);
-    if (savedToken) params.set('guest_token', savedToken);
-    window.location.href = googleRedirectUrl + '?' + params.toString();
-  });
+  // 30 Eylul 2026: kullanicinin talebi - Google ile giris butonu pasife
+  // alindi (HTML'den Blade yorumuna alindi, DOM'da yok), bu yuzden asagidaki
+  // 4 eleman de artik null donebilir - hepsi guard'landi ki widget'in geri
+  // kalani calismaya devam etsin.
+  if (identityGoogleBtn) {
+    // Google ile devam et: mevcut niyet/cinsiyet secimini query string'e koyup
+    // Google OAuth turune yollar - donuste checkGoogleReturn() bu secimi geri okur.
+    identityGoogleBtn.addEventListener('click', function () {
+      var params = new URLSearchParams();
+      if (state.selectedIntent) params.set('intent', state.selectedIntent);
+      if (state.selectedGender) params.set('gender', state.selectedGender);
+      var savedToken = localStorage.getItem(storageKey);
+      if (savedToken) params.set('guest_token', savedToken);
+      window.location.href = googleRedirectUrl + '?' + params.toString();
+    });
+  }
 
   identityContinueBtn.addEventListener('click', function () {
     var name = state.googleName || identityNameInput.value.trim();
@@ -265,7 +275,10 @@
   function checkGoogleReturn() {
     var params = new URLSearchParams(window.location.search);
     var googleName = params.get('chat_google_name');
-    if (!googleName) return;
+    // Google ile giris pasif oldugu icin (bkz. yukaridaki yorum) bu dallanma
+    // artik hic tetiklenmemeli, ama eski bir link/bookmark ile gelinirse
+    // eksik elemanlara guvenli sekilde vazgecer.
+    if (!googleName || !identityGoogleBtn || !identityDivider || !identityGoogleNameLabel || !identityGoogleNote) return;
 
     state.selectedIntent = params.get('chat_google_intent') || 'sohbet';
     state.selectedGender = params.get('chat_google_gender') || null;

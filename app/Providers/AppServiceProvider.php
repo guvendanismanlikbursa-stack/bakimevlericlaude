@@ -56,6 +56,11 @@ class AppServiceProvider extends ServiceProvider
             // Sohbet) gibi bir rozet/sayac YOKTU - admin panele girince yeni bir
             // talep oldugunu FARK ETMIYORDU. Ayni desen uygulandi.
             $view->with('newVisitServiceRequestsCount', VisitServiceRequest::where('status', 'yeni')->count());
+            // 28 Eylul 2026: kullanicinin talebi - admin'e giden bildirimler
+            // (pazarlamacidan kurum bildirimi vb.) artik panelin icinde de
+            // gorunuyor, bkz. Admin\NotificationController.
+            $adminId = session('admin_id');
+            $view->with('unreadAdminNotificationsCount', $adminId ? (\App\Models\Admin::find($adminId)?->notifications()->unread()->count() ?? 0) : 0);
         });
     }
 

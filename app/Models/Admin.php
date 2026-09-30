@@ -22,4 +22,14 @@ class Admin extends Model
     {
         return $this->morphMany(PushSubscription::class, 'subscribable');
     }
+
+    // 28 Eylul 2026: kullanicinin talebi - admin'e giden bildirimler
+    // (ör. pazarlamacidan kurum bildirimi, sahiplenme basvurusu vb.) su ana
+    // kadar SADECE mail/push olarak gidiyordu, panelin ICINDE goruntulenip
+    // "okundu" isaretlenebilecegi bir yer YOKTU - FacilityUser/FamilyUser'daki
+    // AYNI iliski, bkz. Admin\NotificationController.
+    public function notifications()
+    {
+        return $this->morphMany(PlatformNotification::class, 'notifiable')->latest();
+    }
 }

@@ -492,6 +492,11 @@
         <li><a href="{{ brand_route('pages.show', ['slug' => 'gizlilik-politikasi']) }}" class="hover:text-primary">Gizlilik Politikası</a></li>
         <li><a href="{{ brand_route('pages.show', ['slug' => 'kullanim-sartlari']) }}" class="hover:text-primary">Kullanım Şartları</a></li>
         <li><a href="{{ brand_route('pages.show', ['slug' => 'cerez-politikasi']) }}" class="hover:text-primary">Çerez Politikası</a></li>
+        {{-- 29 Eylul 2026: kullanicinin talebi - okul.com.tr'deki gibi
+             pazarlama izni ve (gercek odemeler icin yasal olarak gerekli)
+             mesafeli satis sozlesmesi footer'a eklendi. --}}
+        <li><a href="{{ brand_route('pages.show', ['slug' => 'pazarlama-izni']) }}" class="hover:text-primary">Pazarlama İzni</a></li>
+        <li><a href="{{ brand_route('pages.show', ['slug' => 'mesafeli-satis-sozlesmesi']) }}" class="hover:text-primary">Mesafeli Satış Sözleşmesi</a></li>
         <li><a href="{{ brand_route('contact.create') }}" class="hover:text-primary">İletişim</a></li>
       </ul>
     </div>

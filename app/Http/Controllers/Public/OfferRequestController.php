@@ -37,6 +37,12 @@ class OfferRequestController extends Controller
             'patient_name' => 'nullable|string|max:120',
             'care_for' => 'nullable|string|max:60',
             'message' => 'nullable|string|max:2000',
+            // 30 Eylul 2026: kullanicinin talebi - talep havuzu icin ilk
+            // adim, gercek talep verisi biriktirmeye baslamak.
+            'patient_age' => 'nullable|integer|min:0|max:120',
+            'needed_from' => 'nullable|date',
+            'budget_min' => 'nullable|numeric|min:0|max:999999',
+            'budget_max' => 'nullable|numeric|min:0|max:999999|gte:budget_min',
         ]);
 
         $brand = current_brand();
@@ -67,10 +73,18 @@ class OfferRequestController extends Controller
             return redirect(brand_route('family.dashboard'))->with('success', 'Talebiniz kuruma iletildi. Kurum yanıt verdiğinde burada bildirim alacak, teklifi inceleyip mesajlaşmaya başlayabileceksiniz.');
         }
 
-        session(['pending_offer_request' => $validated]);
+        // 30 Eylul 2026: kullanicinin talebi - "formlari kullanici
+        // yollayabilmesi icin giris yapma sartini kaldir". Eskiden hesapsiz
+        // kullanici buraya kadar geldiginde talep OLUSTURULMUYOR, oturuma
+        // saklanip once hesap acmaya YONLENDIRILIYORDU - bu ekstra adim
+        // gercek donusumu dusuruyordu (bkz. bu tarihli sohbette konusulan
+        // "Aile Talep Havuzu" dogrulama calismasi). Artik misafir olarak
+        // (family_user_id=null, sutun zaten nullable) DOGRUDAN olusturulur;
+        // hesap acma tamamen ISTEGE BAGLI bir sonraki adim haline gelir.
+        $offerRequest = OfferRequest::create($validated);
+        $notifier->notify($offerRequest);
 
-        return redirect(brand_route('family.register'))
-            ->with('info', 'Ucret/teklif bilgisi alabilmek icin once ucretsiz bir aile hesabi olusturmaniz gerekiyor. Bilgileriniz kaybolmayacak.');
+        return back()->with('success', 'Talebiniz kuruma iletildi, en kısa sürede sizinle iletişime geçecekler. Dilerseniz ücretsiz bir aile hesabı oluşturup tüm tekliflerinizi tek yerden takip edebilirsiniz.');
     }
 
     /**
@@ -125,10 +139,11 @@ class OfferRequestController extends Controller
             return redirect(brand_route('family.dashboard'))->with('success', 'Talebiniz '.count($payload['facility_ids']).' kuruma iletildi. Yanıt veren kurumları panelinizden karşılaştırabilir, dilediğinizle mesajlaşmaya başlayabilirsiniz.');
         }
 
-        session(['pending_bulk_offer_request' => $payload]);
+        // 30 Eylul 2026: bkz. store() ayni tarihli yorum - giris sarti
+        // kaldirildi, misafir olarak (family_user_id=null) dogrudan olusturulur.
+        $created = $this->createBulkRequests($payload, null, $notifier);
 
-        return redirect(brand_route('family.register'))
-            ->with('info', 'Ucret/teklif bilgisi alabilmek icin once ucretsiz bir aile hesabi olusturmaniz gerekiyor. Bilgileriniz kaybolmayacak.');
+        return back()->with('success', 'Talebiniz '.count($created).' kuruma iletildi, en kısa sürede sizinle iletişime geçecekler. Dilerseniz ücretsiz bir aile hesabı oluşturup tüm tekliflerinizi tek yerden takip edebilirsiniz.');
     }
 
     /**
@@ -152,7 +167,7 @@ class OfferRequestController extends Controller
         return null;
     }
 
-    public static function createBulkRequests(array $payload, int $familyId, OfferRequestNotificationService $notifier): array
+    public static function createBulkRequests(array $payload, ?int $familyId, OfferRequestNotificationService $notifier): array
     {
         $categoryScope = config('brands.brands')[$payload['brand']]['category_scope'] ?? [];
         $batchId = (string) Str::uuid();

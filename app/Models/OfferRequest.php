@@ -12,6 +12,7 @@ class OfferRequest extends Model
     protected $fillable = [
         'facility_id', 'brand', 'brand_id', 'family_user_id', 'city_id', 'district_id', 'facility_category_id',
         'full_name', 'phone', 'email', 'message', 'patient_name', 'care_for',
+        'patient_age', 'needed_from', 'budget_min', 'budget_max',
         'status', 'accepted_quote_id', 'batch_id', 'review_invited_at',
     ];
 
@@ -28,6 +29,10 @@ class OfferRequest extends Model
         'district_id' => 'integer',
         'facility_category_id' => 'integer',
         'accepted_quote_id' => 'integer',
+        'patient_age' => 'integer',
+        'needed_from' => 'date',
+        'budget_min' => 'float',
+        'budget_max' => 'float',
     ];
 
     public function brandModel()

@@ -104,40 +104,25 @@
       : ($isBrokerHighlight
           ? 'border-2 border-blue-400 shadow-lg shadow-blue-300/60 hover:shadow-xl hover:shadow-blue-400/60 bg-gradient-to-b from-blue-50/70 via-white to-white'
           : 'border border-gray-100 shadow-sm hover:shadow-lg') }}">
-  @if($facility->is_featured || $facility->is_broker_managed || $isActiveSubscriberCard)
-    {{-- 18 Eylul 2026: kullanicinin bildirdigi gercek hata - "ÖNE ÇIKAN"
-         yazisinin son harfi (N) kesiliyordu (rotate-[-45deg] + kartin
-         overflow-hidden'i yuzunden rozetin "yuksek" ucu kartin ust
-         kenarinin disinda kaliyordu). Once top-5 class'i denendi ama
-         canliya yansimadi - bu proje FTP-only deploy edildiginde CSS
-         YENIDEN DERLENMIYOR, derlenmis app-*.css dosyasinda daha once hic
-         kullanilmamis Tailwind class'lari (top-5, top-9, -left-11 vb.)
-         HICBIR KURALA sahip degil, yani class degisikligi sessizce
-         etkisiz kalıyordu (dogrulandi: /build/assets/app-*.css icinde
-         .top-5{ hic yok, .top-3{ var). Bu yuzden Tailwind class'i yerine,
-         derlemeye bagli olmayan satir ici style ile kesin calisan bir
-         konum kullanildi - emoji/genislik/pozisyon aynen korunuyor. --}}
-    <div class="absolute -left-9 z-10 w-36 rotate-[-45deg] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-center text-[10px] font-black text-amber-950 py-1 shadow-md pointer-events-none" style="top: 20px;">
-      {{ ($facility->is_broker_managed || $isActiveSubscriberCard) ? '⭐ ÖNERİLEN' : '⭐ ÖNE ÇIKAN' }}
-    </div>
-  @endif
-  {{-- 4 Eylul 2026: kullanicinin talebi - ince bir cizgi ("kartlar hala
-       ayni gorunuyor") yetersiz kaldi, "Öne Çıkan"in AYNI gorsel gucunde
-       ikinci bir kurdele lazimdi - karsi kosede (sag ust), mavi/lacivert,
-       BEYAZ kalin yazi ile en az onun kadar dikkat cekici. --}}
-  @if($isClaimedHighlight)
-    <div class="absolute z-10 text-center text-[10px] font-black py-1 shadow-md pointer-events-none" style="top:20px;right:-36px;width:9rem;transform:rotate(45deg);background:linear-gradient(to right,#059669,#10b981,#34d399);color:#ffffff;">
-      ✓ SAHİPLENİLMİŞ
-    </div>
-  @endif
-  @if($facility->is_broker_managed)
-    {{-- 18 Eylul 2026: ayni tarihli "ÖNE ÇIKAN" duzeltmesiyle ayni kok
-         neden ve ayni cozum (derlenmemis Tailwind class yerine satir ici
-         style), bkz. o yorumu. --}}
-    <div class="absolute -right-9 z-10 w-36 rotate-[45deg] bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 text-center text-[10px] font-black text-white py-1 shadow-md pointer-events-none" style="top: 20px;">
-      🤝 ANLAŞMALI
-    </div>
-  @endif
+  {{-- 28 Eylul 2026: kullanicinin talebi - kosegen kurdeleler ("sacma
+       sapan" gorunuyordu) kaldirildi, gorselin sol-ust kosesinde kucuk,
+       duz, alt alta rozetlere cevrildi. Sadece daha once buyuk kartta zaten
+       kullanilmis (dogrulanmis) renkler/desen tekrarlanir - Tailwind class'i
+       degil satir ici style (bkz. asagidaki eski yorum - FTP deploy'da CSS
+       yeniden derlenmiyor, kesin calismasi icin). --}}
+  <div class="absolute top-2 left-2 z-10 flex flex-col items-start gap-1 pointer-events-none">
+    @if($facility->is_featured || $facility->is_broker_managed || $isActiveSubscriberCard)
+      <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#fbbf24,#f59e0b);color:#451a03;">
+        {{ ($facility->is_broker_managed || $isActiveSubscriberCard) ? '⭐ ÖNERİLEN' : '⭐ ÖNE ÇIKAN' }}
+      </span>
+    @endif
+    @if($isClaimedHighlight)
+      <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#059669,#10b981);color:#ffffff;">✓ SAHİPLENİLMİŞ</span>
+    @endif
+    @if($facility->is_broker_managed)
+      <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#2563eb,#0ea5e9);color:#ffffff;">🤝 Anlaşmalı</span>
+    @endif
+  </div>
   @unless($isPreRegisteredCard)
     <button type="button" class="js-engagement-toggle absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-lg text-gray-400" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}" data-icon="1" aria-label="Favori">♥</button>
   @endunless
@@ -146,6 +131,24 @@
       <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
       @if($isSampleImage)
         <span class="absolute bottom-2 left-2 bg-gray-950/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Örnek görsel</span>
+      @endif
+      {{-- 28 Eylul 2026: kullanicinin talebi - kartta gercek (demo haric)
+           gorsel sayisi + yorum sayisi, gorselin uzerinde kompakt bir
+           rozetle gosterilsin. Ikisi de 0 ise rozet HIC gorunmez (bos bir
+           kutu gostermek yerine). --}}
+      @php
+        $cardRealImageCount = $facility->realImageCount();
+        $cardReviewCount = $facility->totalReviewCount();
+      @endphp
+      @if($cardRealImageCount > 0 || $cardReviewCount > 0)
+        <div class="absolute bottom-2 right-2 flex items-center gap-2 bg-gray-950/70 text-white text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm">
+          @if($cardRealImageCount > 0)
+            <span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M1 5.25A2.25 2.25 0 0 1 3.25 3h1.5A2.25 2.25 0 0 1 6.628 3.982l.44.882A1 1 0 0 0 7.965 5.5h4.07a1 1 0 0 0 .897-.618l.44-.882A2.25 2.25 0 0 1 15.25 3h1.5A2.25 2.25 0 0 1 19 5.25v9.5A2.25 2.25 0 0 1 16.75 17H3.25A2.25 2.25 0 0 1 1 14.75v-9.5ZM10 8a3.25 3.25 0 1 0 0 6.5A3.25 3.25 0 0 0 10 8Z" clip-rule="evenodd"/></svg>{{ $cardRealImageCount }}</span>
+          @endif
+          @if($cardReviewCount > 0)
+            <span class="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M10 2c-4.418 0-8 2.91-8 6.5 0 1.593.696 3.05 1.843 4.171-.176.822-.583 1.665-1.256 2.408a.5.5 0 0 0 .421.83c1.518-.14 2.68-.665 3.51-1.199A9.49 9.49 0 0 0 10 15c4.418 0 8-2.91 8-6.5S14.418 2 10 2Z" clip-rule="evenodd"/></svg>({{ $cardReviewCount }})</span>
+          @endif
+        </div>
       @endif
     </div>
     <div class="p-4">
@@ -169,29 +172,30 @@
       <h2 class="font-black text-gray-950 mb-1">{{ $facility->name }}</h2>
       <p class="text-sm text-gray-500 mb-1 flex items-center gap-1.5 flex-wrap">
         <span>{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</span>
-        {{-- 20 Eylul 2026: kullanicinin talebi - yorum ikon+sayisi il/ilce
-             satirinin yanina; platform + Google yorumlari toplami, canli
-             hesaplanir (bkz. mini-kartla ayni yorum, yukarida). --}}
-        @if(($totalReviewCount = $facility->totalReviewCount()) > 0)
-          <span class="text-gray-400 shrink-0">· 💬 {{ $totalReviewCount }} yorumu var</span>
-        @endif
       </p>
-      @if($facility->views_count > 0)
+      @php($totalReviewCount = $facility->totalReviewCount())
+      @php($cardDisplayViews = $facility->monthlyDisplayViewsCount())
+      @if($cardDisplayViews > 0)
         <p class="text-xs text-gray-400 mb-3 flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path d="M10 3.5c-4.5 0-7.5 3.5-8.5 6.5 1 3 4 6.5 8.5 6.5s7.5-3.5 8.5-6.5c-1-3-4-6.5-8.5-6.5Zm0 10.5a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/><circle cx="10" cy="10" r="2"/></svg>
-          {{ number_format($facility->views_count, 0, ',', '.') }} kez görüntülendi
+          {{ number_format($cardDisplayViews, 0, ',', '.') }} kez görüntülendi
         </p>
       @else
         <div class="mb-3"></div>
       @endif
       <p class="text-sm text-gray-600 line-clamp-2 mb-4">{{ $facility->description }}</p>
       <div class="flex items-center justify-between">
-        @if($facility->rating > 0)
-          <span class="text-amber-700 font-black text-sm">★ {{ number_format($facility->rating, 1) }}</span>
-          @if($facility->source === 'google_maps_veri_cekici')<span class="text-[10px] text-gray-400 font-semibold -ml-1">(Google)</span>@endif
-        @else
-          <span></span>
-        @endif
+        <span class="flex items-center gap-1.5 flex-wrap">
+          @if($facility->rating > 0)
+            <span class="text-amber-700 font-black text-sm">★ {{ number_format($facility->rating, 1) }}</span>
+            @if($facility->source === 'google_maps_veri_cekici')<span class="text-[10px] text-gray-400 font-semibold -ml-1">(Google)</span>@endif
+          @endif
+          {{-- 28 Eylul 2026: kullanicinin talebi - yorum sayisi artik il/ilce
+               satirinda degil, puanin HEMEN yaninda gosterilir. --}}
+          @if($totalReviewCount > 0)
+            <span class="text-gray-400 text-xs font-semibold">💬 {{ $totalReviewCount }}</span>
+          @endif
+        </span>
         {{-- 7 Eylul 2026: kullanicinin talebi - bkz. price-locked.blade.php ayni tarihli yorum. --}}
         @if(session('family_user_id'))
           @if($facility->price_min)<span class="text-gray-700 font-black text-sm">{{ number_format($facility->price_min,0,',','.') }} TL<span class="text-gray-400 font-normal">/ay</span></span>@else<span class="text-primary text-sm font-black">Fiyat iste</span>@endif

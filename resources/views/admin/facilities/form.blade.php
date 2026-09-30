@@ -93,6 +93,75 @@
           </form>
           @error('applicant_email')<p class="text-xs text-red-600 px-4 pb-3">{{ $message }}</p>@enderror
         </details>
+
+        {{-- 27 Eylul 2026: kullanicinin talebi - CRM'den (pazarlamaci) ikna
+             olup dekont gonderen, henuz hic panel hesabi olmayan kurumu tek
+             adimda hem abone yapar hem giris hesabi acar. Hesabi zaten olan
+             bir kurumda bu kart hic gorunmez, mevcut "Abone Yap" (yukarida,
+             kurum listesinde) yeterlidir. --}}
+        @if($facility->facilityUsers->isEmpty())
+          @if(session('subscription_account_credentials'))
+            @php $subCred = session('subscription_account_credentials'); @endphp
+            <div class="rounded-lg border-2 border-fuchsia-300 bg-fuchsia-50 p-4 mb-3">
+              <p class="text-sm font-black text-fuchsia-800 mb-2">★ Kurum abone yapıldı ve panel hesabı açıldı - giriş bilgileri {{ $subCred['email'] }} adresine gönderildi. Yine de kurum yetkilisine iletin:</p>
+              <p class="text-sm text-gray-800">E-posta: <span class="font-mono font-bold">{{ $subCred['email'] }}</span></p>
+              <p class="text-sm text-gray-800">Geçici şifre: <span class="font-mono font-bold text-lg">{{ $subCred['password'] }}</span></p>
+              <p class="text-sm text-gray-800">Giriş adresi: <a href="{{ $subCred['login_url'] }}" target="_blank" class="text-primary underline">{{ $subCred['login_url'] }}</a></p>
+              @if($subCred['whatsapp_url'] ?? null)
+                <a href="{{ $subCred['whatsapp_url'] }}" target="_blank" class="inline-flex items-center gap-1.5 mt-3 bg-[#25D366] text-white font-bold text-sm px-4 py-2 rounded-lg">📱 Kurumun WhatsApp'ına gönder</a>
+              @endif
+              <p class="text-xs text-gray-500 mt-2">Bu kutu sadece bir kez gösterilir, sayfayı yenilerseniz kaybolur - şimdi not edin.</p>
+            </div>
+          @endif
+
+          @if($facility->marketingNotes->isNotEmpty())
+            @php
+              $marketingStatusLabels = ['called'=>'Arandı','thinking'=>'Düşünecek','interested'=>'İlgileniyor','subscribed'=>'Üye Oldu','not_interested'=>'İlgilenmiyor','receipt_sent'=>'Dekont Geldi'];
+            @endphp
+            <div class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <p class="text-xs font-black text-gray-600 mb-1">Pazarlamacı CRM notları:</p>
+              @if($facility->marketing_callback_at)
+                <p class="text-xs {{ $facility->marketing_callback_at->isFuture() ? 'text-amber-700' : 'text-gray-400' }} font-semibold mb-1">📅 Aranacak zaman: {{ $facility->marketing_callback_at->format('d.m.Y H:i') }}{{ $facility->marketing_callback_at->isPast() ? ' (geçti)' : '' }}</p>
+              @endif
+              @foreach($facility->marketingNotes as $note)
+                <p class="text-xs text-gray-500">{{ $note->created_at->format('d.m.Y H:i') }} — <span class="font-semibold">{{ $marketingStatusLabels[$note->status] ?? $note->status }}</span>@if($note->note) : {{ $note->note }}@endif</p>
+              @endforeach
+              @if($facility->marketing_brochure_requested !== null)
+                <p class="text-xs text-gray-500 mt-1">Broşür dağıtımı: <span class="font-semibold">{{ $facility->marketing_brochure_requested ? 'İstiyor' : 'İstemiyor' }}</span></p>
+              @endif
+            </div>
+          @endif
+
+          <details class="mb-1 group border-2 border-fuchsia-300 bg-fuchsia-50 rounded-lg overflow-hidden">
+            <summary class="list-none cursor-pointer select-none px-4 py-3 flex items-center gap-2 hover:bg-fuchsia-100 transition">
+              <span class="text-lg leading-none">★</span>
+              <span class="text-sm font-black text-fuchsia-900">CRM'den abone yap</span>
+              <span class="text-xs text-fuchsia-700">— dekont geldiyse buradan abone yapıp panel hesabı açın</span>
+              <span class="ml-auto text-fuchsia-600 transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <form method="POST" action="{{ route('admin.facilities.subscription.enable-with-account', $facility) }}" class="px-4 pb-4 flex flex-wrap gap-2 items-end" onsubmit="return confirm('Bu kurum abone yapılıp panel hesabı açılsın mı?');">
+              @csrf
+              <div>
+                <label class="text-xs text-gray-500 block">Plan</label>
+                <select name="plan" class="border rounded-lg px-3 py-1.5 text-sm">
+                  {{-- 29 Eylul 2026: kullanicinin talebi - "3 Aylik" plani
+                       simdilik kaldirildi (kalici SILME degil, ileride
+                       gerekirse asagidaki satiri geri acmak yeterli):
+                  <option value="quarterly">3 Aylık — 4.000 TL</option>
+                  --}}
+                  <option value="semiannual">6 Aylık — 6.000 TL</option>
+                  <option value="yearly">12 Aylık — 9.000 TL</option>
+                  <option value="monthly">Aylık</option>
+                </select>
+              </div>
+              <div><label class="text-xs text-gray-500 block">Ücret (TL)</label><input type="number" name="amount" step="0.01" min="0" class="border rounded-lg px-3 py-1.5 text-sm w-28"></div>
+              <div><label class="text-xs text-gray-500 block">Yetkili Adı Soyadı</label><input type="text" name="applicant_name" required class="border rounded-lg px-3 py-1.5 text-sm w-44"></div>
+              <div><label class="text-xs text-gray-500 block">E-posta</label><input type="email" name="applicant_email" required class="border rounded-lg px-3 py-1.5 text-sm w-52"></div>
+              <div><label class="text-xs text-gray-500 block">Telefon</label><input type="text" name="applicant_phone" required value="{{ $facility->phone }}" class="border rounded-lg px-3 py-1.5 text-sm w-40"></div>
+              <button type="submit" class="bg-white border-2 border-fuchsia-700 text-fuchsia-800 hover:bg-fuchsia-100 px-5 py-2 rounded-lg text-sm font-black">★ Abone Yap + Hesap Aç</button>
+            </form>
+          </details>
+        @endif
       @endif
 
       @if($facility->claims->isNotEmpty())

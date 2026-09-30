@@ -41,6 +41,15 @@
           <td class="p-3 text-xs text-gray-600 max-w-[220px]">
             @if($r->care_for)<div><strong>Kimin için:</strong> {{ $r->care_for }}</div>@endif
             @if($r->patient_name)<div><strong>Hasta/çocuk:</strong> {{ $r->patient_name }}</div>@endif
+            @if($r->patient_age)<div><strong>Yaş:</strong> {{ $r->patient_age }}</div>@endif
+            @if($r->needed_from)<div><strong>İhtiyaç tarihi:</strong> {{ $r->needed_from->format('d.m.Y') }}</div>@endif
+            @if($r->budget_min || $r->budget_max)
+              <div><strong>Bütçe:</strong>
+                {{ $r->budget_min ? number_format($r->budget_min, 0, ',', '.').' TL' : '?' }}
+                –
+                {{ $r->budget_max ? number_format($r->budget_max, 0, ',', '.').' TL' : '?' }}
+              </div>
+            @endif
             @if($r->message)<div class="mt-1 line-clamp-2" title="{{ $r->message }}">{{ $r->message }}</div>@endif
           </td>
           <td class="p-3">

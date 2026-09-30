@@ -95,6 +95,39 @@
   </div>
 </div>
 
+{{-- 29 Eylul 2026: kullanicinin talebi - pazarlamaci satis surecini
+     ("arandi -> yetkiliyle gorustu -> detay dinledi -> fiyat istedi ->
+     odeme") ana sayfada ayrintili takip edebilmek icin (bkz.
+     FacilityMarketingNote::funnelStages() - ayni hesap admin/pazarlamaci-
+     hunisi tam sayfasiyla PAYLASILIR, iki ayri hesap yok). --}}
+<div class="bg-white rounded-xl shadow-sm p-5 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-bold text-lg">Pazarlamacı Satış Hunisi</h2>
+    <a href="{{ route('admin.marketers.funnel') }}" class="text-xs font-semibold text-gray-500">Ayrıntılı görünüm →</a>
+  </div>
+  @if($salesFunnel[0]['count'] === 0)
+    <div class="text-sm text-gray-400">Henüz hiçbir kurum aranmamış, huni burada birikecek.</div>
+  @else
+    <div class="flex flex-wrap gap-2">
+      @foreach($salesFunnel as $i => $stage)
+        <div class="flex-1 min-w-[140px] rounded-lg bg-gray-50 p-3">
+          <div class="text-xs text-gray-500">{{ $stage['label'] }}</div>
+          <div class="text-xl font-black text-gray-950 mt-1">{{ $stage['count'] }}</div>
+          <div class="text-xs font-semibold text-gray-400 mt-0.5">
+            %{{ $stage['percent_of_total'] }} toplam
+            @if($stage['percent_of_prev'] !== null)
+              · %{{ $stage['percent_of_prev'] }} önceki adımdan
+            @endif
+          </div>
+        </div>
+        @if(! $loop->last)
+          <div class="flex items-center text-gray-300 text-lg px-1">→</div>
+        @endif
+      @endforeach
+    </div>
+  @endif
+</div>
+
 {{-- 29 Agustos 2026: kullanicinin talebi - "kullanicilar hangi kurum
      turunu en cok ariyor" sorusuna panelde dogrudan cevap (bkz.
      Admin\DashboardController::categoryDemandSummary()) - tahmin degil,

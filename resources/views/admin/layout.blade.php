@@ -74,6 +74,7 @@
         <a href="{{ route('admin.claims.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.claims.*') ? 'bg-gray-700 text-white' : '' }}"><span>Sahiplenme Başvuruları</span>@if($pendingClaimsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingClaimsCount }}</span>@endif</a>
         <a href="{{ route('admin.registrations.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.registrations.*') ? 'bg-gray-700 text-white' : '' }}"><span>Kurum Kayıt Başvuruları</span>@if($pendingRegistrationsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingRegistrationsCount }}</span>@endif</a>
         <a href="{{ route('admin.invitations.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.invitations.*') ? 'bg-gray-700 text-white' : '' }}">Kurum Davetleri</a>
+        <a href="{{ route('admin.marketers.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.marketers.*') ? 'bg-gray-700 text-white' : '' }}">Pazarlamacılar (CRM)</a>
         {{-- 25 Agustos 2026: kullanicinin talebi - kisisel aracilik/komisyon takibi icin kucuk bir CRM. --}}
         <a href="{{ route('admin.broker.facilities') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.facilities*') ? 'bg-gray-700 text-white' : '' }}">Anlaşmalı Kurumlar</a>
         <a href="{{ route('admin.broker.referrals') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.referrals*') ? 'bg-gray-700 text-white' : '' }}">Aracılık Yönlendirmeleri</a>
@@ -170,6 +171,10 @@
       <span id="admin-theme-toggle-icon" aria-hidden="true">🌙</span>
     </button>
     @include('themes._shared.partials.notification-permission', ['buttonClass' => 'text-sm text-gray-200 hover:text-white font-semibold'])
+    <a href="{{ route('admin.notifications.index') }}" class="flex items-center justify-between text-sm text-gray-200 hover:text-white font-semibold">
+      <span>Bildirimler</span>
+      @if($unreadAdminNotificationsCount > 0)<span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadAdminNotificationsCount }}</span>@endif
+    </a>
     <div class="text-xs text-gray-400">{{ session('admin_name') }}</div>
     <form method="POST" action="{{ route('admin.logout') }}">@csrf<button class="text-sm text-red-400 hover:text-red-300">Çıkış Yap</button></form>
   </div>

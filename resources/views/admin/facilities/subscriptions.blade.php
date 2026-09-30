@@ -36,6 +36,8 @@
   <select name="plan" class="border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
     <option value="">Plan: Tümü</option>
     <option value="monthly" @selected(request('plan')==='monthly')>Aylık</option>
+    <option value="quarterly" @selected(request('plan')==='quarterly')>3 Aylık</option>
+    <option value="semiannual" @selected(request('plan')==='semiannual')>6 Aylık</option>
     <option value="yearly" @selected(request('plan')==='yearly')>Yıllık</option>
   </select>
   <select name="durum" class="border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
@@ -73,7 +75,7 @@
             <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600">{{ $f->name }}</a>
           </td>
           <td class="p-3">{{ $f->city->name }}</td>
-          <td class="p-3">{{ $f->subscription_plan === 'yearly' ? 'Yıllık' : 'Aylık' }}</td>
+          <td class="p-3">{{ ['monthly'=>'Aylık','quarterly'=>'3 Aylık','semiannual'=>'6 Aylık','yearly'=>'Yıllık'][$f->subscription_plan] ?? $f->subscription_plan }}</td>
           <td class="p-3 text-gray-700 whitespace-nowrap">{{ $f->subscription_amount ? number_format($f->subscription_amount, 0, ',', '.').' TL' : '—' }}</td>
           <td class="p-3 text-gray-500 whitespace-nowrap">{{ $f->subscription_started_at?->format('d.m.Y') ?? '—' }}</td>
           <td class="p-3 text-gray-700 whitespace-nowrap">{{ $f->subscription_paid_until?->format('d.m.Y') ?? '—' }}</td>
@@ -86,8 +88,11 @@
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">Ödeme Bekliyor</span>
             @endif
           </td>
+          @php
+            $planDuration = ['monthly' => '1 ay', 'quarterly' => '3 ay', 'semiannual' => '6 ay', 'yearly' => '1 yıl'][$f->subscription_plan] ?? '1 ay';
+          @endphp
           <td class="p-3 text-right whitespace-nowrap">
-            <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline flex items-center gap-1 justify-end" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? {{ $f->subscription_paid_until ? 'Bitiş tarihi 1 '.($f->subscription_plan === 'yearly' ? 'yıl' : 'ay').' uzatılacak.' : 'Abonelik süresi bu ödemeyle başlayıp 1 '.($f->subscription_plan === 'yearly' ? 'yıl' : 'ay').' geçerli olacak.' }}');">
+            <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline flex items-center gap-1 justify-end" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? {{ $f->subscription_paid_until ? 'Bitiş tarihi '.$planDuration.' uzatılacak.' : 'Abonelik süresi bu ödemeyle başlayıp '.$planDuration.' geçerli olacak.' }}');">
               @csrf
               <input type="number" name="amount" step="0.01" min="0" value="{{ $f->subscription_amount }}" placeholder="TL" class="text-xs border rounded w-20" onclick="event.stopPropagation()">
               <button class="text-green-700 font-semibold">Ödeme Aldım</button>

@@ -13,13 +13,15 @@ class Facility extends Model
         'address', 'lat', 'lng', 'phone', 'phone_type', 'email', 'source', 'source_payload', 'description', 'capacity', 'price_min',
         'price_max', 'services', 'cover_image', 'is_published',
         'is_featured', 'rating', 'is_claimed', 'claimed_at', 'ministry_verification',
-        'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'favorites_count',
+        'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'boosted_views_count', 'boosted_views_count_weekly',
+        'views_count_at_week_start', 'views_count_at_month_start', 'favorites_count',
         'invitation_status', 'invitation_status_at', 'menu_image_path', 'menu_image_updated_at',
         'is_broker_managed', 'vacant_beds_male', 'vacant_beds_female', 'vacant_beds_updated_at',
         'allows_visit_service', 'video_path', 'video_updated_at',
         'vacancy_male', 'vacancy_female', 'vacancy_general', 'vacancy_updated_at',
         'site_visited_at', 'google_maps_url', 'google_reviews_fetched_at',
         'is_subscribed', 'subscription_plan', 'subscription_started_at', 'subscription_paid_until', 'subscription_amount',
+        'marketing_status', 'marketing_status_at', 'marketing_brochure_requested', 'marketing_callback_at',
     ];
 
     protected function casts(): array
@@ -66,6 +68,9 @@ class Facility extends Model
             'subscription_started_at' => 'datetime',
             'subscription_paid_until' => 'date',
             'subscription_amount' => 'float',
+            'marketing_status_at' => 'datetime',
+            'marketing_brochure_requested' => 'boolean',
+            'marketing_callback_at' => 'datetime',
         ];
     }
 
@@ -116,6 +121,11 @@ class Facility extends Model
     public function facilityUsers()
     {
         return $this->hasMany(FacilityUser::class);
+    }
+
+    public function marketingNotes()
+    {
+        return $this->hasMany(FacilityMarketingNote::class)->latest();
     }
 
     public function quotes()
@@ -234,6 +244,34 @@ class Facility extends Model
      * partial'inin buyuk kart dalinda) cagirilir - on kayitli kurumlarin
      * kucuk mini-kartinda hic yok, N+1 riski o yuzden sinirli.
      */
+    /**
+     * 30 Eylul 2026: kullanicinin talebi - kurum sayfalarinda ANA/BUYUK
+     * rakam artik "bu AY" sayacidir (ayin basinda sifirlanir, bkz. Console\
+     * Commands\ResetMonthlyViewCounters) - haftalik sifirlama hemen sonrasi
+     * kucuk gorunen sayi sorununu cozer. Gercek aylik goruntulenme
+     * (views_count - views_count_at_month_start) + bu ay otomatik eklenen
+     * (boosted_views_count). Ic analitik BUNU DEGIL, ham views_count'u
+     * (lifetime) kullanmaya devam eder.
+     */
+    public function monthlyDisplayViewsCount(): int
+    {
+        $monthlyReal = max(0, (int) $this->views_count - (int) $this->views_count_at_month_start);
+
+        return $monthlyReal + (int) $this->boosted_views_count;
+    }
+
+    /**
+     * 30 Eylul 2026: "bu HAFTA" sayaci - kucuk, ikincil bir trend rozeti
+     * olarak monthlyDisplayViewsCount()'un yaninda gosterilir (bkz. Console\
+     * Commands\ResetWeeklyViewCounters, facilities/show.blade.php).
+     */
+    public function displayViewsCount(): int
+    {
+        $weeklyReal = max(0, (int) $this->views_count - (int) $this->views_count_at_week_start);
+
+        return $weeklyReal + (int) $this->boosted_views_count_weekly;
+    }
+
     public function totalReviewCount(): int
     {
         // 22 Eylul 2026: kullanicinin bildirdigi gercek hata (N+1 testi) -
@@ -250,6 +288,20 @@ class Facility extends Model
         $google = $this->relationLoaded('googleReviews') ? $this->googleReviews->count() : $this->googleReviews()->count();
 
         return $approved + $google;
+    }
+
+    /**
+     * 28 Eylul 2026: kullanicinin talebi - tanıtım kartlarında "📷 X" rozeti
+     * icin GERCEK (demo HARİÇ) gorsel sayisi. images relation ZATEN listeleme
+     * sorgularinda ->with('images') ile yukleniyor (bkz. facility-card.blade.php
+     * ust kismindaki $ownImagePath), bu yuzden N+1 riski yok - relation
+     * yuklenmemisse (tek kurum sayfalari gibi) sorguya duser.
+     */
+    public function realImageCount(): int
+    {
+        $images = $this->relationLoaded('images') ? $this->images : $this->images()->get();
+
+        return $images->filter(fn ($img) => ! str_starts_with($img->path, 'facilities/demo/'))->count();
     }
 
     public function visitRequests()
@@ -517,8 +569,15 @@ class Facility extends Model
      */
     public function performanceSummary(): array
     {
+        // 30 Eylul 2026: kullanicinin talebi - bu, "HER YERDE AYNI TEK sayi"
+        // diyen 28 Agustos yorumundaki TEK merkezi kaynak - kurum sahibine/
+        // ziyaretcilere gosterilen ANA goruntulenme artik monthlyDisplayViewsCount()
+        // ("bu ay"). Ayrica kucuk bir "bu hafta" trend rozeti icin
+        // displayViewsCount() de ayri bir anahtarda dondurulur. Ic analitik
+        // hicbirini kullanmaz, sadece bu metot (dis gorunum) uzerinden gecer.
         return [
-            'views_count' => $this->views_count,
+            'views_count' => $this->monthlyDisplayViewsCount(),
+            'weekly_views_count' => $this->displayViewsCount(),
             'favorites_count' => $this->favorites_count,
             'offers_count' => $this->relationLoaded('offerRequests') ? $this->offerRequests->count() : $this->offerRequests()->count(),
             'quotes_count' => $this->relationLoaded('quotes') ? $this->quotes->count() : $this->quotes()->count(),

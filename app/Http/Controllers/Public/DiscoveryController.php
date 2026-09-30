@@ -138,17 +138,21 @@ class DiscoveryController extends Controller
 
         $brand = current_brand();
         [$activeSection, $scopes] = $this->activeScopes($request, $brand);
+        // 30 Eylul 2026: kullanicinin talebi - siralama ve rozet ARTIK AYLIK
+        // (monthlyDisplayViewsCount() ile AYNI) sayiyi yansitmali, yoksa
+        // rozetteki sayiyla sira tutmaz, otomatik eklemenin belli olmasina
+        // yol acabilirdi.
         $facilities = $this->cachedListing('most-viewed', $brand, $scopes, $request, fn () => Facility::discoverable()
             ->forBrand($scopes)
             ->with(['city', 'category', 'images'])
-            ->orderByDesc('views_count')
+            ->orderByDesc(DB::raw('(views_count - views_count_at_month_start) + boosted_views_count'))
             ->paginate(15)->withQueryString());
 
         return view("themes.{$brand['theme']}.facilities.grid-page", [
             'title' => 'En Çok Görüntülenen Kurumlar',
             'subtitle' => 'Ziyaretçilerin profil sayfasını en çok açtığı kurumlar.',
             'facilities' => $facilities,
-            'badges' => $facilities->mapWithKeys(fn ($f) => [$f->id => '<span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">'.number_format($f->views_count, 0, ',', '.').' görüntülenme</span>']),
+            'badges' => $facilities->mapWithKeys(fn ($f) => [$f->id => '<span class="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">'.number_format($f->monthlyDisplayViewsCount(), 0, ',', '.').' görüntülenme</span>']),
             'activeSection' => $activeSection,
             'sections' => service_sections(),
         ]);

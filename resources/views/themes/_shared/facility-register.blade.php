@@ -133,6 +133,19 @@
         </span>
       </label>
 
+      {{-- 29 Eylul 2026: kullanicinin talebi - kurumlar platformda
+           listelendiklerinden/pazarlandiklarindan haberdar olduklarini
+           acikca kabul etmeli (aksi halde "haberim yoktu" riski) - bu
+           kutu SADECE kurum formlarinda ve ZORUNLUDUR (aile kaydinda yok). --}}
+      <label class="flex items-start gap-2 text-xs text-gray-600 leading-relaxed">
+        <input type="checkbox" name="marketing_consent" required value="1" class="mt-0.5">
+        <span>
+          <a href="{{ brand_route('pages.show', ['slug' => 'pazarlama-izni']) }}" target="_blank" class="text-primary underline font-semibold">Pazarlama İzni</a>'ni
+          okudum, kurumumun Platform üzerinde tanıtılmasını ve bu kapsamda tarafımla iletişime geçilmesini kabul ediyorum.
+          <span class="font-semibold">Bu kutuyu işaretlemek zorunludur.</span>
+        </span>
+      </label>
+
       <button class="w-full py-3 rounded-lg font-black text-white" style="background: {{ $primary }};">Kaydı Gönder</button>
     </form>
   </div>

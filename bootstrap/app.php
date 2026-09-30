@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.auth' => \App\Http\Middleware\AdminAuth::class,
             'family.auth' => \App\Http\Middleware\FamilyAuth::class,
             'facility.auth' => \App\Http\Middleware\FacilityUserAuth::class,
+            'marketer.auth' => \App\Http\Middleware\MarketerAuth::class,
             'track.visit' => \App\Http\Middleware\TrackSiteVisit::class,
             'static.cache' => \App\Http\Middleware\CacheStaticPage::class,
         ]);

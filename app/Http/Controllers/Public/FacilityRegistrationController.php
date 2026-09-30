@@ -75,6 +75,7 @@ class FacilityRegistrationController extends Controller
             'applicant_ip' => $request->ip(),
             'consent_accepted_at' => now(),
             'consent_ip' => $request->ip(),
+            'marketing_consent_at' => now(),
         ]);
 
         \App\Models\Admin::all()->each(fn ($admin) => notify_user(
@@ -184,9 +185,16 @@ class FacilityRegistrationController extends Controller
             // kaydinda KVKK acik riza onay kutusu vardi, burada yoktu -
             // kisisel veri (ad/e-posta/telefon) onaysiz toplaniyordu.
             'consent' => 'required|accepted',
+            // 29 Eylul 2026: kullanicinin talebi - kurumlar Platform'da
+            // tanitildiklarindan haberdar olduklarini ACIKCA kabul etmeli
+            // (aksi halde "haberim yoktu" hukuki riski), bu yuzden bu kutu
+            // ZORUNLU (client-side required yetmez, sunucu tarafinda da).
+            'marketing_consent' => 'required|accepted',
         ], [
             'consent.required' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
             'consent.accepted' => 'Açık rıza metnini onaylamadan başvuru gönderemezsiniz.',
+            'marketing_consent.required' => 'Pazarlama iznini onaylamadan başvuru gönderemezsiniz.',
+            'marketing_consent.accepted' => 'Pazarlama iznini onaylamadan başvuru gönderemezsiniz.',
         ]);
     }
 }

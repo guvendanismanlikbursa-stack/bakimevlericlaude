@@ -472,11 +472,25 @@
     @php $perf = $facility->performanceSummary(); @endphp
     <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
       <h3 class="font-black text-gray-950 mb-1">Kurum Performansı</h3>
-      <p class="text-xs text-gray-400 mb-3">Yayına başladığından bu yana</p>
+      {{-- 30 Eylul 2026: kullanicinin talebi - goruntulenme artik "bu ay"
+           sayaci oldugu icin "yayina basladigindan bu yana" ifadesi
+           celisiyordu, notu asagidaki metrige tasidik (bkz. yukarida). --}}
+      <p class="text-xs text-gray-400 mb-3">Güncel performans özeti</p>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
         <div>
           <div class="text-gray-500 text-xs">👁️ Profil görüntüleme</div>
           <div class="font-black">{{ number_format($perf['views_count'], 0, ',', '.') }}</div>
+          {{-- 30 Eylul 2026: kullanicinin talebi - ana rakam "bu AY"
+               (her ay basinda sifirlanir), yaninda kucuk bir "bu hafta"
+               trend rozeti + ikisini de aciklayan kisa bir not (kucuk,
+               dikkat cekici olmali - bkz. Facility::monthlyDisplayViewsCount()/
+               displayViewsCount(), Console\Commands\ResetMonthlyViewCounters/
+               ResetWeeklyViewCounters). --}}
+          <div class="flex flex-wrap items-center gap-1 mt-1">
+            <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">📅 Bu ay</span>
+            <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">🔄 {{ number_format($perf['weekly_views_count'], 0, ',', '.') }} bu hafta</span>
+          </div>
+          <div class="text-[10px] text-gray-400 mt-1 max-w-[160px]">Aylık sayaç her ay başında, haftalık sayaç her Pazar akşamı yenilenir.</div>
         </div>
         <div>
           <div class="text-gray-500 text-xs">📞 Telefon tıklaması</div>
@@ -770,7 +784,7 @@
     @endphp
     <section class="mt-10 grid lg:grid-cols-[1fr_360px] gap-6">
       <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-        <h2 class="text-xl font-black text-gray-950 mb-4">Kurum yorumları</h2>
+        <h2 class="text-xl font-black text-gray-950 mb-4">Sitemizdeki Aile Yorumları</h2>
         <div class="space-y-3">
           @forelse(($facility->approvedReviews ?? collect()) as $review)
             <div class="rounded-lg bg-gray-50 border border-gray-100 p-4">
@@ -836,7 +850,22 @@
           <label for="q-asker-name" class="sr-only">Adınız (opsiyonel)</label>
           <input type="text" id="q-asker-name" name="asker_name" value="{{ old('asker_name') }}" placeholder="Adınız (opsiyonel)" class="border rounded-lg px-3 py-2 text-sm sm:w-48">
           <label for="q-question" class="sr-only">Sorunuz</label>
-          <input type="text" id="q-question" name="question" value="{{ old('question') }}" placeholder="Örn: Alzheimer hastası kabul ediyor musunuz?" required class="border rounded-lg px-3 py-2 text-sm flex-1">
+          @php
+            // 28 Eylul 2026: kullanicinin bildirdigi gercek hata - soru
+            // kutusundaki ornek TEK ve yasli-bakima ozel ("Alzheimer
+            // hastası...") idi, cocuk/rehabilitasyon kurumu sayfasinda da
+            // aynen gorunup alakasiz/kotu duruyordu. Bolume gore degisir.
+            // NOT: brand_scope degerleri config/brands.php'deki 'scopes'
+            // gruplariyla AYNI olmali - cocuk bolumu ['cocuk-bakim','ozel-egitim'],
+            // rehabilitasyon bolumu ['rehabilitasyon','fizik-tedavi'] kullanir,
+            // duz 'cocuk'/'rehabilitasyon' TEK BASINA hicbir kategoriyle eslesmez.
+            $questionPlaceholder = match (true) {
+                in_array($facility->category?->brand_scope, ['cocuk-bakim', 'ozel-egitim'], true) => 'Örn: Kaç yaşından itibaren kabul ediyorsunuz?',
+                in_array($facility->category?->brand_scope, ['rehabilitasyon', 'fizik-tedavi'], true) => 'Örn: Evde bakım/tedavi hizmeti veriyor musunuz?',
+                default => 'Örn: Alzheimer hastası kabul ediyor musunuz?',
+            };
+          @endphp
+          <input type="text" id="q-question" name="question" value="{{ old('question') }}" placeholder="{{ $questionPlaceholder }}" required class="border rounded-lg px-3 py-2 text-sm flex-1">
           <button class="btn-primary rounded-lg px-5 py-2 text-sm font-black whitespace-nowrap">Soru Sor</button>
         </form>
       @else
@@ -903,16 +932,78 @@
           @csrf
           @include('themes._shared.partials.honeypot')
           <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+          @php
+            // 28 Eylul 2026: kullanicinin talebi - "Ücret/Teklif Bilgisi Al"
+            // karti kurum turune (bolumune) gore ozellesin. "Kimin icin?"
+            // secenekleri ve alt alandaki isim etiketi artik bolume gore
+            // degisir - cocuk bolumunde "Kendim icin"/"Anne-Babam icin"
+            // anlamsizdi, yasli bakimda "Çocuğum icin" anlamsizdi. Rehabilitasyon
+            // herkesi kapsayabildigi icin TUM secenekler orada kalir.
+            // NOT: brand_scope degerleri config/brands.php'deki 'scopes'
+            // gruplariyla AYNI olmali - cocuk bolumu ['cocuk-bakim','ozel-egitim'],
+            // rehabilitasyon bolumu ['rehabilitasyon','fizik-tedavi'] kullanir.
+            $isCocukBolumu = in_array($facility->category?->brand_scope, ['cocuk-bakim', 'ozel-egitim'], true);
+            $isYasliBolumu = ($facility->category?->brand_scope ?? null) === 'yasli-bakim';
+            $careForOptions = match (true) {
+                $isCocukBolumu => ['cocuk' => 'Çocuğum için', 'yakin' => 'Yakınım için'],
+                $isYasliBolumu => ['kendisi' => 'Kendim için', 'anne-baba' => 'Anne/Babam için', 'yakin' => 'Yakınım için'],
+                default => ['kendisi' => 'Kendim için', 'anne-baba' => 'Anne/Babam için', 'cocuk' => 'Çocuğum için', 'yakin' => 'Yakınım için'],
+            };
+            $patientNamePlaceholder = $isCocukBolumu ? 'Çocuğun adı (opsiyonel)' : 'Hasta adı (opsiyonel)';
+            // 30 Eylul 2026: kullanicinin talebi - yeni kriter alanlari
+            // (yas/tarih/butce) da bolume ozel etiket ve ikna edici bir
+            // aciklamayla sunulmali, boyle bos bir "ekstra alan" gibi
+            // durmamali - doldurulma oranini etkiler.
+            $isRehabBolumu = in_array($facility->category?->brand_scope, ['rehabilitasyon', 'fizik-tedavi'], true);
+            $ageLabel = $isCocukBolumu ? 'Çocuğun yaşı (opsiyonel)' : 'Yaşı (opsiyonel)';
+            $startDateLabel = match (true) {
+                $isCocukBolumu => 'Ne zaman başlamak istiyorsunuz?',
+                $isRehabBolumu => 'Tedaviye ne zaman başlamak istiyorsunuz?',
+                default => 'Ne zaman ihtiyacınız var?',
+            };
+            $criteriaIntro = match (true) {
+                $isCocukBolumu => 'Çocuğunuzun yaşını ve bütçenizi paylaşırsanız, kurum size özel, daha hızlı ve isabetli bir teklif hazırlayabilir.',
+                $isYasliBolumu => 'Yaşı, ihtiyaç tarihini ve bütçenizi paylaşırsanız, kurum durumunuza en uygun teklifi hızlıca hazırlayabilir.',
+                $isRehabBolumu => 'Yaşı ve tedaviye ne zaman başlamak istediğinizi paylaşırsanız, kurum size en uygun planı ve teklifi hazırlayabilir.',
+                default => 'Bu bilgileri paylaşırsanız, kurum size daha isabetli ve hızlı bir teklif hazırlayabilir.',
+            };
+          @endphp
           <label for="offer-care-for" class="sr-only">Kimin için?</label>
           <select id="offer-care-for" name="care_for" class="border rounded-lg px-3 py-2 w-full bg-white">
             <option value="">Kimin için? (opsiyonel)</option>
-            <option value="kendisi" @selected(old('care_for')=='kendisi')>Kendim için</option>
-            <option value="anne-baba" @selected(old('care_for')=='anne-baba')>Anne/Babam için</option>
-            <option value="cocuk" @selected(old('care_for')=='cocuk')>Çocuğum için</option>
-            <option value="yakin" @selected(old('care_for')=='yakin')>Yakınım için</option>
+            @foreach($careForOptions as $value => $label)
+              <option value="{{ $value }}" @selected(old('care_for')==$value)>{{ $label }}</option>
+            @endforeach
           </select>
-          <label for="offer-patient-name" class="sr-only">Hasta/çocuk adı (opsiyonel)</label>
-          <input type="text" id="offer-patient-name" name="patient_name" value="{{ old('patient_name') }}" placeholder="Hasta/çocuk adı (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+          <label for="offer-patient-name" class="sr-only">{{ $patientNamePlaceholder }}</label>
+          <input type="text" id="offer-patient-name" name="patient_name" value="{{ old('patient_name') }}" placeholder="{{ $patientNamePlaceholder }}" class="border rounded-lg px-3 py-2 w-full">
+          {{-- 30 Eylul 2026: kullanicinin talebi - mevcut, calisan forma
+               kucuk ve risksiz bir ek: yas, ihtiyac tarihi, butce araligi.
+               Hepsi opsiyonel - dolduran aile daha isabetli/hizli teklif
+               alir, doldurmayan formu yine de gonderebilir. Bolume ozel
+               etiket + ikna edici aciklama ile sunulur (kullanicinin acik
+               talebi - bos/anlamsiz "ekstra alan" gibi durmamali). --}}
+          <p class="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">💡 {{ $criteriaIntro }}</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="offer-patient-age" class="sr-only">{{ $ageLabel }}</label>
+              <input type="number" id="offer-patient-age" name="patient_age" min="0" max="120" value="{{ old('patient_age') }}" placeholder="{{ $ageLabel }}" class="border rounded-lg px-3 py-2 w-full">
+            </div>
+            <div>
+              <label for="offer-needed-from" class="text-[11px] text-gray-400 block mb-0.5">{{ $startDateLabel }}</label>
+              <input type="date" id="offer-needed-from" name="needed_from" value="{{ old('needed_from') }}" class="border rounded-lg px-3 py-2 w-full text-sm">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="offer-budget-min" class="sr-only">Min bütçe (TL, opsiyonel)</label>
+              <input type="number" id="offer-budget-min" name="budget_min" min="0" step="100" value="{{ old('budget_min') }}" placeholder="Min bütçe (TL)" class="border rounded-lg px-3 py-2 w-full">
+            </div>
+            <div>
+              <label for="offer-budget-max" class="sr-only">Max bütçe (TL, opsiyonel)</label>
+              <input type="number" id="offer-budget-max" name="budget_max" min="0" step="100" value="{{ old('budget_max') }}" placeholder="Max bütçe (TL)" class="border rounded-lg px-3 py-2 w-full">
+            </div>
+          </div>
           <label for="offer-full-name" class="sr-only">Adınız Soyadınız</label>
           <input type="text" id="offer-full-name" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
           <label for="offer-phone" class="sr-only">Telefon</label>
@@ -922,7 +1013,9 @@
           <label for="offer-message" class="sr-only">Mesajınız / ihtiyaç detayı</label>
           <textarea id="offer-message" name="message" placeholder="Mesajınız / ihtiyaç detayı" rows="3" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
           <button class="btn-primary w-full py-2 rounded-lg font-black">Ücret Bilgisi İste</button>
-          <p class="text-xs text-gray-400">Devam ederseniz, ücret bilgisi alabilmek için ücretsiz bir aile hesabı oluşturmanız istenecektir.</p>
+          {{-- 30 Eylul 2026: kullanicinin talebi - "giris yapma sartini
+               kaldir", bu metin artik gercek disi oldugu icin guncellendi. --}}
+          <p class="text-xs text-gray-400">Hesap oluşturmanıza gerek yok — talebiniz doğrudan kuruma iletilir.</p>
         </form>
         {{-- 31 Agustos 2026: kullanicinin bildirdigi gercek hata - burada
              anlasmali kurumlarda bile HALA kurumun kendi ham numarasi

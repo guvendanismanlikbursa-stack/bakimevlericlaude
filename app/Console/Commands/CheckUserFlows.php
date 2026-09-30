@@ -174,6 +174,19 @@ class CheckUserFlows extends Command
             $this->info('Tüm kritik kullanıcı akışları (3 markada) sorunsuz çalışıyor.');
         }
 
+        // 28 Eylul 2026: kullanicinin talebi - "her sabah test bildirimleri
+        // testten sonra silinmeli". Yukaridaki temizlik test VERISINI
+        // (facility_claims, facility_registrations vb.) siliyor ama bu
+        // akislarin tetikledigi ADMIN BILDIRIMLERI (notify_user ile
+        // platform_notifications'a yazilan "Yeni kurum kaydı başvurusu" gibi
+        // kayitlar) ayri bir tablo - onlar hic silinmiyor, admin panelinde
+        // sonsuza kadar birikiyordu. Basari/hata durumundan BAGIMSIZ, bu
+        // calismanin urettigi TUM QATEST isaretli admin bildirimleri silinir.
+        DB::table('platform_notifications')
+            ->where('notifiable_type', \App\Models\Admin::class)
+            ->where(fn ($q) => $q->where('title', 'like', '%QATEST%')->orWhere('body', 'like', '%QATEST%'))
+            ->delete();
+
         // Is bulgusu bir KOMUT hatasi degildir (zaten yukarida ayrica
         // raporlandi) - FAILURE donmek Laravel Scheduler'in kendi, alakasiz
         // "scheduled command failed" hatasini AYRICA uretmesine yol acar
@@ -595,6 +608,13 @@ class CheckUserFlows extends Command
                     ['name' => 'applicant_phone', 'contents' => '05320000003'],
                     ['name' => 'note', 'contents' => 'Otomatik gunluk kontrol'],
                     ['name' => 'consent', 'contents' => '1'],
+                    // 30 Eylul 2026: kullanicinin talebi uzerine 29 Eylul'de
+                    // eklenen zorunlu pazarlama izni kutusu - test formu
+                    // guncellenmezse HER GUN "form 200 dondu ama kayit
+                    // olusmadi" YANLIS hatasi uretirdi (aslinda dogrulama
+                    // hatasi, ama HTTP client redirect'i takip ettigi icin
+                    // 200 olarak goruluyor).
+                    ['name' => 'marketing_consent', 'contents' => '1'],
                 ]);
         } finally {
             @unlink($imagePath);
@@ -645,6 +665,7 @@ class CheckUserFlows extends Command
             'applicant_email' => $email,
             'applicant_phone' => '05320000005',
             'consent' => '1',
+            'marketing_consent' => '1',
         ]);
 
         if ($resp->status() >= 500) {
@@ -1022,7 +1043,7 @@ class CheckUserFlows extends Command
 
         $client->asForm()->post("{$baseUrl}/kurum-panel/giris", [
             '_token' => $token,
-            'email' => $facilityUserEmail,
+            'login' => $facilityUserEmail,
             'password' => 'QaTest12345!',
         ]);
 

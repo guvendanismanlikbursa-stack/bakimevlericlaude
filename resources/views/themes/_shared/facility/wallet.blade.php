@@ -48,6 +48,9 @@
     <p class="text-xs text-gray-400">Dekont görseli (jpg/png/webp) veya PDF olarak yüklenebilir.</p>
     <label for="wallet-note" class="sr-only">Not (opsiyonel)</label>
     <input type="text" id="wallet-note" name="note" value="{{ old('note') }}" placeholder="Not (opsiyonel)" class="border rounded-lg px-3 py-2 w-full">
+    {{-- 29 Eylul 2026: kullanicinin talebi - gercek odeme icin yasal olarak
+         gerekli mesafeli satis sozlesmesi linki (bkz. sayfa/mesafeli-satis-sozlesmesi). --}}
+    <p class="text-xs text-gray-400">Dekontu göndererek <a href="{{ brand_route('pages.show', ['slug' => 'mesafeli-satis-sozlesmesi']) }}" target="_blank" class="underline">Mesafeli Satış Sözleşmesi</a>'ni kabul etmiş olursunuz.</p>
     <button type="submit" class="btn-primary px-6 py-2 rounded-lg font-semibold">Dekontu Gönder</button>
   </form>
 

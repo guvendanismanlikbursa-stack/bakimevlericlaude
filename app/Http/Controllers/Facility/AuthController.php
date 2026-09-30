@@ -21,21 +21,27 @@ class AuthController extends Controller
         $brand = app('currentBrand');
 
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'login' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $user = FacilityUser::where('email', $credentials['email'])->first();
+        // 27 Eylul 2026: kullanicinin talebi - kurum yetkilisi e-posta YERINE
+        // kayitli telefonuyla da giris yapabilmeli (ozellikle CRM uzerinden
+        // acilan hesaplarda telefon her zaman hatirlanir, e-posta unutulabilir).
+        // "@" iceriyorsa e-posta olarak, aksi halde telefon olarak aranir.
+        $user = str_contains($credentials['login'], '@')
+            ? FacilityUser::where('email', $credentials['login'])->first()
+            : FacilityUser::all()->first(fn (FacilityUser $u) => $u->phone && normalize_phone_digits($u->phone) === normalize_phone_digits($credentials['login']));
 
         // 21 Temmuz 2026: Google ile kayit olan hesaba rastgele bir sifre
         // atanir (kullanici hic bilmez) - normal sifre girisi deneyince
         // hep "hatali" cikip kullanici neden giremedigini anlayamiyordu.
         if ($user && $user->google_id && ! Hash::check($credentials['password'], $user->password)) {
-            return back()->withErrors(['email' => 'Bu hesap Google ile oluşturulmuş. Lütfen "Google ile giriş yap" seçeneğini kullanın.'])->onlyInput('email');
+            return back()->withErrors(['login' => 'Bu hesap Google ile oluşturulmuş. Lütfen "Google ile giriş yap" seçeneğini kullanın.'])->onlyInput('login');
         }
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            return back()->withErrors(['email' => 'E-posta veya şifre hatalı.'])->onlyInput('email');
+            return back()->withErrors(['login' => 'E-posta/telefon veya şifre hatalı.'])->onlyInput('login');
         }
 
         if ($user->status !== 'active') {

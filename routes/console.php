@@ -91,6 +91,34 @@ ScheduledJobMonitor::attach(
     60 * 24 * 7
 );
 
+// 30 Eylul 2026: kullanicinin talebi - "kurumlar icin siteyi cazip duruma
+// getirelim". Saatlik calisir, komutun kendisi 08-23 disinda hicbir sey
+// yapmadan cikar (bkz. App\Console\Commands\BoostFacilityViews) - gece
+// goruntulenme eklenmesi inandiriciligi kacirirdi.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:boost-facility-views')->hourly(),
+    'platform:boost-facility-views',
+    90
+);
+
+// 30 Eylul 2026: kullanicinin talebi - "bu hafta" goruntulenme sayaci her
+// Pazar aksami sifirlanir (bkz. App\Console\Commands\ResetWeeklyViewCounters).
+// weeklyOn(0, ...) = Pazar (Laravel/Carbon'da 0).
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:reset-weekly-view-counters')->weeklyOn(0, '20:00'),
+    'platform:reset-weekly-view-counters',
+    60 * 24 * 7
+);
+
+// 30 Eylul 2026: kullanicinin talebi - haftalik sifirlama hemen sonrasi
+// kucuk gorunen sayi sorununu cozmek icin, ana/buyuk rakam "bu ay" sayaci
+// (bkz. App\Console\Commands\ResetMonthlyViewCounters), her ayin 1'i aksami sifirlanir.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:reset-monthly-view-counters')->monthlyOn(1, '20:00'),
+    'platform:reset-monthly-view-counters',
+    60 * 24 * 32
+);
+
 // 12 Agustos 2026: kullanicinin talebi - kurum performans panelindeki
 // "gecen aya gore" trend gorunumu icin her gece kurumlarin o gunku
 // goruntulenme/favori/talep/teklif sayilarini kaydeder (bkz.

@@ -520,7 +520,7 @@ class PlatformFeatureTest extends TestCase
         $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)
             ->assertOk()
             ->assertSee('Veri kalite skoru')
-            ->assertSee('Kurum yorumları')
+            ->assertSee('Sitemizdeki Aile Yorumları')
             ->assertSee('Ziyaret / randevu talebi');
     }
 
@@ -1311,7 +1311,7 @@ class PlatformFeatureTest extends TestCase
         $user->update(['password' => Hash::make('Kurum12345!')]);
 
         $this->post('/site/bakimevleri/kurum-panel/giris', [
-            'email' => 'dogrulama@test.local',
+            'login' => 'dogrulama@test.local',
             'password' => 'Kurum12345!',
         ])->assertRedirect('/site/bakimevleri/kurum-panel/sifre-degistir');
     }
@@ -3828,14 +3828,15 @@ class PlatformFeatureTest extends TestCase
         // is_broker_managed=false, is_claimed=false birakiliyor.
         $this->rehabFacilityClaimed->update([
             'is_featured' => true,
-            'is_broker_managed' => false,
+            'is_broker_managed' => true,
             'is_claimed' => false,
             'site_visited_at' => now(),
         ]);
+        \Illuminate\Support\Facades\Cache::flush();
 
         foreach (['bakimevleri', 'bakimeviara', 'bakimevibul'] as $brand) {
             $response = $this->get("/site/{$brand}/?bolum=rehabilitasyon");
-            $response->assertOk()->assertSee('Yerinde Ziyaret Edildi');
+            $response->assertOk()->assertSee('Yerinde Ziyaret');
         }
 
         $this->assertStringContainsString('md:grid-cols-3', file_get_contents(resource_path('views/themes/bakimevleri/home/_results.blade.php')));
@@ -3884,7 +3885,7 @@ class PlatformFeatureTest extends TestCase
         for ($i = 1; $i <= 13; $i++) {
             $name = 'Rehab One Cikan '.sprintf('%02d', $i);
             $names[] = $name;
-            $this->facility($name, $this->rehabCategory, false)->update(['is_featured' => true]);
+            $this->facility($name, $this->rehabCategory, false)->update(['is_featured' => true, 'is_broker_managed' => true]);
         }
 
         $page1Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon')->assertOk()->getContent();

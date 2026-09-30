@@ -59,11 +59,15 @@ class DashboardController extends Controller
         $health = $this->healthSummary();
         $categoryDemand = $this->categoryDemandSummary();
         $realClickDemand = $this->categoryRealClickSummary();
+        // 29 Eylul 2026: kullanicinin talebi - pazarlamaci satis surecini
+        // ("arandi -> yetkiliyle gorustu -> detay dinledi -> fiyat istedi ->
+        // odeme") ana sayfada da ayrintili takip edebilmek icin.
+        $salesFunnel = \App\Models\FacilityMarketingNote::funnelStages();
 
         return view('admin.dashboard', compact(
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
             'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health',
-            'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions', 'realClickDemand'
+            'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions', 'realClickDemand', 'salesFunnel'
         ));
     }
 

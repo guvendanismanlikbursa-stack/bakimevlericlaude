@@ -91,7 +91,19 @@
     <option value="">Konum: Tümü</option>
     <option value="eksik" @selected(request('konum')==='eksik')>📍 Konumu Eksik</option>
   </select>
-  @if(request('city') || request('district') || request('category') || request('brand') || request('status') || request('q') || request('konum'))
+  {{-- 30 Eylul 2026: kullanicinin talebi - "hangi kurum ne kadar GERCEKTEN
+       goruntulenme almis" sorusuna cevap. Bu filtre/siralama otomatik
+       eklenen (boosted_views_count) DEGIL, sadece gercek (lifetime)
+       views_count uzerinden calisir (bkz. FacilityController::filteredQuery()/
+       index() ayni tarihli yorum). Sayi girisi oldugu icin (select degil)
+       diger metin aramasi gibi "Ara" butonuyla/Enter ile calisir. --}}
+  <input type="number" name="views_min" value="{{ request('views_min') }}" min="0" placeholder="Min. gerçek görüntülenme" class="border rounded-lg px-3 py-2 text-sm w-40">
+  <select name="sort" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="">Sırala: Son Eklenen</option>
+    <option value="views_desc" @selected(request('sort')==='views_desc')>👁️ Görüntülenme (çoktan aza)</option>
+    <option value="views_asc" @selected(request('sort')==='views_asc')>👁️ Görüntülenme (azdan çoğa)</option>
+  </select>
+  @if(request('city') || request('district') || request('category') || request('brand') || request('status') || request('q') || request('konum') || request('views_min') || request('sort'))
     <a href="{{ route('admin.facilities.index', array_filter(['status' => request('status')])) }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreleri temizle</a>
   @endif
 </form>

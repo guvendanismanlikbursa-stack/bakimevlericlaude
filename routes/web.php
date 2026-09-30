@@ -579,5 +579,37 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // 17 Agustos 2026: kullanicinin talebi - bkz. ScheduledJobMonitor yorumu.
         Route::get('/zamanlanan-gorevler', [\App\Http\Controllers\Admin\ScheduledJobController::class, 'index'])->name('scheduled-jobs.index');
+
+        // 27 Eylul 2026: kullanicinin talebi - CRM'e girecek pazarlamaci
+        // hesaplarini (telefon+sifre) sadece admin olusturur/yonetir.
+        Route::get('/pazarlamacilar', [\App\Http\Controllers\Admin\MarketerController::class, 'index'])->name('marketers.index');
+        Route::post('/pazarlamacilar', [\App\Http\Controllers\Admin\MarketerController::class, 'store'])->name('marketers.store');
+        Route::post('/pazarlamacilar/{marketer}/durum', [\App\Http\Controllers\Admin\MarketerController::class, 'toggleActive'])->name('marketers.toggle-active');
+        Route::post('/pazarlamacilar/{marketer}/sifre-sifirla', [\App\Http\Controllers\Admin\MarketerController::class, 'resetPassword'])->name('marketers.reset-password');
+        Route::get('/pazarlamaci-gorusmeleri', [\App\Http\Controllers\Admin\MarketerController::class, 'conversations'])->name('marketers.conversations');
+        Route::get('/pazarlamaci-hunisi', [\App\Http\Controllers\Admin\MarketerController::class, 'funnel'])->name('marketers.funnel');
+
+        Route::get('/bildirimler', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/bildirimler/{notification}/okundu', [\App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');
+        Route::delete('/bildirimler/{notification}', [\App\Http\Controllers\Admin\NotificationController::class, 'destroy'])->name('notifications.destroy');
+        Route::post('/kurumlar/{facility}/abone-yap-ve-panel-ac', [AdminFacilityController::class, 'subscribeWithPanelAccount'])->name('facilities.subscription.enable-with-account');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Pazarlamaci CRM paneli (admin/kurum/aile'den bagimsiz, telefon+sifre)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('pazarlamaci')->name('marketer.')->group(function () {
+    Route::get('/manifest.json', [\App\Http\Controllers\Public\MarketerManifestController::class, 'show'])->name('manifest');
+    Route::get('/giris', [\App\Http\Controllers\Marketer\AuthController::class, 'showLogin'])->name('login');
+    Route::post('/giris', [\App\Http\Controllers\Marketer\AuthController::class, 'login'])->middleware('throttle:auth-attempt')->name('login.attempt');
+    Route::post('/cikis', [\App\Http\Controllers\Marketer\AuthController::class, 'logout'])->name('logout');
+
+    Route::middleware('marketer.auth')->group(function () {
+        Route::get('/crm', [\App\Http\Controllers\Marketer\CrmController::class, 'index'])->name('crm.index');
+        Route::post('/crm/{facility}/not', [\App\Http\Controllers\Marketer\CrmController::class, 'storeNote'])->name('crm.store-note');
+        Route::post('/crm/{facility}/admine-bildir', [\App\Http\Controllers\Marketer\CrmController::class, 'notifyAdmin'])->name('crm.notify-admin');
     });
 });

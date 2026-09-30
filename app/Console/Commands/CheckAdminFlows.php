@@ -200,6 +200,14 @@ class CheckAdminFlows extends Command
             $this->info('Admin panelindeki tüm kritik işlemler sorunsuz çalışıyor.');
         }
 
+        // 28 Eylul 2026: bkz. CheckUserFlows::handle() ayni yorum - bu
+        // akislarin tetikledigi QATEST isaretli admin bildirimleri de
+        // birikmesin diye temizlenir.
+        DB::table('platform_notifications')
+            ->where('notifiable_type', \App\Models\Admin::class)
+            ->where(fn ($q) => $q->where('title', 'like', '%QATEST%')->orWhere('body', 'like', '%QATEST%'))
+            ->delete();
+
         // bkz. CheckUserFlows::runChecks() ayni yorum - bulgu zaten yukarida
         // ayrica raporlandi, FAILURE donmek Scheduler'in alakasiz "komut
         // basarisiz oldu" hatasini ayrica uretmesine yol acar.

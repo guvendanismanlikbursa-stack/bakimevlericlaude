@@ -13,7 +13,7 @@ class FacilityClaim extends Model
         'facility_id', 'brand', 'applicant_name', 'applicant_email', 'applicant_phone',
         'document_path', 'note', 'status', 'admin_note', 'reviewed_by', 'reviewed_at',
         'applicant_lat', 'applicant_lng', 'applicant_city_name', 'distance_km', 'applicant_ip',
-        'consent_accepted_at', 'consent_ip',
+        'consent_accepted_at', 'consent_ip', 'marketing_consent_at',
     ];
 
     // Ham konum verisi hassas kisisel veridir; ileride bir API eklenirse
@@ -29,6 +29,7 @@ class FacilityClaim extends Model
             'applicant_lng' => 'float',
             'distance_km' => 'float',
             'consent_accepted_at' => 'datetime',
+            'marketing_consent_at' => 'datetime',
         ];
     }
 

@@ -12,7 +12,7 @@
   <div class="admin-table-scroll overflow-x-auto">
   <table class="w-full text-sm">
     <thead class="bg-gray-50 text-left text-gray-500">
-      <tr><th class="p-3 w-56">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Durum</th><th class="p-3">Son Güncelleme</th><th class="p-3"></th></tr>
+      <tr><th class="p-3 w-56">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Görüntülenme</th><th class="p-3">Durum</th><th class="p-3">Son Güncelleme</th><th class="p-3"></th></tr>
     </thead>
     <tbody class="divide-y">
       @forelse($facilities as $f)
@@ -82,6 +82,18 @@
               <span class="text-gray-300">—</span>
             @endif
           </td>
+          {{-- 30 Eylul 2026: kullanicinin talebi - gercek ve otomatik
+               eklenen goruntulenme admin'e AYRI AYRI + toplam gorunmeli.
+               Ana sayi ARTIK AYLIK (site/kurum panelindeki ANA rakamla
+               AYNI - bkz. Facility::monthlyDisplayViewsCount()), altinda
+               aylik gercek/eklenen dokumu + kucuk haftalik trend bilgisi.
+               Bu seffaflik SADECE admin'e, disari (kurum paneli/site) tek
+               toplam sayi gider. --}}
+          <td class="p-3 whitespace-nowrap">
+            <div class="font-bold text-gray-900">{{ number_format($f->monthlyDisplayViewsCount(), 0, ',', '.') }} <span class="text-[10px] font-normal text-gray-400">/ ay</span></div>
+            <div class="text-[11px] text-gray-400">Gerçek: {{ number_format(max(0, $f->views_count - $f->views_count_at_month_start), 0, ',', '.') }} · Eklenen: {{ number_format($f->boosted_views_count, 0, ',', '.') }}</div>
+            <div class="text-[11px] text-gray-400">Bu hafta: {{ number_format($f->displayViewsCount(), 0, ',', '.') }} · Lifetime: {{ number_format($f->views_count, 0, ',', '.') }}</div>
+          </td>
           <td class="p-3">{{ $f->is_published ? 'Yayında' : 'Taslak' }}</td>
           {{-- 18 Agustos 2026: kullanicinin talebi - kurumlara sirayla
                gorsel eklerken en son hangisine ekledigini takip edebilmek
@@ -124,6 +136,10 @@
                   @csrf
                   <select name="plan" class="text-xs border rounded" onclick="event.stopPropagation()">
                     <option value="monthly">Aylık</option>
+                    {{-- 30 Eylul 2026: kullanicinin talebi - "3 Aylik" plani
+                         simdilik kaldirildi (bkz. admin/facilities/form.blade.php
+                         AYNI tarihli yorum) - burada da tutarlilik icin. --}}
+                    <option value="semiannual">6 Aylık</option>
                     <option value="yearly">Yıllık</option>
                   </select>
                   <input type="number" name="amount" step="0.01" min="0" placeholder="TL" class="text-xs border rounded w-16" onclick="event.stopPropagation()">
@@ -138,7 +154,7 @@
           </td>
         </tr>
       @empty
-        <tr><td class="p-3 text-gray-400" colspan="9">Kayıt yok.</td></tr>
+        <tr><td class="p-3 text-gray-400" colspan="10">Kayıt yok.</td></tr>
       @endforelse
     </tbody>
   </table>

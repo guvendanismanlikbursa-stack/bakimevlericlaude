@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-place-ids', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -120,12 +120,26 @@ class OpsController extends Controller
             'facility-district-fix-from-address' => $this->facilityDistrictFixFromAddress($request),
             'bursa-google-review-gaps' => $this->bursaGoogleReviewGaps($request),
             'facility-real-image-gaps' => $this->facilityRealImageGaps($request),
+            'facility-image-gap-targets-turkiye' => $this->facilityImageGapTargetsTurkiye($request),
+            'marketer-crm-diagnose' => $this->marketerCrmDiagnose($request),
+            'admin-notifications-clear-all' => $this->adminNotificationsClearAll(),
+            'marketer-qa-test' => $this->marketerQaTest($request),
             'facility-place-ids' => $this->facilityPlaceIds($request),
             'facility-anaokulu-kres-count' => $this->facilityAnaokuluKresCount(),
             'facility-anaokulu-category-fix' => $this->facilityAnaokuluCategoryFix($request),
             'elitokullar-anaokulu-export' => $this->elitokullarAnaokuluExport($request),
             'bursa-description-audit' => $this->bursaDescriptionAudit($request),
             'bursa-description-complete' => $this->bursaDescriptionComplete($request),
+            'description-no-quote-diagnose' => $this->descriptionNoQuoteDiagnose($request),
+            'description-add-short-quotes' => $this->descriptionAddShortQuotes($request),
+            'description-add-public-data-note' => $this->descriptionAddPublicDataNote($request),
+            'subscription-packages-list' => $this->subscriptionPackagesList(),
+            'subscription-package-toggle' => $this->subscriptionPackageToggle($request),
+            'seed-legal-pages' => $this->seedLegalPages($request),
+            'content-pages-debug' => $this->contentPagesDebug($request),
+            'offer-request-debug-lookup' => $this->offerRequestDebugLookup($request),
+            'mail-config-debug' => $this->mailConfigDebug(),
+            'boost-facility-views-run' => $this->boostFacilityViewsRun(),
             'description-fix-locative' => $this->descriptionFixLocative($request),
             'platform-errors-timeline' => $this->platformErrorsTimeline($request),
             'import-batch-errors' => $this->importBatchErrors($request),
@@ -3353,6 +3367,234 @@ Ilk 30 hic gorseli olmayan kurum:
         return ($apply ? 'TASINDI' : 'ONIZLEME').': '.count($move)." kurum Cocuk Bakim Merkezi ({$from}) -> Kres ve Anaokulu ({$to}). Sahipli/anlasmali oldugu icin ATLANAN: {$skipped}".PHP_EOL.'IDLER: '.implode(',', $move);
     }
 
+    // 28 Eylul 2026: kullanicinin talebi - "sitede gorseli bulunmayan butun kurumlar, en
+    // buyuk iller basta olmak uzere". Gercek gorseli OLMAYAN, on kayitli (sahipli/anlasmali
+    // haric) kurumlarin TUMU, il nufus siralamasina gore (buyukten kucuge) cikti verir.
+    // Cikti formati mevcut USB gorsel cekicinin girdi_kurumlar.txt formatiyla AYNI: id|isim|adres|il|ilce
+    private function facilityImageGapTargetsTurkiye(Request $request): string
+    {
+        $ilSira = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya', 'Adana', 'Şanlıurfa', 'Gaziantep', 'Kocaeli', 'Mersin', 'Diyarbakır', 'Kayseri', 'Manisa', 'Hatay', 'Samsun', 'Balıkesir', 'Kahramanmaraş', 'Van', 'Aydın', 'Tekirdağ', 'Sakarya', 'Denizli', 'Muğla', 'Eskişehir', 'Mardin', 'Trabzon', 'Malatya', 'Ordu', 'Erzurum', 'Sivas', 'Adıyaman', 'Batman', 'Elazığ', 'Şırnak', 'Kütahya', 'Tokat', 'Osmaniye', 'Zonguldak', 'Çorum', 'Afyonkarahisar', 'Yozgat', 'Isparta', 'Ağrı', 'Aksaray', 'Düzce', 'Bolu', 'Kırıkkale', 'Rize', 'Çanakkale', 'Uşak', 'Nevşehir', 'Edirne', 'Kırklareli', 'Kastamonu', 'Karaman', 'Niğde', 'Amasya', 'Giresun', 'Kırşehir', 'Erzincan', 'Sinop', 'Bayburt', 'Bartın', 'Yalova', 'Karabük', 'Bilecik', 'Siirt', 'Kilis', 'Iğdır', 'Bingöl', 'Muş', 'Artvin', 'Hakkari', 'Ardahan', 'Gümüşhane', 'Kars', 'Tunceli', 'Burdur'];
+
+        $rows = DB::table('facilities')
+            ->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')
+            ->where('facilities.is_claimed', false)
+            ->where('facilities.is_broker_managed', false)
+            ->whereNotExists(function ($sq) {
+                $sq->select(DB::raw(1))->from('facility_images')->whereColumn('facility_images.facility_id', 'facilities.id')
+                    ->where('facility_images.path', 'not like', 'facilities/demo/%');
+            })
+            ->select('facilities.id', 'facilities.name', 'facilities.address', 'cities.name as city', 'facilities.district')
+            ->get();
+
+        $rank = fn ($il) => (($p = array_search($il, $ilSira, true)) !== false) ? $p : 999;
+        $rows = $rows->sort(function ($a, $b) use ($rank) {
+            $ra = $rank($a->city); $rb = $rank($b->city);
+            return $ra <=> $rb ?: $a->id <=> $b->id;
+        })->values();
+
+        return $rows->map(function ($f) {
+            return $f->id.'|'.str_replace('|', ' ', (string) $f->name).'|'.str_replace('|', ' ', (string) $f->address).'|'.$f->city.'|'.str_replace('|', ' ', (string) $f->district);
+        })->implode("\n");
+    }
+
+    // 28 Eylul 2026: kullanicinin talebi - pazarlamaci CRM'de kayit gorunmuyor
+    // sikayeti icin tani. Pazarlamaci hesaplari, son giris zamanlari, ve
+    // facility_marketing_notes tablosundaki toplam/son kayitlari doker.
+    private function marketerCrmDiagnose(Request $request): string
+    {
+        $out = '';
+        $marketers = DB::table('marketers')->orderBy('name')->get();
+        $out .= 'PAZARLAMACILAR ('.$marketers->count().'):'.PHP_EOL;
+        foreach ($marketers as $m) {
+            $out .= "  #{$m->id} {$m->name} | tel: {$m->phone} | aktif: ".($m->is_active ? 'evet' : 'hayir')." | olusturuldu: {$m->created_at}".PHP_EOL;
+        }
+
+        $noteCount = DB::table('facility_marketing_notes')->count();
+        $out .= PHP_EOL.'TOPLAM NOT KAYDI: '.$noteCount.PHP_EOL;
+
+        $recent = DB::table('facility_marketing_notes')->orderByDesc('id')->limit(10)->get();
+        foreach ($recent as $r) {
+            $out .= "  #{$r->id} facility={$r->facility_id} marketer_id=".($r->marketer_id ?? 'NULL')." status={$r->status} created={$r->created_at}".PHP_EOL;
+        }
+
+        $withMarketingStatus = DB::table('facilities')->whereNotNull('marketing_status')->count();
+        $out .= PHP_EOL.'marketing_status dolu kurum sayisi: '.$withMarketingStatus.PHP_EOL;
+
+        $crmEligible = DB::table('facilities')->whereNull('deleted_at')
+            ->where('is_claimed', false)->where('is_broker_managed', false)
+            ->where('is_subscribed', false)->where('phone_type', '!=', 'none')->count();
+        $out .= 'CRM listesinde gorunmesi gereken (aranacak) kurum sayisi: '.$crmEligible.PHP_EOL;
+
+        return $out;
+    }
+
+    // 28 Eylul 2026: kullanicinin talebi - admin bildirim ekranindaki
+    // birikmis TUM eski kayitlari (QATEST dahil) tek seferde temizle.
+    private function adminNotificationsClearAll(): string
+    {
+        $count = DB::table('platform_notifications')->where('notifiable_type', \App\Models\Admin::class)->count();
+        DB::table('platform_notifications')->where('notifiable_type', \App\Models\Admin::class)->delete();
+
+        return "{$count} admin bildirimi silindi.";
+    }
+
+    // 28 Eylul 2026: devre disi pazarlamacinin oturumu/girisi gercekten engelleniyor mu
+    // uctan uca dogrulamak icin GECICI test hesabi (05320000999) olusturur/kapatir/siler.
+    private function marketerQaTest(Request $request): string
+    {
+        $phone = '05320000999';
+        $step = (string) $request->query('step');
+        $m = \App\Models\Marketer::where('phone', $phone)->first();
+        if ($step === 'create') {
+            $m?->delete();
+            \App\Models\Marketer::create(['name' => 'QATEST Pazarlamaci', 'phone' => $phone, 'password' => \Illuminate\Support\Facades\Hash::make('QaTest12345!'), 'is_active' => true]);
+            return 'olusturuldu';
+        }
+        if ($step === 'disable' && $m) {
+            $m->update(['is_active' => false, 'is_logged_in' => false]);
+            return 'devre disi birakildi';
+        }
+        if ($step === 'delete') {
+            $m?->delete();
+            return 'silindi';
+        }
+        return 'adim yok/hesap yok';
+    }
+
+    // 29 Eylul 2026: kullanicinin talebi - okul.com.tr'deki gibi "Pazarlama
+    // Izni" ve gercek odemeler (bakiye yukleme/abonelik) icin yasal olarak
+    // gerekli "Mesafeli Satis Sozlesmesi" sayfalari 3 marka icin de eklenir.
+    // Veri sorumlusu bilgileri MEVCUT kvkk sayfasindaki AYNI kimlikten
+    // alinir (Guven Bakim Hizmetleri) - tutarlilik icin farkli kimlik
+    // uydurulmadi. dry_run=1 (varsayilan) sadece onizler.
+    private function seedLegalPages(Request $request): string
+    {
+        $apply = $request->query('dry_run', '1') === '0';
+        $brands = config('brands.brands');
+        $out = '';
+
+        // Onceki hatali calistirmanin yanlis brand='pazarlama-izni'/'mesafeli-satis-sozlesmesi' satirlarini temizler.
+        if ($apply) {
+            \App\Models\ContentPage::whereIn('brand', ['pazarlama-izni', 'mesafeli-satis-sozlesmesi'])->delete();
+        }
+
+        foreach ($brands as $slug => $brand) {
+            $domain = $brand['name'];
+
+            $pazarlama = <<<HTML
+<h2>1. Bu İzin Ne Anlama Gelir?</h2>
+<p>{$domain} ("Platform"), kurumların bilgilerini (ad, adres, telefon, hizmet açıklaması, fotoğraf vb.) derleyip aileler için karşılaştırılabilir hale getiren bir bilgi/tanıtım platformudur. Kurum yetkilisi olarak, kurumunuzun Platform üzerinde tanıtılacağını, ailelere görüntüleneceğini ve bu kapsamda Platform'un sahibi <strong>Güven Bakım Hizmetleri</strong> tarafından tarafınızla (vermiş olduğunuz veya ilerleyen adımlarda vereceğiniz telefon numarası ve/veya e-posta adresiniz üzerinden) iletişime geçilebileceğini açıkça kabul edersiniz. Bu onay, "Platform'dan haberim yoktu" itirazının önüne geçmek amacıyla, kurum başvurusu/sahiplenme sırasında alınır ve <strong>zorunludur</strong>.</p>
+
+<h2>2. Bu İzin Neleri Kapsar?</h2>
+<ul>
+<li>Kurumunuzun Platform'da (arama sonuçları, kurum listeleri, kategori sayfaları dahil) yayınlanması ve tanıtılması,</li>
+<li>Yeni hizmetler, kampanyalar ve fırsatlar hakkında bilgilendirme amacıyla ticari elektronik ileti (SMS, e-posta, arama, uygulama içi bildirim) gönderilmesi — 6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun kapsamında,</li>
+<li>Platform deneyimini iyileştirmeye yönelik anket ve geri bildirim talepleri.</li>
+</ul>
+
+<h2>3. Verileriniz Nasıl Kullanılır?</h2>
+<p>Bu izin kapsamında işlenen kurum ve iletişim bilgileriniz yalnızca yukarıdaki amaçlarla, Platform'un kendi sistemleri ve gerektiğinde yalnızca e-posta/SMS gönderim altyapısı sağlayan sözleşmeli iş ortakları aracılığıyla kullanılır; reklam/pazarlama amacıyla üçüncü kişilerle paylaşılmaz veya satılmaz.</p>
+
+<h2>4. Ticari Elektronik İleti İznini Nasıl Geri Alabilirsiniz?</h2>
+<p>Kurumunuzun Platform'da yayınlanmasına ilişkin onay, kurum kaydı/sahiplenme başvurusunun bir parçasıdır; kurumunuzun Platform'dan tamamen kaldırılmasını isterseniz bakimevleri@gmail.com adresinden bize ulaşabilirsiniz. Yalnızca kampanya/tanıtım amaçlı ticari elektronik iletileri almak istemiyorsanız, gönderilen her ileti içindeki "aboneliği iptal et" bağlantısını kullanabilir veya bize yazabilirsiniz; bu, kurumunuzun Platform'daki yayınını etkilemez.</p>
+HTML;
+
+            $mesafeli = <<<HTML
+<h2>1. Taraflar</h2>
+<p><strong>SATICI:</strong> Güven Bakım Hizmetleri<br>
+<strong>Adres:</strong> Bursa Şehir Hastanesi Batı Poliklinik Girişi No:001, Nilüfer/Bursa<br>
+<strong>Telefon:</strong> 0531 463 59 30<br>
+<strong>E-posta:</strong> bakimevleri@gmail.com</p>
+<p><strong>ALICI:</strong> {$domain} üzerinden üyelik/abonelik paketi ve/veya bakiye satın alan kurum yetkilisi (aşağıda "Alıcı" olarak anılacaktır). Alıcı'ya ait ad-soyad, adres, telefon ve e-posta bilgileri, satın alma sırasında Alıcı tarafından sisteme girilen bilgilerdir.</p>
+
+<h2>2. Sözleşmenin Konusu</h2>
+<p>İşbu sözleşmenin konusu, Alıcı'nın {$domain} üzerinden elektronik ortamda satın aldığı üyelik/abonelik paketi ve/veya hesap bakiyesi (bundan sonra "Hizmet" olarak anılacaktır) ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin belirlenmesidir.</p>
+
+<h2>3. Hizmetin Temel Nitelikleri ve Satış Bedeli</h2>
+<p>Satın alınan paketin adı, kapsamı (süre, teklif/görüşme hakkı, öne çıkarma vb.), toplam satış bedeli (tüm vergiler dahil) ve ödeme şekli, satın alma anında Platform üzerinde Alıcı'ya açıkça gösterilir ve Alıcı'nın onayı alınmadan işlem tamamlanmaz. Fiyatlara KDV dahildir.</p>
+
+<h2>4. Ödeme ve İfa Şekli</h2>
+<p>Ödeme, Platform üzerinde belirtilen banka hesabına havale/EFT veya (mevcutsa) online ödeme yöntemleriyle yapılır. Hizmet, ödemenin Satıcı tarafından onaylanmasının ardından, Alıcı hesabına tanımlanarak elektronik ortamda ifa edilir; kargo ile gönderilen fiziksel bir ürün bulunmamaktadır.</p>
+
+<h2>5. Cayma Hakkı</h2>
+<p>Mesafeli Sözleşmeler Yönetmeliği'nin 15. maddesi uyarınca, <strong>Alıcı'nın onayı ile ifasına başlanan, elektronik ortamda anında ifa edilen hizmetler ve tüketiciye anında teslim edilen gayrimaddi mallara ilişkin sözleşmelerde cayma hakkı kullanılamaz.</strong> Alıcı, satın alma işlemini onaylayarak hizmetin (bakiye tanımlanması/paket aktivasyonu) anında, kendi açık talebi üzerine ifasına başlanmasını kabul etmiş sayılır ve bu nedenle, hizmetin ifasına başlanmasından sonra cayma hakkını kullanamaz. Hizmetin ifasına henüz başlanmamışsa (ör. ödeme onaylanmış ancak bakiye/paket henüz tanımlanmamışsa), Alıcı 14 gün içinde herhangi bir gerekçe göstermeksizin sözleşmeden cayma hakkına sahiptir; bu durumda bakimevleri@gmail.com adresine yazılı bildirimde bulunması yeterlidir.</p>
+
+<h2>6. Genel Hükümler</h2>
+<p>Alıcı, satın alma işlemini onaylamadan önce Hizmet'in temel nitelikleri, tam bedeli ve ödeme şekli hakkında Satıcı tarafından usulüne uygun olarak bilgilendirildiğini, bu bilgileri okuyup anladığını ve elektronik ortamda onayladığını kabul eder (bu sayfa aynı zamanda Ön Bilgilendirme Formu yerine geçer). İşbu sözleşmeden doğabilecek uyuşmazlıklarda, Ticaret Bakanlığı'nca ilan edilen değere kadar Tüketici Hakem Heyetleri, üzerindeki uyuşmazlıklarda ise Tüketici Mahkemeleri yetkilidir.</p>
+
+<h2>7. Yürürlük</h2>
+<p>Alıcı, Platform üzerinden bir ödeme işlemini onayladığı anda işbu Mesafeli Satış Sözleşmesi'nin tüm hükümlerini okuduğunu, anladığını ve kabul ettiğini beyan eder.</p>
+HTML;
+
+            $pages = ['Pazarlama İzni' => $pazarlama, 'Mesafeli Satış Sözleşmesi' => $mesafeli];
+            foreach ($pages as $title => $body) {
+                // 29 Eylul 2026: kullanicinin bildirdigi gercek hata - burada
+                // ONCEDEN $slug adi disaridaki marka $slug degiskenini
+                // GOLGELEYIP eziyordu, brand alanina yanlislikla sayfa
+                // slug'i yaziliyordu (3 marka yerine sadece 2 satir olustu).
+                // Ayri isimle (contentSlug) cakismasi engellendi.
+                $contentSlug = \Illuminate\Support\Str::slug($title);
+                $out .= "[{$slug}/{$contentSlug}] {$brand['name']} — {$title}: ".($apply ? 'YAZILDI' : 'onizleme').PHP_EOL;
+                if ($apply) {
+                    \App\Models\ContentPage::updateOrCreate(
+                        ['brand' => $slug, 'slug' => $contentSlug],
+                        ['brand' => $slug, 'slug' => $contentSlug, 'type' => 'page', 'title' => $title, 'summary' => null, 'body' => sanitize_admin_html($body)]
+                    );
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    private function boostFacilityViewsRun(): string
+    {
+        Artisan::call('platform:boost-facility-views');
+
+        return Artisan::output();
+    }
+
+    private function mailConfigDebug(): string
+    {
+        return implode(PHP_EOL, [
+            'MAIL_MAILER='.config('mail.default'),
+            'MAIL_HOST='.config('mail.mailers.smtp.host'),
+            'MAIL_PORT='.config('mail.mailers.smtp.port'),
+            'MAIL_ENCRYPTION='.(config('mail.mailers.smtp.encryption') ?? 'NULL'),
+            'MAIL_USERNAME='.(config('mail.mailers.smtp.username') ? substr(config('mail.mailers.smtp.username'), 0, 4).'***' : 'BOS'),
+            'MAIL_FROM='.config('mail.from.address'),
+        ]);
+    }
+
+    private function offerRequestDebugLookup(Request $request): string
+    {
+        $phone = (string) $request->query('phone');
+        $rows = \App\Models\OfferRequest::where('phone', $phone)->latest()->limit(5)->get();
+        if ($rows->isEmpty()) { return 'KAYIT YOK'; }
+
+        if ($request->query('delete') === '1') {
+            $n = $rows->count();
+            \App\Models\OfferRequest::whereIn('id', $rows->pluck('id'))->forceDelete();
+
+            return "{$n} kayit kalici olarak silindi.";
+        }
+
+        return $rows->map(fn ($r) => "#{$r->id} facility_id={$r->facility_id} family_user_id=".($r->family_user_id ?? 'NULL')." yas={$r->patient_age} tarih={$r->needed_from} butce={$r->budget_min}-{$r->budget_max} olusturuldu={$r->created_at}")->implode(PHP_EOL);
+    }
+
+    private function contentPagesDebug(Request $request): string
+    {
+        $rows = \App\Models\ContentPage::whereIn('slug', ['pazarlama-izni', 'mesafeli-satis-sozlesmesi'])->get(['id', 'brand', 'slug', 'title']);
+        $out = 'current_brand slug beklenen: '.PHP_EOL;
+        $out .= json_encode(array_keys(config('brands.brands'))).PHP_EOL.PHP_EOL;
+        foreach ($rows as $r) {
+            $out .= "#{$r->id} brand=[{$r->brand}] slug=[{$r->slug}] title={$r->title}".PHP_EOL;
+        }
+
+        return $out === '' ? 'HIC KAYIT YOK' : $out;
+    }
+
     // 24 Eylul 2026: elitokullar icin - adinda SADECE anaokulu gecen (kres/gunduz bakim yok)
     // kurumlarin TUM verisi (JSON, sayfali). ozel alanlar (bakiye/kredi/abonelik/telefon-sahibi bilgileri) haric.
     private function elitokullarAnaokuluExport(Request $request): string
@@ -3555,9 +3797,14 @@ Ilk 30 hic gorseli olmayan kurum:
     {
         $cityId = (int) $request->query('city_id', 16);
         $apply = $request->query('dry_run', '1') === '0';
+        // 29 Eylul 2026: kullanicinin talebi - yeni yorum eklenen belirli
+        // kurumlar icin aciklamayi yeniden uretmek gerekince (onceki "temiz"
+        // aciklama sablon metni ICERMEDIGI icin normal filtreden gecmiyordu),
+        // "ids" parametresiyle DOGRUDAN hedeflenebilir.
+        $ids = array_filter(array_map('intval', explode(',', (string) $request->query('ids', ''))));
         $rows = \App\Models\Facility::with(['googleReviews', 'category', 'city'])->where('city_id', $cityId)->whereNull('deleted_at')->where('is_claimed', false)->where('is_broker_managed', false)
             ->where('id', '!=', 6713)->orderBy('id')->get()
-            ->filter(fn ($f) => str_contains((string) $f->description, 'ön kayıt profilidir') || str_contains((string) $f->description, 'Google Maps verilerinden'))
+            ->filter(fn ($f) => $ids ? in_array($f->id, $ids, true) : (str_contains((string) $f->description, 'ön kayıt profilidir') || str_contains((string) $f->description, 'Google Maps verilerinden')))
             ->take(max(1, (int) $request->query('limit', 50)));
         $giris = [
             '{isim}, {ilce}/{il} bölgesinde {kategori} alanında hizmet veren bir kurumdur.',
@@ -3598,6 +3845,173 @@ Ilk 30 hic gorseli olmayan kurum:
             if (count($out) < 3) { $out[] = "#{$f->id} ".$f->name.PHP_EOL.$yeni; }
         }
         return ($apply ? 'YAZILDI' : 'ONIZLEME').": {$n} kurum (yorumdan alintili: {$withReview}, yorumsuz temiz: ".($n - $withReview).')'.PHP_EOL.PHP_EOL.implode(PHP_EOL.PHP_EOL.'-----'.PHP_EOL, $out);
+    }
+
+    // 29 Eylul 2026: kullanicinin sorusu - "olumsuz yorumu olup yoruma gore
+    // aciklama yazmadigin kurum sayisi kac". bursaDescriptionComplete'teki
+    // AYNI "iyi yorum" filtresini (puan>=3, uzunluk>=25, adres/telefon
+    // icermeyen) kullanarak, en az 1 Google yorumu OLUP hicbiri bu filtreyi
+    // GECEMEYEN (dolayisiyla aciklamaya alintilanamayan) kurumlari sayar -
+    // "hic yorumu olmayan" (0 yorum) kurumlardan AYRI bir kategori.
+    private function descriptionNoQuoteDiagnose(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id', 16);
+        $temiz = fn (string $s) => trim(preg_replace('/\s+/', ' ', preg_replace('/(\+?90[\s-]?)?0?\s?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/', '', $s)));
+        $adayDegil = fn (string $s) => preg_match('/\b(Sokak|Sk\.|Cadde|Cad\.|Mah\.|Mahallesi|No\s?:)/u', $s) || preg_match('/\d{5,}/', $s);
+
+        $rows = \App\Models\Facility::with('googleReviews')->where('city_id', $cityId)->whereNull('deleted_at')
+            ->where('is_claimed', false)->where('is_broker_managed', false)->where('id', '!=', 6713)->orderBy('id')->get();
+
+        $noReviewAtAll = 0; $hasReviewNoQuote = 0; $onlyNegative = 0; $out = [];
+        foreach ($rows as $f) {
+            if ($f->googleReviews->isEmpty()) { $noReviewAtAll++; continue; }
+
+            $varUygun = false;
+            foreach ($f->googleReviews->filter(fn ($r) => (int) $r->rating >= 3 && mb_strlen(trim((string) $r->body)) >= 25) as $r) {
+                $q = $temiz((string) $r->body);
+                if ($q !== '' && ! $adayDegil($q) && mb_strlen($q) >= 25) { $varUygun = true; break; }
+            }
+            if (! $varUygun) {
+                $hasReviewNoQuote++;
+                $enYuksekPuan = $f->googleReviews->max('rating');
+                if ($enYuksekPuan < 3) { $onlyNegative++; }
+                if (count($out) < 15) {
+                    $out[] = "#{$f->id} {$f->name} | yorum sayisi: {$f->googleReviews->count()} | en yuksek puan: {$enYuksekPuan}";
+                }
+            }
+        }
+
+        return "Sehir id {$cityId} | toplam kurum: {$rows->count()}".PHP_EOL
+            ."Hic yorumu olmayan: {$noReviewAtAll}".PHP_EOL
+            ."Yorumu OLUP aciklamaya alintilanamayan: {$hasReviewNoQuote} (bunlarin {$onlyNegative} tanesinde TUM yorumlar 3 yildizin altinda)".PHP_EOL.PHP_EOL
+            .implode(PHP_EOL, $out);
+    }
+
+    // 29 Eylul 2026: kullanicinin talebi - descriptionNoQuoteDiagnose'un
+    // bulduğu "yorumu OLUP alintilanamayan" kurumlar icin: 3 yildiz ALTI
+    // yorumlar ASLA alintilanmaz (mevcut temiz aciklama oldugu gibi kalir),
+    // ama 3 yildiz ve UZERI yorumlarda 25 karakter alt siniri KALDIRILIR -
+    // kisa da olsa gercek bir olumlu yorum, hic yorum olmamasindan iyidir.
+    // bursaDescriptionComplete ile AYNI sablon/uslup, SADECE aday secimi ve
+    // uzunluk esigi farkli - kod tekrari bilerek (diger benzer ops
+    // metotlariyla ayni desen, paylasilan soyut bir taban siniflandirma
+    // riskini artirirdi).
+    private function descriptionAddShortQuotes(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id', 16);
+        $apply = $request->query('dry_run', '1') === '0';
+        $giris = [
+            '{isim}, {ilce}/{il} bölgesinde {kategori} alanında hizmet veren bir kurumdur.',
+            '{ilce}, {il}\'de faaliyet gösteren {isim}, {kategori} alanında hizmet sunmaktadır.',
+            '{il} {ilce}\'de bulunan {isim}, ailelere {kategori} hizmeti sunan kurumlardan biridir.',
+            '{isim} isimli kurum, {ilce}/{il} bölgesinde {kategori} alanında hizmet vermektedir.',
+        ];
+        $alinti1 = ['Bir veli yorumunda şunları paylaşmış: "{a}"', 'Ailelerden biri deneyimini şöyle aktarmış: "{a}"', 'Kurumu tercih eden bir aile şu ifadeleri kullanmış: "{a}"'];
+        $kapanis = ['Bu tür geri bildirimler, kurumu değerlendirirken size somut bir fikir verebilir.', 'Gerçek aile deneyimleri, kurumu tanımanıza yardımcı olabilir.'];
+        $cta = [
+            'Güncel fiyat bilgisi ve uygunluk durumu için aşağıdaki formu doldurarak bu kurumdan hızlıca bilgi talep edebilirsiniz.',
+            'Fiyat ve kontenjan bilgisi almak için aşağıdaki formu kullanarak kuruma doğrudan ulaşabilirsiniz.',
+            'Detaylı bilgi ve güncel fiyat için aşağıdaki formu doldurmanız yeterlidir.',
+        ];
+        $temiz = fn (string $s) => trim(preg_replace('/\s+/', ' ', preg_replace('/(\+?90[\s-]?)?0?\s?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/', '', $s)));
+        $adayDegil = fn (string $s) => preg_match('/\b(Sokak|Sk\.|Cadde|Cad\.|Mah\.|Mahallesi|No\s?:)/u', $s) || preg_match('/\d{5,}/', $s);
+
+        $rows = \App\Models\Facility::with(['googleReviews', 'category', 'city'])->where('city_id', $cityId)->whereNull('deleted_at')
+            ->where('is_claimed', false)->where('is_broker_managed', false)->where('id', '!=', 6713)->orderBy('id')->get();
+
+        $n = 0; $out = [];
+        foreach ($rows as $f) {
+            if ($f->googleReviews->isEmpty()) { continue; }
+            // zaten alintili bir aciklamasi varsa dokunma - sadece "yorumsuz temiz" olanlar hedef.
+            $desc = (string) $f->description;
+            if (str_contains($desc, 'Bir veli yorumunda') || str_contains($desc, 'Ailelerden biri deneyimini') || str_contains($desc, 'Kurumu tercih eden bir aile')) { continue; }
+
+            // 3 yildiz ALTI yorumlar KESIN ELENIR - burada esik yok, tek kural budur.
+            $iyi = $f->googleReviews->filter(fn ($r) => (int) $r->rating >= 3)
+                ->sortByDesc(fn ($r) => (int) $r->rating * 1000 + min(mb_strlen((string) $r->body), 300))->values();
+
+            $secilenAlinti = null;
+            foreach ($iyi as $r) {
+                $q = $temiz((string) $r->body);
+                if ($q === '' || $adayDegil($q)) { continue; }
+                $secilenAlinti = mb_strlen($q) > 200 ? mb_substr($q, 0, 200).'…' : $q;
+                break;
+            }
+            if ($secilenAlinti === null) { continue; }
+
+            $sec = fn (array $h) => $h[$f->id % count($h)];
+            $il = $f->city->name ?? ''; $ilce = $f->district ?: $il;
+            $satir = strtr($sec($giris), ['{isim}' => $f->name, '{ilce}' => $ilce, '{il}' => $il, '{kategori}' => $f->category->name ?? 'çocuk bakım']);
+            $parts = [$satir, strtr($sec($alinti1), ['{a}' => $secilenAlinti]), $sec($kapanis), $sec($cta)];
+            $yeni = $this->fixLocative(implode("\n\n", $parts));
+
+            if ($apply) { DB::table('facilities')->where('id', $f->id)->update(['description' => $yeni, 'updated_at' => now()]); }
+            $n++;
+            if (count($out) < 10) { $out[] = "#{$f->id} ".$f->name.PHP_EOL.$yeni; }
+        }
+
+        return ($apply ? 'YAZILDI' : 'ONIZLEME').": {$n} kurum (3+ yildiz, kisa yorumlar dahil)".PHP_EOL.PHP_EOL.implode(PHP_EOL.PHP_EOL.'-----'.PHP_EOL, $out);
+    }
+
+    // 29 Eylul 2026: kullanicinin talebi - Google'da hic yorumu bulunamayan
+    // (dolayisiyla aciklamaya alintilanacak yorumu olmayan) kurumlarin temiz
+    // aciklamasina "bu bilgiler herkese acik verilerle olusturulmustur" tarzi
+    // kisa bir not eklenir - KESIN KURAL: adres veya telefon numarasi ASLA
+    // gecmez (kullanicinin acik talebi), sadece genel bir seffaflik notu.
+    private function descriptionAddPublicDataNote(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id', 16);
+        $apply = $request->query('dry_run', '1') === '0';
+        $notlar = [
+            'Bu bilgiler, herkese açık kaynaklardaki veriler derlenerek hazırlanmıştır.',
+            'Kurum bilgileri, herkese açık kaynaklardan derlenerek oluşturulmuştur.',
+            'Bu içerik, herkese açık verilerden yararlanılarak hazırlanmıştır.',
+        ];
+
+        $rows = \App\Models\Facility::with('googleReviews')->where('city_id', $cityId)->whereNull('deleted_at')
+            ->where('is_claimed', false)->where('is_broker_managed', false)->where('id', '!=', 6713)->orderBy('id')->get();
+
+        $n = 0; $out = [];
+        foreach ($rows as $f) {
+            if ($f->googleReviews->isNotEmpty()) { continue; }
+            $desc = (string) $f->description;
+            if (str_contains($desc, 'herkese açık kaynak') || str_contains($desc, 'herkese açık verilerden')) { continue; }
+
+            $not = $notlar[$f->id % count($notlar)];
+            $satirlar = preg_split('/\n\n/', trim($desc));
+            // Son satir CTA (form/fiyat cagrisi) - notu CTA'dan HEMEN ONCE ekleriz.
+            $son = array_pop($satirlar);
+            $satirlar[] = $not;
+            $satirlar[] = $son;
+            $yeni = implode("\n\n", $satirlar);
+
+            if ($apply) { DB::table('facilities')->where('id', $f->id)->update(['description' => $yeni, 'updated_at' => now()]); }
+            $n++;
+            if (count($out) < 5) { $out[] = "#{$f->id} ".$f->name.PHP_EOL.$yeni; }
+        }
+
+        return ($apply ? 'YAZILDI' : 'ONIZLEME').": {$n} kurum".PHP_EOL.PHP_EOL.implode(PHP_EOL.PHP_EOL.'-----'.PHP_EOL, $out);
+    }
+
+    // 29 Eylul 2026: kullanicinin talebi - "3 aylik uyelik" paketini panelden
+    // kaldir (kalici SILME degil, ileride gerekirse tekrar aktif edilebilsin).
+    private function subscriptionPackagesList(): string
+    {
+        $rows = \App\Models\SubscriptionPackage::orderBy('sort_order')->orderBy('price')->get();
+
+        return $rows->map(fn ($p) => "#{$p->id} {$p->name} | {$p->price} TL | {$p->duration_days} gun | aktif: ".($p->is_active ? 'evet' : 'hayir'))->implode(PHP_EOL);
+    }
+
+    private function subscriptionPackageToggle(Request $request): string
+    {
+        $id = (int) $request->query('id');
+        $active = $request->query('active');
+        $p = \App\Models\SubscriptionPackage::find($id);
+        if (! $p) { return 'HATA: paket bulunamadi.'; }
+        $p->update(['is_active' => $active === '1']);
+        \Illuminate\Support\Facades\Cache::forget('subscription_packages:active');
+
+        return "#{$p->id} {$p->name}: aktif=".($p->is_active ? 'evet' : 'hayir');
     }
 
     // 24 Eylul 2026: Bursa kurumlarinin aciklama denetimi (salt-okunur).
@@ -3799,9 +4213,14 @@ Ilk 30 hic gorseli olmayan kurum:
         $limit = min((int) $request->query('limit', 10), 30);
         $apply = $request->boolean('apply');
 
+        // 28 Eylul 2026: kullanicinin talebi - "sahiplenilmis ve anlaşmalı
+        // kurumlar hariç" - bu iki durumdaki kurumlara ASLA dokunulmaz (bkz.
+        // kullanicinin standing kurali), koordinat duzeltmesi de dahil.
         $facilities = DB::table('facilities')
             ->join('cities', 'cities.id', '=', 'facilities.city_id')
             ->whereNull('facilities.deleted_at')
+            ->where('facilities.is_claimed', false)
+            ->where('facilities.is_broker_managed', false)
             ->whereNotNull('facilities.lat')
             ->whereNotNull('facilities.lng')
             ->whereNotNull('facilities.address')
