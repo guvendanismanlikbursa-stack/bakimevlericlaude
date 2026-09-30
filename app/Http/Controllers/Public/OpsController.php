@@ -3795,14 +3795,24 @@ HTML;
     // dry_run=1 (varsayilan) sadece listeler.
     private function bursaDescriptionComplete(Request $request): string
     {
-        $cityId = (int) $request->query('city_id', 16);
+        // 30 Eylul 2026: kullanicinin talebi - "butun on kayitli kurumlari
+        // tara" (bkz. admin/kurumlar/6374/edit ekran goruntusu - aciklamada
+        // ham adres+telefon yazan sablon aciklamalar aileleri formu
+        // kullanmadan dogrudan aramaya tesvik ediyordu). Bu fonksiyon
+        // 29 Eylul'de SADECE Bursa (city_id=16 varsayilan) icin yazilmisti,
+        // mantik zaten sehire ozel degildi - city_id=0 (veya hic verilmezse)
+        // artik TUM sehirleri tarar. Eski cagrilar (?city_id=16 ile) aynen
+        // calismaya devam eder, geriye donuk uyumluluk bozulmadi.
+        $cityId = (int) $request->query('city_id', 0);
         $apply = $request->query('dry_run', '1') === '0';
         // 29 Eylul 2026: kullanicinin talebi - yeni yorum eklenen belirli
         // kurumlar icin aciklamayi yeniden uretmek gerekince (onceki "temiz"
         // aciklama sablon metni ICERMEDIGI icin normal filtreden gecmiyordu),
         // "ids" parametresiyle DOGRUDAN hedeflenebilir.
         $ids = array_filter(array_map('intval', explode(',', (string) $request->query('ids', ''))));
-        $rows = \App\Models\Facility::with(['googleReviews', 'category', 'city'])->where('city_id', $cityId)->whereNull('deleted_at')->where('is_claimed', false)->where('is_broker_managed', false)
+        $rows = \App\Models\Facility::with(['googleReviews', 'category', 'city'])
+            ->when($cityId > 0, fn ($q) => $q->where('city_id', $cityId))
+            ->whereNull('deleted_at')->where('is_claimed', false)->where('is_broker_managed', false)
             ->where('id', '!=', 6713)->orderBy('id')->get()
             ->filter(fn ($f) => $ids ? in_array($f->id, $ids, true) : (str_contains((string) $f->description, 'ön kayıt profilidir') || str_contains((string) $f->description, 'Google Maps verilerinden')))
             ->take(max(1, (int) $request->query('limit', 50)));
