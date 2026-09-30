@@ -4619,10 +4619,20 @@ HTML;
             ->when($bursaCityId > 0, fn ($q) => $q->where('city_id', $bursaCityId))
             ->where('is_claimed', false)
             ->where('is_broker_managed', false)
-            ->when($request->query('real') === '1', function ($q) {
-                // real=1: demo/varsayilan gorseller SAYILMAZ, sadece gercek gorseli 5'ten az olanlar
-                $q->withCount(['images as real_images_count' => fn ($iq) => $iq->where('path', 'not like', 'facilities/demo/%')])
-                    ->having('real_images_count', '<', 5);
+            ->when($request->query('real') === '1', function ($q) use ($request) {
+                // real=1: demo/varsayilan gorseller SAYILMAZ.
+                // 30 Eylul 2026: kullanicinin bildirdigi gercek hata - varsayilan
+                // "<5" 1-4 arasi gercek gorseli OLAN (yani zaten kismen dolu,
+                // GERCEKTEN eksik SAYILMAYAN) kurumlari da hedefe sokuyordu.
+                // only_zero=1 ile SADECE HIC gercek gorseli olmayan (0) kurumlar
+                // hedeflenir - varsayilan davranis (eski cagrilarla uyumluluk
+                // icin) degismedi, sadece yeni bir secenek eklendi.
+                $q->withCount(['images as real_images_count' => fn ($iq) => $iq->where('path', 'not like', 'facilities/demo/%')]);
+                if ($request->query('only_zero') === '1') {
+                    $q->having('real_images_count', '=', 0);
+                } else {
+                    $q->having('real_images_count', '<', 5);
+                }
             }, fn ($q) => $q->having('images_count', '<', 5))
             ->get(['id', 'name', 'address', 'city_id', 'district']);
 
