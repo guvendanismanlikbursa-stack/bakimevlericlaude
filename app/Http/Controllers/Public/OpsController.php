@@ -3799,12 +3799,23 @@ HTML;
         // aciklama sablon metni ICERMEDIGI icin normal filtreden gecmiyordu),
         // "ids" parametresiyle DOGRUDAN hedeflenebilir.
         $ids = array_filter(array_map('intval', explode(',', (string) $request->query('ids', ''))));
+        // 30 Eylul 2026: kullanicinin bildirdigi gercek hata - city_id=0
+        // (tum Turkiye) ile bu sorgu eskiden TUM on kayitli kurumlari
+        // (binlerce satir, googleReviews/category/city eager-load ile
+        // birlikte) once hafizaya cekip ANCAK ONDAN SONRA PHP'de ->filter()
+        // ediyordu - paylasimli hosting'de 500 (bos govde, muhtemelen bellek/
+        // sure asimi) ile sonuclaniyordu. Sablon metni eslesmesi artik SQL
+        // WHERE'e tasindi ki sadece LIMIT kadar satir cekilsin.
         $rows = \App\Models\Facility::with(['googleReviews', 'category', 'city'])
             ->when($cityId > 0, fn ($q) => $q->where('city_id', $cityId))
             ->whereNull('deleted_at')->where('is_claimed', false)->where('is_broker_managed', false)
-            ->where('id', '!=', 6713)->orderBy('id')->get()
-            ->filter(fn ($f) => $ids ? in_array($f->id, $ids, true) : (str_contains((string) $f->description, 'ön kayıt profilidir') || str_contains((string) $f->description, 'Google Maps verilerinden')))
-            ->take(max(1, (int) $request->query('limit', 50)));
+            ->where('id', '!=', 6713)
+            ->when($ids, fn ($q) => $q->whereIn('id', $ids), fn ($q) => $q->where(fn ($qq) => $qq
+                ->where('description', 'like', '%ön kayıt profilidir%')
+                ->orWhere('description', 'like', '%Google Maps verilerinden%')))
+            ->orderBy('id')
+            ->limit(max(1, (int) $request->query('limit', 50)))
+            ->get();
         $giris = [
             '{isim}, {ilce}/{il} bölgesinde {kategori} alanında hizmet veren bir kurumdur.',
             '{ilce}, {il}\'de faaliyet gösteren {isim}, {kategori} alanında hizmet sunmaktadır.',
