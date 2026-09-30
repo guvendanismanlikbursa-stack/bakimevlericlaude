@@ -13,7 +13,7 @@ class OfferRequest extends Model
         'facility_id', 'brand', 'brand_id', 'family_user_id', 'city_id', 'district_id', 'facility_category_id',
         'full_name', 'phone', 'email', 'message', 'patient_name', 'care_for',
         'patient_age', 'needed_from', 'budget_min', 'budget_max',
-        'status', 'accepted_quote_id', 'batch_id', 'review_invited_at',
+        'status', 'accepted_quote_id', 'batch_id', 'review_invited_at', 'sent_to_facility_at',
     ];
 
     // 13 Temmuz 2026: bu castlar olmadan family_user_id bazen string donuyordu,
@@ -33,6 +33,7 @@ class OfferRequest extends Model
         'needed_from' => 'date',
         'budget_min' => 'float',
         'budget_max' => 'float',
+        'sent_to_facility_at' => 'datetime',
     ];
 
     public function brandModel()

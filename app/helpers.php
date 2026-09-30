@@ -613,6 +613,7 @@ if (! function_exists('notification_action_url')) {
                 'topup_requested' => route('admin.topups.index'),
                 'chat_message' => isset($data['chat_thread_id']) ? route('admin.chat.show', $data['chat_thread_id']) : route('admin.chat.index'),
                 'marketer_facility_forwarded' => isset($data['facility_id']) ? route('admin.facilities.edit', $data['facility_id']) : route('admin.marketers.conversations'),
+                'facility_interest_lead' => route('admin.fee-info-requests.index', ['scope' => 'on_kayitli']),
                 default => null,
             };
         } catch (\Throwable $e) {

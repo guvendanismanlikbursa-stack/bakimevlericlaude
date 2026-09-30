@@ -439,6 +439,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/kurum-ilgi-talepleri', [\App\Http\Controllers\Admin\FacilityInterestLeadController::class, 'index'])->name('facility-interest-leads.index');
         Route::put('/kurum-ilgi-talepleri/{facilityInterestLead}', [\App\Http\Controllers\Admin\FacilityInterestLeadController::class, 'update'])->name('facility-interest-leads.update');
 
+        // 30 Eylul 2026: kullanicinin talebi - "ilgi ve talep ayni sey" -
+        // Teklif Talebi + Kurum Ilgi Talebi artik TEK bir admin ekraninda
+        // (bkz. Admin\FeeInfoRequestController ayni tarihli yorum). Eski
+        // iki ayri sayfa/route hala calisir kalir (geriye donuk uyumluluk,
+        // eski linkler kirilmasin), ama admin menusunde artik SADECE bu
+        // birlesik sayfaya link veriliyor.
+        Route::get('/ucret-bilgi-talepleri', [\App\Http\Controllers\Admin\FeeInfoRequestController::class, 'index'])->name('fee-info-requests.index');
+        Route::post('/ucret-bilgi-talepleri/{type}/{id}/whatsapp', [\App\Http\Controllers\Admin\FeeInfoRequestController::class, 'sendWhatsapp'])->name('fee-info-requests.whatsapp');
+        Route::delete('/ucret-bilgi-talepleri/{type}/{id}', [\App\Http\Controllers\Admin\FeeInfoRequestController::class, 'destroy'])->name('fee-info-requests.destroy');
+
         Route::get('/doluluk-durumu', [AdminOccupancyController::class, 'index'])->name('occupancy.index');
         Route::post('/doluluk-durumu/{facility}', [AdminOccupancyController::class, 'update'])->name('occupancy.update');
 
