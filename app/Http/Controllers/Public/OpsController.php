@@ -4811,11 +4811,26 @@ HTML;
 
     private function gorselCekiciImportImages(Request $request): string
     {
+        // 30 Eylul 2026: kullanicinin talebi - "sureci hizlandir" - cagiran
+        // scriptte limit 10'dan 40'a cikarilinca ImageCompressionService
+        // icindeki sikistirma islemleri toplamda PHP'nin varsayilan 30sn
+        // max_execution_time sinirini asip "Fatal Error" ile 500 dondurdu
+        // (canli hata #196, ayni tarih). set_time_limit ile bu tek istege
+        // ozel sure uzatiliyor (paylasimli hosting bunu yok sayabilir, bu
+        // yuzden limit de asagida guvenli bir tavana sabitlendi - ikisi
+        // birlikte gercek bir guvence saglar).
+        set_time_limit(120);
+
         $folder = (string) $request->input('folder');
         if (! $folder || ! is_dir($folder)) {
             return 'HATA: gecerli bir "folder" parametresi (sunucudaki klasor yolu) gerekli.';
         }
-        $limit = max(1, (int) $request->input('limit', 20));
+        // 30 Eylul 2026: yukaridaki yorumla ayni sebep - limit=10 yuzlerce
+        // turda hic zaman asimina ugramamisti, limit=40 ilk denemede
+        // ugradi. 20 (eski varsayilan), set_time_limit ile birlikte makul
+        // bir orta nokta - cagiran taraf daha yuksek bir deger gonderse
+        // bile burada tavanlanir.
+        $limit = max(1, min(20, (int) $request->input('limit', 20)));
 
         $updatedFacilities = 0;
         $totalImages = 0;
