@@ -55,9 +55,9 @@ class FacilityController extends Controller
         // sayfalama linkleri.
         $perPage = 21;
         // 4 Eylul 2026: kullanicinin acik talebi - "anlaşmalı kurumlar her
-        // zaman en ustte cikmali". is_broker_managed artik is_featured'dan
-        // BILE once, ilk siralama kriteri.
-        $facilities = $query->orderByDesc('is_broker_managed')->orderByDesc('is_featured')->orderByDesc('rating')->paginate($perPage)->withQueryString();
+        // zaman en ustte cikmali". 30 Eylul 2026: paylasilan scope'a tasindi
+        // (bkz. Facility::scopeOrderByListingPriority ayni tarihli yorum).
+        $facilities = $query->orderByListingPriority()->paginate($perPage)->withQueryString();
 
         // 14 Agustos 2026: menzil disi bir sayfaya gidilirse (eski bir
         // yer imi/paylasilan link, filtre degisiminden sonra sayfa sayisi
@@ -176,9 +176,7 @@ class FacilityController extends Controller
 
         $preview = (clone $query)
             ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
-            ->orderByDesc('is_broker_managed')
-            ->orderByDesc('is_featured')
-            ->orderByDesc('rating')
+            ->orderByListingPriority()
             ->limit(6)
             ->get()
             ->map(fn (Facility $facility) => [
@@ -325,7 +323,10 @@ class FacilityController extends Controller
             ->orderByRaw('CASE WHEN district = ? THEN 0 ELSE 1 END', [$facility->district])
             ->orderByRaw('CASE WHEN facility_category_id = ? THEN 0 ELSE 1 END', [$facility->facility_category_id])
             // 4 Eylul 2026: kullanicinin talebi - anlaşmalı kurumlar her zaman en ustte.
-            ->orderByDesc('is_broker_managed')
+            // 30 Eylul 2026: paylasilan scope'a tasindi (bkz. Facility::
+            // scopeOrderByListingPriority ayni tarihli yorum) - ilce/kategori
+            // eslesmesinden SONRAKI ikincil siralama olarak kalir.
+            ->orderByListingPriority()
             ->limit(3)
             ->get();
 

@@ -7,76 +7,18 @@
   // yuklemesi olmayan kartlarda kucuk, durust bir "Ornek gorsel" etiketi
   // gosteriyoruz - gizlemek yerine seffaf olmak guveni artirir.
   $isSampleImage = ! $ownImagePath || str_starts_with($ownImagePath, 'facilities/demo/');
-  // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - bu sart eskiden
-  // SADECE is_claimed'e bakiyordu, yani anlasmali (is_broker_managed) ama
-  // henuz sahiplenilmemis HER kurum, sitenin HER YERINDE (arama sonuclari,
-  // anasayfa, kategori listeleri, "Benzer Kurumlar", rehber sayfalari)
-  // aksiyon butonu olmayan kucuk "Ön Kayıtlı" mini-karta dusuyordu - tıpkı
-  // gercekten hicbir iliskimiz olmayan rastgele bir kurum gibi. Facility::
-  // scopeAcceptsFamilyRequests() ile AYNI kural: anlasmali kurumlar da
-  // artik buyuk, aksiyon butonlu karti kullanir.
-  // 22 Eylul 2026: kullanicinin talebi - odemesi GECERLI olan abone
-  // kurumlar da artik anlasmali/sahiplenilmis kurumlarla AYNI buyuk,
-  // aksiyon butonlu karti kullanir (kucuk mini-karta dusmez) - "Yardımsever
-  // Kurum" rozetiyle one cikarilirlar.
   $isActiveSubscriberCard = $facility->isActiveSubscriber();
-  $isPreRegisteredCard = ! $facility->is_claimed && ! $facility->is_broker_managed && ! $isActiveSubscriberCard;
+  // 30 Eylul 2026: kullanicinin talebi - TUM kurumlar (ön kayıtlı dahil)
+  // ARTIK AYNI buyuk kart tipini kullanir, kucuk mini-kart kaldirildi.
+  // Ayrim artik kart BOYUTUYLA degil, 3 net rozetle yapilir (bkz.
+  // Facility::scopeOrderByListingPriority ayni tarihli yorum - AYNI
+  // oncelik sirasi): Anlaşmalı / Öne Çıkan (abone VEYA admin'in elle
+  // one cikardigi is_featured) / Önerilen (sahiplenilmis, digerleri
+  // degil). Ön kayitli kurumlar hic rozet almaz.
+  $isBrokerManaged = $facility->is_broker_managed;
+  $isFeaturedCard = ! $isBrokerManaged && ($facility->is_featured || $isActiveSubscriberCard);
+  $isRecommendedCard = ! $isBrokerManaged && ! $isFeaturedCard && $facility->is_claimed;
 @endphp
-@if($isPreRegisteredCard)
-  {{-- 17 Agustos 2026: kullanicinin talebi - on kayitli kurumlar buyuk
-       kartla ayni yeri kapladigi icin listelerde az kurum gorunuyordu,
-       ayrica sahiplenilmis kurumlardan gorsel olarak ayrilmiyordu. "Benzer
-       Kurumlar" bolumundeki kucuk yatay mini-kart deseni burada da
-       kullanildi - tiklaninca yine ayni tam kurum detay sayfasi acilir,
-       ayrica bir aksiyon butonu yok. Sahiplenilmis kurumlarda buyuk kart
-       (asagida) DEGISMEDEN kaliyor. --}}
-  {{-- 18 Eylul 2026: kullanicinin bildirdigi gercek hata - listeleme
-       sayfasinda buyuk kartlarla ayni CSS grid satirinda bu kucuk kart
-       varsayilan olarak (align-items:stretch) satir yuksekligine
-       geriliyordu, kenarligi de gerilince kartin altinda buyuk bos beyaz
-       bir kutu gorunuyordu. self-start ile kart artik sadece kendi gercek
-       icerigi kadar yer kaplar, gerilmez. --}}
-  {{-- 20 Eylul 2026: kullanicinin talebi - on kayitli kurumlarda da
-       Karşılaştır ozelligi kullanilabilmeli. Buton <a> disina, kardes
-       olarak eklendi (buton icinde <a>/<button> ic ice OLAMAZ - bkz.
-       nested-form/nested-link sinifi hatalar, gecmiste sorun cikarmisti). --}}
-  <div class="self-start bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition group">
-    <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="flex items-center gap-3">
-      <div class="w-14 h-14 shrink-0 rounded-md overflow-hidden bg-gray-50 relative">
-        <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition">
-      </div>
-      <div class="min-w-0">
-        {{-- 22 Eylul 2026: kullanicinin talebi - "Ön Kayıtlı" etiketi
-             kaldirildi (kafa karistirici/itici bulundu). Aktif abone
-             kurumlar artik bu mini karta hic dusmuyor (bkz. yukaridaki
-             $isPreRegisteredCard hesaplamasi) - buyuk kartta "Yardımsever
-             Kurum" rozetiyle gosteriliyorlar. --}}
-        <div class="flex items-center gap-1.5 flex-wrap">
-          @if($facility->is_featured)<span class="text-[10px] font-black text-amber-700 shrink-0">⭐</span>@endif
-        </div>
-        <div class="text-sm font-black text-gray-950 line-clamp-1">{{ $facility->name }}</div>
-        <div class="text-xs text-gray-500 line-clamp-1 flex items-center gap-1.5">
-          <span>{{ $facility->city->name }} · {{ $facility->district }}</span>
-          {{-- 20 Eylul 2026: kullanicinin talebi - il/ilce satirinin yanina,
-               salt sayi degil "X yorumu var" seklinde, platform + Google
-               yorumlari toplami (canli hesaplanir, yeni yorum eklendikce
-               otomatik guncellenir - sabit/onbelleklenmis bir sayi degil). --}}
-          @if(($miniReviewCount = $facility->totalReviewCount()) > 0)
-            <span class="text-gray-400 shrink-0">· 💬 {{ $miniReviewCount }} yorumu var</span>
-          @endif
-        </div>
-      </div>
-    </a>
-    <div class="mt-2 pt-2 border-t border-gray-50">
-      {{-- 20 Eylul 2026: kullanicinin talebi - buton "belli olmuyordu" (duz
-           gri kenarlik digerlerinden ayirt edilmiyordu); 2px mavi kenarlik +
-           mavi metin ile digerlerinden aciyor ama dolgu yok (asiri degil).
-           Sadece zaten derlenmis (app-*.css'de dogrulandi) siniflar
-           kullanildi: border-2, border-blue-400, text-blue-700. --}}
-      <button type="button" class="js-engagement-toggle w-full rounded-md border-2 border-blue-400 px-2 py-1.5 text-xs font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
-    </div>
-  </div>
-@else
 {{--
   14 Agustos 2026: kullanicinin talebi - "one cikan" kurumlar gorsel
   olarak da fark edilmeli, diger kartlarla ayni gorunmemeli (aksi halde
@@ -92,16 +34,10 @@
   etiketin anlami farkli (biri "vitrin", digeri "bizimle ticari anlasmasi
   var"), gorsel olarak da ayirt edilebilir kalmali.
 --}}
-@php
-  $isBrokerHighlight = $facility->is_broker_managed && ! $facility->is_featured;
-  // 25 Eylul 2026: kullanicinin talebi - sahiplenilmis kurum karti da anlasmali gibi belirgin olsun.
-  // FTP deploy'da Tailwind yeniden derlenmedigi icin renkler SATIR ICI style ile verilir.
-  $isClaimedHighlight = $facility->is_claimed && ! $facility->is_broker_managed && ! $facility->is_featured;
-@endphp
-<article @if($isClaimedHighlight) style="border:2px solid #34d399;box-shadow:0 10px 25px -5px rgba(16,185,129,.35);background:linear-gradient(to bottom,#ecfdf5,#ffffff 45%,#ffffff);" @endif class="bg-white rounded-xl overflow-hidden group relative transition
-  {{ $facility->is_featured
+<article @if($isRecommendedCard) style="border:2px solid #34d399;box-shadow:0 10px 25px -5px rgba(16,185,129,.35);background:linear-gradient(to bottom,#ecfdf5,#ffffff 45%,#ffffff);" @endif class="bg-white rounded-xl overflow-hidden group relative transition
+  {{ $isFeaturedCard
       ? 'border-2 border-amber-300 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50'
-      : ($isBrokerHighlight
+      : ($isBrokerManaged
           ? 'border-2 border-blue-400 shadow-lg shadow-blue-300/60 hover:shadow-xl hover:shadow-blue-400/60 bg-gradient-to-b from-blue-50/70 via-white to-white'
           : 'border border-gray-100 shadow-sm hover:shadow-lg') }}">
   {{-- 28 Eylul 2026: kullanicinin talebi - kosegen kurdeleler ("sacma
@@ -111,21 +47,15 @@
        degil satir ici style (bkz. asagidaki eski yorum - FTP deploy'da CSS
        yeniden derlenmiyor, kesin calismasi icin). --}}
   <div class="absolute top-2 left-2 z-10 flex flex-col items-start gap-1 pointer-events-none">
-    @if($facility->is_featured || $facility->is_broker_managed || $isActiveSubscriberCard)
-      <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#fbbf24,#f59e0b);color:#451a03;">
-        {{ ($facility->is_broker_managed || $isActiveSubscriberCard) ? '⭐ ÖNERİLEN' : '⭐ ÖNE ÇIKAN' }}
-      </span>
-    @endif
-    @if($isClaimedHighlight)
-      <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#059669,#10b981);color:#ffffff;">✓ SAHİPLENİLMİŞ</span>
-    @endif
-    @if($facility->is_broker_managed)
+    @if($isBrokerManaged)
       <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#2563eb,#0ea5e9);color:#ffffff;">🤝 Anlaşmalı</span>
+    @elseif($isFeaturedCard)
+      <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#fbbf24,#f59e0b);color:#451a03;">⭐ ÖNE ÇIKAN</span>
+    @elseif($isRecommendedCard)
+      <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#059669,#10b981);color:#ffffff;">⭐ ÖNERİLEN</span>
     @endif
   </div>
-  @unless($isPreRegisteredCard)
-    <button type="button" class="js-engagement-toggle absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-lg text-gray-400" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}" data-icon="1" aria-label="Favori">♥</button>
-  @endunless
+  <button type="button" class="js-engagement-toggle absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-lg text-gray-400" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}" data-icon="1" aria-label="Favori">♥</button>
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
     <div class="h-44 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center relative">
       <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
@@ -159,6 +89,11 @@
         @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>@endif
         @if($facility->hasFreeChildAccidentInsurance())<span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
+        {{-- 30 Eylul 2026: kullanicinin talebi - "hepsi tek kart tipi"
+             birlestirmesinde (bkz. ust taraftaki ayni tarihli yorum) bu
+             rozet eski, artik kaldirilan ozel anasayfa kart sablonunda
+             kalmisti, ortak karta hic tasinmamisti - buraya eklendi. --}}
+        @if($facility->site_visited_at)<span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">✓ Yerinde Ziyaret</span>@endif
         {{-- 22 Eylul 2026: kullanicinin talebi - abonelik odemesi GECERLI
              olan (ama sahiplenilmemis/anlasmasiz) kurumlar artik anlasmali/
              sahiplenilmis kurumlarla ayni buyuk kartta, "Yardımsever Kurum"
@@ -231,4 +166,3 @@
     @endif
   </div>
 </article>
-@endif

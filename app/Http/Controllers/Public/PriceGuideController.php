@@ -135,10 +135,11 @@ class PriceGuideController extends Controller
                 }
             }
 
+            // 30 Eylul 2026: paylasilan scope'a tasindi (bkz. Facility::
+            // scopeOrderByListingPriority ayni tarihli yorum).
             $facilities = (clone $baseQuery)
                 ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
-                ->orderByDesc('is_featured')
-                ->orderByDesc('rating')
+                ->orderByListingPriority()
                 ->paginate(12)
                 ->withQueryString();
 

@@ -42,52 +42,20 @@ class HomeController extends Controller
         ]));
 
         $homeData = Cache::remember($homeCacheKey, now()->addMinutes(10), function () use ($sectionScopes, $brand) {
-            // 26 Eylul 2026: ONERILEN = anlasmali + aktif abone kurumlar (sayfalanir); ONE CIKAN ayri bolum (sahiplenilmis/anlasmali/abone olmayan is_featured kurumlar).
-            $featured = Facility::discoverable()
+            // 30 Eylul 2026: kullanicinin talebi - "hepsi ayni kart tipinde,
+            // tek liste, sira: Anlaşmalı > Öne Çıkan > Önerilen > Ön Kayıtlı".
+            // Onceden 4 AYRI sorgu/bolum vardi (featured/featuredOnly/
+            // claimedFacilities/preRegistered, her biri kendi basligi/CTA'si
+            // ile) - hepsi TEK bir paylasilan oncelik sirasiyla (bkz.
+            // Facility::scopeOrderByListingPriority) TEK listeye birlesti.
+            // Anasayfada SAYFALAMA YOK - sadece ilk 12 kurum (2 sutun x 6
+            // sira) gosterilir, devami icin "Kurumlar" (filtre) sayfasina
+            // yonlendiren bir link var (bkz. home/_results.blade.php).
+            $facilities = Facility::discoverable()
                 ->forBrand($sectionScopes)
-                ->where(fn ($q) => $q->where('is_broker_managed', true)->orWhere(fn ($s) => $s->where('is_subscribed', true)->whereDate('subscription_paid_until', '>=', now()->toDateString())))
                 ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
-                ->orderByDesc('is_broker_managed')
-                ->orderByDesc('rating')
+                ->orderByListingPriority()
                 ->orderByDesc('id')
-                ->paginate(12, ['*'], 'featured_page')
-                ->withQueryString();
-
-            $featuredOnly = Facility::discoverable()
-                ->forBrand($sectionScopes)
-                ->where('is_featured', true)
-                ->where('is_claimed', false)
-                ->where('is_broker_managed', false)
-                ->where(fn ($q) => $q->where('is_subscribed', false)->orWhereNull('subscription_paid_until')->orWhereDate('subscription_paid_until', '<', now()->toDateString()))
-                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
-                ->orderByDesc('rating')->orderByDesc('id')
-                ->limit(12)->get();
-
-            // 28 Agustos 2026: kullanicinin talebi - "sahiplenilmis kurumlar"
-            // (is_claimed=true ama Öne Çıkanlar'da zaten gosterilenler haric)
-            // Öne Çıkanlar ile Ön Kayıtlı Kurumlar arasinda ayri bir bolum.
-            $claimedFacilities = Facility::discoverable()
-                ->forBrand($sectionScopes)
-                ->where('is_claimed', true)
-                ->where('is_broker_managed', false)
-                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
-                ->latest('claimed_at')
-                // 21 Eylul 2026: kullanicinin talebi - bkz. $featured ayni
-                // tarihli yorum, ayni sebep (4 sutunlu grid, tam 3 satir).
-                ->limit(12)
-                ->get();
-
-            // 28 Agustos 2026: kullanicinin talebi - Öne Çıkanlar, Sahiplenilmiş
-            // Kurumlar ve Ön Kayıtlı Kurumlar birbirinin YERINE GECMEZ - hangisinin
-            // kendi verisi varsa o gorunur, digerlerinin doluluk durumundan
-            // BAGIMSIZ (once denenen "sadece digerleri boşsa goster" yedek
-            // mantigi kaldirildi).
-            $preRegistered = Facility::discoverable()
-                ->forBrand($sectionScopes)
-                ->where('is_claimed', false)
-                ->where('source', 'google_maps_veri_cekici')
-                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
-                ->latest()
                 ->limit(12)
                 ->get();
 
@@ -100,11 +68,10 @@ class HomeController extends Controller
                 ->distinct('cities.id')->count('cities.id');
             $claimedCount = Facility::discoverable()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
 
-            return compact('featured', 'featuredOnly', 'claimedFacilities', 'preRegistered', 'facilityCount', 'cityCount', 'claimedCount');
+            return compact('facilities', 'facilityCount', 'cityCount', 'claimedCount');
         });
 
-        ['featured' => $featured, 'featuredOnly' => $featuredOnly, 'claimedFacilities' => $claimedFacilities, 'preRegistered' => $preRegistered,
-            'facilityCount' => $facilityCount, 'cityCount' => $cityCount, 'claimedCount' => $claimedCount] = $homeData;
+        ['facilities' => $facilities, 'facilityCount' => $facilityCount, 'cityCount' => $cityCount, 'claimedCount' => $claimedCount] = $homeData;
 
         // 14 Eylul 2026: kullanicinin talebi - anlaşmalı (is_broker_managed)
         // kurumlari il secilmemisse Turkiye genelinde, il secilmisse SADECE
@@ -151,23 +118,16 @@ class HomeController extends Controller
         // yakalaniyor, bkz. home.blade.php form action'i).
         $isFiltering = $this->hasActiveFilters($request);
         $filteredFacilities = null;
-        $filteredFeatured = null;
-        $filteredRecommended = null;
         $sectionBreakdown = [];
 
         if ($isFiltering) {
-            $baseQuery = $this->filteredQuery($request, $sectionScopes, $brand['category_scope'])->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews']);
-
-            // 26 Eylul 2026: sira = ONERILEN (anlasmali/abone/sahiplenilmis) -> hemen altinda ONE CIKAN -> en altta diger kurumlar.
-            $isRecommended = fn ($q) => $q->where(fn ($w) => $w->where('is_broker_managed', true)->orWhere(fn ($s) => $s->where('is_subscribed', true)->whereDate('subscription_paid_until', '>=', now()->toDateString())));
-            $filteredRecommended = $isRecommended(clone $baseQuery)->orderByDesc('is_broker_managed')->orderByDesc('rating')->limit(24)->get();
-            $recommendedIds = $filteredRecommended->pluck('id');
-            $filteredFeatured = (clone $baseQuery)->where(fn ($w) => $w->where('is_featured', true)->orWhere('is_claimed', true))->whereNotIn('id', $recommendedIds)->orderByDesc('is_claimed')->orderByDesc('rating')->limit(12)->get();
-
-            $filteredFacilities = $baseQuery
-                ->whereNotIn('id', $recommendedIds->merge($filteredFeatured->pluck('id')))
-                ->orderByDesc('rating')
-                ->paginate(21)
+            // 30 Eylul 2026: kullanicinin talebi - 3 ayri filtrelenmis blok
+            // (Önerilen/Öne Çıkan/Diğer) TEK listeye birlesti, ayni paylasilan
+            // oncelik sirasiyla (bkz. Facility::scopeOrderByListingPriority).
+            $filteredFacilities = $this->filteredQuery($request, $sectionScopes, $brand['category_scope'])
+                ->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews'])
+                ->orderByListingPriority()
+                ->paginate(24)
                 ->withQueryString();
 
             // 12 Agustos 2026 (2): isim aramasi tum bolumlerde arandigi
@@ -188,14 +148,7 @@ class HomeController extends Controller
                     'activeSection',
                     'isFiltering',
                     'filteredFacilities',
-                    'filteredFeatured',
-            'filteredRecommended',
-                    'filteredRecommended',
-                    'featured',
-            'featuredOnly',
-                    'featuredOnly',
-                    'claimedFacilities',
-                    'preRegistered',
+                    'facilities',
                     'brokerFacilities',
                     'registeredMapFacilities',
                     'sectionBreakdown'
@@ -204,10 +157,7 @@ class HomeController extends Controller
         }
 
         return view("themes.{$brand['theme']}.home", compact(
-            'featured',
-            'featuredOnly',
-            'claimedFacilities',
-            'preRegistered',
+            'facilities',
             'brokerFacilities',
             'registeredMapFacilities',
             'categories',
@@ -218,8 +168,6 @@ class HomeController extends Controller
             'sectionServices',
             'isFiltering',
             'filteredFacilities',
-            'filteredFeatured',
-            'filteredRecommended',
             'facilityCount',
             'cityCount',
             'claimedCount',

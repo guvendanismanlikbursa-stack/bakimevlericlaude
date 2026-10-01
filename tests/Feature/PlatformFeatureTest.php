@@ -3831,7 +3831,11 @@ class PlatformFeatureTest extends TestCase
             $response->assertOk()->assertSee('Yerinde Ziyaret');
         }
 
-        $this->assertStringContainsString('md:grid-cols-3', file_get_contents(resource_path('views/themes/bakimevleri/home/_results.blade.php')));
+        // 30 Eylul 2026: kullanicinin talebi - "hepsi tek kart tipi"
+        // birlestirmesiyle 3 marka artik SADECE ayni buyuklukte degil,
+        // TAMAMEN AYNI paylasilan karti (facility-card.blade.php) kullanir -
+        // bu eski kontrolden (grid-cols-3) daha guclu bir garanti.
+        $this->assertStringContainsString("themes._shared.partials.facility-card", file_get_contents(resource_path('views/themes/bakimevleri/home/_results.blade.php')));
     }
 
     public function test_featured_facility_own_detail_page_shows_badge(): void
@@ -3850,15 +3854,16 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()->assertDontSee('Öne Çıkan Kurum');
     }
 
-    public function test_home_featured_section_paginates_twelve_per_page(): void
+    public function test_home_section_shows_only_first_twelve_with_see_more_link(): void
     {
-        // 14 Agustos 2026: kullanicinin talebi - anasayfadaki "Öne
-        // Çıkanlar" bolumu sinirsiz uzamamali, sayfalanmali (bkz.
-        // HomeController::index() - 'featured_page' parametresi).
-        // 21 Eylul 2026: kart grid'i 4 sutuna cikinca (md:grid-cols-4)
-        // sayfa boyutu 6'dan 12'ye ("tam 3 satir") cikarildi - bu test o
-        // degisiklikten sonra guncellenmemisti, hala eski 6 degerini
-        // bekliyordu.
+        // 14 Agustos 2026: kullanicinin talebi - anasayfadaki kurum listesi
+        // sinirsiz uzamamali.
+        // 30 Eylul 2026: kullanicinin talebi - "anasayfada filtresiz sadece
+        // 12 kurum kartı olacak ... onun altında filtreleme sayfasına
+        // yönlendiren yazı" - anasayfada ARTIK SAYFALAMA (2./3. sayfa) YOK,
+        // sadece ilk 12 kurum gosterilir, devami icin "Kurumlar" (filtre)
+        // sayfasina yonlendiren bir link var (bkz. HomeController::index()
+        // ve home/_results.blade.php ayni tarihli yorum).
         // HomeController::index() anasayfa bloklarini 10 dakikalik kisa
         // sureli onbellege alir (bkz. ayni tarihli yorum orada) - tam test
         // paketi calisirken (array cache driver surec omru boyunca kalici)
@@ -3869,10 +3874,8 @@ class PlatformFeatureTest extends TestCase
         // 22 Eylul 2026: kok neden bulundu - duz "{$i}" isimlendirmesi
         // (1..13) "Cikan 1" gibi TEK HANELI bir adin "Cikan 10/11/12/13"
         // gibi CIFT HANELI adlarin ICINDE alt-dize (substring) olarak
-        // yanlislikla "bulunmasina" yol aciyordu (str_contains), bu da
-        // sayfalama dogru calissa bile testin 12 yerine 13 saymasina
-        // sebep oluyordu. Sifir dolgulu (01..13) isimlerde hicbir ad
-        // digerinin alt-dizesi olamaz.
+        // yanlislikla "bulunmasina" yol aciyordu (str_contains). Sifir
+        // dolgulu (01..13) isimlerde hicbir ad digerinin alt-dizesi olamaz.
         $names = [];
         for ($i = 1; $i <= 13; $i++) {
             $name = 'Rehab One Cikan '.sprintf('%02d', $i);
@@ -3880,13 +3883,10 @@ class PlatformFeatureTest extends TestCase
             $this->facility($name, $this->rehabCategory, false)->update(['is_featured' => true, 'is_broker_managed' => true]);
         }
 
-        $page1Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon')->assertOk()->getContent();
-        $onPage1 = collect($names)->filter(fn ($n) => str_contains($page1Body, $n))->count();
-        $this->assertSame(12, $onPage1, 'Anasayfada bir sayfada tam 12 one cikan kurum gorunmeli.');
-
-        $page2Body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon&featured_page=2')->assertOk()->getContent();
-        $onPage2 = collect($names)->filter(fn ($n) => str_contains($page2Body, $n))->count();
-        $this->assertSame(1, $onPage2, 'Kalan 1 one cikan kurum 2. sayfada gorunmeli.');
+        $body = $this->get('/site/bakimevleri/?bolum=rehabilitasyon')->assertOk()->getContent();
+        $shown = collect($names)->filter(fn ($n) => str_contains($body, $n))->count();
+        $this->assertSame(12, $shown, 'Anasayfada tam 12 kurum gorunmeli, sayfalama olmamali.');
+        $this->assertStringContainsString('Devamını görmek için tıklayın', $body);
     }
 
     // 14 Agustos 2026: kullanicinin bildirdigi canli hata - 3 marka ayni
@@ -5011,16 +5011,20 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(1, DB::table('facility_engagement_events')->where('facility_id', $facility->id)->where('type', 'phone_click')->count());
     }
 
-    public function test_claimed_facility_card_uses_full_layout_and_unclaimed_uses_compact_layout(): void
+    public function test_claimed_and_unclaimed_facility_cards_both_use_the_same_full_layout(): void
     {
+        // 30 Eylul 2026: kullanicinin talebi - "hepsi (ön kayıtlı dahil)
+        // AYNI buyuk kart tipinde olsun" - kucuk kompakt mini-kart
+        // TAMAMEN kaldirildi (bkz. facility-card.blade.php ayni tarihli
+        // yorum). Bu test artik TERSINI (eski "sahipli buyuk, on kayitli
+        // kompakt" ayrimini) degil, HEPSININ AYNI buyuk kart duzenini
+        // kullandigini dogrular.
         $response = $this->get('/site/bakimeviara/kurumlar?bolum=rehabilitasyon');
 
         $response->assertOk();
         $response->assertSee('Karşılaştır');
-        // On kayitli kart: kompakt kart sarmalayicisi. 22 Eylul 2026'dan
-        // itibaren "Ön Kayıtlı" rozeti kaldirildigi icin (kullanicinin
-        // talebi) artik mini-karta OZGU CSS sinifi kontrol edilir.
-        $response->assertSee('self-start bg-white border border-gray-100 rounded-lg p-2', false);
+        $response->assertSee('İncele', false);
+        $response->assertDontSee('self-start bg-white border border-gray-100 rounded-lg p-2', false);
     }
 
     public function test_has_precise_location_rejects_city_centroid_fallback(): void
@@ -5636,11 +5640,11 @@ class PlatformFeatureTest extends TestCase
 
     // 18 Agustos 2026: kullanicinin bildirdigi gercek hata - "ön kayıtlı
     // kurumlar ana sayfa ve aramalarda kartları küçülsün dedim sadece bir
-    // bölüme uygulamışsın". Anasayfadaki "Ön Kayıtlı Kurumlar" bolumu kendi
-    // ayri BUYUK kart tasarimini (foto+"Sahiplen" butonu) kullaniyordu,
-    // digerleriyle (facility-card.blade.php) tutarli kucuk mini-karta hic
-    // gecirilmemisti.
-    public function test_homepage_pre_registered_section_uses_compact_card_not_large_one(): void
+    // bölüme uygulamışsın". 30 Eylul 2026: kullanicinin SONRAKI talebi bunu
+    // TERSINE cevirdi - "hepsi (ön kayıtlı dahil) AYNI buyuk kart tipinde
+    // olsun", kucuk mini-kart TAMAMEN kaldirildi (bkz. facility-card.
+    // blade.php ayni tarihli yorum). Bu test artik BUNU dogrular.
+    public function test_homepage_pre_registered_facility_uses_same_large_card_as_others(): void
     {
         $preRegistered = Facility::create([
             'name' => 'Anasayfa On Kayit Testi',
@@ -5658,17 +5662,12 @@ class PlatformFeatureTest extends TestCase
         $response = $this->get('/?bolum=yasli-bakim')->assertOk()->assertSee($preRegistered->name);
 
         $html = $response->getContent();
-        $this->assertStringNotContainsString('Sahiplen<', $html, 'Anasayfadaki on kayitli kurum hala eski buyuk kart+Sahiplen butonuyla gorunuyor.');
-        // 22 Eylul 2026: regex, mini-kartin GERCEK DOM sirasiyla (dis
-        // sarmalayici "self-start bg-white..." -> ic <a class="flex items-
-        // center gap-3"> -> gorsel div'i "w-14 h-14") eslesecek sekilde
-        // duzeltildi - eski hali bu sirayi ters varsayiyordu, hicbir
-        // gecerli DOM ile eslesmiyordu (kart yapisindan BAGIMSIZ, onceden
-        // de kirikti).
-        $this->assertMatchesRegularExpression(
-            '/self-start bg-white border border-gray-100 rounded-lg p-2.*?class="flex items-center gap-3".*?<div class="w-14 h-14/s',
-            $html,
-        );
+        // Eski kucuk mini-kart (self-start bg-white border...) artik hic
+        // kullanilmiyor - facility-card.blade.php'den tamamen kaldirildi.
+        $this->assertStringNotContainsString('self-start bg-white border border-gray-100 rounded-lg p-2', $html);
+        // Buyuk kartin ayirt edici elemanlari: "İncele" butonu (mini-kartta
+        // hic yoktu, sadece "Karşılaştır" vardi).
+        $this->assertStringContainsString('İncele</a>', $html);
     }
 
     // 19 Agustos 2026: kullanicinin bildirdigi gercek hata - kurum detay

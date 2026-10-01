@@ -61,12 +61,13 @@ class LocationGuideController extends Controller
 
         ['facilityCount' => $facilityCount, 'facilities' => $facilities, 'priceRange' => $priceRange] = $this->cachedGuide(
             $guideCacheKey, function () use ($section, $city, $districtName) {
+                // 30 Eylul 2026: paylasilan scope'a tasindi (bkz. Facility::
+                // scopeOrderByListingPriority ayni tarihli yorum).
                 $query = Facility::discoverable()
                     ->forBrand($section['scopes'])
                     ->where('city_id', $city->id)
                     ->with(['city', 'category', 'images'])
-                    ->orderByDesc('is_featured')
-                    ->orderByDesc('rating');
+                    ->orderByListingPriority();
 
                 if ($districtName) {
                     $query->where('district', $districtName);
@@ -136,8 +137,7 @@ class LocationGuideController extends Controller
                     ->where('facility_category_id', $category->id)
                     ->where('city_id', $city->id)
                     ->with(['city', 'category', 'images'])
-                    ->orderByDesc('is_featured')
-                    ->orderByDesc('rating');
+                    ->orderByListingPriority();
 
                 if ($districtName) {
                     $query->where('district', $districtName);

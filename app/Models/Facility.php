@@ -346,6 +346,27 @@ class Facility extends Model
         });
     }
 
+    // 30 Eylul 2026: kullanicinin talebi - TUM kurum listeleme yuzeylerinde
+    // (anasayfa, arama sonuclari, kategori/rehber sayfalari) AYNI siralama
+    // onceligi: Anlasmali > Öne Çıkan (admin'in bilerek one cikardigi VEYA
+    // odemesi gecerli abone) > Önerilen (sahiplenilmis, digerleri degil) >
+    // Ön Kayıtlı. Onceden her controller kendi orderByDesc('is_broker_managed')
+    // ->orderByDesc('is_featured') zincirini TEKRAR TEKRAR yaziyordu (5 ayri
+    // dosyada, bazilari 'is_featured'i abone durumunu HIC saymiyordu) - bu
+    // tek, paylasilan scope ile artik HEPSI ayni mantigi kullanir.
+    public function scopeOrderByListingPriority($query)
+    {
+        // DIKKAT: CURDATE() MySQL'e ozel - yerel test paketi sqlite
+        // kullaniyor, orada "near CURDATE: syntax error" ile patlardi.
+        // Bugunun tarihini PHP'den parametre olarak gecmek her iki
+        // veritabaninda da calisir.
+        return $query
+            ->orderByDesc('is_broker_managed')
+            ->orderByRaw('(is_featured OR (is_subscribed AND subscription_paid_until >= ?)) DESC', [now()->toDateString()])
+            ->orderByDesc('is_claimed')
+            ->orderByDesc('rating');
+    }
+
     public function scopeClaimed($query)
     {
         return $query->where('is_claimed', true);

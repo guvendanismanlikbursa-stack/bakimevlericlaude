@@ -127,8 +127,7 @@ class EngagementController extends Controller
         $facilities = Facility::discoverable()
             ->forBrand($brand['category_scope'])
             ->with(['city', 'category', 'images'])
-            ->orderByDesc('is_featured')
-            ->orderByDesc('rating')
+            ->orderByListingPriority()
             ->limit(80)
             ->get();
 
