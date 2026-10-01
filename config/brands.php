@@ -106,7 +106,10 @@ return [
             'primary_color' => '#1e6f5c',
             'secondary_color' => '#f4a259',
             'category_scope' => $allCategoryScopes,
-            'default_section' => 'cocuk',
+            // 1 Ekim 2026: kullanicinin talebi - bakimevleri ile
+            // bakimevibul'un varsayilan bolumleri TAKAS edildi (asagidaki
+            // bakimevleri'ndeki ayni tarihli yorum).
+            'default_section' => 'yasli-bakim',
             'logo_text' => 'bakimevibul.com',
         ],
         'bakimeviara' => [
@@ -137,7 +140,12 @@ return [
             'primary_color' => '#0b5d8c',
             'secondary_color' => '#e63946',
             'category_scope' => $allCategoryScopes,
-            'default_section' => 'yasli-bakim',
+            // 1 Ekim 2026: kullanicinin talebi - bakimevleri artik "çocuk"
+            // bolumuyle acilir, bakimevibul "yasli-bakim" ile (yukaridaki
+            // ayni tarihli yorum) - 12 Agustos'taki SEO kararinin (alan adi
+            // "bakimevi" kelimesini tasidigi icin yasli-bakim varsayilan
+            // olmaliydi) BILEREK tersine cevrilmesi, kullanicinin acik talebi.
+            'default_section' => 'cocuk',
             'logo_text' => 'bakimevleri.com',
         ],
     ],
