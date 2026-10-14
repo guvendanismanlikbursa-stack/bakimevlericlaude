@@ -1161,13 +1161,41 @@ if (! function_exists('record_platform_error')) {
         // sessizce kaybolmaz ya da ham bir SQL hatasi olarak sizmaz.
         // 24 Eylul 2026: hosting kaynakli kisa MySQL kopmalarinda (Connection refused vb.) her
         // hata icin ayri mail yagmuru yerine 30 dakikada TEK ozet mail gonderilir.
+        // 14 Ekim 2026: kullanicinin bildirdigi gercek olay - bu kilit TEK BASINA
+        // yetersizdi, iki ayri sebepten mail yagmuru devam ediyordu:
+        // 1) 3 marka (bakimevleri/bakimevibul/bakimeviara) AYNI veritabanini
+        //    paylasiyor ama HER BIRI kendi ayri dosya sisteminde calisiyor,
+        //    varsayilan 'file' cache de domain-basina IZOLE - yani Cache::add()
+        //    ile alinan kilit SADECE o anki markayi susturuyordu, ayni dakikada
+        //    diger 2 marka da ayni koptan vurulunca onlar icin ayrica mail gidiyordu.
+        // 2) Laravel'in zamanlayicisi (bkz. vendor/laravel/framework/.../
+        //    ScheduleRunCommand.php:207), komut DB hatasiyla basarisiz olunca
+        //    KENDI ayri genel "Scheduled command [...] failed with exit code [1]"
+        //    hatasini dogurup Handler::report() ile IKINCI KEZ bildiriyordu - bu
+        //    mesajda "Connection refused" gecmedigi icin asagidaki regex'e hic
+        //    girmiyor, dedup'tan tamamen muaf kaliyordu.
+        // Cozum: kilit artik Cache yerine TUM markalarin ORTAK ustunde bulundugu
+        // hosting hesabi dizinine (home/<hesap>) yazilan paylasilan bir dosya -
+        // boylece 3 marka da AYNI kilidi gorur. Ayrica jenerik "zamanlanmis
+        // gorev basarisiz" sarmalayicisi, kilit aktifse (yani az once GERCEK bir
+        // kopma zaten bildirildiyse) kendi mailini de gondermez.
         $isDbOutage = (bool) preg_match('/SQLSTATE\[HY000\] \[2002\]|Connection refused|server has gone away|Too many connections/i', $message.' '.$title);
+        $isScheduledCommandWrapper = (bool) preg_match('/^Scheduled command \[.*\] failed with exit code \[\d+\]\.$/u', trim($message));
+
+        $lockPath = dirname(base_path()).'/.db_outage_mail_lock';
+        $lockActive = is_file($lockPath) && (time() - filemtime($lockPath)) < 1800;
+
         if ($isDbOutage) {
-            if (! \Illuminate\Support\Facades\Cache::add('db-outage-mail-lock', 1, now()->addMinutes(30))) {
+            if ($lockActive) {
                 return;
             }
+            @touch($lockPath);
             $title = 'Veritabani gecici olarak erisilemedi (hosting kaynakli)';
             $message = 'Kisa sureli MySQL baglanti kopmasi tespit edildi. Bu 30 dakika icindeki benzer hatalar icin ayrica mail gonderilmeyecek. Ornek hata: '.mb_substr($message, 0, 300);
+        } elseif ($isScheduledCommandWrapper && $lockActive) {
+            // Az once ayni kopma icin zaten ozet mail gitti, bu sadece onun
+            // dogurdugu ikincil/genel zamanlayici hatasi - ayrica bildirmiyoruz.
+            return;
         }
 
         try {
