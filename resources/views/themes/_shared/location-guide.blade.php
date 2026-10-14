@@ -25,12 +25,12 @@
 @section('og_title', $title)
 @section('meta_description', $brand['name'].' ile '.$placeTitle.' bölgesindeki '.$topicTitle.' kurumlarını karşılaştırın, ücretsiz teklif alın.')
 @section('og_image', seo_og_image($section))
-@if($section['slug'] !== ($brand['default_section'] ?? null))
-  {{-- bkz. layouts/brand.blade.php - 3 marka ayni envanteri paylastigi icin
-       bir markanin KENDI bolumu disindaki rehber sayfalari kopya icerik
-       riski tasir, bu yuzden Google'a bildirilmez (site icinde yine gezilebilir). --}}
-  @section('robots_meta', 'noindex,follow')
-@endif
+{{-- 12 Ekim 2026: kullanicinin acik talebi - "il+kreş/anaokulu, il+rehabilitasyon,
+     ilceleri ile birlikte yasli bakimda da ayni sekilde cikmasi gerekiyor"
+     (bkz. price-guide.blade.php ayni tarihli/sebepli degisiklik). Daha once
+     bir markanin KENDI bolumu disindaki rehber sayfalari kopya icerik
+     riskine karsi noindex idi - kullanicinin bilerek verdigi karar, her 3
+     markanin da TUM il/ilce/kategori aramalarinda gorunmesi tercih edildi. --}}
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => $breadcrumbItems])
   @include('themes._shared.partials.itemlist-jsonld', ['facilities' => $facilities])
@@ -77,6 +77,19 @@
           <a href="{{ brand_route('location-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold hover:shadow-sm {{ ! $category ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">Tümü</a>
           @foreach($sectionCategories as $sectionCategory)
             <a href="{{ brand_route('location-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $sectionCategory->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold hover:shadow-sm {{ $category?->id === $sectionCategory->id ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">{{ $sectionCategory->name }}</a>
+          @endforeach
+        </div>
+      @endif
+      {{-- 13 Ekim 2026: kullanicinin talebi - pazar arastirmasinda ailelerin
+           genel "rehabilitasyon" degil TANI bazli (disleksi, otizm vb.)
+           arama yaptigi tespit edildi, bkz. TaniRehberiController. Bu
+           bolumde hem kullaniciya hem Google'a (ic link = kesif/SEO degeri)
+           bu sayfalara yol gosterilir. --}}
+      @if($section['slug'] === 'rehabilitasyon')
+        <div class="font-black text-gray-950 mb-3 mt-6">Tanıya göre arayın</div>
+        <div class="flex flex-wrap gap-2">
+          @foreach(\App\Http\Controllers\Public\TaniRehberiController::TANILAR as $taniSlug => $tani)
+            <a href="{{ brand_route('tani-rehberi.show', ['taniSlug' => $taniSlug, 'citySlug' => $city->slug, 'districtSlug' => $districtName ? \Illuminate\Support\Str::slug($districtName) : null]) }}" class="rounded-lg px-3 py-2 text-xs font-bold hover:shadow-sm bg-gray-50 border border-gray-100 text-gray-700">{{ $tani['title'] }}</a>
           @endforeach
         </div>
       @endif

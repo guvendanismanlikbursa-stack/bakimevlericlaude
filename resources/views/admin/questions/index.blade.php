@@ -16,23 +16,22 @@
   </select>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Kurum</th><th class="p-3">Soru</th><th class="p-3">Cevap</th><th class="p-3">Tarih</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($questions as $q)
-        <tr>
-          <td class="p-3">{{ $q->facility?->name }}</td>
-          <td class="p-3">{{ $q->asker_name }}: {{ $q->question }}</td>
-          <td class="p-3 text-gray-500">{{ $q->answer ?: '— bekliyor —' }}</td>
-          <td class="p-3 text-gray-400 whitespace-nowrap">{{ $q->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right"><form method="POST" action="{{ route('admin.questions.destroy', $q) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600">Sil</button></form></td>
-        </tr>
-      @empty
-        <tr><td colspan="5" class="p-8 text-center text-gray-500">Kayıt bulunamadı.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($questions as $q)
+    <div class="p-4 flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $q->facility?->name }}</div>
+        <div class="text-sm text-gray-700 mt-0.5">{{ $q->asker_name }}: {{ $q->question }}</div>
+        <div class="text-sm text-gray-500 mt-0.5">{{ $q->answer ?: '— bekliyor —' }}</div>
+        <div class="text-xs text-gray-400 mt-0.5">{{ $q->created_at->format('d.m.Y H:i') }}</div>
+      </div>
+      <form method="POST" action="{{ route('admin.questions.destroy', $q) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600 text-sm font-semibold whitespace-nowrap">Sil</button></form>
+    </div>
+  @empty
+    <div class="p-8 text-center text-gray-500">Kayıt bulunamadı.</div>
+  @endforelse
 </div>
 <div class="mt-6">{{ $questions->links() }}</div>
 @endsection

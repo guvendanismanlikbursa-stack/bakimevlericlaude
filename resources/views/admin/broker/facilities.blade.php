@@ -22,52 +22,36 @@
   @endif
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr>
-        <th class="p-3">Kurum</th>
-        <th class="p-3">Şehir</th>
-        <th class="p-3">Kategori</th>
-        <th class="p-3">Durum</th>
-        <th class="p-3"></th>
-      </tr>
-    </thead>
-    <tbody class="divide-y">
-      @forelse($facilities as $facility)
-        <tr>
-          <td class="p-3 font-medium">{{ $facility->name }}</td>
-          <td class="p-3 text-gray-500">{{ $facility->city->name ?? '-' }}</td>
-          <td class="p-3 text-gray-500">{{ $facility->category->name ?? '-' }}</td>
-          <td class="p-3">
-            @if($facility->is_broker_managed)
-              <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">Anlaşmalı</span>
-            @else
-              <span class="text-gray-400 text-xs">-</span>
-            @endif
-          </td>
-          <td class="p-3">
-            <form method="POST" action="{{ route('admin.broker.facilities.toggle', $facility) }}">
-              @csrf
-              @if($facility->is_broker_managed)
-                <button type="submit" class="text-red-600 text-sm font-bold hover:underline">Çıkar</button>
-              @else
-                <button type="submit" class="text-green-700 text-sm font-bold hover:underline">Ekle</button>
-              @endif
-            </form>
-          </td>
-        </tr>
-      @empty
-        <tr><td colspan="5" class="p-6 text-center text-gray-400">
-          @if($q !== '')
-            "{{ $q }}" için kurum bulunamadı.
-          @else
-            Henüz anlaşmalı kurum yok. Yukarıdan arayıp ekleyin.
-          @endif
-        </td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($facilities as $facility)
+    <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $facility->name }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ $facility->city->name ?? '-' }} · {{ $facility->category->name ?? '-' }}</div>
+        @if($facility->is_broker_managed)
+          <span class="inline-block mt-1 bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">Anlaşmalı</span>
+        @endif
+      </div>
+      <form method="POST" action="{{ route('admin.broker.facilities.toggle', $facility) }}">
+        @csrf
+        @if($facility->is_broker_managed)
+          <button type="submit" class="text-red-600 text-sm font-bold hover:underline whitespace-nowrap">Çıkar</button>
+        @else
+          <button type="submit" class="text-green-700 text-sm font-bold hover:underline whitespace-nowrap">Ekle</button>
+        @endif
+      </form>
+    </div>
+  @empty
+    <div class="p-6 text-center text-gray-400">
+      @if($q !== '')
+        "{{ $q }}" için kurum bulunamadı.
+      @else
+        Henüz anlaşmalı kurum yok. Yukarıdan arayıp ekleyin.
+      @endif
+    </div>
+  @endforelse
 </div>
 
 <div class="mt-4">{{ $facilities->links() }}</div>

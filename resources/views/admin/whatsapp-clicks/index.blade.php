@@ -12,34 +12,31 @@
   </select>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Marka</th><th class="p-3">Sayfa</th><th class="p-3">Konum</th><th class="p-3">Tarih</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($clicks as $click)
-        <tr>
-          <td class="p-3 font-medium">{{ $brands[$click->brand]['name'] ?? $click->brand }}</td>
-          <td class="p-3 text-gray-500 truncate max-w-xs" title="{{ $click->page_url }}">{{ $click->page_url ?: '-' }}</td>
-          <td class="p-3">
-            @if($click->city_name)
-              {{ $click->city_name }}
-              @if($click->lat && $click->lng)
-                <a href="https://www.google.com/maps?q={{ $click->lat }},{{ $click->lng }}" target="_blank" class="text-blue-600 text-xs ml-1">(harita)</a>
-              @endif
-            @else
-              <span class="text-gray-300">İzin verilmedi</span>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($clicks as $click)
+    <div class="p-4 flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $brands[$click->brand]['name'] ?? $click->brand }}</div>
+        <div class="text-xs text-gray-500 mt-0.5 break-words" title="{{ $click->page_url }}">{{ $click->page_url ?: '-' }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">
+          @if($click->city_name)
+            📍 {{ $click->city_name }}
+            @if($click->lat && $click->lng)
+              <a href="https://www.google.com/maps?q={{ $click->lat }},{{ $click->lng }}" target="_blank" class="text-blue-600">(harita)</a>
             @endif
-          </td>
-          <td class="p-3 text-gray-400">{{ $click->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right">
-            <form method="POST" action="{{ route('admin.whatsapp-clicks.destroy', $click) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600 text-xs">Sil</button></form>
-          </td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="5">Kayıt yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+          @else
+            <span class="text-gray-300">Konum izni verilmedi</span>
+          @endif
+          · {{ $click->created_at->format('d.m.Y H:i') }}
+        </div>
+      </div>
+      <form method="POST" action="{{ route('admin.whatsapp-clicks.destroy', $click) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600 text-xs font-semibold whitespace-nowrap">Sil</button></form>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Kayıt yok.</div>
+  @endforelse
 </div>
 <div class="mt-6">{{ $clicks->links() }}</div>
 @endsection

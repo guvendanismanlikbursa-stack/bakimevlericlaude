@@ -50,10 +50,16 @@ class FacilityController extends Controller
 
         $query = $this->filteredQuery($request, $scope, $brand['category_scope'])->with(['city', 'category', 'images'])->withCount(['approvedReviews', 'googleReviews']);
 
-        // 12 Agustos 2026: kullanicinin talebi - her sayfada tutarli 21
-        // kurum (3 sutunlu gride tam sigan bir sayi), fazlasi icin normal
-        // sayfalama linkleri.
-        $perPage = 21;
+        // 12 Agustos 2026: kullanicinin talebi - her sayfada tutarli kurum
+        // sayisi (grid'e tam sigan), fazlasi icin normal sayfalama linkleri.
+        // 6 Ekim 2026 duzeltme: kullanicinin bulgusu - mobilde sayfa sonunda
+        // tek kalan kart. Kurum karti grid'i (facilities/_results.blade.php)
+        // "grid-cols-2 md:grid-cols-4" - mobilde 2, masaustunde 4 sutun. 21
+        // 4'e tam bolunmuyordu (21/4=5 kalan 1), bu yuzden masaustunde HER
+        // sayfanin sonunda tek/eksik kart olusuyordu. 24, hem 2'ye hem 4'e
+        // tam bolunuyor (2x12, 4x6) - sitedeki diger listelemeler
+        // (DiscoveryController, HomeController) zaten 24 kullaniyor.
+        $perPage = 24;
         // 4 Eylul 2026: kullanicinin acik talebi - "anlaşmalı kurumlar her
         // zaman en ustte cikmali". 30 Eylul 2026: paylasilan scope'a tasindi
         // (bkz. Facility::scopeOrderByListingPriority ayni tarihli yorum).

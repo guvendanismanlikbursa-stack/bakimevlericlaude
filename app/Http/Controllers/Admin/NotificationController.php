@@ -41,4 +41,15 @@ class NotificationController extends Controller
 
         return back()->with('success', 'Bildirim silindi.');
     }
+
+    // 14 Ekim 2026: kullanıcının talebi - admin panelinde hiç sesli uyarı
+    // yoktu (bkz. panel-notification-alerts.blade.php, sadece aile/kurum
+    // panelinde çalışıyordu). Facility\NotificationController::unreadCount()
+    // ile AYNI desen - o partial'ı admin için de açmak için gereken ucu.
+    public function unreadCount()
+    {
+        $admin = Admin::findOrFail(session('admin_id'));
+
+        return response()->json(['count' => $admin->notifications()->unread()->count()]);
+    }
 }

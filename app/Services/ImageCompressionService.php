@@ -47,7 +47,32 @@ class ImageCompressionService
                 throw new \RuntimeException('unsupported_image_format');
             }
 
-            return $file->store($directory, $disk);
+            // 4 Ekim 2026: guvenlik denetiminde bulundu - kutuphane yoksa
+            // $file->store() orijinal (saldirgan kontrolundeki) dosya adini/
+            // uzantisini KORUYARAK herhangi bir dosyayi (ornegin .php) web'den
+            // erisilebilir 'public' diskine yaziyordu. getimagesize() GD/Imagick
+            // GEREKTIRMEDEN dosyanin gercekten gecerli bir gorsel header'ina
+            // sahip oldugunu dogrular (Imagetype sabitinden guvenli bir uzanti
+            // turetilir, orijinal dosya adi/uzantisi ASLA kullanilmaz).
+            $info = @getimagesize($file->getRealPath());
+            if ($info === false) {
+                throw new \RuntimeException('unsupported_image_format');
+            }
+            $ext = match ($info[2]) {
+                IMAGETYPE_JPEG => 'jpg',
+                IMAGETYPE_PNG => 'png',
+                IMAGETYPE_GIF => 'gif',
+                IMAGETYPE_WEBP => 'webp',
+                IMAGETYPE_BMP => 'bmp',
+                default => null,
+            };
+            if ($ext === null) {
+                throw new \RuntimeException('unsupported_image_format');
+            }
+            $path = trim($directory, '/').'/'.Str::random(32).'.'.$ext;
+            Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
+
+            return $path;
         }
 
         $path = trim($directory, '/').'/'.Str::random(32).'.webp';

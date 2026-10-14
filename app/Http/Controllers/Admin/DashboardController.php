@@ -5,20 +5,23 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AccountDeletionRequest;
 use App\Models\CategoryViewSnapshot;
+use App\Models\City;
 use App\Models\ContactMessage;
 use App\Models\Facility;
 use App\Models\FacilityClaim;
+use App\Models\FacilityInterestLead;
 use App\Models\FacilityRegistration;
 use App\Models\OfferRequest;
 use App\Models\PlatformError;
 use App\Models\SiteVisit;
 use App\Models\VisitServiceRequest;
 use App\Models\WalletTopup;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // Ortak admin panel: 3 markanin da ozetini ve bekleyen onaylari tek ekranda gosterir
         $brands = Config::get('brands.brands');
@@ -31,7 +34,25 @@ class DashboardController extends Controller
                 'published' => Facility::forBrand($brand['category_scope'])->published()->count(),
                 'claimed' => Facility::forBrand($brand['category_scope'])->claimed()->count(),
                 'offer_requests' => OfferRequest::where('brand', $slug)->count(),
-                'new_offer_requests' => OfferRequest::where('brand', $slug)->where('status', 'new')->count(),
+                // 5 Ekim 2026: kullanicinin bildirdigi gercek hata - kurum
+                // silinince (soft delete, bkz. FacilityArchiveService) talebi
+                // DB'de kalmaya devam ediyordu, bu sayim facility_id'nin
+                // gercekten yasayan bir kuruma bagli olup olmadigina hic
+                // bakmiyordu - silinmis kuruma ait talepler SURESIZ "yeni"
+                // sayiliyordu. Facility SoftDeletes kullandigi icin
+                // whereHas('facility', ...) varsayilan olarak silinmis
+                // kurumlari otomatik disarida birakir (global scope).
+                'new_offer_requests' => OfferRequest::where('brand', $slug)->where('status', 'new')->whereHas('facility')->count(),
+                // 5 Ekim 2026: kullanicinin bildirdigi gercek eksiklik - "Ilgi
+                // Talebi" (FacilityInterestLead) hicbir zaman dashboard'da
+                // sayilmiyordu, sadece OfferRequest (Teklif Talebi) sayiliyordu.
+                // Admin yeni bir ilgi talebi geldiginde PANELE GIRMEDEN fark
+                // etmiyordu - OfferRequest ile AYNI kalip burada tekrarlanir.
+                // DIKKAT: bu tablonun status varsayilani OfferRequest'ten
+                // FARKLI - 'new' (Ingilizce) degil 'yeni' (Turkce), bkz.
+                // 2026_09_20_090000_create_facility_interest_leads_table migration.
+                'interest_leads' => FacilityInterestLead::where('brand', $slug)->count(),
+                'new_interest_leads' => FacilityInterestLead::where('brand', $slug)->where('status', 'yeni')->whereHas('facility')->count(),
                 'contact_messages' => ContactMessage::where('brand', $slug)->count(),
             ];
         }
@@ -52,13 +73,26 @@ class DashboardController extends Controller
         // kutusuna hic yansimiyordu, admin ayri sayfaya girmeden fark edemiyordu.
         $unreadContactMessages = ContactMessage::where('is_read', false)->count();
         $pendingAccountDeletions = AccountDeletionRequest::where('status', 'pending')->count();
+        // 5 Ekim 2026: kullanicinin bildirdigi gercek eksiklik - bkz. yukaridaki
+        // 'interest_leads' yorumu. Ust uyari kutusuna da (digerleriyle AYNI
+        // kalip) eklenir ki admin anasayfaya girer girmez fark etsin.
+        $newInterestLeads = FacilityInterestLead::where('status', 'yeni')->whereHas('facility')->count();
 
         $latestOffers = OfferRequest::with('facility')->latest()->limit(8)->get();
         $latestClaims = FacilityClaim::with('facility')->where('status', 'pending')->latest()->limit(5)->get();
 
         $health = $this->healthSummary();
         $categoryDemand = $this->categoryDemandSummary();
-        $realClickDemand = $this->categoryRealClickSummary();
+        // 13 Ekim 2026: kullanicinin talebi - "en cok tiklanan kurumlar
+        // dogru sonucu gostermiyor, turkiye ve il bazli filtreleme olmali,
+        // bolum bolum de ayrilmali". Liste artik secilen il (varsa) ve
+        // bolume (varsa) gore filtrelenir - secilmezse Turkiye geneli,
+        // tum bolumler gosterilir (eski davranisla ayni).
+        $realClickCityId = $request->filled('il') ? (int) $request->query('il') : null;
+        $realClickSection = $request->filled('bolum') ? (string) $request->query('bolum') : null;
+        $realClickDemand = $this->categoryRealClickSummary($realClickCityId, $realClickSection);
+        $realClickCities = City::orderBy('name')->get(['id', 'name']);
+        $realClickSections = service_sections();
         // 29 Eylul 2026: kullanicinin talebi - pazarlamaci satis surecini
         // ("arandi -> yetkiliyle gorustu -> detay dinledi -> fiyat istedi ->
         // odeme") ana sayfada da ayrintili takip edebilmek icin.
@@ -67,7 +101,8 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
             'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health',
-            'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions', 'realClickDemand', 'salesFunnel'
+            'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions', 'realClickDemand', 'salesFunnel', 'newInterestLeads',
+            'realClickCities', 'realClickSections', 'realClickCityId', 'realClickSection'
         ));
     }
 
@@ -153,7 +188,7 @@ class DashboardController extends Controller
      * gunden itibaren KISMI ama GERCEK veri gosterir - "veri birikiyor"
      * beklemeye gerek yok, sadece zamanla dolar.
      */
-    private function categoryRealClickSummary(): array
+    private function categoryRealClickSummary(?int $cityId = null, ?string $sectionSlug = null): array
     {
         $since = now()->subDays(30);
 
@@ -176,10 +211,24 @@ class DashboardController extends Controller
         $total = array_sum($bySection);
         $oldestEventAt = \Illuminate\Support\Facades\DB::table('facility_engagement_events')->where('type', 'real_view')->min('created_at');
 
-        $topFacilities = \Illuminate\Support\Facades\DB::table('facility_engagement_events')
+        // 13 Ekim 2026: kullanicinin talebi - "en cok tiklanan kurumlar"
+        // listesi artik il (city_id) ve bolume (brand_scope grubu) gore
+        // filtrelenebiliyor - secilmezse eskisi gibi Turkiye geneli/tum
+        // bolumler.
+        $topFacilitiesQuery = \Illuminate\Support\Facades\DB::table('facility_engagement_events')
             ->join('facilities', 'facilities.id', '=', 'facility_engagement_events.facility_id')
             ->where('facility_engagement_events.type', 'real_view')
-            ->where('facility_engagement_events.created_at', '>=', $since)
+            ->where('facility_engagement_events.created_at', '>=', $since);
+
+        if ($cityId) {
+            $topFacilitiesQuery->where('facilities.city_id', $cityId);
+        }
+        if ($sectionSlug && ($section = service_section($sectionSlug))) {
+            $topFacilitiesQuery->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+                ->whereIn('facility_categories.brand_scope', $section['scopes']);
+        }
+
+        $topFacilities = $topFacilitiesQuery
             ->selectRaw('facilities.id, facilities.name, count(*) as toplam')
             ->groupBy('facilities.id', 'facilities.name')
             ->orderByDesc('toplam')

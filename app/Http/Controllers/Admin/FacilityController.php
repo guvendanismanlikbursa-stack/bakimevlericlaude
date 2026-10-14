@@ -132,6 +132,14 @@ class FacilityController extends Controller
             $query->where('district', $request->district);
         }
 
+        // 11 Ekim 2026: kullanicinin talebi - il/ilce gibi mahalleye gore de
+        // filtreleme yapilabilsin. Mahalle serbest metin (facility-neighborhood-fill
+        // tarafindan dolduruluyor, sabit bir liste degil), bu yuzden il/ilce
+        // dropdown'lari gibi secim degil, isim arama gibi LIKE ile calisir.
+        if ($request->filled('mahalle')) {
+            $query->where('neighborhood', 'like', '%'.$request->string('mahalle').'%');
+        }
+
         if ($includeCategory && $request->filled('category')) {
             $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
         }
@@ -150,8 +158,31 @@ class FacilityController extends Controller
         // net/tekil bir eslesme bulunamadigi icin BILEREK atlandi (yanlis
         // konum yazmamak icin) - kullanici bunlari admin panelinde gorup
         // elle tamamlamak istiyor.
-        if ($request->filled('konum') && $request->konum === 'eksik') {
+        //
+        // 11 Ekim 2026: kullanicinin talebi - ayri konum/telefon/gorsel
+        // kutulari yerine TEK bir "Eksiklik" dropdown'u (arayuz sadelesti).
+        // Eski 'konum=eksik' parametresi geriye donuk calismaya devam eder.
+        $eksiklik = $request->filled('eksik') ? $request->eksik : ($request->filled('konum') && $request->konum === 'eksik' ? 'konum' : null);
+        if ($eksiklik === 'konum') {
             $query->whereNull('lat');
+        } elseif ($eksiklik === 'telefon') {
+            $query->where(function ($q) {
+                $q->whereNull('phone')->orWhere('phone', '')->orWhereRaw("phone REGEXP '[0-9]' = 0");
+            });
+        } elseif ($eksiklik === 'gorsel') {
+            $query->whereNotExists(function ($sq) {
+                $sq->select(\Illuminate\Support\Facades\DB::raw(1))->from('facility_images')
+                    ->whereColumn('facility_images.facility_id', 'facilities.id')
+                    ->where('facility_images.path', 'not like', 'facilities/demo/%');
+            });
+        } elseif ($eksiklik === 'mahalle') {
+            // 11 Ekim 2026: kullanicinin talebi - site capinda mahalle
+            // taramasi (facility-neighborhood-fill) adres/koordinat
+            // eslesmedigi icin bos biraktigi kurumlari admin elle
+            // tamamlayabilsin diye.
+            $query->where(function ($q) {
+                $q->whereNull('neighborhood')->orWhere('neighborhood', '');
+            });
         }
 
         // 30 Eylul 2026: kullanicinin talebi - "hangi kurum ne kadar
@@ -160,6 +191,16 @@ class FacilityController extends Controller
         // views_count uzerinden calisir.
         if ($request->filled('views_min')) {
             $query->where('views_count', '>=', (int) $request->views_min);
+        }
+
+        // 1 Ekim 2026: kullanicinin talebi - geri eklenen "Kuruluş Türü"
+        // filtresi (bkz. index.blade.php ayni tarihli yorum).
+        if ($request->filled('ownership')) {
+            if ($request->ownership === 'isaretsiz') {
+                $query->whereNull('ownership_type');
+            } else {
+                $query->where('ownership_type', $request->ownership);
+            }
         }
 
         return $query;
@@ -1013,7 +1054,10 @@ class FacilityController extends Controller
         $files = collect($request->file('images', []));
         $start = $facility->images()->count();
 
-        if ($start + $files->count() > self::MAX_GALLERY_IMAGES) {
+        // 11 Ekim 2026: Facility\ProfileController::uploadImage ile AYNI
+        // kural - aktif abone kurumlarda admin panelinden eklerken de
+        // sinirsiz hak taninir, tutarsizlik olmasin.
+        if (! $facility->isActiveSubscriber() && $start + $files->count() > self::MAX_GALLERY_IMAGES) {
             $remaining = max(0, self::MAX_GALLERY_IMAGES - $start);
             throw ValidationException::withMessages(['images' => "Bir kurum için en fazla 10 görsel eklenebilir. Kalan yükleme hakkı: {$remaining}."]);
         }
@@ -1187,6 +1231,7 @@ class FacilityController extends Controller
             'city_id' => 'required|exists:cities,id',
             'facility_category_id' => 'required|exists:facility_categories,id',
             'district' => 'nullable|string|max:120',
+            'neighborhood' => 'nullable|string|max:120',
             'address' => 'nullable|string|max:500',
             'lat' => 'nullable|numeric|between:-90,90',
             'lng' => 'nullable|numeric|between:-180,180',

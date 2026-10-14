@@ -136,6 +136,47 @@
     @endunless
     <p class="text-sm text-gray-600 {{ $heroImage ? 'mt-5' : 'mt-3' }} italic">{{ facility_brand_framing($facility, $brand)['intro'] }}</p>
 
+    {{-- 11 Ekim 2026: kullanicinin talebi - okul.com.tr analizinden sonra
+         "hizli bakis" (yas araligi/calisma saatleri/yaz okulu gibi) bilgiler
+         sayfanin en ustunde, aile scroll etmeden gorsun istendi. Alt
+         taraftaki "Kurum Detayları" kutusu (ayni veriyi zaten kapsamli
+         listeler) HIC degistirilmedi - bu sadece oradan secilmis 2-3 alanin
+         ust taraftaki, gozden kacmayan bir ozeti. Deger yoksa chip hic
+         gorunmez (bos/"Belirtilmedi" ust tarafta gosterilmez). --}}
+    @php
+      $quickGlanceDetail = match($sectionSlug) {
+        'yasli-bakim' => $facility->elderlyDetail,
+        'cocuk' => $facility->childDetail,
+        'rehabilitasyon' => $facility->rehabDetail,
+        default => null,
+      };
+      $quickGlanceValues = $quickGlanceDetail->details ?? [];
+      $quickGlanceFields = match($sectionSlug) {
+        'cocuk' => [['icon' => '🎈', 'label' => 'Yaş aralığı'], ['icon' => '🕒', 'label' => 'Çalışma saatleri']],
+        'yasli-bakim' => [['icon' => '🛏️', 'label' => 'Kapasite'], ['icon' => '🕒', 'label' => 'Ziyaret saatleri']],
+        'rehabilitasyon' => [['icon' => '⏱️', 'label' => 'Seans süresi'], ['icon' => '🏠', 'label' => 'Evde hizmet']],
+        default => [],
+      };
+      $quickGlanceChips = collect($quickGlanceFields)
+        ->map(fn ($f) => ['icon' => $f['icon'], 'label' => $f['label'], 'value' => $quickGlanceValues[\Illuminate\Support\Str::slug($f['label'])] ?? null])
+        ->filter(fn ($f) => filled($f['value']));
+      $hasSummerSchool = $sectionSlug === 'cocuk' && in_array('Yaz okulu programı', $facility->services ?? [], true);
+    @endphp
+    @if($quickGlanceChips->isNotEmpty() || $hasSummerSchool)
+      <div class="mt-4 flex items-center gap-2 flex-wrap">
+        @foreach($quickGlanceChips as $chip)
+          <span class="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-full">
+            <span class="text-base leading-none">{{ $chip['icon'] }}</span>{{ $chip['value'] }}
+          </span>
+        @endforeach
+        @if($hasSummerSchool)
+          <span class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full">
+            <span class="text-base leading-none">☀️</span>Yaz okulu programı
+          </span>
+        @endif
+      </div>
+    @endif
+
     {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumlarda boş yer
          bilgisinin guncel tutulma ihtimali daha yuksek (biz yonetiyoruz),
          bu yuzden POZITIF (Var) durumda sayfanin EN USTUNDE, kacirilamaz
@@ -571,19 +612,46 @@
          her zaman listelenir, kurumda VARSA vurgulu/isaretli, YOKSA soluk
          gorunur - "hicbir sey girilmemis" ile "hicbir ozelligi yok" farki
          artik gorunur, bilgi eksikligi gizlenmiyor. --}}
+    {{-- 11 Ekim 2026: kullanicinin bildirdigi gercek hata - "cocuk" bolumu
+         45 ozellige cikarildiktan sonra (bkz. 11 Ekim 2026 ayni konulu
+         config/brands.php yorumu) hepsi TEK "Çocuk Özellikleri" basligi
+         altinda tek bir karma listeye donusmustu - "Yaş grubu" ile
+         "Montessori" ile "Yüzme" ile "İngilizce" ayni semsiye baslikta
+         anlamsiz duruyordu. config/brands.php'deki feature_groups (zaten
+         profile.blade.php duzenleme formunda kullaniliyordu, bkz. 11 Ekim
+         2026 ayni tarihli yorum) VARSA, her grup kendi basligiyla AYRI bir
+         bolum olarak gosterilir; YOKSA (yasli-bakim/rehabilitasyon, henuz
+         grup tanimlanmamis bolumler) eski tek-liste davranisi devam eder. --}}
     @if(!empty($section['features']) && !empty($facility->services))
-      <div class="mt-5">
-        <div class="text-sm font-black text-gray-950 mb-2">{{ $section['title'] ?? 'Kurum' }} Özellikleri</div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          @foreach($section['features'] as $feature)
-            @php $hasFeature = in_array($feature, $facility->services ?? [], true); @endphp
-            <div class="flex items-center gap-2 text-xs px-3 py-2 rounded-lg border {{ $hasFeature ? 'bg-green-50 border-green-200 text-green-800 font-semibold' : 'bg-gray-50 border-gray-100 text-gray-400' }}">
-              <span>{{ $hasFeature ? '✓' : '—' }}</span>
-              <span>{{ $feature }}</span>
+      @if(!empty($section['feature_groups']))
+        @foreach($section['feature_groups'] as $groupTitle => $groupFeatures)
+          <div class="mt-5">
+            <div class="text-sm font-black text-gray-950 mb-2">{{ $groupTitle }}</div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              @foreach($groupFeatures as $feature)
+                @php $hasFeature = in_array($feature, $facility->services ?? [], true); @endphp
+                <div class="flex items-center gap-2 text-xs px-3 py-2 rounded-lg border {{ $hasFeature ? 'bg-green-50 border-green-200 text-green-800 font-semibold' : 'bg-gray-50 border-gray-100 text-gray-400' }}">
+                  <span>{{ $hasFeature ? '✓' : '—' }}</span>
+                  <span>{{ $feature }}</span>
+                </div>
+              @endforeach
             </div>
-          @endforeach
+          </div>
+        @endforeach
+      @else
+        <div class="mt-5">
+          <div class="text-sm font-black text-gray-950 mb-2">{{ $section['title'] ?? 'Kurum' }} Özellikleri</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            @foreach($section['features'] as $feature)
+              @php $hasFeature = in_array($feature, $facility->services ?? [], true); @endphp
+              <div class="flex items-center gap-2 text-xs px-3 py-2 rounded-lg border {{ $hasFeature ? 'bg-green-50 border-green-200 text-green-800 font-semibold' : 'bg-gray-50 border-gray-100 text-gray-400' }}">
+                <span>{{ $hasFeature ? '✓' : '—' }}</span>
+                <span>{{ $feature }}</span>
+              </div>
+            @endforeach
+          </div>
         </div>
-      </div>
+      @endif
     @endif
 
     @php $extraServices = collect($facility->services ?? [])->diff($section['features'] ?? []); @endphp
@@ -770,6 +838,50 @@
         @if($facility->google_maps_url)
           <a href="{{ $facility->google_maps_url }}" target="_blank" rel="noopener nofollow" class="block text-center mt-4 text-sm font-black text-primary hover:underline">Devamını oku (Google Haritalar'da görüntüle) →</a>
         @endif
+      </section>
+    @endif
+
+    {{-- 11 Ekim 2026: kullanicinin talebi - okul.com.tr analizinde oradaki
+         SSS/FAQ bolumunun guven artirici bir unsur oldugu goruldu. Burada
+         KURUMA OZEL veri yok (aile icin dogru olan tek sey bu), bu yuzden
+         bolume gore genel ama gercekten faydali 3 soru + son cumlede
+         ("...için bu kurumdan doğrudan sorun") asagidaki teklif formuna
+         yonlendiren tesvik edici bir CTA var - statik metin, EK SORGU YOK. --}}
+    @php
+      $faqItems = match($sectionSlug) {
+        'cocuk' => [
+          ['s' => 'Kaydolmadan önce kurumu ziyaret edebilir miyim?', 'c' => 'Kreş/anaokulu seçerken yerinde görmek önemlidir; çoğu kurum randevulu ziyarete açıktır.'],
+          ['s' => 'Servis ve yemek ücrete dahil mi?', 'c' => 'Bu genellikle kurumdan kuruma değişir; servis güzergahı ve yemek programının ücrete dahil olup olmadığını kaydolmadan önce netleştirmek doğru olur.'],
+          ['s' => 'Ücretler pazarlığa açık mı?', 'c' => 'Dönem/kayıt zamanına göre kampanya veya kardeş indirimi uygulayan kurumlar olabilir.'],
+        ],
+        'yasli-bakim' => [
+          ['s' => 'Yakınımı hangi saatlerde ziyaret edebilirim?', 'c' => 'Ziyaret saatleri kurumdan kuruma değişir, bazı kurumlarda randevu gerekebilir.'],
+          ['s' => '7/24 hemşire veya doktor desteği var mı?', 'c' => 'Bu, sağlık durumuna bağlı olarak kritik bir kriterdir; kurumun kadro ve nöbet düzenini doğrudan sormanızı öneririz.'],
+          ['s' => 'Ücrete hangi hizmetler dahil, ek masraf çıkar mı?', 'c' => 'Oda tipi, bakım yoğunluğu ve ek hizmetlere göre fiyat değişebilir; net ücreti kurumdan teyit edin.'],
+        ],
+        'rehabilitasyon' => [
+          ['s' => 'Kaç seans gerekir, süreç nasıl işler?', 'c' => 'Seans sayısı duruma göre değişir; ilk değerlendirme sonrası kurum size bir plan sunar.'],
+          ['s' => 'Evde bakım/tedavi hizmeti sunuyorlar mı?', 'c' => 'Bazı rehabilitasyon merkezleri evde hizmet de sağlar, bunu kurumla doğrudan teyit edin.'],
+          ['s' => 'SGK veya özel sigorta ile çalışıyorlar mı?', 'c' => 'Bu kuruma göre değişir; randevu öncesi anlaşmalı olduğu kurum/sigortaları sormanızı öneririz.'],
+        ],
+        default => [],
+      };
+    @endphp
+    @if(! empty($faqItems))
+      <section class="mt-10 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+        <h2 class="text-xl font-black text-gray-950 mb-3">Sıkça Sorulan Sorular</h2>
+        <div class="divide-y divide-gray-100">
+          @foreach($faqItems as $faq)
+            <details class="group py-3">
+              <summary class="flex items-center justify-between gap-3 cursor-pointer list-none font-bold text-gray-800 text-sm">
+                {{ $faq['s'] }}
+                <span class="text-gray-400 group-open:rotate-45 transition shrink-0 text-lg leading-none">+</span>
+              </summary>
+              <p class="text-sm text-gray-600 mt-2 leading-relaxed">{{ $faq['c'] }}</p>
+            </details>
+          @endforeach
+        </div>
+        <a href="#teklif-talebi" class="block text-center mt-4 text-sm font-black text-primary hover:underline">Bu kurumla ilgili net bilgiyi doğrudan sorun →</a>
       </section>
     @endif
 
@@ -1304,6 +1416,14 @@
     $facilitySchema['priceRange'] = $facility->price_min && $facility->price_max
       ? number_format($facility->price_min, 0).' - '.number_format($facility->price_max, 0).' TL'
       : number_format($facility->price_min ?: $facility->price_max, 0).' TL';
+  }
+  // 13 Ekim 2026: kullanicinin talebi - semalari zenginlestirme. Kurumun
+  // GERCEKTEN yapilandirilmis yas grubu verisi (FacilityAgeGroup, zaten
+  // $facility->ageGroups ile on-yuklu - bkz. FacilityController::show())
+  // varsa knowsAbout olarak eklenir - uydurma deger degil, veritabanindaki
+  // gercek secimler.
+  if ($facility->ageGroups->isNotEmpty()) {
+    $facilitySchema['knowsAbout'] = $facility->ageGroups->map(fn ($ag) => $ag->label())->values()->all();
   }
   if ($reviewCount > 0) {
     $facilitySchema['aggregateRating'] = [

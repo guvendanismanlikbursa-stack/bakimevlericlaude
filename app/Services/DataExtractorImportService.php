@@ -35,9 +35,21 @@ class DataExtractorImportService
         'maps_url' => ['google haritalar linki', 'maps url', 'google maps url', 'harita linki'],
     ];
 
+    /**
+     * 14 Ekim 2026: kullanıcının talebi - tek bir dosyada BİRDEN FAZLA
+     * ilçeye yayılmış taranmış veri (ör. tüm Bursa'daki bireysel
+     * fizyoterapistler) içe aktarılması gerekti. Bu metod önceden SADECE
+     * admin "Veri Çekici" ekranındaki tek-ilçe akışı için $district
+     * parametresiyle TEK bir ilçeyi tüm satırlara uyguluyordu. $district
+     * artık null geçilebilir - o zaman HER SATIRIN KENDİ ilçesi, adres
+     * alanından (expertImportFile() ile AYNI kanıtlanmış regex deseni)
+     * otomatik çıkarılır. Mevcut çağrılar (her zaman dolu $district
+     * geçiyor) davranış olarak HİÇ etkilenmez - bu satır içi, ek bir dal.
+     */
     public function import(string $path, City $city, FacilityCategory $category, ?string $district, bool $publish, ?int $adminId = null, ?string $fileName = null, ?string $neighborhood = null): array
     {
         $rows = app(SimpleXlsxReader::class)->rows($path);
+        $perRowDistrict = ! filled($district);
         $districtModel = $this->districtModel($city, $district);
         $batch = DataImportBatch::create([
             'source' => 'google_maps_veri_cekici',
@@ -89,6 +101,17 @@ class DataExtractorImportService
 
             $phoneType = classify_phone_type($item['phone']);
 
+            // 14 Ekim 2026: $district null geçildiyse (bkz. yukarıdaki
+            // $perRowDistrict yorumu) bu satırın ilçesi KENDİ adresinden
+            // çıkarılır - tüm dosyaya tek bir ilçe dayatılmaz.
+            if ($perRowDistrict) {
+                $rowDistrictName = $this->addressDistrict($item['address'] ?? '');
+                $rowDistrictModel = $this->districtModel($city, $rowDistrictName ?: null);
+            } else {
+                $rowDistrictName = $district;
+                $rowDistrictModel = $districtModel;
+            }
+
             // 10 Eylul 2026: bkz. DataImportRowApprovalService ayni tarihli
             // yorum - mahalle verilmisse adresin basina eklenir.
             $address = $item['address'];
@@ -102,7 +125,7 @@ class DataExtractorImportService
             $lat = $this->coordinate($item['lat']);
             $lng = $this->coordinate($item['lng']);
             if ($lat === null && $lng === null && filled($address)) {
-                $coords = $this->geocodingService->geocodeAddress($address, $districtModel?->name ?? $district, $city->name);
+                $coords = $this->geocodingService->geocodeAddress($address, $rowDistrictModel?->name ?? $rowDistrictName, $city->name);
                 if ($coords) {
                     $lat = $coords['lat'];
                     $lng = $coords['lng'];
@@ -114,10 +137,10 @@ class DataExtractorImportService
                     'name' => $item['name'],
                     'slug' => $this->uniqueSlug($item['name']),
                     'city_id' => $city->id,
-                    'district_id' => $districtModel?->id,
+                    'district_id' => $rowDistrictModel?->id,
                     'facility_category_id' => $category->id,
                     'ownership_type' => $ownershipType,
-                    'district' => $districtModel?->name ?? $district,
+                    'district' => $rowDistrictModel?->name ?? $rowDistrictName,
                     'address' => $address,
                     'lat' => $lat,
                     'lng' => $lng,
@@ -238,10 +261,30 @@ class DataExtractorImportService
             return false;
         }
 
+        // 6 Ekim 2026: kullanicinin bulgusu - ayni gercek kurum, basina/sonuna
+        // farkli bir mahalle/semt metni eklenerek (ör. "Istiklal, Fatih Cd.
+        // No:146" vs "Agaköy Mahallesi, Istiklal, Fatih Cd. No:146" - AYNI
+        // bina, sadece biri mahalle on ekiyle) farkli taramalarda iki/uc kez
+        // kaydedilebiliyordu - TAM esitlik sarti bunu yakalamiyordu. Artik
+        // isim AYNI VE adreslerden biri digerinin icinde geciyorsa (substring)
+        // da mukerrer sayilir - cadde/sokak/kapi no kismi sabit kaldigi surece
+        // sadece mahalle on eki degisimini yakalar, farkli isimli kurumlari
+        // (ayri sart - normalizedName hala tam esit olmali) etkilemez.
         return Facility::where('city_id', $city->id)
             ->get(['id', 'name', 'address'])
-            ->contains(fn ($f) => $this->normalizeName($f->name) === $normalizedName
-                && $this->normalizeAddress($f->address) === $normalizedAddress);
+            ->contains(function ($f) use ($normalizedName, $normalizedAddress) {
+                if ($this->normalizeName($f->name) !== $normalizedName) {
+                    return false;
+                }
+                $existingAddress = $this->normalizeAddress($f->address);
+                if ($existingAddress === '') {
+                    return false;
+                }
+
+                return $existingAddress === $normalizedAddress
+                    || str_contains($existingAddress, $normalizedAddress)
+                    || str_contains($normalizedAddress, $existingAddress);
+            });
     }
 
     // 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
@@ -312,6 +355,21 @@ class DataExtractorImportService
         };
     }
 
+    /**
+     * 14 Ekim 2026: expertImportFile() (OpsController) içindeki KANITLANMIŞ
+     * aynı regex - "...16500 Mustafakemalpaşa/Bursa" gibi bir adresin
+     * SONUNDAKİ "ilçe/il" kalıbından ilçeyi çıkarır. Bulunamazsa boş döner
+     * (uydurma yapılmaz, o satırın ilçesi/district_id'si null kalır).
+     */
+    private function addressDistrict(string $address): string
+    {
+        if (preg_match('/\d{4,5}\s+([^,\/\d]+)\/[^\/,]+\s*$/u', $address, $m)) {
+            return trim($m[1]);
+        }
+
+        return '';
+    }
+
     private function districtModel(City $city, ?string $district): ?District
     {
         if (! filled($district)) {
@@ -365,6 +423,13 @@ class DataExtractorImportService
         if (filled($item['email'])) {
             $parts[] = 'E-posta: '.$item['email'];
         }
+        // 7 Ekim 2026: kullanicinin acik talebi - henuz yorumu olmayan (bu
+        // asamada, ice aktarilir aktarilmaz) kurumlarda da ucret/bilgi
+        // talep formuna yonlendirme MUTLAKA bulunmali. ReviewBasedDescriptionGenerator
+        // daha sonra GERCEK yorum gelince bu aciklamayi zengin bir metinle
+        // (kendi CTA'siyla birlikte) DEGISTIRECEK - bu sadece o ana kadarki
+        // bosluk icin.
+        $parts[] = 'Güncel fiyat bilgisi ve uygunluk durumu için aşağıdaki formu doldurarak bu kurumdan bilgi talep edebilirsiniz.';
 
         return implode("\n", $parts);
     }

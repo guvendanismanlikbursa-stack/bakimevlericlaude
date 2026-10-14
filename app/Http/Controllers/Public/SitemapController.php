@@ -134,6 +134,34 @@ class SitemapController extends Controller
                     $urls->push($this->url($prefix.'/sayfa/'.$slug, 'monthly', '0.6'));
                 }
             }
+
+            // 13 Ekim 2026: kullanicinin talebi - "turkiye genelli olacak il
+            // ilce bazli" tani-rehberi sayfalari (Disleksi, Otizm, Ergoterapi,
+            // Dil ve Konusma Terapisi, Duyu Butunleme). Bu sayfalar AYNI
+            // kurum kumesini (ozel-egitim+rehabilitasyon+fizik-tedavi) listeler,
+            // bu yuzden yukarida zaten hesaplanmis districtCombos['rehabilitasyon']
+            // DOGRUDAN tekrar kullanilir - ayri bir sorgu gerekmez. Diger
+            // bolumlerle AYNI "sadece markanin kendi bolumu" politikasi.
+            if ($section['slug'] === 'rehabilitasyon') {
+                foreach (array_keys(\App\Http\Controllers\Public\TaniRehberiController::TANILAR) as $taniSlug) {
+                    foreach ($cities as $city) {
+                        $cityLastmod = isset($cityFreshness[$city->id])
+                            ? \Illuminate\Support\Carbon::parse($cityFreshness[$city->id])
+                            : $city->updated_at;
+                        $urls->push($this->url($prefix.'/tani-rehberi/'.$taniSlug.'/'.$city->slug, 'weekly', '0.6', $cityLastmod));
+
+                        foreach ($districtCombos['rehabilitasyon'][$city->slug] ?? [] as $district) {
+                            if (! $district['has_facilities']) {
+                                continue;
+                            }
+                            $urls->push($this->url(
+                                $prefix.'/tani-rehberi/'.$taniSlug.'/'.$city->slug.'/'.$district['slug'],
+                                'weekly', '0.5', $cityLastmod
+                            ));
+                        }
+                    }
+                }
+            }
         }
 
         foreach ($categories as $category) {

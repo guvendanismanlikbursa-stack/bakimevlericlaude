@@ -3,10 +3,14 @@
 namespace App\Providers;
 
 use App\Models\ChatThread;
+use App\Models\ContactMessage;
 use App\Models\FacilityClaim;
+use App\Models\FacilityInterestLead;
 use App\Models\FacilityRegistration;
 use App\Models\FacilityUser;
 use App\Models\FamilyUser;
+use App\Models\JobApplication;
+use App\Models\OfferRequest;
 use App\Models\VisitServiceRequest;
 use App\Models\WalletTopup;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -60,7 +64,30 @@ class AppServiceProvider extends ServiceProvider
             // (pazarlamacidan kurum bildirimi vb.) artik panelin icinde de
             // gorunuyor, bkz. Admin\NotificationController.
             $adminId = session('admin_id');
-            $view->with('unreadAdminNotificationsCount', $adminId ? (\App\Models\Admin::find($adminId)?->notifications()->unread()->count() ?? 0) : 0);
+            $admin = $adminId ? \App\Models\Admin::find($adminId) : null;
+            $view->with('unreadAdminNotificationsCount', $admin?->notifications()->unread()->count() ?? 0);
+
+            // 14 Ekim 2026: kullanicinin talebi - "admin tarafindaki mantik
+            // catismalarinin hepsini duzelt - eksik/yarim bildirimler". Daha
+            // once SADECE claims/registrations/visit-service/chat/topup
+            // kendi ozel sidebar rozetini aliyordu, mail+push zaten giden
+            // digerleri (iletisim mesaji, is basvurusu, kurum ilgi talebi,
+            // pazarlamaci yonlendirmesi, anlasmali kurum olaylari, Pusula)
+            // SADECE genel "Bildirimler" sayacinda gorunuyordu - admin hangi
+            // TURDE yeni bir sey oldugunu sidebar'a bakip anlayamiyordu.
+            // Kendi durum sutunu olanlar (is basvurusu/kurum ilgi talebi/
+            // iletisim mesaji/teklif talebi) O sutundan, dogal bir "durum"
+            // sutunu olmayanlar (pazarlamaci/anlasmali kurum/Pusula) ise
+            // ayni notify_user() cagrisinin urettigi okunmamis bildirim
+            // turune gore sayiliyor - TUM nav ogeleri icin TEK, tutarli kural.
+            $view->with('pendingJobApplicationsCount', JobApplication::where('status', 'yeni')->count());
+            $view->with('unreadContactMessagesCount', ContactMessage::where('is_read', false)->count());
+            $view->with('newFeeInfoRequestsCount', FacilityInterestLead::where('status', 'yeni')->count() + OfferRequest::where('status', 'new')->count());
+
+            $unreadByType = $admin
+                ? $admin->notifications()->unread()->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type')
+                : collect();
+            $view->with('unreadByType', $unreadByType);
         });
     }
 

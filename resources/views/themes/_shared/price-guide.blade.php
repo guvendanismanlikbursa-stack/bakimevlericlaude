@@ -17,18 +17,40 @@
   if ($districtName ?? null) {
       $breadcrumbItems[] = ['name' => $districtName, 'url' => url()->current()];
   }
+
+  // 13 Ekim 2026: kullanicinin talebi - pazar arastirmasinda tespit edilen,
+  // sik aranan ama platformda karsiligi olmayan uzun kuyruklu ifadeler
+  // ("calisan anne kres destegi", "7/24 hemsireli yasli bakim evi") -
+  // location-guide.blade.php'deki AYNI mantik, bolume ozel GERCEK bilgi.
+  $extraFaq = [];
+  if ($section['slug'] === 'cocuk') {
+      $extraFaq[] = [
+          $placeTitle.' bölgesinde çalışan anne/baba için kreş desteği var mı?',
+          'Bazı belediyeler ve işletmeler çalışan ebeveynler için kreş desteği/indirimi sunabilir; bu, kurumdan kuruma ve dönemden döneme değişir. '.$placeTitle.' bölgesindeki kurumlarla doğrudan görüşerek güncel kreş desteği ve erken kayıt fırsatlarını öğrenebilirsiniz.',
+      ];
+  } elseif ($section['slug'] === 'yasli-bakim') {
+      $extraFaq[] = [
+          $placeTitle.' bölgesinde 7/24 hemşireli yaşlı bakım evi var mı?',
+          $placeTitle.' bölgesindeki kurumların çoğu 7/24 hemşire/bakım personeli desteği sunar; Alzheimer/demans veya yatalak hasta bakımı gibi özel ihtiyaçlar için bu hizmetin kapsamını kuruma doğrudan sormanızı öneririz.',
+      ];
+  }
+  $faqPreview = [...$extraFaq, ...(site_section_content($brand['slug'], $section['slug'])['faq_preview'] ?? [])];
 @endphp
 @section('title', $placeTitle.' '.$topicTitle.' Fiyatları - Ücret Rehberi')
 @section('og_title', $placeTitle.' '.$topicTitle.' Fiyatları')
 @section('meta_description', $placeTitle.' bölgesinde '.$topicTitle.' kurumlarının ortalama, en düşük ve en yüksek fiyat bilgileri.')
 @section('og_image', seo_og_image($section))
-@if($section['slug'] !== ($brand['default_section'] ?? null))
-  @section('robots_meta', 'noindex,follow')
-@endif
+{{-- 12 Ekim 2026: kullanicinin acik talebi - "fiyat soranlara siteler
+     cikmali 3 sitede de". Daha once bir markanin KENDI bolumu disindaki
+     fiyat rehberi sayfalari kopya icerik riskine karsi noindex idi (bkz.
+     location-guide.blade.php'deki AYNI kural, o sayfa icin DEGISTIRILMEDI).
+     Kullanicinin bilerek verdigi karar: fiyat sayfalarinda kopya icerik
+     riskini gozardi edip her 3 markanin da "X fiyatlari" aramalarinda
+     gorunmesi tercih edildi. --}}
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => $breadcrumbItems])
   @include('themes._shared.partials.itemlist-jsonld', ['facilities' => $facilities])
-  @include('themes._shared.partials.faqpage-jsonld', ['questions' => site_section_content($brand['slug'], $section['slug'])['faq_preview'] ?? []])
+  @include('themes._shared.partials.faqpage-jsonld', ['questions' => $faqPreview])
 @endsection
 @section('content')
 <div class="max-w-6xl mx-auto px-4 py-10">
@@ -107,6 +129,23 @@
     <div class="mt-8">
       @include('partials.pagination-info', ['paginator' => $facilities])
       {{ $facilities->links() }}
+    </div>
+  @endif
+
+  {{-- 13 Ekim 2026: kullanicinin talebi - JSON-LD'deki SSS gorunur icerikle
+       de eslesmeli (Google'in "gizli/sadece schema'da olan icerik" karsiti
+       politikasina uymak icin), bkz. yukaridaki $faqPreview ayni tarihli yorum. --}}
+  @if(!empty($faqPreview))
+    <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mt-8">
+      <h2 class="text-lg font-black text-gray-950 mb-4">Sıkça sorulan sorular</h2>
+      <div class="space-y-4">
+        @foreach($faqPreview as [$question, $answer])
+          <div>
+            <div class="font-bold text-gray-900">{{ $question }}</div>
+            <p class="text-gray-600 text-sm leading-relaxed mt-1">{{ $answer }}</p>
+          </div>
+        @endforeach
+      </div>
     </div>
   @endif
 </div>

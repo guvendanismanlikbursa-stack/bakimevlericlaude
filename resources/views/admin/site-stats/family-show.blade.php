@@ -37,22 +37,19 @@
   </div>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm">
   <div class="p-4 border-b border-gray-100 font-black text-gray-950">Ücret/Teklif Talep Geçmişi ({{ $family->offerRequests->count() }})</div>
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Kurum</th><th class="p-3">Marka</th><th class="p-3">Durum</th><th class="p-3">Tarih</th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($family->offerRequests as $offerRequest)
-        <tr>
-          <td class="p-3">{{ $offerRequest->facility->name ?? 'Yayın talebi (tüm uygun kurumlar)' }}</td>
-          <td class="p-3 text-gray-500">{{ config("brands.brands.{$offerRequest->brand}.name", $offerRequest->brand) }}</td>
-          <td class="p-3">{{ $offerRequest->status }}</td>
-          <td class="p-3 text-gray-400">{{ $offerRequest->created_at->format('d.m.Y H:i') }}</td>
-        </tr>
-      @empty
-        <tr><td colspan="4" class="p-8 text-center text-gray-500">Henüz talep yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+  <div class="divide-y divide-gray-100">
+    @forelse($family->offerRequests as $offerRequest)
+      <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div class="font-semibold text-gray-900">{{ $offerRequest->facility->name ?? 'Yayın talebi (tüm uygun kurumlar)' }}</div>
+        <div class="text-xs text-gray-500">{{ config("brands.brands.{$offerRequest->brand}.name", $offerRequest->brand) }} · {{ $offerRequest->status }} · {{ $offerRequest->created_at->format('d.m.Y H:i') }}</div>
+      </div>
+    @empty
+      <div class="p-8 text-center text-gray-500">Henüz talep yok.</div>
+    @endforelse
+  </div>
 </div>
 @endsection

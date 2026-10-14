@@ -1,163 +1,112 @@
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  {{-- 18 Agustos 2026: kullanicinin bildirdigi gercek hata - "kurumlar
-       sekmesindeki islemler gorunmuyor". Kok neden: admin/layout.blade.php
-       SAYFA YUKLENDIGINDE sayfadaki her tabloyu otomatik olarak yatay
-       kaydirilabilir bir sarmalayiciya aliyor, AMA bu tablo AJAX anlik
-       filtreyle (data-instant-filter) her degistiginde SIFIRDAN
-       yeniden render ediliyor - o script tekrar CALISMADIGI icin yeni
-       tablo sarmalanmadan kaliyor, dar ekranlarda son sutunlar (Durum +
-       islem butonlari: Revize/Panelde Gor/Sil) erisilemez oluyor. Sarma
-       artik dogrudan burada (server tarafinda, HER render'da) yapiliyor -
-       JS'e hic bagli degil. --}}
-  <div class="admin-table-scroll overflow-x-auto">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr><th class="p-3 w-56">Ad</th><th class="p-3">Şehir</th><th class="p-3">Kategori</th><th class="p-3">Profil Kalitesi</th><th class="p-3">Sahiplenme</th><th class="p-3">Bakiye / Hak</th><th class="p-3">Görüntülenme</th><th class="p-3">Durum</th><th class="p-3">Son Güncelleme</th><th class="p-3"></th></tr>
-    </thead>
-    <tbody class="divide-y">
-      @forelse($facilities as $f)
-        <tr>
-          {{-- 18 Agustos 2026: kullanicinin bildirdigi gercek hata - Ad
-               sutunu asiri genis alan kapliyordu (bkz. .admin-table-scroll
-               table { min-width: max-content } - yatay kaydirma duzeltmesi
-               ayni zamanda hicbir sutunun sarilmasina izin vermiyordu).
-               Sabit bir genislik + break-words ile uzun isimler artik alt
-               satira geciyor, sutun tasmiyor. --}}
-          <td class="p-3 font-medium w-56 break-words">{{ $f->name }}</td>
-          <td class="p-3">{{ $f->city->name }}</td>
-          <td class="p-3">
-            {{ $f->category->name }}
-            @if($f->ownership_type)
-              <div class="text-[11px] text-gray-400 mt-0.5">{{ $ownershipTypes[$f->ownership_type] ?? $f->ownership_type }}</div>
-            @endif
-          </td>
-          <td class="p-3">
-            @php($quality = $f->profileQuality())
-            <div class="flex items-center gap-2">
-              <div class="h-2 w-20 rounded-full bg-gray-100 overflow-hidden"><div class="h-full {{ $quality['score'] >= 80 ? 'bg-green-500' : ($quality['score'] >= 55 ? 'bg-amber-500' : 'bg-red-500') }}" style="width: {{ $quality['score'] }}%"></div></div>
-              <span class="text-xs font-semibold text-gray-700">{{ $quality['score'] }}/100</span>
+<div class="bg-white rounded-xl shadow-sm">
+  {{-- 1 Ekim 2026: kullanicinin talebi - "hangi olcude olursa olsun (tam
+       ekran, daraltilmis, mobil) butun islemleri gorebilmeliyim, saga sola
+       kaydirmak istemiyorum". Eskiden bu bir <table> idi - 10 sutun +
+       coklu buton genis ekranda bile tasiyor, admin-table-scroll sarmasi
+       yatay kaydirmayi GEREKTIRIYORDU. Artik her kurum, icerigi flex-wrap
+       ile satir kiran bir "kart" - ekran daraldikca yana tasmak yerine
+       asagi dogru uzuyor. --}}
+  <div class="divide-y divide-gray-100">
+    @forelse($facilities as $f)
+      <div class="p-4 flex flex-col gap-3">
+        {{-- Ust satir: isim + sehir/kategori + islem butonlari (kendi icinde wrap) --}}
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div class="min-w-0">
+            <div class="font-bold text-gray-900 break-words">{{ $f->name }}</div>
+            <div class="text-xs text-gray-500 mt-0.5">
+              {{ $f->city->name }} · {{ $f->category->name }}
+              @if($f->ownership_type)
+                · {{ $ownershipTypes[$f->ownership_type] ?? $f->ownership_type }}
+              @endif
             </div>
-            @if($quality['missing'])<div class="text-[11px] text-gray-400 mt-1">Eksik: {{ implode(', ', array_slice($quality['missing'], 0, 2)) }}</div>@endif
-          </td>
-          <td class="p-3">
-            {{-- 3 Eylul 2026: kullanicinin talebi - admin/kurumlar filtresi
-                 artik Ön Kayıt/Anlaşmalı/Sahipli 3 durumunu ayirt ediyor
-                 (bkz. FacilityController::filteredQuery() ayni tarihli
-                 yorum), bu sutun da ayni 3 durumu gostermeli - eskiden
-                 Anlaşmalı kurumlar bile sadece "✓ Sahiplenilmiş" veya
-                 "Ön Kayıtlı" gorunuyordu, ayirt edilemiyordu. --}}
-            @if($f->is_broker_managed)
-              <span class="text-amber-700 text-xs font-semibold">🤝 Anlaşmalı</span>
-            @elseif($f->is_claimed)
-              <span class="text-green-700 text-xs font-semibold">✓ Sahiplenilmiş</span>
-            @else
-              <span class="text-gray-400 text-xs">Sahiplenilmemiş</span>
-            @endif
-            {{-- 22 Eylul 2026: kullanicinin talebi - abonelik durumu admin
-                 tablosunda tek bakista gorulsun (fuchsia, "Öncelikli Kurumlar"
-                 rozetiyle ayni renk - bkz. facility-card.blade.php). --}}
-            @if($f->is_subscribed)
-              <div class="mt-1">
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">
-                  ★ Abone{{ $f->isActiveSubscriber() ? '' : ($f->subscription_paid_until ? ' (süresi geçti)' : ' (ödeme bekliyor)') }}{{ $f->subscription_amount ? ' · '.number_format($f->subscription_amount, 0, ',', '.').' TL' : '' }}
-                </span>
-              </div>
-            @endif
-            @php($mv = $f->ministryVerificationBadge())
-            @if($mv)
-              <div class="mt-1"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full {{ $mv['classes'] }}">{{ $mv['label'] }}</span></div>
-            @endif
-            {{-- 22 Eylul 2026: kullanicinin talebi - konumvericekici'nin
-                 Google'da net eslesme bulamadigi icin atladigi kurumlar
-                 admin panelinde tek bakista secilsin diye. --}}
-            @if(! $f->lat)
-              <div class="mt-1"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">📍 Konum eksik</span></div>
-            @endif
-          </td>
-          <td class="p-3">
-            @if($f->is_claimed)
-              <div class="text-gray-700 font-medium">{{ number_format($f->balance, 2, ',', '.') }} TL</div>
-              <div class="text-[11px] text-gray-400">{{ $f->free_quote_credits }} ücretsiz hak</div>
-            @else
-              <span class="text-gray-300">—</span>
-            @endif
-          </td>
-          {{-- 30 Eylul 2026: kullanicinin talebi - gercek ve otomatik
-               eklenen goruntulenme admin'e AYRI AYRI + toplam gorunmeli.
-               Ana sayi ARTIK AYLIK (site/kurum panelindeki ANA rakamla
-               AYNI - bkz. Facility::monthlyDisplayViewsCount()), altinda
-               aylik gercek/eklenen dokumu + kucuk haftalik trend bilgisi.
-               Bu seffaflik SADECE admin'e, disari (kurum paneli/site) tek
-               toplam sayi gider. --}}
-          <td class="p-3 whitespace-nowrap">
-            <div class="font-bold text-gray-900">{{ number_format($f->monthlyDisplayViewsCount(), 0, ',', '.') }} <span class="text-[10px] font-normal text-gray-400">/ ay</span></div>
-            <div class="text-[11px] text-gray-400">Gerçek: {{ number_format(max(0, $f->views_count - $f->views_count_at_month_start), 0, ',', '.') }} · Eklenen: {{ number_format($f->boosted_views_count, 0, ',', '.') }}</div>
-            <div class="text-[11px] text-gray-400">Bu hafta: {{ number_format($f->displayViewsCount(), 0, ',', '.') }} · Lifetime: {{ number_format($f->views_count, 0, ',', '.') }}</div>
-          </td>
-          <td class="p-3">{{ $f->is_published ? 'Yayında' : 'Taslak' }}</td>
-          {{-- 18 Agustos 2026: kullanicinin talebi - kurumlara sirayla
-               gorsel eklerken en son hangisine ekledigini takip edebilmek
-               icin. Gorsel ekleme, tam duzenleme formunun (isim/adres/vb.
-               ile ayni PUT istegi) bir parcasi oldugundan facilities.
-               updated_at zaten bu ani dogru yansitir. --}}
-          <td class="p-3 text-gray-500 whitespace-nowrap">{{ $f->updated_at?->format('d.m.Y H:i') ?? '—' }}</td>
-          <td class="p-3 text-right space-x-2">
-            <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600">Revize</a>
-            {{-- 4 Eylul 2026: anlaşmalı (broker-managed) kurumlarin kendi hesabi
-                 hic olmayabilir - facilities.impersonate route'u (admin.
-                 FacilityController::impersonate()) yoksa otomatik olusturup
-                 giris yapar, is_claimed'a DOKUNMAZ. --}}
+          </div>
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600 text-sm font-semibold whitespace-nowrap">Revize</a>
             @if($f->is_claimed || $f->is_broker_managed)
               <form method="POST" action="{{ route('admin.facilities.impersonate', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} kurum paneline gireceksiniz. Devam edilsin mi?')">
                 @csrf
-                <button class="text-purple-600">Panelde Gör</button>
+                <button class="text-purple-600 text-sm font-semibold whitespace-nowrap">Panelde Gör</button>
               </form>
             @endif
             @if($f->is_claimed)
               <form method="POST" action="{{ route('admin.facilities.revert', $f) }}" class="inline" onsubmit="return confirm('Bu kurumun sahiplenmesini geri almak istediğinize emin misiniz?');">
                 @csrf
-                <button class="text-orange-600">Sahiplenmeyi Geri Al</button>
+                <button class="text-orange-600 text-sm font-semibold whitespace-nowrap">Sahiplenmeyi Geri Al</button>
               </form>
               <form method="POST" action="{{ route('admin.facilities.reset-registration', $f) }}" class="inline" onsubmit="return confirm('Bu kurumun sahiplenme kaydı SİLİNECEK (kurum yetkilisi hesabı kalıcı olarak silinir, bonus geri alınır) ve kurum yeniden sahiplenilebilir hale gelecek. Emin misiniz?');">
                 @csrf
-                <button class="text-red-700" title="Yanlış bilgiyle sahiplenildiyse, hesabı silip sıfırdan sahiplendirmek için">Kaydı Sıfırla</button>
+                <button class="text-red-700 text-sm font-semibold whitespace-nowrap" title="Yanlış bilgiyle sahiplenildiyse, hesabı silip sıfırdan sahiplendirmek için">Kaydı Sıfırla</button>
               </form>
             @endif
-            {{-- 22 Eylul 2026: kullanicinin talebi - "abonelik" ozelligi,
-                 24 Eylul 2026: sahipli ve anlasmali kurumlarda da. --}}
-            @if(true)
-              @if($f->is_subscribed)
-                <form method="POST" action="{{ route('admin.facilities.subscription.cancel', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} aboneliği iptal edilsin mi?');">
-                  @csrf
-                  <button style="color:#a21caf;">Aboneliği İptal Et</button>
-                </form>
-              @else
-                <form method="POST" action="{{ route('admin.facilities.subscription.enable', $f) }}" class="inline flex items-center gap-1" onsubmit="return confirm('{{ $f->name }} abone yapılsın mı?');">
-                  @csrf
-                  <select name="plan" class="text-xs border rounded" onclick="event.stopPropagation()">
-                    <option value="monthly">Aylık</option>
-                    {{-- 30 Eylul 2026: kullanicinin talebi - "3 Aylik" plani
-                         simdilik kaldirildi (bkz. admin/facilities/form.blade.php
-                         AYNI tarihli yorum) - burada da tutarlilik icin. --}}
-                    <option value="semiannual">6 Aylık</option>
-                    <option value="yearly">Yıllık</option>
-                  </select>
-                  <input type="number" name="amount" step="0.01" min="0" placeholder="TL" class="text-xs border rounded w-16" onclick="event.stopPropagation()">
-                  <button style="color:#a21caf;">Abone Yap</button>
-                </form>
-              @endif
+            @if($f->is_subscribed)
+              <form method="POST" action="{{ route('admin.facilities.subscription.cancel', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} aboneliği iptal edilsin mi?');">
+                @csrf
+                <button class="text-sm font-semibold whitespace-nowrap" style="color:#a21caf;">Aboneliği İptal Et</button>
+              </form>
+            @else
+              <form method="POST" action="{{ route('admin.facilities.subscription.enable', $f) }}" class="inline-flex items-center gap-1 flex-wrap" onsubmit="return confirm('{{ $f->name }} abone yapılsın mı?');">
+                @csrf
+                <select name="plan" class="text-xs border rounded" onclick="event.stopPropagation()">
+                  <option value="monthly">Aylık</option>
+                  <option value="semiannual">6 Aylık</option>
+                  <option value="yearly">Yıllık</option>
+                </select>
+                <input type="number" name="amount" step="0.01" min="0" placeholder="TL" class="text-xs border rounded w-16" onclick="event.stopPropagation()">
+                <button class="text-sm font-semibold whitespace-nowrap" style="color:#a21caf;">Abone Yap</button>
+              </form>
             @endif
             <form method="POST" action="{{ route('admin.facilities.destroy', $f) }}" class="inline" onsubmit="return confirm('Silinsin mi?');">
               @csrf @method('DELETE')
-              <button class="text-red-600">Sil</button>
+              <button class="text-red-600 text-sm font-semibold whitespace-nowrap">Sil</button>
             </form>
-          </td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="10">Kayıt yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+          </div>
+        </div>
+
+        {{-- Alt satir: durum rozetleri + kalite + bakiye + goruntulenme + guncelleme - hepsi wrap --}}
+        <div class="flex items-center gap-4 flex-wrap text-xs text-gray-500">
+          <div class="flex items-center gap-2">
+            @php($quality = $f->profileQuality())
+            <div class="h-2 w-20 rounded-full bg-gray-100 overflow-hidden"><div class="h-full {{ $quality['score'] >= 80 ? 'bg-green-500' : ($quality['score'] >= 55 ? 'bg-amber-500' : 'bg-red-500') }}" style="width: {{ $quality['score'] }}%"></div></div>
+            <span class="font-semibold text-gray-700">{{ $quality['score'] }}/100</span>
+            @if($quality['missing'])<span>· Eksik: {{ implode(', ', array_slice($quality['missing'], 0, 2)) }}</span>@endif
+          </div>
+
+          @if($f->is_broker_managed)
+            <span class="text-amber-700 font-semibold">🤝 Anlaşmalı</span>
+          @elseif($f->is_claimed)
+            <span class="text-green-700 font-semibold">✓ Sahiplenilmiş</span>
+          @else
+            <span>Sahiplenilmemiş</span>
+          @endif
+
+          @if($f->is_subscribed)
+            <span class="font-semibold px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">
+              ★ Abone{{ $f->isActiveSubscriber() ? '' : ($f->subscription_paid_until ? ' (süresi geçti)' : ' (ödeme bekliyor)') }}{{ $f->subscription_amount ? ' · '.number_format($f->subscription_amount, 0, ',', '.').' TL' : '' }}
+            </span>
+          @endif
+
+          @php($mv = $f->ministryVerificationBadge())
+          @if($mv)
+            <span class="font-semibold px-2 py-0.5 rounded-full {{ $mv['classes'] }}">{{ $mv['label'] }}</span>
+          @endif
+
+          @if(! $f->lat)
+            <span class="font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">📍 Konum eksik</span>
+          @endif
+
+          @if($f->is_claimed)
+            <span>{{ number_format($f->balance, 2, ',', '.') }} TL ({{ $f->free_quote_credits }} ücretsiz hak)</span>
+          @endif
+
+          <span>{{ number_format($f->monthlyDisplayViewsCount(), 0, ',', '.') }}/ay görüntülenme (Gerçek: {{ number_format(max(0, $f->views_count - $f->views_count_at_month_start), 0, ',', '.') }} · Eklenen: {{ number_format($f->boosted_views_count, 0, ',', '.') }} · Toplam: {{ number_format($f->views_count, 0, ',', '.') }})</span>
+
+          <span>{{ $f->is_published ? 'Yayında' : 'Taslak' }}</span>
+          <span>Güncelleme: {{ $f->updated_at?->format('d.m.Y H:i') ?? '—' }}</span>
+        </div>
+      </div>
+    @empty
+      <div class="p-4 text-gray-400">Kayıt yok.</div>
+    @endforelse
   </div>
 </div>
 <div class="mt-6">

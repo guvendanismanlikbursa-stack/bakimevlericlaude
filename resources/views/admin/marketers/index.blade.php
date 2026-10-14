@@ -30,45 +30,32 @@
   <button class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">Pazarlamacı Ekle</button>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Ad</th><th class="p-3">Telefon</th><th class="p-3">Hesap</th><th class="p-3">Oturum</th><th class="p-3">Not sayısı</th><th class="p-3">Son giriş</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($marketers as $marketer)
-        <tr>
-          <td class="p-3 font-medium">{{ $marketer->name }}</td>
-          <td class="p-3">{{ $marketer->phone }}</td>
-          <td class="p-3">
-            @if($marketer->is_active)
-              <span class="text-green-700 text-xs font-semibold">Aktif</span>
-            @else
-              <span class="text-red-700 text-xs font-semibold">Devre Dışı</span>
-            @endif
-          </td>
-          <td class="p-3">
-            @if($marketer->is_logged_in)
-              <span class="text-green-700 text-xs font-semibold">● Aktif</span>
-            @else
-              <span class="text-gray-400 text-xs font-semibold">● Pasif</span>
-            @endif
-          </td>
-          <td class="p-3">{{ $marketer->notes_count }}</td>
-          <td class="p-3 text-gray-400">{{ $marketer->last_login_at?->format('d.m.Y H:i') ?? '—' }}</td>
-          <td class="p-3 text-right space-x-2 whitespace-nowrap">
-            <form method="POST" action="{{ route('admin.marketers.reset-password', $marketer) }}" class="inline" onsubmit="return confirm('Bu pazarlamacı için yeni bir şifre üretilsin mi? Eski şifre geçersiz olur.');">
-              @csrf
-              <button class="text-blue-600">Şifre Sıfırla</button>
-            </form>
-            <form method="POST" action="{{ route('admin.marketers.toggle-active', $marketer) }}" class="inline">
-              @csrf
-              <button class="{{ $marketer->is_active ? 'text-red-600' : 'text-green-700' }}">{{ $marketer->is_active ? 'Devre Dışı Bırak' : 'Aktif Et' }}</button>
-            </form>
-          </td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="7">Henüz pazarlamacı eklenmedi.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($marketers as $marketer)
+    <div class="p-4 flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $marketer->name }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">📞 {{ $marketer->phone }} · {{ $marketer->notes_count }} not · son giriş: {{ $marketer->last_login_at?->format('d.m.Y H:i') ?? '—' }}</div>
+        <div class="flex items-center gap-2 mt-1 text-xs">
+          @if($marketer->is_active)<span class="text-green-700 font-semibold">Aktif</span>@else<span class="text-red-700 font-semibold">Devre Dışı</span>@endif
+          @if($marketer->is_logged_in)<span class="text-green-700 font-semibold">● Oturum Aktif</span>@else<span class="text-gray-400 font-semibold">● Oturum Pasif</span>@endif
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <form method="POST" action="{{ route('admin.marketers.reset-password', $marketer) }}" class="inline" onsubmit="return confirm('Bu pazarlamacı için yeni bir şifre üretilsin mi? Eski şifre geçersiz olur.');">
+          @csrf
+          <button class="text-blue-600 text-sm font-semibold whitespace-nowrap">Şifre Sıfırla</button>
+        </form>
+        <form method="POST" action="{{ route('admin.marketers.toggle-active', $marketer) }}" class="inline">
+          @csrf
+          <button class="text-sm font-semibold whitespace-nowrap {{ $marketer->is_active ? 'text-red-600' : 'text-green-700' }}">{{ $marketer->is_active ? 'Devre Dışı Bırak' : 'Aktif Et' }}</button>
+        </form>
+      </div>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Henüz pazarlamacı eklenmedi.</div>
+  @endforelse
 </div>
 @endsection

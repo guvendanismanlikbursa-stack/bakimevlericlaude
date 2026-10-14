@@ -51,6 +51,42 @@ class GeocodingService
         return null;
     }
 
+    /**
+     * 11 Ekim 2026: kullanicinin talebi - kurumlari MAHALLE'ye gore
+     * filtreleyebilmek icin (uye olmayan bir kuruma gelen talebi ayni
+     * mahalledeki uye bir kuruma yonlendirebilmek). Koordinattan (lat/lng)
+     * Nominatim'in reverse ucuyla mahalle/suburb bilgisini doner - TEK
+     * BASINA guvenilir degildir (canli testte adres metniyle %33 oraninda
+     * celisti), bu yuzden caginin tarafi bunu adres metninden cikarilan
+     * adayla KARSILASTIRIP ikisi UYUSMADAN kaydetmemelidir.
+     */
+    public function reverseGeocode(float $lat, float $lng): ?string
+    {
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => config('app.name').' facility reverse-geocoder ('.config('app.url').', '.config('mail.from.address').')',
+            ])->timeout(8)->get('https://nominatim.openstreetmap.org/reverse', [
+                'lat' => $lat,
+                'lon' => $lng,
+                'format' => 'json',
+                'addressdetails' => 1,
+                'accept-language' => 'tr',
+            ]);
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $addr = $response->json('address') ?? [];
+
+            return $addr['suburb'] ?? $addr['neighbourhood'] ?? $addr['quarter'] ?? null;
+        } catch (\Throwable $e) {
+            Log::warning('Reverse geocoding (mahalle) basarisiz: '.$e->getMessage(), ['lat' => $lat, 'lng' => $lng]);
+
+            return null;
+        }
+    }
+
     private function tryGeocode(string $query): ?array
     {
         try {

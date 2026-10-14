@@ -538,11 +538,37 @@ if (! function_exists('notification_preference_groups')) {
             ];
         }
 
+        // 14 Ekim 2026: kullanicinin talebi - "admin tarafindaki mantik
+        // catismalarinin hepsini duzelt". Admin'e gercekte giden TUM
+        // bildirim turlerini (bkz. notify_user() cagrilarinin tarandigi
+        // denetim) burada gruplayarak admin'e de aile/kurum paneliyle AYNI
+        // acma/kapama ekranini veriyoruz - daha once admin hicbir turu
+        // kapatamiyordu.
+        if ($for === 'admin') {
+            return [
+                'leads' => ['label' => 'Yeni başvuru/talep geldiğinde (sahiplenme, kayıt, ziyaret, iletişim, iş, ilgi, Pusula)', 'types' => [
+                    'claim_submitted', 'registration_submitted', 'visit_service_request_submitted',
+                    'contact_message_submitted', 'job_application_submitted', 'facility_interest_lead',
+                    'care_advisor_lead',
+                ]],
+                'messages' => ['label' => 'Canlı sohbet mesajı geldiğinde', 'types' => ['chat_message']],
+                'wallet' => ['label' => 'Bakiye yükleme talebi geldiğinde', 'types' => ['topup_requested']],
+                'broker' => ['label' => 'Anlaşmalı kurum (aracılık) hareketlerinde', 'types' => [
+                    'broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined',
+                    'broker_visit_request', 'broker_new_question', 'broker_question_reminder', 'marketer_facility_forwarded',
+                ]],
+            ];
+        }
+
         return [
             'leads' => ['label' => 'Yeni talep veya soru geldiğinde', 'types' => ['offer_request', 'new_question']],
             'messages' => ['label' => 'Aile mesaj gönderdiğinde', 'types' => ['new_message']],
             'wallet' => ['label' => 'Bakiye işlemlerimde', 'types' => ['topup_approved', 'topup_rejected']],
             'reminders' => ['label' => 'Hatırlatmalarda', 'types' => ['question_reminder']],
+            // 14 Ekim 2026: kullanicinin talebi - kurum tarafindaki Firsat
+            // Havuzu'na (Pusula eslesmesi) artik bildirim gidiyor, kurum da
+            // bunu kapatabilmeli.
+            'care_advisor_lead' => ['label' => 'Fırsat Havuzu\'na yeni (bölgenizdeki) Pusula talebi düştüğünde', 'types' => ['care_advisor_lead_facility']],
         ];
     }
 }
@@ -614,6 +640,12 @@ if (! function_exists('notification_action_url')) {
                 'chat_message' => isset($data['chat_thread_id']) ? route('admin.chat.show', $data['chat_thread_id']) : route('admin.chat.index'),
                 'marketer_facility_forwarded' => isset($data['facility_id']) ? route('admin.facilities.edit', $data['facility_id']) : route('admin.marketers.conversations'),
                 'facility_interest_lead' => route('admin.fee-info-requests.index', ['scope' => 'on_kayitli']),
+                // 14 Ekim 2026: kullanicinin talebi - "Pusula Anketleri icin
+                // bildirim eksikti, tamamla". Admin'e giden bildirim admin
+                // panelindeki listeye, kuruma giden bildirim ise Firsat
+                // Havuzu'na goturur.
+                'care_advisor_lead' => route('admin.care-advisor-leads.index'),
+                'care_advisor_lead_facility' => brand_route('facility.care-advisor-leads.index'),
                 default => null,
             };
         } catch (\Throwable $e) {

@@ -8,7 +8,7 @@
 @endphp
 <h1 class="text-2xl font-bold mb-6">Genel Bakış</h1>
 
-@if($pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0 || $newVisitServiceRequests > 0 || $unreadContactMessages > 0 || $pendingAccountDeletions > 0)
+@if($pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0 || $newVisitServiceRequests > 0 || $unreadContactMessages > 0 || $pendingAccountDeletions > 0 || $newInterestLeads > 0)
 <div class="grid md:grid-cols-3 gap-4 mb-6">
   @if($pendingClaims > 0)
     <a href="{{ route('admin.claims.index') }}" class="block bg-orange-50 border border-orange-200 text-orange-800 px-5 py-4 rounded-xl">
@@ -34,6 +34,13 @@
   @if($newVisitServiceRequests > 0)
     <a href="{{ route('admin.visit-service.index', ['status' => 'yeni']) }}" class="block bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl">
       <strong>{{ $newVisitServiceRequests }}</strong> yeni "Yakınımı Ziyaret Et" talebi var →
+    </a>
+  @endif
+  {{-- 5 Ekim 2026: kullanicinin bildirdigi gercek eksiklik - bkz.
+       DashboardController ayni tarihli yorum. --}}
+  @if($newInterestLeads > 0)
+    <a href="{{ route('admin.fee-info-requests.index') }}" class="block bg-teal-50 border border-teal-200 text-teal-800 px-5 py-4 rounded-xl">
+      <strong>{{ $newInterestLeads }}</strong> yeni ilgi/bilgi talebi var →
     </a>
   @endif
   {{-- 4 Eylul 2026: kullanicinin talebi - ContactMessage (is_read) ve
@@ -167,7 +174,7 @@
      talebi uzerine). Bu YENI, AYRI kart SADECE gercek (bot haric, oturumda
      24 saatte 1 kez) tiklamayi gosterir - bkz. Admin\DashboardController::
      categoryRealClickSummary() ayni tarihli yorum. --}}
-<div class="bg-white rounded-xl shadow-sm p-5 mb-10">
+<div class="bg-white rounded-xl shadow-sm p-5 mb-10" id="en-cok-tiklanan">
   <h2 class="font-bold text-lg mb-1">Gerçek Tıklama (Bot Hariç)</h2>
   <p class="text-xs text-gray-500 mb-4">
     Son 30 gün · yalnızca bilinen arama motoru/SEO botları hariç tutulan, aynı tarayıcının aynı kurumu 24 saatte yalnızca 1 kez saydığı ölçüm
@@ -191,9 +198,35 @@
         </div>
       @endforeach
     </div>
-    @if($realClickDemand['top_facilities']->isNotEmpty())
-      <div class="mt-5 pt-5 border-t border-gray-100">
-        <div class="text-xs font-semibold text-gray-500 mb-2">En çok tıklanan kurumlar</div>
+    <div class="mt-5 pt-5 border-t border-gray-100">
+      <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+        <div class="text-xs font-semibold text-gray-500">En çok tıklanan kurumlar</div>
+        {{-- 13 Ekim 2026: kullanicinin talebi - "turkiye ve il bazli
+             filtreleme olmali, bolum bolum de ayrilmali" - sayfa bu GET
+             formuyla kendini ayni filtrelerle yeniden yukler, secim
+             degisince otomatik gonderir (JS'siz de calisan native fallback). --}}
+        {{-- 13 Ekim 2026: kullanicinin talebi - "filtreleme yapinca sayfanin
+             en ustune atmamali, oldugu yerde kalmali". GET formu dogasi
+             geregi sayfayi yeniden yukler (bu, native/JS'siz fallback'in
+             BEDELI) - ama action'a #en-cok-tiklanan eklenince tarayici
+             yukleme sonrasi otomatik bu karta kaydirir, en uste atmaz. --}}
+        <form method="GET" action="{{ url()->current() }}#en-cok-tiklanan" class="flex items-center gap-2 flex-wrap">
+          <select name="il" onchange="this.form.submit()" class="border rounded-lg px-2 py-1 text-xs">
+            <option value="">Türkiye geneli</option>
+            @foreach($realClickCities as $city)
+              <option value="{{ $city->id }}" @selected($realClickCityId === $city->id)>{{ $city->name }}</option>
+            @endforeach
+          </select>
+          <select name="bolum" onchange="this.form.submit()" class="border rounded-lg px-2 py-1 text-xs">
+            <option value="">Tüm bölümler</option>
+            @foreach($realClickSections as $slug => $section)
+              <option value="{{ $slug }}" @selected($realClickSection === $slug)>{{ $section['title'] }}</option>
+            @endforeach
+          </select>
+          <noscript><button type="submit" class="border rounded-lg px-2 py-1 text-xs font-semibold">Filtrele</button></noscript>
+        </form>
+      </div>
+      @if($realClickDemand['top_facilities']->isNotEmpty())
         <div class="space-y-1.5">
           @foreach($realClickDemand['top_facilities'] as $i => $f)
             <div class="flex items-center justify-between text-sm">
@@ -202,8 +235,10 @@
             </div>
           @endforeach
         </div>
-      </div>
-    @endif
+      @else
+        <p class="text-sm text-gray-400">Bu filtreyle eşleşen gerçek tıklama kaydı yok.</p>
+      @endif
+    </div>
   @endif
 </div>
 
@@ -216,6 +251,8 @@
         <div><div class="text-gray-500">Sahiplenilmiş</div><div class="font-bold text-lg text-green-700">{{ $s['claimed'] }}</div></div>
         <div><div class="text-gray-500">Teklif Talebi</div><div class="font-bold text-lg">{{ $s['offer_requests'] }}</div></div>
         <div><div class="text-gray-500">Yeni Talep</div><div class="font-bold text-lg text-orange-600">{{ $s['new_offer_requests'] }}</div></div>
+        <div><div class="text-gray-500">İlgi Talebi</div><div class="font-bold text-lg">{{ $s['interest_leads'] }}</div></div>
+        <div><div class="text-gray-500">Yeni İlgi</div><div class="font-bold text-lg text-teal-600">{{ $s['new_interest_leads'] }}</div></div>
       </div>
       <a href="{{ route('admin.facilities.index', ['brand' => $slug]) }}" class="text-xs text-blue-600 mt-3 inline-block">Kurumları görüntüle →</a>
     </div>
@@ -223,24 +260,18 @@
 </div>
 
 <h2 class="text-lg font-bold mb-4">Son Teklif Talepleri</h2>
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr><th class="p-3">Ad Soyad</th><th class="p-3">Telefon</th><th class="p-3">Kurum</th><th class="p-3">Durum</th><th class="p-3">Tarih</th></tr>
-    </thead>
-    <tbody class="divide-y">
-      @forelse($latestOffers as $offer)
-        <tr>
-          <td class="p-3">{{ $offer->full_name }}</td>
-          <td class="p-3">{{ $offer->phone }}</td>
-          <td class="p-3">{{ $offer->facility?->name ?? '-' }}</td>
-          <td class="p-3">{{ $offerStatusLabels[$offer->status] ?? $offer->status }}</td>
-          <td class="p-3">{{ $offer->created_at->format('d.m.Y H:i') }}</td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="5">Henüz talep yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap kart. --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($latestOffers as $offer)
+    <div class="p-4 flex items-center justify-between gap-3 flex-wrap text-sm">
+      <div>
+        <span class="font-semibold">{{ $offer->full_name }}</span>
+        <span class="text-gray-500"> · {{ $offer->phone }} · {{ $offer->facility?->name ?? '-' }}</span>
+      </div>
+      <span class="text-xs text-gray-500">{{ $offerStatusLabels[$offer->status] ?? $offer->status }} · {{ $offer->created_at->format('d.m.Y H:i') }}</span>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Henüz talep yok.</div>
+  @endforelse
 </div>
 @endsection

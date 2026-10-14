@@ -188,6 +188,10 @@
     <a href="{{ brand_route('facility.wallet.index') }}" class="bg-primary text-white rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Bakiye Yükle →</a>
     <a href="{{ brand_route('facility.packages.index') }}" class="border border-primary text-primary rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Paketler →</a>
     <a href="{{ brand_route('facility.questions.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Aile Soruları →</a>
+    {{-- 13 Ekim 2026: kullanicinin talebi - "ucretli uyeligin en buyuk
+         satici gucu". Ucretsiz kurumlar da bu linki GORUR (sayfaya girince
+         kilitli oldugunu anlar) - ozelligin varligi basli basina bir satis aracidir. --}}
+    <a href="{{ brand_route('facility.care-advisor-leads.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">🎯 Fırsat Havuzu →</a>
     <a href="{{ brand_route('facility.reviews.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Yorumlarım →</a>
     @if($user->role === 'owner')
       <a href="{{ brand_route('facility.team.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Ekip Yönetimi →</a>

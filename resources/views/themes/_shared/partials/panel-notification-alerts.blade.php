@@ -1,17 +1,24 @@
 @php
-  $panelType = session('facility_user_id') ? 'facility' : (session('family_user_id') ? 'family' : null);
+  // 14 Ekim 2026: kullanıcının talebi - "admin tarafındaki mantık
+  // çatışmalarının hepsini düzelt - admin panelinde hiç sesli uyarı yoktu".
+  // Bu partial daha önce SADECE aile/kurum oturumlarında çalışıyordu (admin
+  // panelinde hiç include edilmemişti) - claims/registrations/chat gibi
+  // ZATEN bildirim gönderen türler bile admin ekranında sessiz kalıyordu.
+  // Admin'de rozet, markaya özel renk yerine sabit koyu bir ton kullanır
+  // (admin panelinin kendi renk şeması, bkz. admin/layout.blade.php).
+  $panelType = session('facility_user_id') ? 'facility' : (session('family_user_id') ? 'family' : (session('admin_id') ? 'admin' : null));
 @endphp
 @if($panelType)
-<div id="js-notify-reminder-wrap" hidden class="fixed bottom-24 right-5 z-40 max-w-xs rounded-xl shadow-lg p-4 text-sm" style="background: {{ $brand['primary_color'] }}; color: #fff;">
+<div id="js-notify-reminder-wrap" hidden class="fixed bottom-24 right-5 z-40 max-w-xs rounded-xl shadow-lg p-4 text-sm" style="background: {{ $panelType === 'admin' ? '#111827' : $brand['primary_color'] }}; color: #fff;">
   <button type="button" id="js-notify-reminder-close" aria-label="Kapat" class="absolute top-1.5 right-2 text-white/70 hover:text-white text-base leading-none">×</button>
   <p class="font-semibold pr-4">🔔 Bildirimlerinizi açmayı unutmayınız</p>
-  <p class="text-white/80 text-xs mt-1">Gelen mesaj ve teklifleri kaçırmamak için tarayıcı bildirim iznini açık tutun.</p>
+  <p class="text-white/80 text-xs mt-1">Gelen mesaj ve talepleri kaçırmamak için tarayıcı bildirim iznini açık tutun.</p>
 </div>
 
 <script>
 (function () {
   var panelType = @json($panelType);
-  var countUrl = @json($panelType === 'facility' ? brand_route('facility.notifications.unread-count') : brand_route('family.notifications.unread-count'));
+  var countUrl = @json(match($panelType){'facility' => brand_route('facility.notifications.unread-count'), 'admin' => route('admin.notifications.unread-count'), default => brand_route('family.notifications.unread-count')});
 
   // --- Sesli uyari: panel acikken okunmamis bildirim sayisi artarsa kisa
   // bir "ping" calar (Web Audio API ile uretiliyor, ayrica bir ses dosyasi

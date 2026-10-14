@@ -31,6 +31,12 @@ class BackupDatabase extends Command
 
     public function handle(): int
     {
+        // 4 Ekim 2026: bu komut hem CLI cron'dan (sinirsiz sure) hem de
+        // /_ops/backup-now web ucundan (PHP'nin 30sn web limitine tabi)
+        // tetiklenebiliyor - buyuk dosya sayisinda zip olusturma 30sn'yi
+        // asabilir, bu yuzden kaynaktan bagimsiz guvenceye aliniyor.
+        set_time_limit(0);
+
         $connection = config('database.default');
         $driver = config("database.connections.{$connection}.driver");
 
@@ -67,7 +73,42 @@ class BackupDatabase extends Command
 
         // 25 Eylul 2026: gorsel klasoru her gece zip'lenince (yuzlerce MB) hosting kaynak sinirina takiliyor ve
         // gunluk yedek hic tamamlanmiyordu; SQL yedegi gunluk, dosya zip'i haftalik (Pazar) alinir.
-        [$filesZipPath, $filesZipSize] = ($this->option('with-files') || now()->isSunday()) ? $this->buildFilesZip($dir) : [null, 0];
+        //
+        // 11 Ekim 2026: kullanicinin bulgusu - CheckGalleryHealth'teki gunluk
+        // kontrol, dosya yedegi eksikse bunu ANCAK 8 GUN SONRA fark ediyordu.
+        // Kok neden: paylasimli hosting'in (buyuyen, artik 3.6+ GB'lik) zip
+        // islemini bazi Pazarlar surec/kaynak siniri yuzunden SESSIZCE
+        // yarida kesmesi (hicbir Exception/hata kaydi birakmadan) - haftalarca
+        // fark edilmeden surebiliyordu. Artik buildFilesZip() try/catch'e
+        // alinir, basarisiz olursa (veya beklenenden kucuk/bos ciktiginda)
+        // AYNI GUN record_platform_error() ile acik bir hata kaydi dusurulur -
+        // 8 gun beklemeden, admin Hatalar panelinde hemen gorulur.
+        $filesZipPath = null;
+        $filesZipSize = 0;
+        if ($this->option('with-files') || now()->isSunday()) {
+            try {
+                [$filesZipPath, $filesZipSize] = $this->buildFilesZip($dir);
+                if (! $filesZipPath) {
+                    record_platform_error(
+                        'backup-files-zip',
+                        'Haftalık dosya yedeği oluşturulamadı',
+                        'buildFilesZip() null döndü (ZipArchive eklentisi eksik veya zip dosyası açılamadı) - '.now()->format('Y-m-d H:i:s')
+                    );
+                } elseif ($filesZipSize < 1024) {
+                    record_platform_error(
+                        'backup-files-zip',
+                        'Haftalık dosya yedeği şüpheli derecede küçük',
+                        basename($filesZipPath).' sadece '.$filesZipSize.' bayt - yarım kalmış olabilir.'
+                    );
+                }
+            } catch (\Throwable $e) {
+                record_platform_error(
+                    'backup-files-zip',
+                    'Haftalık dosya yedeği oluşturma hatası',
+                    get_class($e).': '.$e->getMessage().' ('.$e->getFile().':'.$e->getLine().')'
+                );
+            }
+        }
         if ($filesZipPath) {
             $this->info('Dosya yedegi olusturuldu: '.basename($filesZipPath).' ('.number_format($filesZipSize / 1024 / 1024, 1).' MB)');
         }
@@ -114,13 +155,29 @@ class BackupDatabase extends Command
             'uploads/claims' => storage_path('app/private/claims'),
         ];
 
+        // 4 Ekim 2026: kullanicinin bildirdigi gercek hata - bugunku toplu
+        // importlar sonrasi facilities klasorunde on binlerce dosya
+        // birikince File::allFiles() (TUM sonuclari once bir array'e
+        // TOPLAYAN, Symfony Finder tabanli) 128MB PHP bellek limitini
+        // asip Pazar gecesi otomatik yedegi KALICI olarak cokertiyordu.
+        // RecursiveDirectoryIterator/RecursiveIteratorIterator ile dogrudan
+        // STREAMING gezinmek (tek seferde bir tek dosya yolu bellekte)
+        // bellek kullanimini dosya SAYISINDAN BAGIMSIZ, sabit tutar.
         foreach ($sources as $zipPrefix => $sourceDir) {
             if (! File::isDirectory($sourceDir)) {
                 continue;
             }
 
-            foreach (File::allFiles($sourceDir) as $file) {
-                $zip->addFile($file->getPathname(), $zipPrefix.'/'.$file->getRelativePathname());
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($sourceDir, \FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $file) {
+                if (! $file->isFile()) {
+                    continue;
+                }
+                $relative = substr($file->getPathname(), strlen($sourceDir) + 1);
+                $zip->addFile($file->getPathname(), $zipPrefix.'/'.str_replace('\\', '/', $relative));
             }
         }
 

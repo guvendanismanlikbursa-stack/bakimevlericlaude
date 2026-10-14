@@ -5,7 +5,10 @@
 @php
   $selectedServices = collect($facility->services ?? []);
   $imageCount = $facility->exists ? $facility->images->count() : 0;
-  $remainingImages = max(0, 10 - $imageCount);
+  // 11 Ekim 2026: Facility\ProfileController ile AYNI kural - aktif abone
+  // kurumlarda sinirsiz gorsel hakki admin panelinde de yansitilir.
+  $isUnlimitedGallery = $facility->exists && $facility->isActiveSubscriber();
+  $remainingImages = $isUnlimitedGallery ? null : max(0, 10 - $imageCount);
 @endphp
 {{-- 18 Agustos 2026: kullanicinin talebi - kayittan sonra artik listeye
      otomatik donulmuyor (bkz. Admin\FacilityController::update() ayni
@@ -232,6 +235,17 @@
     <input type="text" id="facility-form-district" name="district" value="{{ old('district', $facility->district) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
   </div>
 
+  {{-- 11 Ekim 2026: kullanicinin bildirdigi gercek hata - mahalle sadece
+       site-capinda otomatik tarama (facility-neighborhood-fill) ile
+       doldurulabiliyordu, admin formunda elle yazilacak/duzeltilecek bir
+       alan HIC yoktu - otomatik tarama adres metninden mahalleyi
+       cikaramadigi/Nominatim ile uyusmadigi icin BOS birakilan kurumlar
+       elle tamamlanamiyordu. --}}
+  <div>
+    <label class="text-sm font-medium">Mahalle</label>
+    <input type="text" name="neighborhood" value="{{ old('neighborhood', $facility->neighborhood) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+  </div>
+
   <div>
     <label class="text-sm font-medium">Telefon</label>
     <input type="text" name="phone" value="{{ old('phone', $facility->phone) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
@@ -240,6 +254,15 @@
   <div class="md:col-span-2">
     <label class="text-sm font-medium">Adres</label>
     <input type="text" id="facility-form-address" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
+  </div>
+
+  {{-- 11 Ekim 2026: kullanicinin talebi - il/ilce/mahalle/adres gibi en sik
+       duzenlenen alanlar formun en ustunde, ama tek Kaydet butonu sayfanin
+       en altindaydi - her kucuk duzeltmede asagi kaydirmak zaman
+       kaybettiriyordu. Asagidaki ana Kaydet butonu KALDIRILMADI, bu sadece
+       ayni formu gonderen EK bir kisayol. --}}
+  <div class="md:col-span-2">
+    <button type="submit" class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold">Kaydet</button>
   </div>
 
   {{-- 29 Agustos 2026: kullanicinin talebi - kimse elle koordinat bilmiyor,
@@ -459,9 +482,13 @@
   <div class="md:col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-4">
     <div class="flex items-center justify-between gap-3 mb-2">
       <label class="text-sm font-semibold">Demo / Galeri Görselleri</label>
-      <span class="text-xs font-semibold rounded-full px-3 py-1 {{ $remainingImages > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500' }}">{{ $imageCount }}/10 yüklü</span>
+      @if($isUnlimitedGallery)
+        <span class="text-xs font-semibold rounded-full px-3 py-1 bg-amber-100 text-amber-700">★ Sınırsız — {{ $imageCount }} yüklü</span>
+      @else
+        <span class="text-xs font-semibold rounded-full px-3 py-1 {{ $remainingImages > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500' }}">{{ $imageCount }}/10 yüklü</span>
+      @endif
     </div>
-    @if($remainingImages > 0)
+    @if($isUnlimitedGallery || $remainingImages > 0)
       {{-- 21 Eylul 2026: kullanicinin bildirdigi hata - "teker teker cok
            zaman aliyor" dedi ama input zaten multiple destekliyordu; asil
            sorun dosya secme penceresinde TEK dosya seciyor olmasiydi
@@ -470,13 +497,21 @@
            bildirimi eklendi ki coklu secimin gercekten calistigini gorsun. --}}
       <input type="file" name="images[]" id="facility-images-input" multiple accept="image/*" class="border rounded-lg px-3 py-2 w-full mt-1 bg-white">
       <p id="facility-images-selected-count" class="text-xs font-semibold text-blue-600 mt-1"></p>
-      <p class="text-xs text-gray-500 mt-1">En fazla 10 görsel olabilir. Bu kurum için kalan yükleme hakkı: {{ $remainingImages }}. <strong>Birden fazla görsel seçmek için</strong>, açılan pencerede görsellere <strong>Ctrl tuşunu basılı tutarak</strong> tek tek tıklayın (veya ilk görsele tıklayıp <strong>Shift ile son görsele</strong> tıklayın), sonra "Aç"a basın — hepsi tek seferde yüklenir.</p>
+      @if($isUnlimitedGallery)
+        <p class="text-xs text-gray-500 mt-1">Abone kurum - sınırsız görsel yükleyebilirsiniz. <strong>Birden fazla görsel seçmek için</strong>, açılan pencerede görsellere <strong>Ctrl tuşunu basılı tutarak</strong> tek tek tıklayın (veya ilk görsele tıklayıp <strong>Shift ile son görsele</strong> tıklayın), sonra "Aç"a basın — hepsi tek seferde yüklenir.</p>
+      @else
+        <p class="text-xs text-gray-500 mt-1">En fazla 10 görsel olabilir. Bu kurum için kalan yükleme hakkı: {{ $remainingImages }}. <strong>Birden fazla görsel seçmek için</strong>, açılan pencerede görsellere <strong>Ctrl tuşunu basılı tutarak</strong> tek tek tıklayın (veya ilk görsele tıklayıp <strong>Shift ile son görsele</strong> tıklayın), sonra "Aç"a basın — hepsi tek seferde yüklenir.</p>
+      @endif
       <script>
       document.getElementById('facility-images-input')?.addEventListener('change', function (e) {
         var n = e.target.files.length;
         var el = document.getElementById('facility-images-selected-count');
         if (!n) { el.textContent = ''; return; }
-        el.textContent = n + ' görsel seçildi' + (n > {{ $remainingImages }} ? ' — DİKKAT: kalan hakkınızdan ({{ $remainingImages }}) fazla, fazlası kaydedilmeyecek.' : '.');
+        @if($isUnlimitedGallery)
+          el.textContent = n + ' görsel seçildi.';
+        @else
+          el.textContent = n + ' görsel seçildi' + (n > {{ $remainingImages }} ? ' — DİKKAT: kalan hakkınızdan ({{ $remainingImages }}) fazla, fazlası kaydedilmeyecek.' : '.');
+        @endif
       });
       </script>
     @else
@@ -667,44 +702,27 @@
                baglanir (referrals tablosundaki ayni desen) - <form>
                elemani <tr>/<td> disina, HTML kurallarina uygun sekilde
                tasinir. --}}
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-gray-500 border-b border-gray-100">
-                  <th class="py-1.5 pr-3">Tarih</th>
-                  <th class="py-1.5 pr-3">İşlem</th>
-                  <th class="py-1.5 pr-3 text-right">Tutar</th>
-                  <th class="py-1.5 pr-3 text-right">Hak</th>
-                  <th class="py-1.5 pr-3 text-right">Bakiye Sonrası</th>
-                  <th class="py-1.5 pr-3 text-right">Hak Sonrası</th>
-                  <th class="py-1.5">Not</th>
-                  <th class="py-1.5">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach($facility->balanceLogs->sortByDesc('created_at') as $log)
-                  <tr class="border-b border-gray-50">
-                    <td class="py-1.5 pr-3 whitespace-nowrap text-gray-500">{{ $log->created_at->format('d.m.Y H:i') }}</td>
-                    <td class="py-1.5 pr-3">{{ $balanceLogTypeLabels[$log->type] ?? $log->type }}</td>
-                    <td class="py-1.5 pr-3 text-right">
-                      <input type="number" step="0.01" name="amount" form="log-edit-{{ $log->id }}" value="{{ $log->amount }}" class="border rounded px-1.5 py-1 text-right text-sm w-24 {{ $log->amount < 0 ? 'text-red-600' : ($log->amount > 0 ? 'text-green-700' : '') }}">
-                    </td>
-                    <td class="py-1.5 pr-3 text-right">
-                      <input type="number" name="credits_amount" form="log-edit-{{ $log->id }}" value="{{ $log->credits_amount }}" class="border rounded px-1.5 py-1 text-right text-sm w-16 {{ $log->credits_amount < 0 ? 'text-red-600' : ($log->credits_amount > 0 ? 'text-green-700' : '') }}">
-                    </td>
-                    <td class="py-1.5 pr-3 text-right text-gray-600">{{ number_format($log->balance_after, 2, ',', '.') }} TL</td>
-                    <td class="py-1.5 pr-3 text-right text-gray-600">{{ $log->credits_after }}</td>
-                    <td class="py-1.5">
-                      <input type="text" name="note" form="log-edit-{{ $log->id }}" value="{{ $log->note }}" class="border rounded px-1.5 py-1 text-sm w-full min-w-[140px]">
-                    </td>
-                    <td class="py-1.5 whitespace-nowrap">
-                      <button type="submit" form="log-edit-{{ $log->id }}" class="text-xs font-semibold text-primary hover:underline">Kaydet</button>
-                      <button type="submit" form="log-delete-{{ $log->id }}" class="text-xs font-semibold text-red-600 hover:underline ml-2">Sil</button>
-                    </td>
-                  </tr>
-                @endforeach
-              </tbody>
-            </table>
+          {{-- 11 Ekim 2026: kullanicinin talebi - "hangi olcude olursa olsun
+               butun islemleri gorebilmeliyim, kaydirmak istemiyorum" - genis
+               <table> yerine flex-wrap kart (bkz. admin/facilities/_results.blade.php
+               ayni desen). form="log-edit-id" ozniteligi kart yapisinda da calismaya devam eder. --}}
+          <div class="divide-y divide-gray-100">
+            @foreach($facility->balanceLogs->sortByDesc('created_at') as $log)
+              <div class="py-2 flex flex-col gap-1.5">
+                <div class="flex items-center justify-between gap-3 flex-wrap text-xs text-gray-500">
+                  <span>{{ $log->created_at->format('d.m.Y H:i') }} · {{ $balanceLogTypeLabels[$log->type] ?? $log->type }} · Bakiye sonrası: {{ number_format($log->balance_after, 2, ',', '.') }} TL · Hak sonrası: {{ $log->credits_after }}</span>
+                  <span class="whitespace-nowrap">
+                    <button type="submit" form="log-edit-{{ $log->id }}" class="text-xs font-semibold text-primary hover:underline">Kaydet</button>
+                    <button type="submit" form="log-delete-{{ $log->id }}" class="text-xs font-semibold text-red-600 hover:underline ml-2">Sil</button>
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <label class="text-xs text-gray-500">Tutar <input type="number" step="0.01" name="amount" form="log-edit-{{ $log->id }}" value="{{ $log->amount }}" class="border rounded px-1.5 py-1 text-right text-sm w-24 ml-1 {{ $log->amount < 0 ? 'text-red-600' : ($log->amount > 0 ? 'text-green-700' : '') }}"></label>
+                  <label class="text-xs text-gray-500">Hak <input type="number" name="credits_amount" form="log-edit-{{ $log->id }}" value="{{ $log->credits_amount }}" class="border rounded px-1.5 py-1 text-right text-sm w-16 ml-1 {{ $log->credits_amount < 0 ? 'text-red-600' : ($log->credits_amount > 0 ? 'text-green-700' : '') }}"></label>
+                  <input type="text" name="note" form="log-edit-{{ $log->id }}" value="{{ $log->note }}" placeholder="Not" class="border rounded px-1.5 py-1 text-sm flex-1 min-w-[140px]">
+                </div>
+              </div>
+            @endforeach
           </div>
           @foreach($facility->balanceLogs as $log)
             <form id="log-edit-{{ $log->id }}" method="POST" action="{{ route('admin.facilities.balance-log.update', [$facility, $log]) }}" onsubmit="return confirm('Bu hareket kaydı güncellensin ve bakiye/hak buna göre yeniden hesaplansın mı?');">
@@ -716,6 +734,43 @@
               @method('DELETE')
             </form>
           @endforeach
+        @endif
+      </div>
+
+      {{-- 12 Ekim 2026: kullanicinin talebi - "o kuruma kac anket yollanilmis
+           ve hangi anketler yollanilmis" admin bu kurumun kendi sayfasindan
+           gorebilsin - bkz. FamilyNeedSurveyController::whatsapp() ve
+           Facility::needSurveySends(). --}}
+      <div class="border-t border-gray-100 mt-4 pt-4">
+        <h3 class="font-semibold text-sm mb-2">Gönderilen Aile İhtiyaç Anketleri ({{ $facility->needSurveySends->count() }})</h3>
+        @if($facility->needSurveySends->isEmpty())
+          <p class="text-sm text-gray-500">Bu kuruma henüz bir aile ihtiyaç anketi gönderilmemiş.</p>
+        @else
+          <div class="divide-y divide-gray-100">
+            @foreach($facility->needSurveySends as $send)
+              <div class="py-2 text-xs text-gray-600">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-gray-400 whitespace-nowrap">{{ $send->created_at->format('d.m.Y H:i') }}</span>
+                  @if($send->familyNeedSurvey)
+                    @php($s = $send->familyNeedSurvey)
+                    <span class="font-semibold text-gray-800">{{ $s->name ?: 'İsim girilmemiş' }}</span>
+                    <span class="text-gray-400">· {{ $s->phone ?: 'telefon yok' }}</span>
+                    <span>{{ \App\Models\FamilyNeedSurvey::SERVICE_TYPES[$s->service_type] ?? $s->service_type }}</span>
+                    <span class="text-gray-400">· {{ $s->district ?: $s->city?->name }}@if($s->neighborhood) / {{ $s->neighborhood }}@endif</span>
+                  @else
+                    <span class="text-gray-400">(anket sonradan silinmiş)</span>
+                  @endif
+                </div>
+                @if($send->familyNeedSurvey && ($s->age_group || $s->urgency || $s->ownership_preference))
+                  <div class="flex items-center gap-1.5 flex-wrap mt-1">
+                    @if($s->age_group)<span class="bg-gray-100 px-2 py-0.5 rounded-full">{{ \App\Models\FamilyNeedSurvey::AGE_GROUPS[$s->age_group] ?? $s->age_group }}</span>@endif
+                    @if($s->urgency)<span class="bg-gray-100 px-2 py-0.5 rounded-full">{{ \App\Models\FamilyNeedSurvey::URGENCIES[$s->urgency] ?? $s->urgency }}</span>@endif
+                    @if($s->ownership_preference)<span class="bg-gray-100 px-2 py-0.5 rounded-full">{{ \App\Models\FamilyNeedSurvey::OWNERSHIP_PREFERENCES[$s->ownership_preference] ?? $s->ownership_preference }}</span>@endif
+                  </div>
+                @endif
+              </div>
+            @endforeach
+          </div>
         @endif
       </div>
     </div>

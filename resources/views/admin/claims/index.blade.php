@@ -12,37 +12,32 @@
   </select>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Kurum</th><th class="p-3">Başvuran</th><th class="p-3">E-posta</th><th class="p-3">Evrak</th><th class="p-3">Mesafe</th><th class="p-3">Tarih</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($claims as $claim)
-        <tr>
-          <td class="p-3 font-medium">{{ $claim->facility->name }}</td>
-          <td class="p-3">{{ $claim->applicant_name }}</td>
-          <td class="p-3">{{ $claim->applicant_email }}</td>
-          <td class="p-3">
-            @if($claim->document_path)
-              <span class="text-green-700 text-xs font-semibold">✓ Var</span>
-            @else
-              <span class="text-amber-700 text-xs font-semibold" title="24 saat içinde eklenmezse otomatik silinir">⏳ Bekliyor</span>
-            @endif
-          </td>
-          <td class="p-3">
-            @if($claim->distance_km !== null)
-              <span class="{{ $claim->distance_km > 50 ? 'text-amber-700 font-semibold' : 'text-gray-600' }}">{{ number_format($claim->distance_km, 1) }} km</span>
-            @else
-              <span class="text-gray-300">—</span>
-            @endif
-          </td>
-          <td class="p-3 text-gray-400">{{ $claim->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right"><a href="{{ route('admin.claims.show', $claim) }}" class="text-blue-600">İncele</a></td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="7">Kayıt yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($claims as $claim)
+    <div class="p-4 flex flex-col gap-2">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          <div class="font-bold text-gray-900 break-words">{{ $claim->facility->name }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">{{ $claim->applicant_name }} · {{ $claim->applicant_email }} · {{ $claim->created_at->format('d.m.Y H:i') }}</div>
+        </div>
+        <a href="{{ route('admin.claims.show', $claim) }}" class="text-blue-600 text-sm font-semibold whitespace-nowrap">İncele</a>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap text-xs">
+        @if($claim->document_path)
+          <span class="text-green-700 font-semibold">✓ Evrak Var</span>
+        @else
+          <span class="text-amber-700 font-semibold" title="24 saat içinde eklenmezse otomatik silinir">⏳ Evrak Bekliyor</span>
+        @endif
+        @if($claim->distance_km !== null)
+          <span class="{{ $claim->distance_km > 50 ? 'text-amber-700 font-semibold' : 'text-gray-600' }}">{{ number_format($claim->distance_km, 1) }} km</span>
+        @endif
+      </div>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Kayıt yok.</div>
+  @endforelse
 </div>
 <div class="mt-6">{{ $claims->links() }}</div>
 @endsection

@@ -41,6 +41,26 @@ class CareAdvisorMatchService
     {
         $score = 0;
         $reasons = [];
+
+        // 13 Ekim 2026 (4): kullanıcının talebi - "o ildeki anlaşmalı, üye ve
+        // sahipli kurumların sırasıyla gösterilme sıralaması bu şekilde
+        // olmalı". AYNI hiyerarşi, sitede zaten var olan
+        // Facility::scopeOrderByListingPriority() ile TUTARLI (anlaşmalı >
+        // üye/öne çıkan > sahipli > puan). Katmanlar arasında büyük puan
+        // boşlukları (100000/10000/1000) bırakılarak anahtar kelime/bütçe/
+        // puan eşleşmesinin bu sıralamayı EZMESİ engellenir - o puanlar
+        // SADECE aynı katman içindeki sıralamayı belirler.
+        if ($facility->is_broker_managed) {
+            $score += 100000;
+        }
+        if ($facility->is_featured || $facility->isActiveSubscriber()) {
+            $score += 10000;
+        }
+        if ($facility->is_claimed) {
+            $score += 1000;
+            $reasons[] = 'Doğrulanmış kurum';
+        }
+
         $services = collect($facility->services ?? [])->map(fn ($s) => mb_strtolower($s));
 
         foreach ($keywordWeights as $keyword => $label) {
@@ -59,13 +79,7 @@ class CareAdvisorMatchService
             $score += 3;
         }
 
-        if ($facility->is_claimed) {
-            $score += 10;
-            $reasons[] = 'Doğrulanmış kurum';
-        }
-
         $score += min(10, (float) $facility->rating * 2);
-        $score += $facility->is_featured ? 5 : 0;
 
         return [$score, array_unique($reasons)];
     }

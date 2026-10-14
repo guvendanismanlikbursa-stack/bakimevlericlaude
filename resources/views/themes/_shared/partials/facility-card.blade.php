@@ -149,20 +149,33 @@
        kurumlar da ayni tesvik edici CTA'yi alir. --}}
   @if($facility->is_broker_managed || $isActiveSubscriberCard)
     <div class="px-4 pb-3">
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black text-white text-center bg-gradient-to-r from-blue-600 to-sky-500 shadow-md shadow-blue-400/40 hover:shadow-lg hover:shadow-blue-400/60 transition">
-        💬 Hemen Ücret Sor <span class="font-normal opacity-90">· Öncelikli Yanıt</span>
+      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="flex flex-col items-center justify-center rounded-lg px-2 py-2.5 text-sm font-black text-white text-center leading-tight bg-gradient-to-r from-blue-600 to-sky-500 shadow-md shadow-blue-400/40 hover:shadow-lg hover:shadow-blue-400/60 transition">
+        <span>💬 Hemen Ücret Sor</span>
+        <span class="font-normal opacity-90 text-xs">Öncelikli Yanıt</span>
       </a>
     </div>
   @endif
+  {{-- 4 Ekim 2026: kullanicinin bildirdigi gercek hata - "Karşılaştır" tek
+       kelime oldugu icin dogal satir kirma noktasi yok; CSS Grid'de hucreler
+       varsayilan min-width:auto oldugundan (icerigin kirilamayan en genis
+       kelimesi kadar) dar ekranlarda metin kutudan tasiyordu. min-w-0 hucreyi
+       sutun genisligine kuculmeye zorlar, break-words gerekirse kelimeyi
+       kendi icinde kirar.
+       5 Ekim 2026: kullanicinin bildirdigi gercek hata - yukaridaki ikisi
+       tasmayi teknik olarak engelliyordu ama "Karşılaştır" cok dar ekranlarda
+       kenara YAPISIYOR gorunuyordu (gercek piksel payı yoktu). text-sm (14px)
+       yerine text-xs (12px) + px-1 (daha az yatay dolgu) ile en uzun kelime
+       icin HER ekranda rahat bir bosluk payi birakilir - artik sinirda degil,
+       acikca sigacak kadar kucuk render edilir. --}}
   <div class="px-4 pb-4 grid grid-cols-2 gap-2">
-    <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 text-center hover:bg-gray-50">İncele</a>
+    <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="min-w-0 break-words rounded-lg border border-gray-200 px-1 py-2 text-xs font-black text-gray-700 text-center hover:bg-gray-50">İncele</a>
     @if($facility->is_broker_managed)
-      <button type="button" class="js-engagement-toggle rounded-lg border-2 border-blue-400 px-3 py-2 text-sm font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
-      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50 col-span-2" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
+      <button type="button" class="js-engagement-toggle min-w-0 break-words rounded-lg border-2 border-blue-400 px-1 py-2 text-xs font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      <button type="button" class="js-engagement-toggle min-w-0 break-words rounded-lg border border-gray-200 px-1 py-2 text-xs font-black text-gray-700 hover:bg-gray-50 col-span-2" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
     @else
-      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="rounded-lg px-3 py-2 text-sm font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Fiyat Al</a>
-      <button type="button" class="js-engagement-toggle rounded-lg border-2 border-blue-400 px-3 py-2 text-sm font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
-      <button type="button" class="js-engagement-toggle rounded-lg border border-gray-200 px-3 py-2 text-sm font-black text-gray-700 hover:bg-gray-50" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
+      <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}#teklif-talebi" class="min-w-0 break-words rounded-lg px-1 py-2 text-xs font-black text-white text-center" style="background: {{ $section['theme']['primary'] ?? $brand['primary_color'] }};">Fiyat Al</a>
+      <button type="button" class="js-engagement-toggle min-w-0 break-words rounded-lg border-2 border-blue-400 px-1 py-2 text-xs font-black text-blue-700 hover:bg-gray-50" data-mode="compare" data-id="{{ $facility->id }}">Karşılaştır</button>
+      <button type="button" class="js-engagement-toggle min-w-0 break-words rounded-lg border border-gray-200 px-1 py-2 text-xs font-black text-gray-700 hover:bg-gray-50" data-mode="bulk-quote" data-id="{{ $facility->id }}">Toplu Fiyat Al</button>
     @endif
   </div>
 </article>

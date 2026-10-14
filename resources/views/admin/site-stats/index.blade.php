@@ -21,26 +21,110 @@
 </div>
 
 @if($dailySeries->isNotEmpty())
-  @php $maxDaily = $dailySeries->flatMap(fn($rows) => $rows->pluck('count'))->max() ?: 1; @endphp
-  <h2 class="font-bold text-lg mb-3">Son 30 Gün Trend</h2>
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10 overflow-x-auto">
-    {{-- 9 Eylul 2026: kullanicinin "cubuklar hep ust sinirda, anlasilmiyor"
-         bildirimi - oranlama dogruydu (son gunler gercekten birbirine yakin
-         yuksek trafige sahip), ama BIRBIRE YAKIN cubuklarin GERCEK farki
-         sadece hover ile gorulebiliyordu, ilk bakista okunmuyordu. Her
-         cubugun USTUNE sayiyi dogrudan yazarak (kucuk cubuklarda sigmiyorsa
-         cubugun UZERINE tasarak) farkin her zaman gorunur olmasi saglandi. --}}
-    <div class="flex items-end gap-1 h-40 min-w-[600px] pt-6">
-      @foreach($dailySeries as $date => $rows)
-        @php $dayTotal = $rows->sum('count'); $barPct = max(4, round($dayTotal / $maxDaily * 100)); @endphp
-        <div class="flex-1 h-full flex flex-col justify-end items-center relative" title="{{ $date }}: {{ $dayTotal }}">
-          <span class="text-[10px] font-bold text-gray-600 mb-1 whitespace-nowrap">{{ number_format($dayTotal, 0, ',', '.') }}</span>
-          <div class="w-full rounded-t" style="background:#0b5d8c; height: {{ $barPct }}%"></div>
-        </div>
-      @endforeach
+  {{-- 5 Ekim 2026: kullanicinin talebi - eski cubuk grafik "amator" bulundu,
+       Google Search Console tarzi (duz cizgi, altinda hafif dolgu, hover'da
+       tooltip) bir cizgi grafigine + 1/7/30 gun arasinda gecis yapan bir
+       anahtara cevrildi. Sunucudan hep 30 gunluk veri gelir, 1/7 gunluk
+       gorunum JS tarafinda son N gunu dilimleyerek (ekstra istek atmadan,
+       aninda) uretilir. Chart.js admin panelinde ilk kez kullaniliyor,
+       jsDelivr CDN'den yuklenir (CSP yok, sorun degil). --}}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10">
+    <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
+      <h2 class="font-bold text-lg">Giriş Trendi</h2>
+      <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm" id="trend-range-toggle">
+        <button type="button" data-range="1" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 transition">1 gün</button>
+        <button type="button" data-range="7" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">7 gün</button>
+        <button type="button" data-range="30" class="trend-range-btn px-3 py-1.5 font-semibold border-l border-gray-200 transition" style="background:#0b5d8c;color:#fff;">30 gün</button>
+        <button type="button" data-range="90" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">90 gün</button>
+      </div>
     </div>
-    <div class="text-xs text-gray-400 mt-2">{{ $dailySeries->keys()->first() }} — {{ $dailySeries->keys()->last() }}</div>
+    <div style="height: 260px;">
+      <canvas id="trend-chart"></canvas>
+    </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      var dailyData = @json($dailySeries->map(fn ($rows, $date) => ['date' => $date, 'total' => $rows->sum('count')])->values());
+      var aylar = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+      function formatDate(d) {
+        var parts = d.split('-');
+        return parseInt(parts[2], 10) + ' ' + aylar[parseInt(parts[1], 10) - 1];
+      }
+      function formatNum(n) {
+        return new Intl.NumberFormat('tr-TR').format(n);
+      }
+
+      var ctx = document.getElementById('trend-chart').getContext('2d');
+      var gradient = ctx.createLinearGradient(0, 0, 0, 260);
+      gradient.addColorStop(0, 'rgba(11,93,140,0.22)');
+      gradient.addColorStop(1, 'rgba(11,93,140,0.01)');
+
+      var chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Giriş',
+            data: [],
+            borderColor: '#0b5d8c',
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2.5,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#0b5d8c',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#111827',
+              padding: 10,
+              titleFont: { weight: 'bold' },
+              callbacks: { label: function (c) { return 'Giriş: ' + formatNum(c.parsed.y); } },
+            },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 11 }, maxRotation: 0, autoSkip: true } },
+            y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: { size: 11 }, callback: formatNum } },
+          },
+        },
+      });
+
+      function render(rangeDays) {
+        var slice = dailyData.slice(-rangeDays);
+        chart.data.labels = slice.map(function (d) { return formatDate(d.date); });
+        chart.data.datasets[0].data = slice.map(function (d) { return d.total; });
+        chart.data.datasets[0].pointRadius = rangeDays <= 7 ? 3 : 0;
+        chart.update();
+      }
+
+      render(30);
+
+      document.querySelectorAll('.trend-range-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.trend-range-btn').forEach(function (b) {
+            b.style.background = '';
+            b.style.color = '';
+            b.classList.add('text-gray-600');
+          });
+          btn.style.background = '#0b5d8c';
+          btn.style.color = '#fff';
+          btn.classList.remove('text-gray-600');
+          render(parseInt(btn.dataset.range, 10));
+        });
+      });
+    })();
+  </script>
 @endif
 
 <h2 class="font-bold text-lg mb-3">Kayıt Olan Ailelerin Konumları</h2>
@@ -91,36 +175,33 @@
   </select>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Ad</th><th class="p-3">Marka</th><th class="p-3">Şehir (yaklaşık)</th><th class="p-3">E-posta</th><th class="p-3">Rıza Tarihi</th><th class="p-3">Kayıt Tarihi</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($families as $family)
-        <tr>
-          <td class="p-3"><div class="font-semibold">{{ $family->name }}</div><div class="text-xs text-gray-400">{{ $family->email }}</div></td>
-          <td class="p-3 text-gray-500">{{ $brands[$family->registered_brand]['name'] ?? $family->registered_brand }}</td>
-          <td class="p-3">{{ $family->signup_city_name ?? '—' }}</td>
-          <td class="p-3">
-            @if($family->hasVerifiedEmail())
-              <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Doğrulandı</span>
-            @else
-              <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">Bekliyor</span>
-            @endif
-          </td>
-          <td class="p-3 text-gray-400">{{ $family->consent_accepted_at?->format('d.m.Y H:i') ?? '—' }}</td>
-          <td class="p-3 text-gray-400">{{ $family->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right space-x-2 whitespace-nowrap">
-            @if($family->signup_lat && $family->signup_lng)
-              <a href="https://www.google.com/maps?q={{ $family->signup_lat }},{{ $family->signup_lng }}" target="_blank" class="text-primary text-xs font-semibold">Haritada gör →</a>
-            @endif
-            <a href="{{ route('admin.family-users.show', $family) }}" class="text-primary text-xs font-semibold">Detay →</a>
-          </td>
-        </tr>
-      @empty
-        <tr><td colspan="7" class="p-8 text-center text-gray-500">Kayıt bulunamadı.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($families as $family)
+    <div class="p-4 flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $family->name }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ $family->email }} · {{ $brands[$family->registered_brand]['name'] ?? $family->registered_brand }} · {{ $family->signup_city_name ?? '—' }}</div>
+        <div class="text-xs text-gray-400 mt-0.5">Rıza: {{ $family->consent_accepted_at?->format('d.m.Y H:i') ?? '—' }} · Kayıt: {{ $family->created_at->format('d.m.Y H:i') }}</div>
+        <div class="mt-1">
+          @if($family->hasVerifiedEmail())
+            <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">E-posta Doğrulandı</span>
+          @else
+            <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">E-posta Bekliyor</span>
+          @endif
+        </div>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap justify-end">
+        @if($family->signup_lat && $family->signup_lng)
+          <a href="https://www.google.com/maps?q={{ $family->signup_lat }},{{ $family->signup_lng }}" target="_blank" class="text-primary text-sm font-semibold whitespace-nowrap">Haritada gör →</a>
+        @endif
+        <a href="{{ route('admin.family-users.show', $family) }}" class="text-primary text-sm font-semibold whitespace-nowrap">Detay →</a>
+      </div>
+    </div>
+  @empty
+    <div class="p-8 text-center text-gray-500">Kayıt bulunamadı.</div>
+  @endforelse
 </div>
 <div class="mt-6">{{ $families->links() }}</div>
 @endsection

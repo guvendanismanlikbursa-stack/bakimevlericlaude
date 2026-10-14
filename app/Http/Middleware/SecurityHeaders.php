@@ -21,6 +21,18 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        // 4 Ekim 2026: guvenlik denetimi - PHP'nin kendi gonderdigi
+        // "X-Powered-By: PHP/x.y.z" basligi saldirgana tam surum numarasini
+        // (hedefli CVE aramasi icin) hediye ediyordu, hicbir islevsel
+        // faydasi yok. Bu baslik PHP'nin SAPI katmaninda dogrudan
+        // header()/header_remove() ile eklenir, Symfony'nin ResponseHeaderBag'i
+        // (kendi EKLEMEDIGI bir basligi) remove() ile silemez - bu yuzden
+        // native PHP fonksiyonu sart. php.ini'ye erisim olmadigi icin
+        // (paylasimli hosting, expose_php kapatilamiyor) burada kaldiriliyor.
+        if (function_exists('header_remove')) {
+            header_remove('X-Powered-By');
+        }
+
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

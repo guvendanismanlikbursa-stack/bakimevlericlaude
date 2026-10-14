@@ -47,6 +47,11 @@
     $openErrorCount = \App\Models\PlatformError::whereNull('resolved_at')->count();
     $pendingDeletionCount = \App\Models\AccountDeletionRequest::where('status', 'pending')->count();
     $overdueJobCount = \App\Models\ScheduledJobRun::get()->filter(fn ($j) => $j->isOverdue())->count();
+    // 14 Ekim 2026: kullanicinin talebi - "Anlasmali Kurumlar"a giden
+    // broker_* turlerinin HEPSI tek bir rozette toplanir (bkz. AppServiceProvider
+    // > $unreadByType).
+    $brokerTypes = ['broker_offer_request', 'broker_new_message', 'broker_quote_accepted', 'broker_quote_declined', 'broker_visit_request', 'broker_new_question', 'broker_question_reminder'];
+    $brokerUnreadCount = collect($brokerTypes)->sum(fn ($t) => $unreadByType[$t] ?? 0);
   @endphp
   <nav class="p-3 text-sm space-y-1 flex-1 overflow-y-auto">
     <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.dashboard') ? 'bg-gray-700 text-white' : '' }}">Genel Bakış</a>
@@ -71,15 +76,17 @@
       </summary>
       <div class="space-y-1 pb-1">
         <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
+        <a href="{{ route('admin.experts.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.experts.*') ? 'bg-gray-700 text-white' : '' }}">Doktorlar</a>
+        <a href="{{ route('admin.organizations.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.organizations.*') ? 'bg-gray-700 text-white' : '' }}">Organizasyon Şirketleri</a>
         <a href="{{ route('admin.claims.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.claims.*') ? 'bg-gray-700 text-white' : '' }}"><span>Sahiplenme Başvuruları</span>@if($pendingClaimsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingClaimsCount }}</span>@endif</a>
         <a href="{{ route('admin.registrations.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.registrations.*') ? 'bg-gray-700 text-white' : '' }}"><span>Kurum Kayıt Başvuruları</span>@if($pendingRegistrationsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingRegistrationsCount }}</span>@endif</a>
         <a href="{{ route('admin.invitations.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.invitations.*') ? 'bg-gray-700 text-white' : '' }}">Kurum Davetleri</a>
-        <a href="{{ route('admin.marketers.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.marketers.*') ? 'bg-gray-700 text-white' : '' }}">Pazarlamacılar (CRM)</a>
+        <a href="{{ route('admin.marketers.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.marketers.*') ? 'bg-gray-700 text-white' : '' }}"><span>Pazarlamacılar (CRM)</span>@if(($unreadByType['marketer_facility_forwarded'] ?? 0) > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadByType['marketer_facility_forwarded'] }}</span>@endif</a>
         {{-- 25 Agustos 2026: kullanicinin talebi - kisisel aracilik/komisyon takibi icin kucuk bir CRM. --}}
-        <a href="{{ route('admin.broker.facilities') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.facilities*') ? 'bg-gray-700 text-white' : '' }}">Anlaşmalı Kurumlar</a>
+        <a href="{{ route('admin.broker.facilities') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.facilities*') ? 'bg-gray-700 text-white' : '' }}"><span>Anlaşmalı Kurumlar</span>@if($brokerUnreadCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $brokerUnreadCount }}</span>@endif</a>
         <a href="{{ route('admin.broker.referrals') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.broker.referrals*') ? 'bg-gray-700 text-white' : '' }}">Aracılık Yönlendirmeleri</a>
         <a href="{{ route('admin.occupancy.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.occupancy.*') ? 'bg-gray-700 text-white' : '' }}">Doluluk Durumu</a>
-        <a href="{{ route('admin.job-applications.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.job-applications.*') ? 'bg-gray-700 text-white' : '' }}">İş Başvuruları</a>
+        <a href="{{ route('admin.job-applications.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.job-applications.*') ? 'bg-gray-700 text-white' : '' }}"><span>İş Başvuruları</span>@if($pendingJobApplicationsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $pendingJobApplicationsCount }}</span>@endif</a>
         <a href="{{ route('admin.categories.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.categories.*') ? 'bg-gray-700 text-white' : '' }}">Kategoriler</a>
         <a href="{{ route('admin.cities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.cities.*') ? 'bg-gray-700 text-white' : '' }}">Şehirler</a>
       </div>
@@ -97,12 +104,12 @@
              ayni tarihli yorum). routeIs'e her iki eski route grubu da
              dahil edildi ki o sayfalardan birine (ör. mesajlari incele alt
              sayfasi) girildiginde menude bu link hala aktif gorunsun. --}}
-        <a href="{{ route('admin.fee-info-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.fee-info-requests.*') || request()->routeIs('admin.offer-requests.*') || request()->routeIs('admin.facility-interest-leads.*') ? 'bg-gray-700 text-white' : '' }}">Ücret ve Bilgi Talepleri</a>
+        <a href="{{ route('admin.fee-info-requests.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.fee-info-requests.*') || request()->routeIs('admin.offer-requests.*') || request()->routeIs('admin.facility-interest-leads.*') ? 'bg-gray-700 text-white' : '' }}"><span>Ücret ve Bilgi Talepleri</span>@if($newFeeInfoRequestsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $newFeeInfoRequestsCount }}</span>@endif</a>
         <a href="{{ route('admin.visit-requests.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.visit-requests.*') ? 'bg-gray-700 text-white' : '' }}">Ziyaret Talepleri</a>
         <a href="{{ route('admin.visit-service.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.visit-service.*') ? 'bg-gray-700 text-white' : '' }}"><span>Yakınımı Ziyaret Et Talepleri</span>@if($newVisitServiceRequestsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $newVisitServiceRequestsCount }}</span>@endif</a>
         <a href="{{ route('admin.reviews.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.reviews.*') ? 'bg-gray-700 text-white' : '' }}">Yorumlar</a>
         <a href="{{ route('admin.questions.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.questions.*') ? 'bg-gray-700 text-white' : '' }}">Aile Soruları</a>
-        <a href="{{ route('admin.contact-messages.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.contact-messages.*') ? 'bg-gray-700 text-white' : '' }}">İletişim Mesajları</a>
+        <a href="{{ route('admin.contact-messages.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.contact-messages.*') ? 'bg-gray-700 text-white' : '' }}"><span>İletişim Mesajları</span>@if($unreadContactMessagesCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadContactMessagesCount }}</span>@endif</a>
         <a href="{{ route('admin.whatsapp-clicks.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.whatsapp-clicks.*') ? 'bg-gray-700 text-white' : '' }}">WhatsApp Tıklamaları</a>
         <a href="{{ route('admin.chat.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat.*') ? 'bg-gray-700 text-white' : '' }}"><span>Canlı Sohbet</span>@if($unreadChatThreadsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadChatThreadsCount }}</span>@endif</a>
       </div>
@@ -130,6 +137,9 @@
         <a href="{{ route('admin.data-extractor.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-extractor.*') ? 'bg-gray-700 text-white' : '' }}">Veri Çekici</a>
         <a href="{{ route('admin.trash.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.trash.*') ? 'bg-gray-700 text-white' : '' }}">Çöp Kutusu</a>
         <a href="{{ route('admin.audit-log.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.audit-log.*') ? 'bg-gray-700 text-white' : '' }}">İşlem Günlüğü</a>
+        <a href="{{ route('admin.sales-opportunities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.sales-opportunities.*') ? 'bg-gray-700 text-white' : '' }}">📞 Satış Fırsatları</a>
+        <a href="{{ route('admin.family-need-surveys.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.family-need-surveys.*') ? 'bg-gray-700 text-white' : '' }}">📋 Aile Anketleri</a>
+        <a href="{{ route('admin.care-advisor-leads.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.care-advisor-leads.*') ? 'bg-gray-700 text-white' : '' }}"><span>🧭 Pusula Anketleri</span>@if(($unreadByType['care_advisor_lead'] ?? 0) > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadByType['care_advisor_lead'] }}</span>@endif</a>
         <a href="{{ route('admin.data-quality.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.data-quality.*') ? 'bg-gray-700 text-white' : '' }}">Veri Denetimi</a>
         <a href="{{ route('admin.platform-errors.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.platform-errors.*') ? 'bg-gray-700 text-white' : '' }}">
           <span>Hatalar</span>
@@ -232,6 +242,9 @@
 </div>
 
 @include('themes._shared.partials.scroll-restore')
+{{-- 14 Ekim 2026: kullanıcının talebi - admin panelinde hiç sesli bildirim
+     uyarısı yoktu (bkz. partial'ın kendi içindeki aynı tarihli yorum). --}}
+@include('themes._shared.partials.panel-notification-alerts')
 
 <script>
   (function () {

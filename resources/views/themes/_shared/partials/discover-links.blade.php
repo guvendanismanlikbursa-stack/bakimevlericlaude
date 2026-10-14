@@ -3,7 +3,7 @@
     <h2 class="text-xl font-black text-gray-950">Keşfet</h2>
   </div>
   <div class="flex flex-wrap gap-2">
-    <a href="{{ brand_route('care-advisor.form') }}" class="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:shadow-md transition">🧭 Bakım Danışmanı</a>
+    <a href="{{ brand_route('care-advisor.form') }}" class="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:shadow-md transition">🧭 Pusula</a>
     <a href="{{ brand_route('price-guide.index') }}" class="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:shadow-md transition">💰 Ücret Rehberi</a>
     <a href="{{ brand_route('discovery.verified') }}" class="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:shadow-md transition">✅ Doğrulanmış Kurumlar</a>
     <a href="{{ brand_route('discovery.new') }}" class="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:shadow-md transition">🆕 Yeni Eklenen Kurumlar</a>

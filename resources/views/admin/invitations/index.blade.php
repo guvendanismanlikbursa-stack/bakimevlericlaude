@@ -62,71 +62,56 @@
 
 @include('themes._shared.partials.location-filter-script')
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr>
-        <th class="p-3">Kurum</th>
-        <th class="p-3">Şehir / İlçe</th>
-        <th class="p-3">Kategori</th>
-        <th class="p-3">Telefon</th>
-        <th class="p-3">Durum</th>
-        <th class="p-3"></th>
-      </tr>
-    </thead>
-    <tbody class="divide-y">
-      @forelse($facilities as $facility)
-        <tr>
-          <td class="p-3 font-medium">{{ $facility->name }}</td>
-          <td class="p-3 text-gray-600">{{ $facility->city->name ?? '—' }} @if($facility->district)/ {{ $facility->district }}@endif</td>
-          <td class="p-3 text-gray-600">{{ $facility->category->name ?? '—' }}</td>
-          <td class="p-3 text-gray-600">
-            {{ $facility->phone ?: '—' }}
-            @if($facility->phone_type === 'landline')
-              <span class="ml-1 text-xs text-amber-600 font-semibold">(sabit hat)</span>
-            @endif
-          </td>
-          <td class="p-3">
-            <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold
-              {{ match(true) {
-                   in_array($facility->invitation_status, ['claimed','approved']) => 'bg-green-100 text-green-700',
-                   in_array($facility->invitation_status, ['sent','opened']) => 'bg-blue-100 text-blue-700',
-                   in_array($facility->invitation_status, ['do_not_contact','unreachable','wrong_number']) => 'bg-red-100 text-red-700',
-                   default => 'bg-gray-100 text-gray-600',
-                 } }}">
-              {{ $statusLabels[$facility->invitation_status] ?? $facility->invitation_status }}
-            </span>
-          </td>
-          <td class="p-3 text-right whitespace-nowrap space-x-1">
-            @if($facility->phone_type === 'mobile')
-              <a href="{{ route('admin.invitations.whatsapp', $facility) }}" target="_blank" rel="noopener"
-                 class="inline-block rounded-lg bg-green-600 text-white px-3 py-1.5 text-xs font-bold hover:bg-green-700">WhatsApp Aç</a>
-              @if(in_array($facility->invitation_status, ['not_started', 'opened', 'sent']))
-                <form method="POST" action="{{ route('admin.invitations.update-status', $facility) }}" class="inline">
-                  @csrf
-                  <input type="hidden" name="status" value="sent">
-                  <button class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50">Gönderildi</button>
-                </form>
-              @endif
-            @endif
-            <div class="inline-block relative">
-              <form method="POST" action="{{ route('admin.invitations.update-status', $facility) }}" class="inline-flex items-center gap-1">
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($facilities as $facility)
+    <div class="p-4 flex flex-col gap-2">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          <div class="font-bold text-gray-900">{{ $facility->name }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">
+            {{ $facility->city->name ?? '—' }}@if($facility->district) / {{ $facility->district }}@endif · {{ $facility->category->name ?? '—' }} ·
+            📞 {{ $facility->phone ?: '—' }}
+            @if($facility->phone_type === 'landline')<span class="text-amber-600 font-semibold">(sabit hat)</span>@endif
+          </div>
+          <span class="inline-block mt-1 rounded-full px-2.5 py-0.5 text-xs font-semibold
+            {{ match(true) {
+                 in_array($facility->invitation_status, ['claimed','approved']) => 'bg-green-100 text-green-700',
+                 in_array($facility->invitation_status, ['sent','opened']) => 'bg-blue-100 text-blue-700',
+                 in_array($facility->invitation_status, ['do_not_contact','unreachable','wrong_number']) => 'bg-red-100 text-red-700',
+                 default => 'bg-gray-100 text-gray-600',
+               } }}">
+            {{ $statusLabels[$facility->invitation_status] ?? $facility->invitation_status }}
+          </span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+          @if($facility->phone_type === 'mobile')
+            <a href="{{ route('admin.invitations.whatsapp', $facility) }}" target="_blank" rel="noopener"
+               class="inline-block rounded-lg bg-green-600 text-white px-3 py-1.5 text-xs font-bold hover:bg-green-700 whitespace-nowrap">WhatsApp Aç</a>
+            @if(in_array($facility->invitation_status, ['not_started', 'opened', 'sent']))
+              <form method="POST" action="{{ route('admin.invitations.update-status', $facility) }}" class="inline">
                 @csrf
-                <select name="status" onchange="this.form.submit()" class="border rounded-lg px-2 py-1.5 text-xs">
-                  <option value="">Durum değiştir…</option>
-                  @foreach($statusLabels as $value => $label)
-                    <option value="{{ $value }}" @selected($facility->invitation_status === $value)>{{ $label }}</option>
-                  @endforeach
-                </select>
+                <input type="hidden" name="status" value="sent">
+                <button class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 whitespace-nowrap">Gönderildi</button>
               </form>
-            </div>
-          </td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="6">Bu grupta kurum yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+            @endif
+          @endif
+          <form method="POST" action="{{ route('admin.invitations.update-status', $facility) }}" class="inline-flex items-center gap-1">
+            @csrf
+            <select name="status" onchange="this.form.submit()" class="border rounded-lg px-2 py-1.5 text-xs">
+              <option value="">Durum değiştir…</option>
+              @foreach($statusLabels as $value => $label)
+                <option value="{{ $value }}" @selected($facility->invitation_status === $value)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </form>
+        </div>
+      </div>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Bu grupta kurum yok.</div>
+  @endforelse
 </div>
 <div class="mt-6">
   @include('partials.pagination-info', ['paginator' => $facilities])

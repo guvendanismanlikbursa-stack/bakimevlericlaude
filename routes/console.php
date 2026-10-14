@@ -119,6 +119,15 @@ ScheduledJobMonitor::attach(
     60 * 24 * 32
 );
 
+// 11 Ekim 2026: kullanicinin talebi - admin/satis-firsatlari "bu ceyrek"
+// sayaci, haftalik/aylik ile AYNI desen - Schedule::quarterly() takvim
+// ceyreginin (Ocak/Nisan/Temmuz/Ekim) 1. gunu calisir.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:reset-quarterly-view-counters')->quarterly()->at('20:00'),
+    'platform:reset-quarterly-view-counters',
+    60 * 24 * 95
+);
+
 // 12 Agustos 2026: kullanicinin talebi - kurum performans panelindeki
 // "gecen aya gore" trend gorunumu icin her gece kurumlarin o gunku
 // goruntulenme/favori/talep/teklif sayilarini kaydeder (bkz.

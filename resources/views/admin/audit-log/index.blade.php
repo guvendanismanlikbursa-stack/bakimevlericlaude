@@ -11,23 +11,24 @@
   </select>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Tarih</th><th class="p-3">Admin</th><th class="p-3">İşlem</th><th class="p-3">Kayıt</th><th class="p-3">Detay</th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($events as $event)
-        <tr>
-          <td class="p-3 text-gray-400 whitespace-nowrap">{{ $event->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3">{{ $event->admin?->name ?? '—' }}</td>
-          <td class="p-3 font-mono text-xs">{{ $event->event_type }}</td>
-          <td class="p-3 text-gray-500">{{ $event->entity_type }} @if($event->entity_id) #{{ $event->entity_id }} @endif</td>
-          <td class="p-3 text-gray-400 text-xs">{{ $event->detail_json ? json_encode($event->detail_json, JSON_UNESCAPED_UNICODE) : '—' }}</td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="5">Henüz kayıt yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($events as $event)
+    <div class="p-4">
+      <div class="flex items-center gap-2 flex-wrap text-xs text-gray-500">
+        <span>{{ $event->created_at->format('d.m.Y H:i') }}</span>
+        <span>· {{ $event->admin?->name ?? '—' }}</span>
+        <span class="font-mono">· {{ $event->event_type }}</span>
+        <span>· {{ $event->entity_type }}@if($event->entity_id) #{{ $event->entity_id }}@endif</span>
+      </div>
+      @if($event->detail_json)
+        <div class="text-xs text-gray-400 mt-1 break-words">{{ json_encode($event->detail_json, JSON_UNESCAPED_UNICODE) }}</div>
+      @endif
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Henüz kayıt yok.</div>
+  @endforelse
 </div>
 
 <div class="mt-4">{{ $events->links() }}</div>

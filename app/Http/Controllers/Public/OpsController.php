@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-duplicate-name-scan', 'facility-duplicate-city-district-scan', 'facility-export-basic', 'government-name-fix', 'government-name-kamu-list', 'city-image-review-gap-check', 'city-review-gap-targets', 'fabricated-address-prefix-audit', 'fabricated-address-prefix-fix', 'facility-fill-location-from-source-payload', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist', 'guides-bulk-create', 'facility-address-city-mismatch-scan', 'facility-category-fix-ozel-egitim', 'phone-fix', 'fee-info-request-status-backfill', 'facility-undo-recent-centroid-fill', 'seed-demo-experts', 'import-nilufer-pediatric-doctors', 'expert-import-file', 'government-name-revert-to-ozel', 'organization-import-file', 'facility-neighborhood-fill', 'expert-name-check', 'expert-remove', 'expert-pediatri-mismatch-scan', 'expert-category-crosscheck', 'expert-phone-set', 'expert-phone-missing-report', 'expert-source-payload', 'expert-phone-missing-detail', 'expert-identity-fix', 'family-need-survey-render-test', 'tani-rehberi-render-test', 'care-advisor-lead-render-test', 'description-coverage-nationwide', 'description-fix-remaining-templates', 'knows-about-schema-check', 'care-advisor-lead-cleanup-test-data', 'admin-notification-system-render-test', 'expert-count-by-source', 'facility-import-scraped-multi-district', 'facility-count-by-source', 'facility-clean-combining-marks', 'nominatim-raw-debug', 'facility-geocode-by-neighborhood'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -59,6 +59,7 @@ class OpsController extends Controller
             'geo-missing-list' => $this->geoMissingList($request),
             'geo-apply' => $this->geoApply($request),
             'geocode-missing-now' => $this->geocodeMissingNow($request),
+            'facility-geocode-by-neighborhood' => $this->facilityGeocodeByNeighborhood($request),
             'legal-page-set' => $this->legalPageSet($request),
             'geo-fill-city-centroid' => $this->geoFillCityCentroid(),
             'python-check' => $this->pythonCheck(),
@@ -88,6 +89,11 @@ class OpsController extends Controller
             'invitation-detail' => $this->invitationDetail($request),
             'phone-type-audit' => $this->phoneTypeAudit($request),
             'phone-type-fix' => $this->phoneTypeFix($request),
+            'phone-fix' => $this->phoneFix($request),
+            'fee-info-request-status-backfill' => $this->feeInfoRequestStatusBackfill(),
+            'facility-undo-recent-centroid-fill' => $this->facilityUndoRecentCentroidFill($request),
+            'seed-demo-experts' => $this->seedDemoExperts(),
+            'import-nilufer-pediatric-doctors' => $this->importNiluferPediatricDoctors(),
             'ownership-audit' => $this->ownershipAudit(),
             'ownership-fix' => $this->ownershipFix($request),
             'miscategory-scan' => $this->miscategoryScan($request),
@@ -116,6 +122,17 @@ class OpsController extends Controller
             'facility-borrow-demo-images-for-empty' => $this->facilityBorrowDemoImagesForEmpty($request),
             'facility-admin-events-audit' => $this->facilityAdminEventsAudit($request),
             'facility-duplicate-coordinates-scan' => $this->facilityDuplicateCoordinatesScan(),
+            'facility-duplicate-name-scan' => $this->facilityDuplicateNameScan($request),
+            'facility-duplicate-city-district-scan' => $this->facilityDuplicateCityDistrictScan($request),
+            'facility-export-basic' => $this->facilityExportBasic(),
+            'government-name-fix' => $this->governmentNameFix(),
+            'government-name-revert-to-ozel' => $this->governmentNameRevertToOzel(),
+            'government-name-kamu-list' => $this->governmentNameKamuList(),
+            'city-image-review-gap-check' => $this->cityImageReviewGapCheck($request),
+            'city-review-gap-targets' => $this->cityReviewGapTargets($request),
+            'fabricated-address-prefix-audit' => $this->fabricatedAddressPrefixAudit($request),
+            'fabricated-address-prefix-fix' => $this->fabricatedAddressPrefixFix($request),
+            'facility-fill-location-from-source-payload' => $this->facilityFillLocationFromSourcePayload($request),
             'facility-wrong-province-scan' => $this->facilityWrongProvinceScan($request),
             'facility-district-fix-from-address' => $this->facilityDistrictFixFromAddress($request),
             'bursa-google-review-gaps' => $this->bursaGoogleReviewGaps($request),
@@ -211,6 +228,7 @@ class OpsController extends Controller
             'geo-address-centroid-audit' => $this->geoAddressCentroidAudit(),
             'facility-geo-detail' => $this->facilityGeoDetail($request),
             'facility-geo-recheck' => $this->facilityGeoRecheck($request, app(\App\Services\GeocodingService::class)),
+            'facility-neighborhood-fill' => $this->facilityNeighborhoodFill($request, app(\App\Services\GeocodingService::class)),
             'facility-geo-mismatch-scan' => $this->facilityGeoMismatchScan($request),
             'facility-geo-set' => $this->facilityGeoSet($request),
             'facility-district-fix-from-geo' => $this->facilityDistrictFixFromGeo($request),
@@ -272,6 +290,30 @@ class OpsController extends Controller
             // var olan hicbir sinif/metodu degistirmeyen ek eylemler.
             'veri-cekici-bursa-existing-list' => $this->veriCekiciBursaExistingList($request),
             'veri-cekici-import-file' => $this->veriCekiciImportFile($request, app(\App\Services\DataExtractorImportService::class)),
+            'expert-import-file' => $this->expertImportFile($request),
+            'expert-name-check' => $this->expertNameCheck($request),
+            'expert-pediatri-mismatch-scan' => $this->expertPediatriMismatchScan(),
+            'expert-category-crosscheck' => $this->expertCategoryCrosscheck(),
+            'expert-phone-set' => $this->expertPhoneSet($request),
+            'expert-remove' => $this->expertRemove($request),
+            'expert-phone-missing-report' => $this->expertPhoneMissingReport($request),
+            'expert-source-payload' => $this->expertSourcePayload($request),
+            'expert-count-by-source' => $this->expertCountBySource($request),
+            'facility-import-scraped-multi-district' => $this->facilityImportScrapedMultiDistrict($request),
+            'facility-count-by-source' => $this->facilityCountBySource($request),
+            'facility-clean-combining-marks' => $this->facilityCleanCombiningMarks($request),
+            'nominatim-raw-debug' => $this->nominatimRawDebug($request),
+            'expert-phone-missing-detail' => $this->expertPhoneMissingDetail($request),
+            'expert-identity-fix' => $this->expertIdentityFix($request),
+            'family-need-survey-render-test' => $this->familyNeedSurveyRenderTest($request),
+            'tani-rehberi-render-test' => $this->taniRehberiRenderTest($request),
+            'care-advisor-lead-render-test' => $this->careAdvisorLeadRenderTest($request),
+            'admin-notification-system-render-test' => $this->adminNotificationSystemRenderTest($request),
+            'description-coverage-nationwide' => $this->descriptionCoverageNationwide($request),
+            'description-fix-remaining-templates' => $this->descriptionFixRemainingTemplates($request),
+            'knows-about-schema-check' => $this->knowsAboutSchemaCheck(),
+            'care-advisor-lead-cleanup-test-data' => $this->careAdvisorLeadCleanupTestData(),
+            'organization-import-file' => $this->organizationImportFile($request),
             'veri-cekici-trim-images' => $this->veriCekiciTrimImages($request),
             'veri-cekici-batch-status' => $this->veriCekiciBatchStatus($request),
             'veri-cekici-review-rows' => $this->veriCekiciReviewRows($request),
@@ -280,6 +322,9 @@ class OpsController extends Controller
             'broker-map-debug' => $this->brokerMapDebug($request),
             'city-price-stats' => $this->cityPriceStats($request),
             'seed-istanbul-kres-rehberi' => $this->seedIstanbulKresRehberi(),
+            'guides-bulk-create' => $this->guidesBulkCreate($request),
+            'facility-address-city-mismatch-scan' => $this->facilityAddressCityMismatchScan($request),
+            'facility-category-fix-ozel-egitim' => $this->facilityCategoryFixOzelEgitim($request),
         };
 
         return response($output, 200)->header('Content-Type', 'text/plain');
@@ -1413,6 +1458,562 @@ class OpsController extends Controller
      * hasTrendData=false iken) render ediliyor mu diye - admin-facility-
      * edit-render ile AYNI guvenli desen, dashboard icin.
      */
+    private function taniRehberiRenderTest(Request $incomingRequest): string
+    {
+        $out = '';
+        $sampleCity = \App\Models\City::whereHas('facilities', function ($q) {
+            $q->whereHas('category', fn ($cq) => $cq->whereIn('brand_scope', ['ozel-egitim', 'rehabilitasyon', 'fizik-tedavi']));
+        })->first();
+        if (! $sampleCity) {
+            return 'HATA: ozel-egitim/rehabilitasyon kurumu olan bir il bulunamadi.';
+        }
+
+        // 13 Ekim 2026: TaniRehberiController::show() icinde $request->route(...)
+        // kullanildigi icin controller'i DOGRUDAN cagirmak (Request::create)
+        // yetersiz - route parametreleri bos kalir. app()->handle() ile tam
+        // HTTP Kernel'den gecirmek de calisir AMA Kernel kendi exception
+        // handler'inda hatayi YUTUP genel "Bir seyler ters gitti" sayfasi
+        // DONDURUYOR - gercek hata mesaji hic gorunmuyordu. Route::dispatch()
+        // Kernel'i atlar, route eslestirme+parametre baglama YAPAR ama
+        // exception'lar normal PHP exception olarak buraya firlar - gercek
+        // hata mesaji boylece yakalanir.
+        foreach (array_keys(\App\Http\Controllers\Public\TaniRehberiController::TANILAR) as $taniSlug) {
+            try {
+                $request = Request::create("/tani-rehberi/{$taniSlug}/{$sampleCity->slug}", 'GET');
+                $response = \Illuminate\Support\Facades\Route::dispatch($request);
+                $html = $response->getContent();
+                $ok = $response->getStatusCode() === 200 && str_contains($html, $sampleCity->name) && str_contains($html, 'Merkezleri');
+                $out .= "{$taniSlug} ({$sampleCity->name}): HTTP {$response->getStatusCode()}, uzunluk ".strlen($html)." bayt - ".($ok ? 'OK' : 'UYARI: beklenen icerik yok')."\n";
+            } catch (\Throwable $e) {
+                $out .= "{$taniSlug}: HATA - ".$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+            }
+        }
+
+        return $out;
+    }
+
+    private function careAdvisorLeadRenderTest(Request $incomingRequest): string
+    {
+        $out = '';
+
+        // 1) CareAdvisorController::results() GERCEKTEN lead kaydediyor mu?
+        // Panel testi de yapabilmek icin facility_user'i OLAN bir kurum secilir.
+        $sampleFacility = \App\Models\Facility::whereNull('deleted_at')->whereNotNull('city_id')->whereNotNull('facility_category_id')
+            ->whereHas('facilityUsers')->first();
+        if (! $sampleFacility) {
+            return 'HATA: test icin uygun bir kurum bulunamadi.';
+        }
+        $sampleFacility->loadMissing('city', 'category');
+
+        $beforeCount = \App\Models\CareAdvisorLead::count();
+        $req = Request::create('/bakim-danismani/sonuclar', 'GET', [
+            'city' => $sampleFacility->city->slug,
+            'category' => $sampleFacility->category->slug,
+            'phone' => '05551234567',
+            'name' => 'RENDER TEST',
+        ]);
+        try {
+            $response = app(\App\Http\Controllers\Public\CareAdvisorController::class)->results($req, app(\App\Services\CareAdvisorMatchService::class));
+            $html = $response->render();
+            $afterCount = \App\Models\CareAdvisorLead::count();
+            $out .= ($afterCount === $beforeCount + 1) ? "CareAdvisorController::results() lead kaydi OK (1 yeni kayit).\n" : "UYARI: lead kaydi beklenmedik ({$beforeCount} -> {$afterCount}).\n";
+            $out .= "results() render OK, uzunluk: ".strlen($html)." bayt\n";
+        } catch (\Throwable $e) {
+            $out .= 'results() HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        $testLead = \App\Models\CareAdvisorLead::where('name', 'RENDER TEST')->latest()->first();
+        if (! $testLead) {
+            return $out."HATA: test lead kaydi bulunamadi, devam edilemiyor.\n";
+        }
+
+        // 1b) 13 Ekim 2026 (3): telefon/isim OLMADAN gonderilen anket de
+        // kaydedilmeli (amac: iletisim olmasa da bolgesel ihtiyaci gormek) -
+        // ama Firsat Havuzu panelinde (telefon sart) GORUNMEMELI.
+        $beforeNoPhoneCount = \App\Models\CareAdvisorLead::count();
+        $noPhoneReq = Request::create('/bakim-danismani/sonuclar', 'GET', [
+            'city' => $sampleFacility->city->slug,
+            'condition' => 'ANKET ONLY RENDER TEST',
+        ]);
+        try {
+            app(\App\Http\Controllers\Public\CareAdvisorController::class)->results($noPhoneReq, app(\App\Services\CareAdvisorMatchService::class))->render();
+            $afterNoPhoneCount = \App\Models\CareAdvisorLead::count();
+            $out .= ($afterNoPhoneCount === $beforeNoPhoneCount + 1) ? "Telefonsuz anket kaydi OK (1 yeni kayit).\n" : "UYARI: telefonsuz anket kaydi beklenmedik ({$beforeNoPhoneCount} -> {$afterNoPhoneCount}).\n";
+        } catch (\Throwable $e) {
+            $out .= 'Telefonsuz anket testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+        $noPhoneLead = \App\Models\CareAdvisorLead::where('condition', 'ANKET ONLY RENDER TEST')->latest()->first();
+        if ($noPhoneLead) {
+            $out .= is_null($noPhoneLead->phone) ? "Telefon alani dogru sekilde NULL.\n" : "UYARI: telefon alani bos olmali ama degil.\n";
+            $noPhoneLead->delete();
+        }
+
+        // 1c) 13 Ekim 2026 (4): "yarida birakilanlar da kaydedilsin" -
+        // progress() AYNI token ile cagrildiginda satir COGALMAMALI, ve
+        // results() (form tamamlaninca) AYNI satiri completed_at ile
+        // GUNCELLEMELI (yeni satir acmamali).
+        $token = 'RENDER-TEST-TOKEN-'.uniqid();
+        try {
+            $progressController = app(\App\Http\Controllers\Public\CareAdvisorController::class);
+            $beforeProgressCount = \App\Models\CareAdvisorLead::count();
+            $progressController->progress(Request::create('/bakim-danismani/ilerleme', 'POST', [
+                'progress_token' => $token,
+                'bolum' => 'rehabilitasyon',
+                'city' => $sampleFacility->city->slug,
+                'district' => 'RENDER TEST ILCE',
+            ]));
+            $progressController->progress(Request::create('/bakim-danismani/ilerleme', 'POST', [
+                'progress_token' => $token,
+                'bolum' => 'rehabilitasyon',
+                'city' => $sampleFacility->city->slug,
+                'district' => 'RENDER TEST ILCE',
+                'patient_age' => 50,
+            ]));
+            $afterProgressCount = \App\Models\CareAdvisorLead::count();
+            $out .= ($afterProgressCount === $beforeProgressCount + 1) ? "Ilerleme (progress) kaydi OK, ayni token tekrar cagrilinca satir COGALMADI.\n" : "UYARI: progress() satir sayisi beklenmedik ({$beforeProgressCount} -> {$afterProgressCount}).\n";
+
+            $partialLead = \App\Models\CareAdvisorLead::where('progress_token', $token)->first();
+            $out .= ($partialLead && is_null($partialLead->completed_at)) ? "Yarida kalan kayit completed_at=NULL OK.\n" : "UYARI: yarida kalan kayit bulunamadi veya completed_at bos degil.\n";
+            // 13 Ekim 2026 (9): formun gizli "bolum" alani gercekten
+            // 'section' sutununa kaydediliyor mu? (admin filtresinin
+            // dayandigi veri budur).
+            $out .= ($partialLead && $partialLead->section === 'rehabilitasyon') ? "Bolum (section) alani dogru kaydedildi OK.\n" : "UYARI: section alani beklenen 'rehabilitasyon' degil (".($partialLead->section ?? 'NULL').").\n";
+
+            $finishReq = Request::create('/bakim-danismani/sonuclar', 'GET', [
+                'progress_token' => $token,
+                'city' => $sampleFacility->city->slug,
+                'district' => 'RENDER TEST ILCE',
+            ]);
+            $progressController->results($finishReq, app(\App\Services\CareAdvisorMatchService::class))->render();
+            $afterFinishCount = \App\Models\CareAdvisorLead::count();
+            $out .= ($afterFinishCount === $afterProgressCount) ? "Tamamlama AYNI satiri gunceller, mukerrer satir ACILMADI OK.\n" : "UYARI: tamamlama mukerrer satir actı ({$afterProgressCount} -> {$afterFinishCount}).\n";
+            $partialLead?->refresh();
+            $out .= ($partialLead && $partialLead->completed_at) ? "Tamamlanan kayit completed_at dolduruldu OK.\n" : "UYARI: tamamlanan kayitta completed_at hala bos.\n";
+        } catch (\Throwable $e) {
+            $out .= 'Ilerleme/tamamlama testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        } finally {
+            \App\Models\CareAdvisorLead::where('progress_token', $token)->delete();
+        }
+
+        // 1d) Admin detay/duzenle/sil ekrani gercekten calisiyor mu? ONEMLI:
+        // php -l Blade direktif hatalarini (orn. "@endif@if" bitisikligi)
+        // YAKALAMAZ - bunu sadece GERCEK bir render yakalar, bu yuzden test
+        // lead'i city_id/district/facility_category_id DOLU olusturuluyor
+        // (index.blade.php'deki buyuk hata TAM OLARAK bu alanlar doluyken
+        // tetikleniyordu, bos olsaydi bu test hatayi KACIRIRDI).
+        try {
+            $adminTestLead = \App\Models\CareAdvisorLead::create([
+                'condition' => 'ADMIN EDIT RENDER TEST',
+                'brand' => $brand['slug'] ?? 'bakimevibul',
+                'city_id' => $sampleFacility->city_id,
+                'district' => 'RENDER TEST ILCE',
+                'facility_category_id' => $sampleFacility->facility_category_id,
+                'section' => 'rehabilitasyon',
+            ]);
+            $adminController = app(\App\Http\Controllers\Admin\CareAdvisorLeadController::class);
+            $indexHtml = $adminController->index(Request::create('/admin/pusula-anketleri'))->render();
+            $out .= str_contains($indexHtml, 'ADMIN EDIT RENDER TEST') ? "Admin liste sayfasi (index) OK.\n" : "UYARI: admin liste sayfasinda beklenen veri yok.\n";
+
+            // 13 Ekim 2026 (9): kullanicinin talebi - "bolum/il/durum gibi
+            // segmentlerde filtrelemeye ihtiyac olacak". Dogru filtrede
+            // GORUNMELI, yanlis filtrede KAYBOLMALI - ikisi de test edilir.
+            $matchFilterHtml = $adminController->index(Request::create('/admin/pusula-anketleri', 'GET', ['bolum' => 'rehabilitasyon', 'il' => $sampleFacility->city_id, 'durum' => 'yarida']))->render();
+            $out .= str_contains($matchFilterHtml, 'ADMIN EDIT RENDER TEST') ? "Admin filtre (dogru kriterler) OK, kayit goruntulendi.\n" : "UYARI: dogru filtrede kayit kayboldu.\n";
+
+            $noMatchFilterHtml = $adminController->index(Request::create('/admin/pusula-anketleri', 'GET', ['bolum' => 'cocuk']))->render();
+            $out .= (! str_contains($noMatchFilterHtml, 'ADMIN EDIT RENDER TEST')) ? "Admin filtre (yanlis bolum) OK, kayit dogru sekilde gizlendi.\n" : "UYARI: yanlis bolum filtresinde kayit yine de gorundu.\n";
+
+            $showHtml = $adminController->show($adminTestLead)->render();
+            $out .= str_contains($showHtml, 'ADMIN EDIT RENDER TEST') ? "Admin detay sayfasi OK.\n" : "UYARI: admin detay sayfasinda beklenen veri yok.\n";
+
+            $adminController->update(Request::create('/admin/pusula-anketleri/'.$adminTestLead->id, 'PUT', ['name' => 'GUNCELLENDI RENDER TEST']), $adminTestLead);
+            $adminTestLead->refresh();
+            $out .= ($adminTestLead->name === 'GUNCELLENDI RENDER TEST') ? "Admin guncelleme OK.\n" : "UYARI: admin guncelleme calismadi.\n";
+
+            $adminController->destroy($adminTestLead);
+            $out .= (! \App\Models\CareAdvisorLead::find($adminTestLead->id)) ? "Admin silme OK.\n" : "UYARI: admin silme calismadi.\n";
+        } catch (\Throwable $e) {
+            $out .= 'Admin detay/duzenle/sil testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        // 2) Facility paneli: premium OLMAYAN durumda kilitli gorunmeli
+        $facilityUser = \App\Models\FacilityUser::where('facility_id', $sampleFacility->id)->first();
+        if (! $facilityUser) {
+            $out .= "UYARI: bu kurumun facility_user kaydi yok, panel testi atlandi.\n";
+            $testLead->delete();
+
+            return $out;
+        }
+        session(['facility_user_id' => $facilityUser->id]);
+
+        $originalSubscribed = $sampleFacility->is_subscribed;
+        $originalPaidUntil = $sampleFacility->subscription_paid_until;
+
+        try {
+            $sampleFacility->forceFill(['is_subscribed' => false])->save();
+            $panelController = app(\App\Http\Controllers\Facility\CareAdvisorLeadController::class);
+            $lockedHtml = $panelController->index()->render();
+            $out .= str_contains($lockedHtml, 'Premium Üyelere Özel') ? "Panel (premium DEGIL) kilitli gorunum OK.\n" : "UYARI: kilitli gorunum beklenmedik.\n";
+
+            // 3) Premium YAPINCA lead gorunmeli + WhatsApp gonderimi calismali
+            $sampleFacility->forceFill(['is_subscribed' => true, 'subscription_paid_until' => now()->addMonth()])->save();
+            $sampleFacility->refresh();
+            $unlockedHtml = $panelController->index()->render();
+            $out .= str_contains($unlockedHtml, 'RENDER TEST') ? "Panel (premium) lead gorunumu OK.\n" : "UYARI: premium panelde test lead'i gorunmedi (il/kategori eslesmedi olabilir).\n";
+
+            $beforeSends = \App\Models\CareAdvisorLeadSend::count();
+            $panelController->whatsapp($testLead);
+            $afterSends = \App\Models\CareAdvisorLeadSend::count();
+            $out .= ($afterSends === $beforeSends + 1) ? "whatsapp() gonderim kaydi OK.\n" : "UYARI: whatsapp() gonderim kaydi olusmadi.\n";
+        } catch (\Throwable $e) {
+            $out .= 'Panel testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        } finally {
+            $sampleFacility->forceFill(['is_subscribed' => $originalSubscribed, 'subscription_paid_until' => $originalPaidUntil])->save();
+            \App\Models\CareAdvisorLeadSend::where('care_advisor_lead_id', $testLead->id)->delete();
+            $testLead->delete();
+            session()->forget('facility_user_id');
+        }
+
+        return $out;
+    }
+
+    /**
+     * 14 Ekim 2026: kullanicinin talebi - "eksiklerin hepsini tamamla,
+     * yarim bildirimleri, olmayan bildirimleri ayarla ve admin tarafindaki
+     * mantik catismalarinin hepsini duzelt". Bu test GERCEK render ve
+     * GERCEK veritabani satirlariyla dogrular - php -l Blade/mantik
+     * hatalarini YAKALAMAZ (bkz. 13 Ekim'deki @endif@if dersi), bu yuzden
+     * her adim gercekten calistirilip sonuc kontrol edilir.
+     */
+    private function adminNotificationSystemRenderTest(Request $incomingRequest): string
+    {
+        $out = '';
+        $admin = \App\Models\Admin::first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
+
+        $sampleFacility = \App\Models\Facility::whereNull('deleted_at')->whereNotNull('city_id')->whereNotNull('facility_category_id')
+            ->whereHas('facilityUsers')->first();
+        if (! $sampleFacility) {
+            return 'HATA: test icin uygun bir kurum bulunamadi.';
+        }
+        $sampleFacility->loadMissing('city');
+
+        // 1) Pusula tamamlaninca admin'e GERCEKTEN bildirim gidiyor mu, ve
+        // AYNI kayit tekrar "tamamlanirsa" (sayfa yenileme, progress_token
+        // tekrar) MUKERRER bildirim gitmiyor mu?
+        $token = 'NOTIF-RENDER-TEST-'.uniqid();
+        $beforeAdminNotifCount = $admin->notifications()->count();
+        try {
+            $controller = app(\App\Http\Controllers\Public\CareAdvisorController::class);
+            $req1 = Request::create('/bakim-danismani/sonuclar', 'GET', [
+                'progress_token' => $token,
+                'city' => $sampleFacility->city->slug,
+                'category' => $sampleFacility->category?->slug,
+                'condition' => 'NOTIF RENDER TEST',
+            ]);
+            $controller->results($req1, app(\App\Services\CareAdvisorMatchService::class))->render();
+            $afterFirst = $admin->notifications()->count();
+            $out .= ($afterFirst === $beforeAdminNotifCount + 1) ? "Admin bildirimi ILK tamamlamada OLUSTU OK.\n" : "UYARI: admin bildirimi beklenen sayida degil ({$beforeAdminNotifCount} -> {$afterFirst}).\n";
+
+            $lead = \App\Models\CareAdvisorLead::where('progress_token', $token)->first();
+            $out .= ($lead && $lead->notified_admin_at) ? "notified_admin_at dolduruldu OK.\n" : "UYARI: notified_admin_at bos kaldi.\n";
+
+            $notif = $admin->notifications()->where('type', 'care_advisor_lead')->latest()->first();
+            $out .= ($notif && ($notif->data['care_advisor_lead_id'] ?? null) === $lead?->id) ? "Bildirim verisi (lead id) dogru OK.\n" : "UYARI: bildirim data_json lead id'yi tasimiyor.\n";
+            $actionUrl = notification_action_url($admin, 'care_advisor_lead', $notif?->data ?? []);
+            $out .= ($actionUrl === route('admin.care-advisor-leads.index')) ? "notification_action_url('care_advisor_lead') dogru OK.\n" : "UYARI: action url beklenmedik: {$actionUrl}\n";
+
+            // Ayni token ile IKINCI kez "tamamlama" (ör. sayfa yenileme) -
+            // mukerrer admin bildirimi OLUSMAMALI.
+            $req2 = Request::create('/bakim-danismani/sonuclar', 'GET', [
+                'progress_token' => $token,
+                'city' => $sampleFacility->city->slug,
+                'category' => $sampleFacility->category?->slug,
+                'condition' => 'NOTIF RENDER TEST',
+            ]);
+            $controller->results($req2, app(\App\Services\CareAdvisorMatchService::class))->render();
+            $afterSecond = $admin->notifications()->count();
+            $out .= ($afterSecond === $afterFirst) ? "Ayni kayit tekrar tamamlaninca MUKERRER admin bildirimi GITMEDI OK.\n" : "UYARI: mukerrer admin bildirimi gitti ({$afterFirst} -> {$afterSecond}).\n";
+        } catch (\Throwable $e) {
+            $out .= 'Admin bildirim testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        // 2) Telefon eklenince (kurum eslesmesi + premium ise) kuruma
+        // GERCEKTEN bildirim gidiyor mu?
+        $facilityUser = \App\Models\FacilityUser::where('facility_id', $sampleFacility->id)->first();
+        $originalSubscribed = $sampleFacility->is_subscribed;
+        $originalPaidUntil = $sampleFacility->subscription_paid_until;
+        try {
+            if ($facilityUser) {
+                $sampleFacility->forceFill(['is_subscribed' => true, 'subscription_paid_until' => now()->addMonth()])->save();
+                $sampleFacility->refresh();
+                $beforeFacilityNotifCount = $facilityUser->notifications()->count();
+
+                $req3 = Request::create('/bakim-danismani/sonuclar', 'GET', [
+                    'progress_token' => $token,
+                    'city' => $sampleFacility->city->slug,
+                    'category' => $sampleFacility->category?->slug,
+                    'name' => 'Render Test',
+                    'phone' => '05551234567',
+                ]);
+                app(\App\Http\Controllers\Public\CareAdvisorController::class)->results($req3, app(\App\Services\CareAdvisorMatchService::class))->render();
+
+                $afterFacilityNotif = $facilityUser->notifications()->count();
+                $out .= ($afterFacilityNotif === $beforeFacilityNotifCount + 1) ? "Telefon eklenince PREMIUM kuruma bildirim gitti OK.\n" : "UYARI: kurum bildirimi beklenen sayida degil ({$beforeFacilityNotifCount} -> {$afterFacilityNotif}).\n";
+
+                $leadAfter = \App\Models\CareAdvisorLead::where('progress_token', $token)->first();
+                $out .= ($leadAfter && $leadAfter->notified_facility_at) ? "notified_facility_at dolduruldu OK.\n" : "UYARI: notified_facility_at bos kaldi.\n";
+            } else {
+                $out .= "UYARI: bu kurumun facility_user kaydi yok, kurum bildirim testi atlandi.\n";
+            }
+        } catch (\Throwable $e) {
+            $out .= 'Kurum bildirim testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        } finally {
+            $sampleFacility->forceFill(['is_subscribed' => $originalSubscribed, 'subscription_paid_until' => $originalPaidUntil])->save();
+            \App\Models\CareAdvisorLead::where('progress_token', $token)->delete();
+            $admin->notifications()->where('type', 'care_advisor_lead')->where('title', 'Yeni Pusula talebi')->get()
+                ->filter(fn ($n) => str_contains($n->body ?? '', $sampleFacility->city->name ?? '___yoksa___'))->each->delete();
+            if ($facilityUser) {
+                $facilityUser->notifications()->where('type', 'care_advisor_lead_facility')->latest()->first()?->delete();
+            }
+        }
+
+        // 3) Admin sidebar rozetleri GERCEKTEN dogru sayiyi mi gosteriyor?
+        // (AppServiceProvider > unreadByType, pendingJobApplicationsCount,
+        // unreadContactMessagesCount, newFeeInfoRequestsCount)
+        try {
+            $dashboardHtml = app(\App\Http\Controllers\Admin\DashboardController::class)->index(Request::create('/admin', 'GET'))->render();
+            $out .= str_contains($dashboardHtml, 'Pusula Anketleri') ? "Admin layout (sidebar) hatasiz render edildi OK.\n" : "UYARI: admin layout render sonucu beklenmedik.\n";
+        } catch (\Throwable $e) {
+            $out .= 'Admin layout render HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        // 4) Admin "Ayarlar" sayfasi artik bildirim tercihleri bolumunu
+        // GERCEKTEN iceriyor mu, ve kaydetme GERCEKTEN calisiyor mu?
+        try {
+            $settingsController = app(\App\Http\Controllers\Admin\SettingController::class);
+            $settingsHtml = $settingsController->edit()->render();
+            $out .= str_contains($settingsHtml, 'Bildirim Tercihleri') ? "Admin ayarlar sayfasinda bildirim tercihleri bolumu VAR OK.\n" : "UYARI: admin ayarlar sayfasinda bildirim tercihleri bolumu bulunamadi.\n";
+
+            $originalPrefs = $admin->notification_preferences;
+            $settingsController->updateNotifications(Request::create('/admin/ayarlar/bildirimler', 'PUT', [
+                'notifications' => ['leads' => ['email' => '0', 'push' => '0']],
+            ]));
+            $admin->refresh();
+            $leadsOff = ! notification_channel_enabled($admin, 'care_advisor_lead', 'email');
+            $out .= $leadsOff ? "Admin bildirim tercihi KAYDEDILDI ve dogru okunuyor OK.\n" : "UYARI: admin bildirim tercihi kaydedilmedi/okunmuyor.\n";
+            $admin->update(['notification_preferences' => $originalPrefs]);
+        } catch (\Throwable $e) {
+            $out .= 'Admin ayarlar/tercih testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        // 5) Sesli uyari icin gereken /admin/bildirimler/sayi ucu calisiyor mu?
+        try {
+            $countJson = app(\App\Http\Controllers\Admin\NotificationController::class)->unreadCount()->getData(true);
+            $out .= isset($countJson['count']) ? "Admin bildirim sayisi (sesli uyari ucu) calisiyor OK (count={$countJson['count']}).\n" : "UYARI: unreadCount() beklenen JSON'u donmedi.\n";
+        } catch (\Throwable $e) {
+            $out .= 'unreadCount() testi HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        // 6) 14 Ekim 2026: bu testi calistirirken platform_errors'ta GERCEK,
+        // bu degisikliklerle alakasiz 2 eski Blade hatasi bulundu (bitisik
+        // @direktif deseni, bkz. ayni tarihli yorumlar) - fee-info-requests
+        // ve data-quality sayfalarinda duzeltildi. Madem admin katmanindaki
+        // TUM mantik hatalarini temizlemek istendi, bu iki sayfa da burada
+        // GERCEKTEN render edilerek dogrulanir.
+        try {
+            $feeHtml = app(\App\Http\Controllers\Admin\FeeInfoRequestController::class)->index(Request::create('/admin/ucret-bilgi-talepleri', 'GET', ['scope' => 'on_kayitli']))->render();
+            $out .= "Ücret ve Bilgi Talepleri sayfasi (scope=on_kayitli) hatasiz render edildi OK, uzunluk: ".strlen($feeHtml)." bayt\n";
+        } catch (\Throwable $e) {
+            $out .= 'Ücret ve Bilgi Talepleri render HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+        try {
+            $dqHtml = app(\App\Http\Controllers\Admin\DataQualityController::class)->index(app(\App\Services\DataQualityService::class))->render();
+            $out .= "Veri Denetimi sayfasi hatasiz render edildi OK, uzunluk: ".strlen($dqHtml)." bayt\n";
+        } catch (\Throwable $e) {
+            $out .= 'Veri Denetimi render HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        session()->forget(['admin_id', 'admin_name']);
+
+        return $out;
+    }
+
+    /**
+     * 13 Ekim 2026: kullanicinin talebi - "thin content kapsami ne kadar"
+     * sorusuna GERCEK, Turkiye capinda bir cevap. bursaDescriptionAudit()
+     * ile AYNI siniflandirma mantigi, ama tek sehire ozel degil ve
+     * performans icin kurum basina Google yorumu yuklemez (sadece
+     * description metninin KENDISI siniflandirilir).
+     */
+    private function descriptionCoverageNationwide(Request $request): string
+    {
+        $sablonIsaretleri = ['ön kayıt profilidir', 'Google Maps verilerinden', 'admin tarafından'];
+
+        $rows = \App\Models\Facility::whereNull('deleted_at')
+            ->get(['id', 'description', 'is_claimed', 'is_broker_managed']);
+
+        $out = 'TOPLAM kurum: '.$rows->count().PHP_EOL.PHP_EOL;
+
+        foreach (['sahipsiz_anlasmasiz' => fn ($f) => ! $f->is_claimed && ! $f->is_broker_managed, 'sahipli_veya_anlasmali' => fn ($f) => $f->is_claimed || $f->is_broker_managed] as $grupAdi => $filtre) {
+            $grup = $rows->filter($filtre);
+            $bos = 0;
+            $sablon = 0;
+            $gercek = 0;
+            foreach ($grup as $f) {
+                $d = trim((string) $f->description);
+                if ($d === '') {
+                    $bos++;
+
+                    continue;
+                }
+                $sablonMu = false;
+                foreach ($sablonIsaretleri as $s) {
+                    if (mb_stripos($d, $s) !== false) {
+                        $sablonMu = true;
+                        break;
+                    }
+                }
+                if ($sablonMu) {
+                    $sablon++;
+                } else {
+                    $gercek++;
+                }
+            }
+            $toplam = $grup->count();
+            $out .= "=== {$grupAdi} (toplam {$toplam}) ===\n";
+            $out .= sprintf("  Bos aciklama: %d (%%%.1f)\n", $bos, $toplam ? $bos / $toplam * 100 : 0);
+            $out .= sprintf("  Sablon/jenerik aciklama: %d (%%%.1f)\n", $sablon, $toplam ? $sablon / $toplam * 100 : 0);
+            $out .= sprintf("  Gercek/ozel aciklama (yorumdan uretilmis veya elle yazilmis): %d (%%%.1f)\n\n", $gercek, $toplam ? $gercek / $toplam * 100 : 0);
+        }
+
+        return $out;
+    }
+
+    /**
+     * 13 Ekim 2026: kullanicinin talebi - "kalan 43 sablon aciklamali
+     * kurumu hallet, sahiplenmiste olsa olumlu yorumlarina gore aciklama
+     * ekle". descriptionCoverageNationwide() ile AYNI tespit mantigiyla
+     * tam liste bulunur, sonra ReviewBasedDescriptionGenerator'a ($facilityIds
+     * parametresiyle, is_claimed/is_broker_managed guvenlik filtresi bu
+     * ozel durumda KAPALI) verilir.
+     */
+    private function descriptionFixRemainingTemplates(Request $request): string
+    {
+        $sablonIsaretleri = ['ön kayıt profilidir', 'Google Maps verilerinden', 'admin tarafından'];
+
+        $rows = \App\Models\Facility::whereNull('deleted_at')->get(['id', 'description', 'is_claimed', 'is_broker_managed']);
+        $hedefIdler = [];
+        foreach ($rows as $f) {
+            $d = trim((string) $f->description);
+            if ($d === '') {
+                continue;
+            }
+            foreach ($sablonIsaretleri as $s) {
+                if (mb_stripos($d, $s) !== false) {
+                    $hedefIdler[] = $f->id;
+                    break;
+                }
+            }
+        }
+
+        if (! $hedefIdler) {
+            return 'Sablon aciklamali kurum kalmamis, yapilacak bir sey yok.';
+        }
+
+        $r = (new \App\Services\ReviewBasedDescriptionGenerator())->run(
+            limit: count($hedefIdler), afterId: 0, minRating: 3, cityId: null, facilityIds: $hedefIdler
+        );
+
+        $out = 'Hedeflenen sablon kurum: '.count($hedefIdler)." (id: ".implode(',', $hedefIdler).")\n\n";
+        $out .= "Yorumdan gercek aciklama uretilen: {$r['guncellenen']} (id: ".implode(',', $r['guncellenen_idler']).")\n";
+        $out .= "Sadece CTA eklenen (uygun yorumu yoktu): {$r['guncellenen_sadece_cta']} (id: ".implode(',', $r['guncellenen_sadece_cta_idler']).")\n";
+        $out .= 'Atlanan ('.count($r['atlanan'])."):\n".implode("\n", $r['atlanan'])."\n";
+
+        $islenenToplam = $r['guncellenen'] + $r['guncellenen_sadece_cta'] + count($r['atlanan']);
+        $out .= "\nKontrol: hedef ".count($hedefIdler).' = islenen toplam '.$islenenToplam.' -> '.(count($hedefIdler) === $islenenToplam ? 'OK' : 'UYUMSUZ, kalanlar asagida elle duzeltiliyor:');
+
+        // 13 Ekim 2026: kullanicinin bildirdigi/benim bulgum - eski sablon
+        // metnin KENDISI zaten "...formu doldurarak..." CTA cumlesi
+        // iceriyordu, bu yuzden ReviewBasedDescriptionGenerator'in "CTA
+        // zaten var, dokunma" kontrolu bu kurumlari YANLISLIKLA atliyordu.
+        // Hala sablon isareti tasiyan kalanlar burada DOGRUDAN, zorla
+        // CTA-only metinle degistirilir (uygun yorumu yoksa zaten yapilacak
+        // en iyi sey budur).
+        $kalanlar = \App\Models\Facility::whereIn('id', $hedefIdler)->with(['city', 'category'])->get(['id', 'name', 'description', 'city_id', 'facility_category_id', 'district']);
+        $zorlaDuzeltilen = [];
+        foreach ($kalanlar as $f) {
+            $d = trim((string) $f->description);
+            $halaSablon = false;
+            foreach ($sablonIsaretleri as $s) {
+                if (mb_stripos($d, $s) !== false) {
+                    $halaSablon = true;
+                    break;
+                }
+            }
+            if (! $halaSablon) {
+                continue;
+            }
+            $f->update(['description' => \App\Services\ReviewBasedDescriptionGenerator::ctaMetni($f)]);
+            $zorlaDuzeltilen[] = "#{$f->id} {$f->name}";
+        }
+        if ($zorlaDuzeltilen) {
+            $out .= "\n\nElle duzeltilen (".count($zorlaDuzeltilen)."):\n".implode("\n", $zorlaDuzeltilen);
+        }
+
+        return $out;
+    }
+
+    private function knowsAboutSchemaCheck(): string
+    {
+        $adaylar = \App\Models\Facility::whereHas('ageGroups')->whereNull('deleted_at')->limit(10)->get();
+        if ($adaylar->isEmpty()) {
+            return 'HATA: hic yas grubu verisi olan kurum bulunamadi.';
+        }
+
+        $facility = null;
+        $html = '';
+        $denenenler = [];
+        foreach ($adaylar as $aday) {
+            $request = Request::create('/kurumlar/'.$aday->slug, 'GET');
+            $response = \Illuminate\Support\Facades\Route::dispatch($request);
+            $denenenler[] = "#{$aday->id} ({$response->getStatusCode()})";
+            if ($response->getStatusCode() === 200) {
+                $facility = $aday;
+                $html = $response->getContent();
+                break;
+            }
+        }
+
+        if (! $facility) {
+            return "Hicbir aday 200 donmedi, denenenler: ".implode(', ', $denenenler);
+        }
+
+        $out = "Test kurumu: #{$facility->id} {$facility->name} ({$facility->slug})\n";
+        $out .= "Denenenler: ".implode(', ', $denenenler)."\n";
+        $out .= str_contains($html, '"knowsAbout"') ? "knowsAbout alani JSON-LD'de OK.\n" : "UYARI: knowsAbout bulunamadi.\n";
+
+        $pos = strpos($html, '"knowsAbout"');
+        if ($pos !== false) {
+            $out .= "\n".substr($html, $pos - 20, 200);
+        }
+
+        return $out;
+    }
+
+    private function careAdvisorLeadCleanupTestData(): string
+    {
+        $silinen = \App\Models\CareAdvisorLead::where('name', 'TestKullanici')->orWhere('phone', '05551234567')->get();
+        $c = $silinen->count();
+        \App\Models\CareAdvisorLeadSend::whereIn('care_advisor_lead_id', $silinen->pluck('id'))->delete();
+        \App\Models\CareAdvisorLead::whereIn('id', $silinen->pluck('id'))->delete();
+
+        return "Silinen test lead sayisi: {$c}";
+    }
+
     private function adminDashboardRender(Request $incomingRequest): string
     {
         $admin = DB::table('admins')->first();
@@ -1421,7 +2022,9 @@ class OpsController extends Controller
         }
         session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
 
-        $response = app(\App\Http\Controllers\Admin\DashboardController::class)->index();
+        $controller = app(\App\Http\Controllers\Admin\DashboardController::class);
+
+        $response = $controller->index(Request::create('/admin', 'GET'));
         $html = $response->render();
 
         $out = 'HTML uzunlugu: '.strlen($html)." bayt\n\n";
@@ -1437,6 +2040,35 @@ class OpsController extends Controller
             $out .= "'Gerçek Tıklama' bulunamadi.\n";
         } else {
             $out .= "\n---\n".mb_substr($html, $pos2, 1200)."\n";
+        }
+
+        // 13 Ekim 2026: kullanicinin talebi - "en cok tiklanan kurumlar
+        // ... turkiye ve il bazli filtreleme olmali, bolum bolum de
+        // ayrilmali" - il/bolum secili dropdown'larin dogru render
+        // edildigi ve filtrenin GERCEKTEN farkli sonuc urettigi test edilir.
+        $out .= "\n\n=== FILTRE TESTI ===\n";
+        $out .= (str_contains($html, 'name="il"') && str_contains($html, 'name="bolum"') && str_contains($html, 'Türkiye geneli'))
+            ? "Filtre dropdown'lari OK.\n" : "UYARI: filtre dropdown'lari bulunamadi.\n";
+        $out .= (str_contains($html, 'id="en-cok-tiklanan"') && str_contains($html, '#en-cok-tiklanan'))
+            ? "Filtreleme sonrasi sayfa en uste atmaz (#en-cok-tiklanan ankoru) OK.\n"
+            : "UYARI: #en-cok-tiklanan ankoru bulunamadi.\n";
+
+        $sampleCity = \App\Models\City::whereHas('facilities')->first();
+        if ($sampleCity) {
+            $filteredResponse = $controller->index(Request::create('/admin?il='.$sampleCity->id, 'GET'));
+            $filteredHtml = $filteredResponse->render();
+            $out .= str_contains($filteredHtml, 'selected')
+                ? "Il filtresiyle render OK ({$sampleCity->name}), secili option isaretlenmis.\n"
+                : "UYARI: il filtresiyle render sonrasi 'selected' bulunamadi.\n";
+        }
+
+        $sectionSlug = array_key_first(service_sections());
+        if ($sectionSlug) {
+            $sectionResponse = $controller->index(Request::create('/admin?bolum='.$sectionSlug, 'GET'));
+            $sectionHtml = $sectionResponse->render();
+            $out .= str_contains($sectionHtml, 'selected')
+                ? "Bolum filtresiyle render OK ({$sectionSlug}).\n"
+                : "UYARI: bolum filtresiyle render sonrasi 'selected' bulunamadi.\n";
         }
 
         return $out;
@@ -1839,7 +2471,7 @@ class OpsController extends Controller
             return "facility_id={$id}: bulunamadi.";
         }
 
-        return "#{$facility->id} {$facility->name}\nsource: {$facility->source}\nsource_payload:\n".json_encode($facility->source_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        return "#{$facility->id} {$facility->name}\ndeleted_at: {$facility->deleted_at}\nsource: {$facility->source}\nsource_payload:\n".json_encode($facility->source_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     private function facilityLookup(Request $request): string
@@ -2980,6 +3612,103 @@ Ilk 30 hic gorseli olmayan kurum:
     }
 
     /**
+     * 11 Ekim 2026: kullanicinin talebi - kurumlari MAHALLE'ye gore
+     * filtreleyebilmek (uye olmayan bir kuruma gelen talebi, ayni
+     * mahalledeki uye bir kuruma yonlendirebilmek icin). Kullanicinin ACIK
+     * sarti: "sallama" mahalle ASLA yazilmaz. Canli testte adres metninden
+     * cikan aday ile koordinat-bazli (Nominatim reverse) sonuc 3 orneklik
+     * testte 1 kez TAM celisti - bu yuzden SADECE ikisi birbirini
+     * DOGRULADIGINDA (esit veya biri digerini iceriyorsa) dolduruluyor,
+     * aksi halde bos birakilip "uyuşmadi" listesine dusuyor (elle incelemeye).
+     * Nominatim'in 1 istek/saniye kurali geregi her kayit arasinda 1.1sn
+     * bekleniyor - bu yuzden limit KUCUK tutulmali (varsayilan 15),
+     * after_id ile sayfalanarak coklu cagriyla devam ettirilir.
+     */
+    private function facilityNeighborhoodFill(Request $request, \App\Services\GeocodingService $geocodingService): string
+    {
+        set_time_limit(0);
+
+        $afterId = (int) $request->query('after_id', 0);
+        $limit = min((int) $request->query('limit', 15), 40);
+        $apply = $request->boolean('apply');
+        $cityId = $request->filled('city_id') ? (int) $request->query('city_id') : null;
+
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->whereNull('neighborhood')
+            ->whereNotNull('lat')->whereNotNull('lng')
+            ->whereNotNull('address')->where('address', '!=', '')
+            ->where('id', '>', $afterId)
+            ->when($cityId, fn ($q) => $q->where('city_id', $cityId))
+            ->orderBy('id')
+            ->select('id', 'name', 'address', 'lat', 'lng')
+            ->limit($limit)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return "BITTI: after_id={$afterId} sonrasinda islenecek kurum kalmadi.";
+        }
+
+        $norm = fn (string $s) => trim(preg_replace('/\s*(mahallesi|mahalle|mah\.?|mh\.?)\s*$/iu', '', strtr(mb_strtolower(trim($s)), ['ı' => 'i', 'İ' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c', 'â' => 'a', 'î' => 'i', 'û' => 'u'])));
+
+        $filled = 0;
+        $mismatch = [];
+        $skipped = 0;
+        $lastId = $afterId;
+
+        foreach ($rows as $f) {
+            $lastId = $f->id;
+
+            $adresAday = trim(explode(',', (string) $f->address)[0] ?? '');
+            if ($adresAday === '') {
+                $skipped++;
+
+                continue;
+            }
+
+            usleep(1_100_000); // Nominatim kurali: saniyede en fazla 1 istek
+            $nominatimAday = $geocodingService->reverseGeocode((float) $f->lat, (float) $f->lng);
+            if (! $nominatimAday) {
+                $skipped++;
+
+                continue;
+            }
+
+            // 11 Ekim 2026: kullanicinin talebi - binlerce kurum "mahallesi
+            // eksik" kalmisti, kok neden incelendiginde (bkz. uyusmayanlar
+            // listesi, elle gozden gecirildi) $adresAday ("adres metninde
+            // VIRGULDEN ONCEKI ILK PARCA") cok sik sokak adi/kisi adi/bina
+            // adi gibi ALAKASIZ bir sey ("Elif Su Uludağ", "Adana Şehir
+            // Hastanesi") yakalıyor, GERCEK koordinattan gelen Nominatim
+            // sonucu ise DUZENLI OLARAK dogru/temiz mahalle adi donuyordu.
+            // Yani iki kaynaktan biri (adres metni) guvenilmezdi, karsilastirma
+            // onu "dogrulama" degil "engelleme" olarak isliyordu. Artik
+            // Nominatim'in (GERCEK koordinata dayanan) sonucu TEK BASINA
+            // yeterli kabul edilir; adres metni sadece (uyusmuyorsa) log'a
+            // not dusulur, ISLEMI DURDURMAZ.
+            $a = $norm($adresAday);
+            $b = $norm($nominatimAday);
+            $uyusuyor = $a !== '' && $b !== '' && ($a === $b || str_contains($a, $b) || str_contains($b, $a));
+
+            if (! $uyusuyor) {
+                $mismatch[] = "#{$f->id} {$f->name}: adres=\"{$adresAday}\" | nominatim=\"{$nominatimAday}\" (nominatim kullanildi)";
+            }
+
+            if ($apply) {
+                DB::table('facilities')->where('id', $f->id)->update(['neighborhood' => $nominatimAday, 'updated_at' => now()]);
+            }
+            $filled++;
+        }
+
+        $out = ($apply ? 'UYGULANDI' : 'ONIZLEME')." | Taranan: {$rows->count()} | Dolduruldu: {$filled} | Uyusmadi ama nominatim ile dolduruldu: ".count($mismatch)." | Atlandi (veri eksik): {$skipped} | son_id: {$lastId}".PHP_EOL;
+        if ($mismatch) {
+            $out .= PHP_EOL.'=== ADRES METNIYLE UYUSMAYANLAR (bilgi amacli, isteginize gore elle kontrol edilebilir) ==='.PHP_EOL.implode(PHP_EOL, $mismatch);
+        }
+
+        return $out;
+    }
+
+    /**
      * 8 Eylul 2026: kullanicinin bildirdigi "adres dogru harita yanlis"
      * sikayeti icin - kurumun KAYITLI adresini GERCEK GeocodingService
      * (canli, Nominatim) ile YENIDEN geocode eder, YENI sonucu MEVCUT
@@ -3260,20 +3989,48 @@ Ilk 30 hic gorseli olmayan kurum:
             ->whereNull('facilities.deleted_at')->whereNotNull('facilities.address')
             ->select('facilities.id', 'facilities.name', 'facilities.address', 'facilities.district', 'facilities.city_id', 'cities.name as city_name')->get();
         $districts = DB::table('districts')->select('id', 'city_id', 'name', 'slug')->get()->groupBy('city_id');
-        $fix = 0; $skip = 0; $out = '';
+        $fix = 0; $skip = 0; $out = ''; $out2 = [];
         foreach ($rows as $f) {
-            if (! preg_match('/\d{5}\s+(.+?)\/([^\/,]+)\s*$/u', trim($f->address), $mm)) { continue; }
+            // 7 Ekim 2026: bazi kurumlarin adresi BOZUK/TEKRARLI kaydedilmis
+            // (ör. "...14300 Bolu Merkez, 14300 Bolu Merkez/Bolu" - sonundaki
+            // parca gercek ilceyi yansitmiyor). Boyle bir adresten cikan
+            // sonuc, kurumun zaten DOGRU olan mevcut ilcesini (ör. "Dörtdivan")
+            // yanlislikla ezebiliyordu. Artik SADECE ilcesi tamamen BOS olan
+            // kurumlar dolduruluyor - mevcut bir deger ASLA degistirilmiyor.
+            if (trim((string) $f->district) !== '') { continue; }
+            // 7 Ekim 2026: adreste GERCEK posta kodundan ONCE baska bir 5 haneli
+            // sayi varsa (ör. "82033 Sk No:1 ... 01170 Cukurova/Adana" - 82033
+            // bina/sokak no'su), eski (.+?) orta grubu virgul/rakam sinirlamasi
+            // olmadigi icin yanlis baslangic noktasindan esleserek bozuk metin
+            // yakalayip sessizce "eslesmeyen" olarak atliyordu. Orta grup artik
+            // rakam/virgul/slash icermez - boylece motor gercek posta koduna
+            // (sondaki "ILCE/IL" kalibina en yakin olana) geri cekiliyor.
+            if (! preg_match('/\d{5}\s+([^,\/\d]+)\/([^\/,]+)\s*$/u', trim($f->address), $mm)) { continue; }
             [$_, $dText, $cText] = $mm;
-            if (str_contains($dText, '/') || $norm($cText) !== $norm($f->city_name)) { $skip++; continue; }
-            $cand = trim(preg_replace('/^'.preg_quote($f->city_name, '/').'\s+/iu', '', $dText));
-            $row = ($districts[$f->city_id] ?? collect())->first(fn ($d) => $d->slug === $norm($cand));
-            if (! $row) { $skip++; continue; }
+            if (str_contains($dText, '/')) { $skip++; $out2[] = "#{$f->id} {$f->name} | adres: {$f->address} | (ilce metninde fazladan slash)"; continue; }
+            // 7 Ekim 2026: Google bazen Istanbul icin "...Besiktas/Istanbul -
+            // Avrupa" / "Kartal/Istanbul - Asya" seklinde sehir adina yaka eki
+            // ekliyor - duz isim karsilastirmasi bunu YAKALAMIYORDU. Once bu
+            // bilinen ekler ayiklanip normal karsilastirma denenir.
+            $cTextTemiz = trim(preg_replace('/\s*-\s*(avrupa|asya|europe|asia)\s*$/iu', '', $cText));
+            if ($norm($cTextTemiz) === $norm($f->city_name)) {
+                $cand = trim(preg_replace('/^'.preg_quote($f->city_name, '/').'\s+/iu', '', $dText));
+                $row = ($districts[$f->city_id] ?? collect())->first(fn ($d) => $d->slug === $norm($cand));
+                if (! $row) { $skip++; $out2[] = "#{$f->id} {$f->name} | adres: {$f->address} | (ilce bulunamadi, aday: \"{$cand}\")"; continue; }
+            } else {
+                // 7 Ekim 2026: bazi adreslerde format "...Mahalle, 34776 X
+                // Sanayi Bolgesi/Umraniye" gibi - slash SONRASI aslinda sehir
+                // degil, ILCENIN KENDISI. Sehir adi hic metinde yok. cText
+                // dogrudan bir ilce adiyla eslesiyorsa onu ilce olarak kabul et.
+                $row = ($districts[$f->city_id] ?? collect())->first(fn ($d) => $d->slug === $norm($cText));
+                if (! $row) { $skip++; $out2[] = "#{$f->id} {$f->name} | adres: {$f->address} | (sehir metni uyusmadi: \"{$cText}\")"; continue; }
+            }
             if ($norm((string) $f->district) === $row->slug) { continue; }
             $fix++;
             $out .= "#{$f->id} {$f->name}: \"{$f->district}\" -> \"{$row->name}\"".PHP_EOL;
             if ($apply) { DB::table('facilities')->where('id', $f->id)->update(['district' => $row->name, 'district_id' => $row->id, 'updated_at' => now()]); }
         }
-        return 'Duzeltilecek/duzeltilen: '.$fix.' ('.($apply ? 'UYGULANDI' : 'onizleme').'), belirsiz/eslesmeyen atlanan: '.$skip.PHP_EOL.$out;
+        return 'Duzeltilecek/duzeltilen: '.$fix.' ('.($apply ? 'UYGULANDI' : 'onizleme').'), belirsiz/eslesmeyen atlanan: '.$skip.PHP_EOL.$out.PHP_EOL.'=== ATLANAN DETAY ==='.PHP_EOL.implode(PHP_EOL, $out2);
     }
 
     // 24 Eylul 2026: Bursa'da Google yorumu OLMAYAN kurumlar (salt-okunur).
@@ -3584,6 +4341,26 @@ HTML;
         return $rows->map(fn ($r) => "#{$r->id} facility_id={$r->facility_id} family_user_id=".($r->family_user_id ?? 'NULL')." yas={$r->patient_age} tarih={$r->needed_from} butce={$r->budget_min}-{$r->budget_max} olusturuldu={$r->created_at}")->implode(PHP_EOL);
     }
 
+    // 4 Ekim 2026: kullanicinin bildirdigi gercek olay - bir rakip (Bansera
+    // yazilim) "Ilgi" formunu (aileler icin) kendi satis tanitimini kuruma
+    // WhatsApp'tan ilettirmek icin kotuye kullandi. offerRequestDebugLookup
+    // ayni deseni FacilityInterestLead icin de saglar.
+    private function interestLeadDebugLookup(Request $request): string
+    {
+        $phone = (string) $request->query('phone');
+        $rows = \App\Models\FacilityInterestLead::where('phone', $phone)->latest()->limit(5)->get();
+        if ($rows->isEmpty()) { return 'KAYIT YOK'; }
+
+        if ($request->query('delete') === '1') {
+            $n = $rows->count();
+            \App\Models\FacilityInterestLead::whereIn('id', $rows->pluck('id'))->forceDelete();
+
+            return "{$n} kayit kalici olarak silindi.";
+        }
+
+        return $rows->map(fn ($r) => "#{$r->id} facility_id={$r->facility_id} isim={$r->full_name} mesaj=".str_replace("\n", ' / ', (string) $r->message)." sent_to_facility_at=".($r->sent_to_facility_at ?? 'NULL')." olusturuldu={$r->created_at}")->implode(PHP_EOL);
+    }
+
     private function contentPagesDebug(Request $request): string
     {
         $rows = \App\Models\ContentPage::whereIn('slug', ['pazarlama-izni', 'mesafeli-satis-sozlesmesi'])->get(['id', 'brand', 'slug', 'title']);
@@ -3812,9 +4589,21 @@ HTML;
             $olusturuldu = true;
         }
 
-        $adaylar = \App\Models\Facility::where('facility_category_id', $kaynak->id)
-            ->where('name', 'like', '%Fizyoterapist%')
-            ->get(['id', 'name']);
+        // 4 Ekim 2026: kullanicinin talebi - "kurum adinda fizyoterapist
+        // gecen HEPSI" - artik SADECE "Fizik Tedavi ve Rehabilitasyon"
+        // kaynagiyla sinirli degil, hangi kategoride olursa olsun (Ozel
+        // Egitim, Norolojik Rehabilitasyon vb. dahil) adinda "fizyoterapist"
+        // veya "fizyo terapist" (bosluklu yazim) gecen TUM kurumlar hedefe
+        // tasinir - zaten hedef kategoride olanlar ($hedef->id haric
+        // tutularak) tekrar islenmez.
+        $adaylar = \App\Models\Facility::where(function ($q) {
+            $q->where('name', 'like', '%Fizyoterapist%')
+                ->orWhere('name', 'like', '%Fizyo Terapist%')
+                ->orWhere('name', 'like', '%fizyoterapist%')
+                ->orWhere('name', 'like', '%fizyo terapist%');
+        })
+            ->when($hedef, fn ($q) => $q->where('facility_category_id', '!=', $hedef->id))
+            ->get(['id', 'name', 'facility_category_id']);
 
         if ($apply && $hedef) {
             \App\Models\Facility::whereIn('id', $adaylar->pluck('id'))->update(['facility_category_id' => $hedef->id]);
@@ -3822,6 +4611,45 @@ HTML;
 
         $out = ($apply ? 'UYGULANDI' : 'ONIZLEME').": kategori ".($olusturuldu ? '(YENI olusturuldu)' : ($hedef ? '(zaten vardi, id='.$hedef->id.')' : '(dry-run, henuz olusturulmadi)'))
             .' | tasinacak/tasinan kurum: '.$adaylar->count().PHP_EOL;
+        $out .= $adaylar->take(50)->map(fn ($f) => "  #{$f->id} {$f->name}")->implode(PHP_EOL);
+
+        return $out;
+    }
+
+    // 4 Ekim 2026: kullanicinin talebi - "isminde ozel egitim geciyor ama
+    // fizik tedavi rehabilitasyon bolumunde yayinlanan kurumlar var". Bolum
+    // ayrimi daha once kullaniciyla netlestirildi: "Ozel Egitim ve
+    // Rehabilitasyon Merkezi" (MEB lisansli, cocuk agirlikli egitim+terapi)
+    // COCUK bolumune, "Fizik Tedavi ve Rehabilitasyon" (Saglik Bakanligi
+    // lisansli, tum yaslar, fizyoterapi) REHABILITASYON bolumune ait olmali.
+    // Adinda "Ozel Egitim" gecen ama yanlislikla Fizik Tedavi kategorisinde
+    // kalan kurumlar dogru (cocuk) kategoriye tasinir.
+    private function facilityCategoryFixOzelEgitim(Request $request): string
+    {
+        $apply = $request->query('dry_run', '1') === '0';
+
+        $kaynak = \App\Models\FacilityCategory::where('brand_scope', 'rehabilitasyon')
+            ->where('name', 'Fizik Tedavi ve Rehabilitasyon')->first();
+        $hedef = \App\Models\FacilityCategory::where('brand_scope', 'ozel-egitim')
+            ->where('name', 'Özel Eğitim ve Gelişim Merkezi')->first();
+        if (! $kaynak || ! $hedef) {
+            return 'HATA: kaynak veya hedef kategori bulunamadi.';
+        }
+
+        $adaylar = \App\Models\Facility::where('facility_category_id', $kaynak->id)
+            ->where(function ($q) {
+                $q->where('name', 'like', '%Özel Eğitim%')
+                    ->orWhere('name', 'like', '%özel eğitim%')
+                    ->orWhere('name', 'like', '%ÖZEL EĞİTİM%')
+                    ->orWhere('name', 'like', '%Ozel Egitim%');
+            })
+            ->get(['id', 'name']);
+
+        if ($apply) {
+            \App\Models\Facility::whereIn('id', $adaylar->pluck('id'))->update(['facility_category_id' => $hedef->id]);
+        }
+
+        $out = ($apply ? 'UYGULANDI' : 'ONIZLEME').": {$kaynak->name} -> {$hedef->name} | tasinacak/tasinan kurum: ".$adaylar->count().PHP_EOL;
         $out .= $adaylar->take(50)->map(fn ($f) => "  #{$f->id} {$f->name}")->implode(PHP_EOL);
 
         return $out;
@@ -4242,6 +5070,1680 @@ HTML;
     }
 
     /**
+     * 1 Ekim 2026 - Izmir anaokulu/kres toplu importu sirasinda sunucu
+     * baglanti timeoutlari nedeniyle ayni dosya birden fazla kez calistirildi.
+     * isDuplicate() sadece AYNI city_id icinde karsilastirma yaptigi icin,
+     * (a) ayni kurumun ayni sehir icinde IKI KEZ olusmasi VE (b) komsu il
+     * sinirindaki kurumlarin (Manisa/Bursa vb., zaten baska city_id ile
+     * kayitli) Izmir city_id ile TEKRAR olusmasi riski var. Bu action,
+     * verilen city_id+category_id+min_id (bu importun baslangic id'si)
+     * icin normallestirilmis isim bazinda TEKRARLARI listeler (sadece
+     * okur, hicbir seyi silmez).
+     */
+    /**
+     * 1 Ekim 2026 - kullanicinin yerel klasordeki (Bursa ilceleri, Istanbul
+     * anaokullari, norolojik rehabilitasyon, ozel egitim vb.) kurumlarin
+     * sunucuda olup olmadigini KONTROL ETMEK (yuklemeden once) icin tam
+     * kurum listesi. Salt okunur, hicbir satiri degistirmez.
+     */
+    private function facilityExportBasic(): string
+    {
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->select('id', 'city_id', 'facility_category_id', 'name', 'phone', 'address', 'district')
+            ->orderBy('id')
+            ->get();
+
+        return $rows->map(fn ($r) => "{$r->id}|{$r->city_id}|{$r->facility_category_id}|{$r->name}|{$r->phone}|{$r->address}|{$r->district}")->implode("\n");
+    }
+
+    /**
+     * 1 Ekim 2026: kullanicinin talebi - konumu eksik kurumlar icin
+     * GeocodingService (Nominatim, ucretsiz/ucuz) detayli Turkce adreslerde
+     * sistematik basarisiz oluyordu. Oysa source_payload.maps_url icinde
+     * (veri cekici'nin kaydettigi orijinal Google Haritalar linki) koordinat
+     * ZATEN var, hic cikarilmamisti. Dis servise hic ihtiyac yok, sadece
+     * ayni regex (Izmir importu icin kullanilan) ile bu alandan okunuyor.
+     */
+    // 6 Ekim 2026: kullanicinin talebi - az once gecici olarak il-merkezi
+    // koordinatiyla doldurulan kurumlar, source_payload.maps_url'den
+    // GERCEK/hassas koordinat cikarilabiliyorsa oraya yukseltilmeli. Bu
+    // uc SADECE son X dakikada il-merkezi degerine TAM esit olarak
+    // guncellenmis (yani bu oturumda gecici doldurulmus) kurumlari NULL'a
+    // geri alir - facilityFillLocationFromSourcePayload hemen ardindan
+    // bunlari hassas koordinatla doldurabilsin diye. Daha eski/baska
+    // sebeple il-merkezinde kalan kurumlara dokunmaz.
+    // 6 Ekim 2026: kullanicinin bulgusu - ayni isimli kurumun adresine
+    // mahalle on eki eklenip/cikarilarak farkli taramalarda birden fazla
+    // kez kaydedilmesi (ör. Gursu Rehber #6687/#7422/#11032). Site genelinde
+    // (TUM sehirler) ayni-isim + birbirinin icinde gecen adres (substring)
+    // kuralini (bkz. DataExtractorImportService::isDuplicate() ayni tarihli
+    // duzeltme) kullanarak mevcut kayitlarda kac tane boyle cift/uclu
+    // kalmis oldugunu raporlar - hicbir sey SILMEZ, sadece listeler.
+    private function facilitySubstringDuplicateScan(Request $request): string
+    {
+        $norm = function (?string $s): string {
+            $s = mb_strtolower((string) $s, 'UTF-8');
+            $s = str_replace(['ı', 'ğ', 'ü', 'ş', 'ö', 'ç', 'İ'], ['i', 'g', 'u', 's', 'o', 'c', 'i'], $s);
+
+            return preg_replace('/[^a-z0-9]+/', '', $s) ?: '';
+        };
+
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'address', 'city_id', 'phone', 'invitation_status')
+            ->orderBy('city_id')->orderBy('name')
+            ->get();
+
+        $byCity = $rows->groupBy('city_id');
+        $groups = [];
+
+        foreach ($byCity as $cityId => $cityRows) {
+            $arr = $cityRows->values();
+            for ($i = 0; $i < count($arr); $i++) {
+                for ($j = $i + 1; $j < count($arr); $j++) {
+                    $a = $arr[$i];
+                    $b = $arr[$j];
+                    if ($norm($a->name) !== $norm($b->name)) {
+                        continue;
+                    }
+                    $addrA = $norm($a->address);
+                    $addrB = $norm($b->address);
+                    if ($addrA === '' || $addrB === '') {
+                        continue;
+                    }
+                    if ($addrA === $addrB || str_contains($addrA, $addrB) || str_contains($addrB, $addrA)) {
+                        $groups[] = [$a, $b];
+                    }
+                }
+            }
+        }
+
+        if (empty($groups)) {
+            return 'Site genelinde isim+adres ortusmesi olan kayit bulunamadi.';
+        }
+
+        $out = 'Bulunan grup sayisi: '.count($groups).PHP_EOL.PHP_EOL;
+        foreach ($groups as [$a, $b]) {
+            $out .= "#{$a->id} {$a->name} | tel=".($a->phone ?: '-')." | adres: {$a->address}".PHP_EOL;
+            $out .= "#{$b->id} {$b->name} | tel=".($b->phone ?: '-')." | adres: {$b->address}".PHP_EOL.PHP_EOL;
+        }
+
+        return $out;
+    }
+
+    // 7 Ekim 2026: "Özel Doktorlar" (doktorlar) test sayfasi icin 8 demo
+    // kayit - gercek veri cekici (su an mesgul) ile doldurulana kadar
+    // kullanicinin tasarimi gozden gecirebilmesi icin. idempotent -
+    // tekrar cagrilirsa mevcut demo kayitlari (source='demo_seed')
+    // SILIP yeniden olusturur, cogaltmaz.
+    private function seedDemoExperts(): string
+    {
+        \App\Models\Expert::where('source', 'demo_seed')->forceDelete();
+
+        $demoReviews = [
+            ['author_name' => 'Elif K.', 'rating' => 5, 'body' => 'Çok ilgili ve sabırlıydı, çocuğumla güzel iletişim kurdu.', 'relative_time_text' => '2 ay önce'],
+            ['author_name' => 'Mehmet Y.', 'rating' => 5, 'body' => 'Randevu saatine uyuyor, bekleme olmuyor.', 'relative_time_text' => '4 ay önce'],
+            ['author_name' => 'Ayşe T.', 'rating' => 4, 'body' => 'Açıklayıcı bilgilendirme yaptı.', 'relative_time_text' => '6 ay önce'],
+        ];
+
+        $rows = [
+            ['name' => 'Ahmet Demir', 'title' => 'Uzm. Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => 34, 'district' => 'Kadıköy', 'address' => 'Caferağa Mah. Moda Cd. No:12, Kadıköy/İstanbul', 'clinic_name' => 'Demo Çocuk Sağlığı Polikliniği', 'phone' => '0532 111 22 33', 'phone_type' => 'mobile', 'rating' => 4.8, 'review_count' => 112],
+            ['name' => 'Fatma Yılmaz', 'title' => 'Prof. Dr.', 'branch' => 'Geriatri', 'branch_label' => 'Yaşlılık Uzmanı', 'city_id' => 16, 'district' => 'Nilüfer', 'address' => 'Konak Mah. Ataevler Cd. No:5, Nilüfer/Bursa', 'clinic_name' => 'Demo Yaşlı Sağlığı Merkezi', 'phone' => '0224 222 33 44', 'phone_type' => 'landline', 'rating' => 4.9, 'review_count' => 87],
+            ['name' => 'Selin Arslan', 'title' => 'Uzm. Dr.', 'branch' => 'Fiziksel Tıp ve Rehabilitasyon', 'branch_label' => 'Fizik Tedavi Doktoru', 'city_id' => 6, 'district' => 'Çankaya', 'address' => 'Kızılay Mah. Atatürk Blv. No:88, Çankaya/Ankara', 'clinic_name' => 'Demo Rehabilitasyon Kliniği', 'phone' => '0533 444 55 66', 'phone_type' => 'mobile', 'rating' => 4.7, 'review_count' => 64],
+            ['name' => 'Burak Şahin', 'title' => 'Uzm. Dr.', 'branch' => 'Çocuk Nörolojisi', 'branch_label' => 'Çocuk Beyin ve Sinir Hastalıkları', 'city_id' => 35, 'district' => 'Karşıyaka', 'address' => 'Bostanlı Mah. Cemal Gürsel Cd. No:21, Karşıyaka/İzmir', 'clinic_name' => 'Demo Çocuk Nöroloji Merkezi', 'phone' => '0232 333 44 55', 'phone_type' => 'landline', 'rating' => 4.6, 'review_count' => 41],
+            ['name' => 'Zeynep Kaya', 'title' => 'Dr.', 'branch' => 'Çocuk Psikiyatrisi', 'branch_label' => 'Çocuk Gelişim Uzmanı', 'city_id' => 34, 'district' => 'Beşiktaş', 'address' => 'Levent Mah. Büyükdere Cd. No:40, Beşiktaş/İstanbul', 'clinic_name' => 'Demo Gelişim Danışmanlık', 'phone' => '0535 666 77 88', 'phone_type' => 'mobile', 'rating' => 4.9, 'review_count' => 73],
+            ['name' => 'Hakan Çelik', 'title' => 'Uzm. Dr.', 'branch' => 'Nöroloji', 'branch_label' => 'Beyin ve Sinir Hastalıkları', 'city_id' => 16, 'district' => 'Osmangazi', 'address' => 'Çekirge Mah. Hastane Cd. No:7, Osmangazi/Bursa', 'clinic_name' => 'Demo Nöroloji Polikliniği', 'phone' => '0224 555 66 77', 'phone_type' => 'landline', 'rating' => 4.5, 'review_count' => 58],
+            ['name' => 'Derya Aydın', 'title' => 'Op. Dr.', 'branch' => 'Ortopedi', 'branch_label' => 'Kemik ve Eklem Hastalıkları', 'city_id' => 6, 'district' => 'Keçiören', 'address' => 'Etlik Mah. Sağlık Sk. No:3, Keçiören/Ankara', 'clinic_name' => 'Demo Ortopedi Merkezi', 'phone' => '0536 777 88 99', 'phone_type' => 'mobile', 'rating' => 4.7, 'review_count' => 95],
+            ['name' => 'Gökhan Polat', 'title' => 'Uzm. Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => 35, 'district' => 'Bornova', 'address' => 'Erzene Mah. Üniversite Cd. No:16, Bornova/İzmir', 'clinic_name' => 'Demo Çocuk Kliniği', 'phone' => '0232 888 99 00', 'phone_type' => 'landline', 'rating' => 4.8, 'review_count' => 130],
+            ['name' => 'Ebru Korkmaz', 'title' => 'Dt.', 'branch' => 'Diş Hekimliği', 'branch_label' => 'Diş Doktoru', 'city_id' => 34, 'district' => 'Üsküdar', 'address' => 'Altunizade Mah. Kısıklı Cd. No:9, Üsküdar/İstanbul', 'clinic_name' => 'Demo Diş Polikliniği', 'phone' => '0533 222 11 00', 'phone_type' => 'mobile', 'rating' => 4.9, 'review_count' => 204],
+        ];
+
+        $created = 0;
+        foreach ($rows as $i => $row) {
+            \App\Models\Expert::create($row + [
+                'slug' => \Illuminate\Support\Str::slug($row['name']).'-'.($i + 1),
+                'reviews' => $demoReviews,
+                'google_maps_url' => 'https://www.google.com/maps/search/'.urlencode($row['name'].' '.$row['branch'].' '.($row['district'] ?? '')),
+                'is_published' => true,
+                'source' => 'demo_seed',
+            ]);
+            $created++;
+        }
+
+        return "Olusturulan demo uzman: {$created}";
+    }
+
+    // 7 Ekim 2026: kullanicinin talebi - yeni "Doktor Cekici" aracindan
+    // once, kullanicinin ELLE yarida kestigi test taramasindaki (Nilufer
+    // ilcesi, Bursa) GERCEK 26 doktoru (37 ham kayittan okul/kitapci/
+    // fizyoterapist/bransi belirsiz olanlar elenerek) kalici olarak
+    // iceri alir. idempotent - tekrar cagrilirsa mevcut
+    // source='nilufer_oct2026_import' kayitlari SILIP yeniden olusturur.
+    // Ayni zamanda artik gereksiz demo_seed kayitlarini da temizler.
+    private function importNiluferPediatricDoctors(): string
+    {
+        \App\Models\Expert::where('source', 'nilufer_oct2026_import')->forceDelete();
+        $demoRemoved = \App\Models\Expert::where('source', 'demo_seed')->count();
+        \App\Models\Expert::where('source', 'demo_seed')->forceDelete();
+
+        $rows = [
+            // kaynak satir #1 (Nilufer test taramasi)
+            [
+                'title' => 'Çocuk Hekimi',
+                'name' => 'Orhan Sevinç Cura',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'İhsaniye mahallesi leylak 110 sokak Rızvanoğlu 1453 FSM 3A /kat3/A21-22, 16130 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0530 603 52 16',
+                'rating' => 4.7,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/bursa+nil%C3%BCfer+%C3%A7ocuk+hekimi+orhan+sevin%C3%A7+cura/data=!4m7!3m6!1s0x14ca1403fbefea63:0xa19d2c15496cbd4b!8m2!3d40.2139605!4d28.9778828!16s%2Fg%2F11cn7x3hw6!19sChIJY-rv-wMUyhQRS71sSRUsnaE?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Nurdan Uslu',
+                        'rating' => 5,
+                        'body' => '9 yaşındaki iştahsız zayıf yaşıtlarına göre çok geride olan kızım için sürekli üzülüp iyi bir hekim araştırırken, instegram da kendısıne denk gelememiz çok iyi bir tevafuk oldu … keşandan Bursa’ya gittik.. Asla kilo almayan cocugum , 1 ayda ilk defa 2 kilo aldı ve iştahı açıldı şükürler olsun  .. açım demeye mutfakta sürekli dolanmaya başladı…  kontrol için online görüştük.. Devam edıyoruz kolay kolay bırakmayız hocamı☺️Rabbim kendısının ayağına taş değdirmesın.. iyi ki diyorum iyi ki kendısını tanıdık ve hergün  bu çocuk neren bukadar ufak tefek dediklerinde kaygılandığım üzüldüğüm evladımın hayatına dokundu minnettarız',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'elturco54',
+                        'rating' => 5,
+                        'body' => 'Kızımızın kulağında sıvı birikimi vardı. Geçmezse ameliyat olup tüp takılacaktı doktor beyin verdiği diyet listesini ve takviyeleri harfiyen uyguladık ve kızımızın sıvı birikimi ve ağız kokusu geçti.',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Gizem Özgüney Tayyar',
+                        'rating' => 5,
+                        'body' => 'Orhan hocayı uzun zamandır Instagramdan takip ediyordum. 4 yaşında ikiz kızlarımda uyku problemleri, gaz ve bağırsak sıkıntıları nedeniyle  İstanbuldan Bursa’ya gittik iyi ki de gitmişiz. 4 yıldır gece uyanmaları olan kızlarımda hocamızın verdiği ilaç ve takviyelere başladımız anda sorun çözüldü. Orhan hocamızdan Allah razı olsun 4 sene sonra ben de deliksiz uyku nedir hatırladım. Reflü diyetimizi ve kereviz detoksumuzu yapıyoruz kızlarımdaki değişim kendini gösteriyor. Hocamız her soruma kısa ve net cevaplar vermiştir ki yüzlerce çocuk ve aileye şifa olduğu düşünürlerse gayet haklı bir tutum olduğu görülür. Ben kesinlikle tavsiye ediyorum kendisine de buradan tekrar teşekkür ediyorum 🙏🏻',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Hikmet Kesim',
+                        'rating' => 2,
+                        'body' => 'Haziran 2026’da İstanbul’dan Bursa’ya çocuğumuzu Orhan Bey’e götürdük. Geniz eti nedeniyle önerdiği beslenme tedavisini uyguladık. Öncelikle tedavinin tıbbi kısmıyla ilgili olumsuz bir değerlendirmem olmadığını belirtmek isterim. Bizim memnuniyetsizliğimiz daha çok iletişim, muayenehane işleyişi ve sonrasında karşılaştığımız yaklaşım nedeniyle oluştu. İlk randevumuzda muayenehaneyi bulmakta zorlandığımız için telefonla ulaşmaya çalıştık ancak asistan/hemşire hanımlara ulaşamadık. Ağustos ayında tekrar randevu almak istediğimizde de tatil döneminde iletişim kuramayınca Orhan Bey’e yazdık ve kendisinin yardımıyla online görüşme oluşturuldu. Orhan Bey’in tatilde olması elbette normal; ancak sonuçta bir hasta-doktor görüşmesi yapıldığı için görüşmeye askılı, kolsuz yazlık bir üstle katılması bize profesyonel bir görüşme açısından fazla rahat geldi. Bu görüşmede Bursa’da güvendiği iki KBB uzmanından birinin de çocuğumuzu görmesini ve ardından kendisine gelmemizi önerdi. İstanbul’dan geleceğimiz için Orhan Bey’den ve önerdiği doktorlardan birinden aynı güne, yaklaşık iki saat arayla randevu aldık. İşimizi, çocuğumuzun okulunu ve yolculuğumuzu buna göre planladık. Bu süreçte okulda uygulanacak beslenme programı için imzalı-kaşeli kısa bir yazı istedik. Asistan hanım Orhan Bey’e yönlendirdi. WhatsApp’tan yazmamıza rağmen dönüş alamadık. Daha sonra konuştuğumuzda mesajı hatırlatınca aldığım cevap “Tekrar yazsaydınız” oldu. Yoğun olabileceğini düşünerek arka arkaya mesaj gönderip rahatsız etmek istememiştik. Açıkçası böyle basit bir talebin muayenehane içinde iletilerek tarafımıza ulaştırılabileceğini düşünüyorum. Bizi asıl rahatsız eden ise kontrol randevumuzun daha sonra Orhan Bey’in kişisel bir tapu işi nedeniyle değiştirilmek istenmesi oldu. İstanbul’dan geleceğimizi, kendisinin önerdiği diğer doktordan da aynı güne randevu aldığımızı, okul ve iş programımızı buna göre ayarladığımızı ve tarihi değiştirmemizin zor olduğunu anlattım. “Bu durumda neden o güne randevu verildi?” diye sorduğumda, 4-5 gün önceden haber verildiği, devam etmek istersek başka güne randevu alabileceğimiz, istemezsek bizim bileceğimiz şeklinde cevap aldım. Bu yaklaşım üzerine devam etmek istemediğimi söylediğimde ise “Peki siz bilirsiniz, kapıda bekleyen çok hastam var.” cevabını aldım. Bizim açımızdan bardağı taşıran son damla bu oldu. Bir hekimin tıbbi bilgisi kadar, özellikle şehir dışından çocuğunu getiren aileler açısından iletişim, organizasyon ve kullanılan üslubun da önemli olduğunu düşünüyorum. Biz tedavinin tıbbi kısmı nedeniyle değil, süreç boyunca yaşadığımız bu iletişim ve yaklaşım nedeniyle devam etmeme kararı aldık. Özellikle şehir dışından randevu oluşturacak ailelerin planlama yaparken bizim yaşadığımız deneyimi de göz önünde bulundurmasını isterim.',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Aslıhan KAYACIK',
+                        'rating' => 2,
+                        'body' => 'Kızım 19 aylıkken Doktor Bey’in muayenehanesine gittik. Bursa’da daha önce bir çok özel hastanedeki hekim ve muayenehane denemiş biri olarak söyleyebilirim çok ilginç deneyimler yaşadım bunlardan birisi çocuğumun boy kilo ölçümüne doktor Bey’in değil de daha doktor Bey’in kapısına girmeden önce onun Sekreterinin bakmış olması. Hemşiresi bile değil randevu veren sekreter çocuğun not kilosuna bakıyor hem de üstündeki kıyafetle . Ben oraya çocuğumu getiriyorsam çocuğum ile ilgilenecek tek kişinin doktor bey olmasını isterdim . Ayrıca kızımın reflü şikayeti için doktor beye başvurmuştuk ilaç önerdi 15 gün sonra benimle işe yarayıp yaramadığını görüşürsünüz dedi tamam sizin uygun olduğunuz biz vakitte sizi ararım dedim hayır aramayın whatsapp dan mesaj atın dedi ve 15 gün sonra uzun uzun kızımın durumuyla ilgili mesaj attığımda tek yanıt ilaca devam edin oldu . Ben özel muayenehanesi olan bir hekime gidiyorsam en azından makul saatlerde ve gerektiği durumda hekime ulaşmak isterim . Hemşiresi kan alıyor kızımdan , pat diye iğneyi çekiyor sonra kanayınca ben bastırmadım diye kendince kızıyor . Ben orada kızım gözü önünde tartışmak istemedim üstelik ben de hemşireyim ve yaptığı yanlışın farkındayım ama bunu yüzüne bile vurmadım . Çarşamba çalışan anneler gününde akşam 17 gibi randevu aldık , yaklaşık 45 dakika bekledik . Aynı randevu saatine başka kişiyi de almışlar ben bu kadar bekleyeceksem devlet hastanesine giderim sonuçta . Sonra oyuncakların olduğu kısımda çocuklar lütfen oyuncakları götürmeyin tarzında bir yazı yazmışlar o kadar ücreti verip muayeneye getiren hiçbir ebeveynin oyuncakları eve götüreceğini sanmam üstelik böyle bir uyarma bile bence çok çirkince . Sonra doktor bey sanki ben onun instagram paylaşımlarını izlemeliymişim gibi davranıyor . Ben soruyorum muz vereyim mi diye hayır reflülü çocuk muz yemez diyor en başından ben sormayabilirdim söylemesi gerekir ne yiyip ne yememesi gerektiğini . Kan aldılar tahlil için arayıp söylemek yerine yine whatsapp dan bunlar bunlar yüksek üç ay sonra tekrar diyor . Soru soruyorum iki kelime en fazla bir cümlelik baştan savma cevaplar . Doktor bey in bilgi ve deneyimine asla bişey diyemem ama bence instagramdan takip edip paylaşımlarını dinlemek muayenehanesine gitmekten daha çok fayda sağlar çünkü asla ilgilenilmiyor . Bu yazdıklarımı daha önce Bursa’da birçok özel hastane ve muayenehaneye gitmiş biri olarak yazıyorum ve bu kıyaslamayı bu sebeple yapabiliyorum .',
+                        'relative_time_text' => '4 hafta önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #2 (Nilufer test taramasi)
+            [
+                'title' => 'Op. Dr.',
+                'name' => 'Ünal Adıgüzel',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Lotus Ofis, Konak, 1. Badem Sk. B Blok Kat:3 No:37, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => 'Bursa Sünnet Ve Çocuk Cerrahisi Kliniği',
+                'phone' => '0506 543 91 68',
+                'rating' => 4.9,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Op+Dr+%C3%9Cnal+Ad%C4%B1g%C3%BCzel%2F+Bursa+S%C3%BCnnet+Ve+%C3%87ocuk+Cerrahisi+Klini%C4%9Fi/data=!4m7!3m6!1s0x14ca3e0f282f56a3:0xa82a02edc3ca3fb7!8m2!3d40.2112561!4d28.9868205!16s%2Fg%2F11fy92l9cd!19sChIJo1YvKA8-yhQRtz_Kw-0CKqg?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'İpek Altınışık',
+                        'rating' => 5,
+                        'body' => 'Çocuk doktorumun ve çevremde birçok kişinin tavsiyesiyle Ünal Bey\'e sünnet için randevu aldık. Hakkında duyduğumuz yorumlar zaten çok güzeldi ama birebir tecrübe edince bunu bizde onayladık. 7 aylık bebeğim 1 ay önce sünnet oldu bugün son kontrolümüzle birlikte iyileşme sürecimiz de sona erdi ilgi alaka herşey çok güzeldi. Bebeğim hiç sünnet olduğunu anlamadığı bir süreç yaşadı ve bizde öyle sonsuz teşekkür ve tavsiye ediyoruz tüm ekip güleryüzlü ve çok ilgililer onlarla tanıştığımız ve tercih ettiğimiz için çok şanslıyız tekrardan teşekkürler Ünal Adıgüzel ve ekibi 🧡',
+                        'relative_time_text' => '2 gün önce',
+                    ],
+                    [
+                        'author_name' => 'Bediha Eraslan',
+                        'rating' => 1,
+                        'body' => 'Oğlumu sünnet işlemi için muayeneye götürdük. Ancak doktor, oğlumun kilolu olduğunu gerekçe göstererek sünnet işlemini gerçekleştirmedi. Elbette bir doktorun, çocuğun sağlığı ve güvenliği açısından tıbbi bir işlem konusunda karar verme hakkına saygı duyuyorum. Fakat asıl rahatsız olduğum konu, bize karşı sergilenen tavır ve iletişim şekliydi.
+“Türkiye’de tek kilolu çocuk benim oğlum mu?” şeklinde bir soru sorduğumda, aldığım cevap ve karşılaştığımız muamele son derece kırıcı, küçümseyici ve bir doktora yakışmayacak kadar nezaketsizdi. Bir sağlık çalışanından, özellikle de bir çocuğun yanında, daha anlayışlı, sakin ve saygılı bir iletişim beklemek en doğal hakkımız.
+Bununla da kalmayıp, muayenenin başında herhangi bir şekilde bilgi verilmeden çıkışta 2.000 TL muayene ücreti talep edilmesi de ayrıca kabul edilebilir bir durum değildir. Ücret konusunda hastanın işlem öncesinde açık ve net bir şekilde bilgilendirilmesi gerektiğini düşünüyorum.
+Tıbbi kararınıza saygı duyabilirim; ancak hastaya ve yakınına yaklaşım biçiminizi kesinlikle doğru bulmuyorum. Doktorluk yalnızca tıbbi bilgi ve işlemden ibaret değildir; aynı zamanda empati, iletişim ve nezaket gerektiren bir meslektir. Yaşadığımız bu tutumun, mesleğin gerektirdiği etik ve nezaket kurallarıyla bağdaşmadığını düşünüyorum.
+Umarım bundan sonraki hastalarınıza karşı daha açıklayıcı, anlayışlı ve saygılı bir iletişim kurarsınız.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Rabia Su',
+                        'rating' => 5,
+                        'body' => 'Ailerin en çok tedirgin olduğu bir konudur.tamamen eş ve dost tavsiyesiyle nokta atışı ÜNAL HOCAM a geldim.Özellikle tecrübesiyle evladimizdan önce bizi rahatlattı.aylardir üstümuzdeki nasıl.olacak oğlum çok korkacakmi canı yanacak mi sorusuna şöyle cevap verelim oğlum oyun oynarken sünnet oldu eve geldi şisini yaparken baba ben sünnet olmuşum dedi.ne canı yandı ne zerre kadar korktu inanılmaz mutluluk aile reisi olarak..bir onemli konuda sadece sünnet evresi değil biz veliler için asıl tedirginlik sünnet sonrası evre işte burda kelimeler anlatılmaz bir tecrübe giriyor devreye sünnet ten sonrası eve gittiğimizde tamamen iyileşme süreci boyunca her gün abartmıyorum her gün her zaman resim çekip gönderiyoruz anında cevap yönlendirme mükemmel hizmet iyileşinceye kadar devam ediyor.son bir tşk de çok ama çok güzel çalışma ortamı ve elemanlarına ve bu elemanları temin eden değerli ÜNAL HOCAM a..emeklerinize sağlık aile dostlarımıza komşularımıza çalışma arkadaşlarımıza her keze gönül rahatlığıyla tavsiye ettim...KIRMAN AİLESİ olarak çok tşk ederiz...',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Hamide Gekik',
+                        'rating' => 5,
+                        'body' => 'Elinize sağlık. Biz çok memnun kaldık. Her şey için çok teşekkür ederiz.',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #3 (Nilufer test taramasi)
+            [
+                'title' => 'Op. Dr.',
+                'name' => 'Yusuf Çalışkan',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Odunluk, Operatör Sokak No 1 Tezeller iş merkezi, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => 'Bursa Çocuk Cerrahisi ve Sünnet Kliniği',
+                'phone' => '0530 075 04 06',
+                'rating' => 4.9,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Op.+Dr.+Yusuf+%C3%87al%C4%B1%C5%9Fkan+Bursa+%C3%87ocuk+Cerrahisi+ve+S%C3%BCnnet+Klini%C4%9Fi/data=!4m7!3m6!1s0x14ca15d58dfd0f97:0xbe175ad460da9d4e!8m2!3d40.2058764!4d28.9929291!16s%2Fg%2F11fk8fk9kx!19sChIJlw_9jdUVyhQRTp3aYNRaF74?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Ş. A.',
+                        'rating' => 5,
+                        'body' => 'Sünnet sürecimizde gösterdiğiniz ilgi için doktorumuza çok teşekkür ederiz. Ameliyat sonrasındaki bilgilendirmeler ve mesajlarımıza anında dönülmesi bizi çok rahatlattı. Harika bir hekim ve harika bir süreç yönetimi. ALLAH RAZI OLSUN',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Merve şanlı',
+                        'rating' => 5,
+                        'body' => 'Cok tesekkur ediyoruz Dr. Yusuf Bey’e, sayesinde oglumuzun sunnet operasyonu cok basarili bir sekilde ve huzurla tamamlandi.
+Ilgisi, profesyonelligi ve verdigi guven icin kendisine cok minnettariz.',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'ömer sacar',
+                        'rating' => 5,
+                        'body' => 'Yusuf hocam büyük oğlumu sünnet etti. Allah razı olsun, süreç çok güzel, keyifli gerçekleşti. Bugün kontrolümüz vardı. Hamdolsun küçük oglumuzu da seneye getireceğiz. Aklınızda birşey olmasın. Kesinlikle tavsiye ediyorum.',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Yasin Yıldız',
+                        'rating' => 5,
+                        'body' => 'Bir doktorun bu kadar ilgili olmasını beklemiyordum açıkçası. Oğlum  sünnet olalı 1 ay oldu hala daha bizimle iletişim halinde biz yazmadan bile bize hatırlatmalarda bulundu. Operasyon ve İyileşme süreci şükür hepsi güzel geçti sağolsun teşekkür ederiz.',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #4 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dr.',
+                'name' => 'Zeliha Yılmaz',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Yılmar Plaza, Karaman, Söğüt Sk. No:170 Kat. 4 Daire. 31, 16130 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0530 624 80 11',
+                'rating' => 5.0,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Bursa+%C3%87ocuk+Doktoru+-+Uzm.+Dr.+Zeliha+Y%C4%B1lmaz/data=!4m7!3m6!1s0x14ca1566b0429047:0x9989e74d2bf42cba!8m2!3d40.2175978!4d28.9987711!16s%2Fg%2F11h7d7zcg1!19sChIJR5BCsGYVyhQRuiz0K03niZk?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Sercan Ağrı',
+                        'rating' => 5,
+                        'body' => 'Zeliha Hanım ile ablamın tavsiyesi üzerine tanıştık; kendisi uzun süredir yeğenimin de çocuk doktoruydu. Yeni doğan bebeğimizin takibini üstlendiği ilk andan itibaren, sakin ve rahatlatıcı iletişimiyle içimizi çok ferahlattı ve bize büyük destek oldu. Kendisine çok teşekkür ederiz.
+​Ayrıca hemşiresi Meyra Hanım da emzirme sürecinde eşime büyük bir destek sağladı, sayesinde kısa sürede güzel bir rutin oluşturup emzirme düzenini oturttular. Her ikisine de emekleri için yürekten teşekkür ediyor, çocuk doktoru arayışında olan herkese gönül rahatlığıyla tavsiye ediyoruz.',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Fatma HIDIROĞLU',
+                        'rating' => 5,
+                        'body' => 'Arkadaş tavsiyesiyle Zeliha Doktorumuz ve Meyra Hemşiremizle tanıştık. Çok samimi ve içten oldukları gözlerinden belliydi. İlgileri, enerjileri harikaydı. 16 aylık kızım muayenesini ve aşısını oldu. Kızımda bende çok memnun ayrıldık.',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Uğur Şentürk',
+                        'rating' => 5,
+                        'body' => 'Zeliş hocamızın enerjisi süper.iyiki oğlumuzu size emenet etmişiz.teşekkürler.',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'fatih aydınn',
+                        'rating' => 5,
+                        'body' => 'Herkese merhaba ;
+Hem ebeveynlere yaklaşımı hem de çocuklarla kurduğu iletişim harika. Sorularımıza her zaman sabırla ve detaylıca cevap alıyoruz. Çok memnunuz. Kesinlikle tavsiye ediyoruz.
+Gözünüz kapalı çocuğunuzu emanet edebilirsiniz. İyi ki varsınız !',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #5 (Nilufer test taramasi)
+            [
+                'title' => 'Dr.',
+                'name' => 'Gül Güner Nar',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Osmangazi',
+                'address' => 'Opus by Evke, Bağlarbaşı, Sanayi Cd. No:348 B No:46, 16170 Osmangazi̇/Bursa',
+                'clinic_name' => null,
+                'phone' => '0530 413 74 85',
+                'rating' => 5.0,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/%C3%87ocuk+Doktoru+Bursa+Dr+G%C3%BCl+G%C3%9CNER+NAR/data=!4m7!3m6!1s0x14ca117a8efb7b43:0xc239bdf4d3029e4b!8m2!3d40.2339589!4d28.9801962!16s%2Fg%2F11gbk4v5qd!19sChIJQ3v7jnoRyhQRS54C0_S9OcI?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Çiğdem Edizsoy',
+                        'rating' => 5,
+                        'body' => 'Çocukları bu kadar seven ve anne şevkati gösteren bir çocuk doktoru görmemişsinizdir.
+Mesleki tecrübesi saygılı tavrı ve anlayışlı yaklaşımıyla rahat hissetiren çok iyi bir insan ve doktordu🥰 Teşekkür ederiz🙏 …',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Yusuf Alan',
+                        'rating' => 5,
+                        'body' => 'Kendim de hekimim, cocugumuzu sizin gibi degerli hekimlere emanet etme şansımız oldugu için çok şanslıyız, çocuklara ses tonunuzla huzur, annelere güven veriyorsunuz. Tekrar teşekkür ederiz.',
+                        'relative_time_text' => '3 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Tulpar Bilgisayar Bahar Ak',
+                        'rating' => 5,
+                        'body' => 'O bir melek 🥰 asla durup dururken antibiyotik vermeyen bir doktor. İlk önce kandan bakar ona göre antibiyotik verir. Her daim rahatlıkla ulaşırsınız. Şehir dışında bile olsa sizin için bir çözüm bulur . Bursa da gitmediğim doktor kalmamıştır kızım için . En az 30 farklı doktora gittim .3 senedir kesintisiz  hep Gül hanıma giderim. Bir alerji doktorum birde  Gül hanım mükemmeller . İyiki varsınız işini hakkıyla yapan , dünya iyisi bir insansınız. Çok ince düşünceli ,ince görüşlü ve gerçekten işinin en iyisi bir doktor. Sonuna kadar takip ediyor herşeyi  ve her tanısı birebir doğru çıka  . 🥰🥰',
+                        'relative_time_text' => '9 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Seda Çevik ACAR',
+                        'rating' => 5,
+                        'body' => 'Canımız doktorumuz. Artık 5 yıldan sonra doktor ablamız oldu. Oğlumun doğumundan beri doktoru şimdi de kızımın. Serinkanlılığı, içtenliği, bilgisi, her an her acil durumda yanımda hissettirmesi, her soruma sakince cevap vermesi , gereksiz ilaç yazmaması gibi gibi🫠 daha çok şey yazabilirim. İyiki tanımışız. Gül doktor bebeleri çok şanslı♥️',
+                        'relative_time_text' => null,
+                    ],
+                ],
+            ],
+            // kaynak satir #7 (Nilufer test taramasi)
+            [
+                'title' => 'Op. Dr.',
+                'name' => 'Neşe Güney',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Osmangazi',
+                'address' => 'Dikkaldırım Mahallesi, Çekirge, Zübeyde Hanım Cd. No:5, 16080 Osmangazi̇/Bursa',
+                'clinic_name' => null,
+                'phone' => '0546 228 16 16',
+                'rating' => 3.9,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Op.Dr.+Ne%C5%9Fe+G%C3%9CNEY/data=!4m7!3m6!1s0x14ca1429f765d015:0xa49eb2f471a0fcbf!8m2!3d40.2042916!4d29.0203927!16s%2Fg%2F11dfgb6s7k!19sChIJFdBl9ykUyhQRv_ygcfSynqQ?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Arel Böke ÇAKMAK',
+                        'rating' => 5,
+                        'body' => 'Oglum dogdugundan beri Neşe hocama emanet. Sunnetimizi ve ameliyatlarimizi kıymetli hocamız yaptı. Süreçlerde bize ve oğlumuza olan yaklaşımıyla, desteğiyle içimiz rahatlayarak yanından ayrıldık. Operasyonlar sonrası hep güzel geçti,  hiç bir sorun sıkıntı yaşamadık. Bilgisine, ilgisine, kendisine minnettarız. 🌸 …',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Seren Şahin',
+                        'rating' => 1,
+                        'body' => 'Oğlum 3.5 aylık ve Nev esentepe hastanesinde çocuk cerrahisi NEŞE GÜNEY e 14/12/20124 tarihinde sünnet yaptırdık daha sonra kontrol için 18/12/2024 tarihinde kontrole götürdük ve bize dediği bebeğinizin bölgesi yağlı olduğu için gömülü şuan bezini değiştirirken geriye doğru çektirip baş kısmını çıkartmamız gerektiğini ve günde 1 saat açık kalmasını 15 gün sonra tekrar kontrole gelin ve egzersiz vereceğini söyledi ilk doğrudur bir sorun yoktur diye düşündük daha sonra düzelme olmayınca ve pipisinin başı tamemen kapandığı için başka doktorlara gösterdik ve üç tane doktor yeteri kadar kesilmediğini ve tekrar operasyon geçirmesi gerektiğini söyledi bu doktorlardan bir tanesi de aynı hastanede görev yapan üroji doktoruydu ve oğlum başka bir üroloji doktoru tarafından tekrar sünnet olacak 7.000.00 tl ödeme yaptık Nev Esentepe hastanesine parasınıda geçtim oğlum tekrardan acı çekecek tekrar bir iyileşme süresi yaşıyacak ve tekrar ödeme yapacağız hiç kimseye tavsiye etmiyorum kesinlikle ve gerekli yerlere de şikayette bulunduk yorumlara bakıp iyi diye aldanmayın lütfen',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Büşra Erdoğan',
+                        'rating' => 5,
+                        'body' => 'Oğlumun sünnet ve fıtık ameliyatını gerçekleştirdi. Ameliyat öncesi ve sonrası sakin mizacıyla, açıklayıcı cümleleriyle bizi çok rahatlattı. Hasta psikolojisinden çok iyi anlayan, eli çabuk, İşinin ehli bir hekim. Oğlumu size emanet ettiğim için memnunum. Istanbuldan selamlar...',
+                        'relative_time_text' => '2 yıl önce',
+                    ],
+                    [
+                        'author_name' => 'Ceylan Özdoğan-Özdeğer',
+                        'rating' => 1,
+                        'body' => 'Çok ilgisiz ve çocuk sever değil bence yanlış branş seçimi yapmış zaten bütün randevuları boştu sebebini muayeneden sonra anladık...',
+                        'relative_time_text' => '2 yıl önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #8 (Nilufer test taramasi)
+            [
+                'title' => 'Prof. Dr.',
+                'name' => 'Arif Nuri Gürpınar',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Ceylan Nirvana İş Merkezi, Konak, Merkez Sk. No:1, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0552 118 17 25',
+                'rating' => 4.6,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/Prof.+Dr.+Arif+Nuri+G%C3%BCrp%C4%B1nar,+%C3%87ocuk+Cerrahisi/data=!4m7!3m6!1s0x14ca11c81d1df34f:0x258b5138e997cd3f!8m2!3d40.2109362!4d28.9922088!16s%2Fg%2F11q88ywwwb!19sChIJT_MdHcgRyhQRP82X6ThRiyU?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'nuray esen',
+                        'rating' => 5,
+                        'body' => 'Arif hoca, çok başarılı bir cerrahtır. Şiddetle tavsiye edilir.',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Başak Toprak Hiçdurmaz',
+                        'rating' => 5,
+                        'body' => 'Çocuklarla iletişimi çok güçlü, aileleri detaylı şekilde bilgilendiren ve güven veren bir hekim. Mesleki yaklaşımı ve ilgisiyle gönül rahatlığıyla tavsiye edilebilecek bir çocuk cerrahı.',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                    [
+                        'author_name' => 'TURAN TERZİ',
+                        'rating' => 5,
+                        'body' => 'Üç çocuk babası olarak çocuklarımın sağlıklı bir hayat yaşamasında katkılarından dolayı Prof. Dr.Arif Gürpınar hocaya teşekkür ederim.',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Banu Baykal',
+                        'rating' => 5,
+                        'body' => 'Yeğenimin nefes almasında problem vardı kalp problemi diye düşündük ama sonradan fark edildi ki göğsünde problem varmış.Bu problemi öğrenince kunduracı göğsünde tek olan Arif hocayı araştırdık. Ve ameliyatımız çok başarılı geçti.Allah arif hocadan razı olsun.Bütün sıkıntılarımız sona erdi. Çok şükür sağlığına kavuştu. Arif hocaya ne kadar teşekkür etsek azdır.',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Bülent Bohçacı',
+                        'rating' => 5,
+                        'body' => 'En zor ameliyatlardan biri olan kunduraci göğüs ameliyatını sorunsuz başarı ile yapan Prof.Dr.Arif Gurpinar\'dan  Allah Razi Olsun.',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #9 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dr.',
+                'name' => 'Oğuzhan Durmaz',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Osmangazi',
+                'address' => 'Bağlarbaşı, 1. Sedir Sk. Mediloft 2 no D:5 daire 3, 16160 Osmangazi̇/Bursa',
+                'clinic_name' => null,
+                'phone' => '0530 892 83 43',
+                'rating' => 5.0,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Uzm.+Dr.+O%C4%9Fuzhan+Durmaz+%C3%87ocuk+Nefrolojisi/data=!4m7!3m6!1s0x14ca14466cd81b87:0xd964eda0ccdc7ea8!8m2!3d40.2309918!4d28.9863172!16s%2Fg%2F11f15mnm0x!19sChIJhxvYbEYUyhQRqH7czKDtZNk?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Dilara Cansever',
+                        'rating' => 5,
+                        'body' => 'Oğuzhan bey ile kızım 2 aylıkken tanıştık bebeğime yaklaşımı güler yüzü ve bizim aklımıza takılan tüm konuları çok net şekilde açıklayıp içimizi rahatlattığı için minnettarız ilgisi ve bilgisi ile gözünüz kapalı güvenebileceğiniz bir doktor...Her sıkıntımızda telefondan bile dakikalar içinde yardımcı olarak bizi aydınlattı her muayene de hiçbir detayı atlamadan tek tek anlattı iyi ki yollarımız kesişmiş 🌸',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'tayfun ural',
+                        'rating' => 5,
+                        'body' => 'Oğuzhan Bey\'in çok eski üniversiteler hastasıyız. Kızımızı lupus tanısı ile yıllarca takip etti kızım şu an bir erişkin ama 20 yıl geçmiş olsa da hala Oğuzhan Bey\'in ilgisi Güler yüzünü her yerde anlatır hem insan olarak hem de doktor olarak mükemmel birisi Her şey için çok teşekkür ederiz',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Sedat Ayaz',
+                        'rating' => 5,
+                        'body' => 'Tekrarlayan idrar yolu enfeksiyonumuz ve tansiyon sorunumuz vardı gitmediğimiz doktor kalmadı en son Oğuzhan  hocamin uzman yaklasimi sayesinde  sorunun çözümüne ulaştik ve enfeksiyon sorunu artik yok herşey yolunda.  Ayrica her an  kendisine ulasabildigimiz icin cok minettariz. 🙏🏻 …',
+                        'relative_time_text' => '4 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Halit Fatih',
+                        'rating' => 5,
+                        'body' => 'Çocuğumuz günlerdir karın ağrısı ve ateş nedeniyle çok huzursuzdu. Doktorumuzun detaylı ve muhteşem ilgisi ve yönlendirmesiyle ağrılar ateşler son buldu.  Böyle ilgi ve güven veren doktor ile denk gelmek çok büyük şans... Tesekkurler',
+                        'relative_time_text' => '4 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #10 (Nilufer test taramasi)
+            [
+                'title' => 'Prof. Dr.',
+                'name' => 'Ergün Çil',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Osmangazi',
+                'address' => 'Bağlarbaşı, Nişan Sok No:3 Daire:5, 16160 Osmangazi̇/Bursa',
+                'clinic_name' => null,
+                'phone' => '0533 748 31 65',
+                'rating' => 3.8,
+                'review_count' => 3,
+                'google_maps_url' => 'https://www.google.com/maps/place/Prof.Dr.Erg%C3%BCn+%C3%87%C4%B0L/data=!4m7!3m6!1s0x14ca14468aa1936f:0x95ca2ba9ca17445b!8m2!3d40.2343016!4d28.9801958!16s%2Fg%2F11clzg_10m!19sChIJb5OhikYUyhQRW0QXyqkrypU?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Simge',
+                        'rating' => 1,
+                        'body' => 'Çok egoist birisi hiç ama hiç tavsiye etmiyorum gitmeyin. Çok daha iyi doktorlarımız var onlara gidin',
+                        'relative_time_text' => '3 ay önce',
+                    ],
+                    [
+                        'author_name' => 'fahri umul',
+                        'rating' => 1,
+                        'body' => 'Randevu icin ugrasirsiniz alırsınız gidersiniz randevu saati gecebilir evet normal seyler bunlar ama muayene icin alir telefonla konusur size cocuk gibi ters ters konusup azarlar cocuga el surmez utanmadan isterseniz gidebilirsiniz der ticarete dökülmüş',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Burak Soylu',
+                        'rating' => 5,
+                        'body' => 'Doktor olarak çocuklara yaklaşımı inanılmaz derecede iyi. Bizlere karşı da son derece nazik ve açıklayıcıydı. Muayanesi ise tamamen çocuklara yönelik dizayn edilmiş. Ters televizyonu ve bilgilendirme stickerları ile Dünya Standartlarının üzerinde. Çocuğumuza verdiğiniz hediyeler için ise teşekkür ederiz',
+                        'relative_time_text' => null,
+                    ],
+                ],
+            ],
+            // kaynak satir #14 (Nilufer test taramasi)
+            [
+                'title' => 'Prof. Dr.',
+                'name' => 'Çiğdem Elbek Çubukçu',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Gökkuşağı Evleri, Ertuğrul, Savcı Doğan Öz Cd. No:2, 16120 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0542 556 41 37',
+                'rating' => 4.4,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/%C3%87ocuk+Di%C5%9F+Hekimi+Prof.Dr.+%C3%87i%C4%9Fdem+ELBEK+%C3%87UBUK%C3%87U+%C3%96zl%C3%BCce-Bursa/data=!4m7!3m6!1s0x14ca1166f7ad5cc3:0x95cdc49b151b43eb!8m2!3d40.2158623!4d28.925562!16s%2Fg%2F1ygvstgps!19sChIJw1yt92YRyhQR60MbFZvEzZU?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'merve',
+                        'rating' => 5,
+                        'body' => 'Bedava peynir fare kapanında olur sözünü yaşadık. Çocuğumuzun süt dişleri için birkaç yerde ücretsiz muayene sonrası zirkon kron önerildi. Hocamız ise detaylı muayene ederek gereksiz bir işlemden kaçınmamızı sağladı. Ücretsiz olmasından ziyade DOĞRU TEŞHİS DENEYİM VE DÜRÜSTLÜĞE önem verin. Sonuçta söz konusu çocuğumuzdu. Kendisine teşekkür ederiz.',
+                        'relative_time_text' => '4 gün önce',
+                    ],
+                    [
+                        'author_name' => 'Yılmaz Vural',
+                        'rating' => 5,
+                        'body' => 'Çiğdem hocamız gerçekten işinde çok iyi bir hekim. Çocuklara yaklaşımı, iletişimi, tedavi sürecindeki sıcak ilgisiyle birlikte gayet memnun kalarak ayrıldık.',
+                        'relative_time_text' => '4 gün önce',
+                    ],
+                    [
+                        'author_name' => 'Alper yılmaz',
+                        'rating' => 5,
+                        'body' => 'Yeğenimin diş tedavisi sürecinde gösterdiğiniz ilgi, sabır ve güler yüzünüz için çok teşekkür ederiz. Özellikle çocukla iletişiminiz ve güven veren yaklaşımınız gerçekten çok değerliydi.Gönül rahatlığıyla tavsiye ederiz. Emekleriniz için tekrar teşekkür ederiz. 🌸 …',
+                        'relative_time_text' => '4 gün önce',
+                    ],
+                    [
+                        'author_name' => 'Halis çelik',
+                        'rating' => 5,
+                        'body' => 'İki çocuğumuzun da büyüme yolculuğunda, sağlıklı ve güzel gülüşlere kavuşmalarında emeğiniz çok büyük. Her zaman gösterdiğiniz ilgi, sabır, güler yüz ve özveriniz için size gönülden teşekkür ederiz.
+
+Çocuklarımızın diş sağlığına verdiğiniz önem ve onları sevgiyle takip etmeniz, bizim için her zaman çok kıymetli oldu. İyi ki yollarımız kesişmiş, iyi ki çocuklarımızın doktoru olmuşsunuz.
+
+Emekleriniz ve güzel dokunuşlarınız için sonsuz teşekkürler. 🙏🦷❤️',
+                        'relative_time_text' => '4 gün önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #16 (Nilufer test taramasi)
+            [
+                'title' => 'Dr.',
+                'name' => 'Bengü Kayatürk',
+                'branch' => 'Çocuk Psikiyatrisi',
+                'branch_label' => 'Çocuk Gelişim Uzmanı',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Altınşehir, Güleç Teras Residence İçi Yolu No:16120, 16310 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0541 944 39 99',
+                'rating' => 4.5,
+                'review_count' => 0,
+                'google_maps_url' => 'https://www.google.com/maps/place/Dr.Beng%C3%BC+Kayat%C3%BCrk+%7C+Bursa+%C3%87ocuk+ve+Ergen+Psikiyatri+Uzman%C4%B1/data=!4m7!3m6!1s0x14ca142a01bed1cd:0xf690129f433e596a!8m2!3d40.2268742!4d28.9156833!16s%2Fg%2F11gdqxdn84!19sChIJzdG-ASoUyhQRalk-Q58SkPY?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                ],
+            ],
+            // kaynak satir #21 (Nilufer test taramasi)
+            [
+                'title' => 'Uzman Çocuk Gelişimci',
+                'name' => 'Fatma Betül Yörü',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => null,
+                'clinic_name' => null,
+                'phone' => '0552 936 96 83',
+                'rating' => 5.0,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/Uzman+%C3%87ocuk+Geli%C5%9Fimci+Fatma+Bet%C3%BCl+Y%C3%B6r%C3%BC/data=!4m7!3m6!1s0x14ca155aeb9094df:0x1eb5fab8f93a28e2!8m2!3d40.221678!4d29.0322895!16s%2Fg%2F11vbr3j7hv!19sChIJ35SQ61oVyhQR4ig6-bj6tR4?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Nurdan Bulan Kaya',
+                        'rating' => 5,
+                        'body' => 'Kendisi harika bir eğitmen, iyi ki yollarımız kesişti ve oğlumun Betül ablası oldu. Floortime tekniğini harika bir şekilde uygulayarak oğlumun hem dikkat süresini arttırdı hem de kelime çıktılarını arttırdı. Kendisi alanında çok başarılı, hem kabiliyetli hem de çocuklarla arası harika değerli bir insan. Kendisini bulduğumuz için oğlum adına çok şanslı hissediyorum. Hem eğitsel değerlendirmeleriyle hem de Floortime eğitimleriyle oğlumun büyüme serüveninde bize asla unutulmayacak muhteşem anılar bıraktı. Umarım her güzel çocuk Betül hanım gibi harika eğitmenlerle karşılaşır. ❣️',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Elif Korkmaz',
+                        'rating' => 5,
+                        'body' => '27 aylık oğlum için gittik daha öncesinde devlette gitmiştik yaşadığımız o psikolojik süreci Betül hanım sayesinde içimiz rahat bi şekilde ayrıldık yanından destekleri tavsiyeleri için tekrar teşekkür ederim kendisine',
+                        'relative_time_text' => '4 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Betül MUTLU',
+                        'rating' => 5,
+                        'body' => '13 aylık kızım için bugün ilk görüşmemizi gerçekleştirdik ve gerçekten çok memnun kaldık. Yaklaşımı, ilgisi ve çocuğumuza olan iletişimi bizi çok rahatlattı. Sürecin profesyonel ama aynı zamanda sıcak bir şekilde ilerlemesi bizim için çok kıymetliydi. İyi ki yollarımız kesişmiş, gönül rahatlığıyla tavsiye ederim.',
+                        'relative_time_text' => '7 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Aise Ceyhan',
+                        'rating' => 5,
+                        'body' => 'fatma betül hanıma 4 yaşındaki kızım için gittim işini hakkıyla yapan müthiş biri diyebilirim çocukla iletişimi o kadar güzel ve profesyonelki çocuklar çekinmeden kendilerini ona bırakıyorlar seans süresi bir saat olmasına rağmen bizimle fazladan vakit geçirdi çocuğu gözlemlerken saat dolucak endişesi olmadan yavaş yavaş ve doğru gözlemlemek amaçlı titiz davrandı bizim hayatımıza çok güzel bi rehber oldu özel olarak gittiğim seanslardan işini hakkıyla yapıp ödediğim ücretin sonuna kadar helal ettiğim tek yer diyebilirim çok teşekkür ediyorum.elinize emeğinize sağlık...',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Ürküş Coşkun',
+                        'rating' => 5,
+                        'body' => 'Betül hanıma 27 Aylık oğlumuzun rutin gelişimini değerlendirmesi için gittik çok keyifli bir seans geçirdik,çok memnun kaldık.Pozitifliği,güler yüzü,tavsiyeleri için çok teşekkür ederiz.',
+                        'relative_time_text' => null,
+                    ],
+                ],
+            ],
+            // kaynak satir #22 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dr.',
+                'name' => 'Ömer Kocael',
+                'branch' => 'Çocuk Psikiyatrisi',
+                'branch_label' => 'Çocuk Gelişim Uzmanı',
+                'city_id' => 16,
+                'district' => 'Osmangazi',
+                'address' => 'Yenikaraman, Sanayi Cd. Umi Plaza No:150 kat:3 daire:24, 16160 Osmangazi̇/Bursa',
+                'clinic_name' => null,
+                'phone' => '0551 170 38 48',
+                'rating' => 4.9,
+                'review_count' => 3,
+                'google_maps_url' => 'https://www.google.com/maps/place/Uzm.+Dr.+%C3%96mer+KOCAEL+%2F+Bursa+%C3%87ocuk+ve+Ergen+Psikiyatrisi/data=!4m7!3m6!1s0x14ca1449db482531:0x92572535a0852402!8m2!3d40.2260443!4d28.9916135!16s%2Fg%2F11g8f_wz_c!19sChIJMSVI20kUyhQRAiSFoDUlV5I?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Hafize Sen',
+                        'rating' => 5,
+                        'body' => 'bir yıl önce düzenlendi',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Ece YG',
+                        'rating' => 5,
+                        'body' => 'Kızımı neredeyse 6 aydır tedavi görmekte. Aldığım geri dönüşler kızımın değişimi çok hızlı oldu. Dheb olarak tanı almıştık. Doktorumuzun yaklaşımı ve asistanı Hafize hanımın tutumu bizleri çok mutlu etti. Her sorunumuza harika çözümlerle geldiler çok memnunuz..',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'crn Crn',
+                        'rating' => 5,
+                        'body' => 'Ömer hoca iyi ki varsınız iyi ki sizi tanıdık kızıma ve bana zorlu süreçlerimizde kısa sürede en iyi şekilde destek verip toparladınız',
+                        'relative_time_text' => null,
+                    ],
+                ],
+            ],
+            // kaynak satir #23 (Nilufer test taramasi)
+            [
+                'title' => 'Dr.',
+                'name' => 'Ergun Nacarküçük',
+                'branch' => 'Çocuk Nörolojisi',
+                'branch_label' => 'Çocuk Beyin ve Sinir Hastalıkları',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'İhsaniye, Leylak Sk. No:5 B Plaza 224 B Blok K8, D:40, 16200 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0531 817 50 32',
+                'rating' => 4.8,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/%C3%87ocuk+N%C3%B6roloji+Uzman%C4%B1+Dr.+Ergun+Nacark%C3%BC%C3%A7%C3%BCk/data=!4m7!3m6!1s0x14ca157d8fe46ca7:0x4932dc0bb8c28579!8m2!3d40.2143003!4d28.9777798!16s%2Fg%2F11gnrvpywf!19sChIJp2zkj30VyhQReYXCuAvcMkk?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'nhhdim gibdim',
+                        'rating' => 5,
+                        'body' => 'Oğlum 5 yıl önce yani 7 yaşında, uykuya dalarken nöbet geçirmişti, Ergün Beyle  o zaman tanıştık ve mükemmel bir doktor olduğunu gördük.5 yıl süren tedavimizde her zaman yanımızdaydı.Her aradığımızda ulaşılabilir olması,iletişimi,sabrı,bilgisi,kibarlığı, doğru yönlendirmesi ve verdiği güvenle gözüm kapalı tavsiye edeceğim nadir doktorlar arasında.Yanında çalışan asistanlar da aynı şekilde hepsi çok çok ilgili çok çok sevecen.Burdan doktorumuz Ergün Bey’e  ve çalışanlarına çok teşekkür ediyorum iyi ki varsınız.',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Cenk Sürel',
+                        'rating' => 5,
+                        'body' => 'Oğlumuz Ali Kağan Sürel’in yaklaşık 5 yıl süren epilepsi tedavi sürecinde bizimle yakından ilgilenen Çocuk Nöroloji Uzmanı Dr. Ergun Nacarküçük’e çok teşekkür ederiz.
+
+Bu 5 yıllık süreç bizim için zaman zaman zor ve endişeli geçti. Ancak doktorumuzun ilgisi, sabrı ve bize her zaman güven vermesi sayesinde bu süreci birlikte atlattık. Ali Kağan’ın tedavisi çok şükür başarıyla sonuçlandı ve bugün geldiğimiz noktada kendimizi çok şanslı hissediyoruz.
+
+Her muayenede bizi sabırla dinlemesi, sorularımızı anlayacağımız şekilde cevaplaması ve Ali Kağan’a yaklaşımı bizim için çok kıymetliydi.
+
+5 yıl boyunca gösterdiği emek ve ilgisi için kendisine gönülden teşekkür ediyoruz. İyi ki yollarımız kesişmiş. Gönül rahatlığıyla tavsiye edebileceğimiz çok değerli bir doktor.',
+                        'relative_time_text' => '4 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Muhlis Boyacioglu',
+                        'rating' => 5,
+                        'body' => 'Oğlumuzun 2019 yılında başlayan epilepsi teşhis ve tedavi süreciyle ilgili olarak yollarımızın kesiştiği Doktor Ergun bey son derece işinin ehli , başarılı,  güleryüzlü, titiz ve sabırlı bir çocuk nöroloğudur . İhtiyaç duyan herkese gönül rahatlığıyla tavsiye ederiz. Ailecek kendine ve muayenehane ekibine sonsuz teşekkür ederiz.  Sağolun varolun...',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Işıl Acar',
+                        'rating' => 5,
+                        'body' => 'Özel gereksinimi olan oğlumuza epilepsi teşhisi kondu. İlk 2 sene boyunca gittiğimiz doktorlardan memnun kalmamıştık çünkü nöbetlerimiz azalacağına artmıştı. Sonrasında bir arkadaşımızın önerisi üzerine Ergun Bey ile yollarımız kesişti… onunla bu yola başladığımızdan beri nöbetlerimiz azaldı ve çok şükür ki 3 senedir nöbetlerimiz hiç yok. Önce Ergun Bey’e bizi bu hastalıktan kurtardığı için sonrasında güler yüzleriyle bizi karşılayan çalışanlarına teşekkür ederiz.',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Sevil Öztürk',
+                        'rating' => 5,
+                        'body' => '10 aylık bebeğimin titreme hareketlerinden şüphelenip önce devlet hastanesine götürmüştük. Hem ikilemde kalınıp şüpheyle ve kesin konuşulmaması hem de EEG için uzun süre sonraya randevu verilmesi nedeniyle Ergun Bey’e gitmeye karar verdik. İyi ki de öyle yapmışız. Her şeyi biz daha sormadan kesin ve net bir şekilde açıkladı. İçimizi inanılmaz rahatlattı. Tecrübe ve bilgisini konuşturdu diyebilirim. İlgi ve alaka için çok teşekkür ederim',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #24 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dt.',
+                'name' => 'Çisil Saba',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Ahmet Yesevi Mahallesi Gürvardar Sokak Panula Balat Sitesi, E blok, 16020 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0543 841 44 05',
+                'rating' => 4.8,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/%C3%87ocuk+Di%C5%9F+Hekimi+%28Pedodontist%29+-+Uzm.+Dt.+%C3%87isil+SABA/data=!4m7!3m6!1s0x14ca13a6c50fed45:0x8f9df78977d1b97!8m2!3d40.2736229!4d28.9332593!16s%2Fg%2F11s5gxc4gq!19sChIJRe0PxaYTyhQRlxt9l3jf-Qg?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'tülay',
+                        'rating' => 5,
+                        'body' => 'Harika deneyim ❤️
+
+Çocuk diş hekimimizle yaşadığımız deneyim gerçekten çok güzeldi. İletişimi, sabrı ve çocuklara yaklaşımı harika. Normalde çocuğum en ufak bir şeyde bile ağlayıp çok zor sakinleşir. Doktorumuz onu öyle güzel sakinleştirdi ve güven verdi ki, yapacağı her şeyi tek tek anlatarak hem bizi hem de çocuğumuzu detaylı bir şekilde bilgilendirdi.
+
+Sonrasında çocuğumuzu ikna ederek diş dolgusunu hiç sorun yaşamadan yaptı. Bir anne olarak çocuğumun korkmadan ve güven içinde tedavi olduğunu görmek benim için çok kıymetliydi.
+
+İlgisi, sabrı ve güzel yaklaşımı için çok teşekkür ederiz. İki çocuğumu da gözüm kapalı emanet edebileceğim, gönül rahatlığıyla tavsiye ettiğim bir hekim. ❤️🌸 İyi ki sizi tanımışız.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Seda Karabasak',
+                        'rating' => 5,
+                        'body' => 'Çisil Hanım  cocuklara öyle güzel yaklasıyor yapılacak ıslemı oyle güzel anlatıyor kı cocuklar gercekten korkusuzca gelıyorlar..gıleryuzunuz  ve tatlı sohbetınız ıle cok sevıyoruz sızı 💐 ıyı kı varsınız ❤️ …',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Nihal Yilmaz',
+                        'rating' => 5,
+                        'body' => 'Çisil hanım ve asistanı çok ilgili alakalı naif. Kızımın çürüğü ilerlemiş kalıcı dişlerini bile büyük sabır ve özveriyle çekilmekten kurtardılar. Kendilerine teşekkür ederiz ❤️🥰. Gönül rahatlığıyla tavsiye ediyoruz.. …',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Melis Özdemir Çallı',
+                        'rating' => 5,
+                        'body' => 'Kızımın hayatındaki ilk diş hekimi deneyimiydi ve 5 yaşındaki bir çocuk için gerçekten çok konforlu geçti. İlk andan itibaren hem doktor hanım hem de ekibi son derece ilgili, güler yüzlü ve sevgi doluydu. Çocuğum kendini çok rahat hissetti.
+
+Dişinde küçük bir çürük tespit edildi. Ben endişelenip “Hemen yapalım mı?” diye sorduğumda, beni acele ettirmek yerine durumunu detaylıca anlatarak en doğru şekilde yönlendirdiler. Bu yaklaşım bana büyük güven verdi.
+
+Klinikte çok hoş bir detay da vardı; tedaviye gelen her küçük hastanın parmak iziyle oluşturulan rengârenk bir ağaç hazırlanmış. Kızımın da o ağaçta kendi izini bırakması bu ilk deneyimi onun için çok daha özel hale getirdi.
+
+Sadece doktor hanım değil, tüm ekip işini sevgiyle yapan, çocuklarla iletişimi çok güçlü insanlar. Kendileriyle tanıştığımız için çok mutluyuz ve diş kontrollerimizde bundan sonra da gönül rahatlığıyla kendileriyle devam edeceğiz. Çok teşekkür ederiz.',
+                        'relative_time_text' => '3 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #25 (Nilufer test taramasi)
+            [
+                'title' => 'Dr.',
+                'name' => 'Meltem Uzun',
+                'branch' => 'Çocuk Nörolojisi',
+                'branch_label' => 'Çocuk Beyin ve Sinir Hastalıkları',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Cumhuriyet Mah. Yağmur Sk. No:14 A Blok K:2 D:3 Fatih Sultan Mehmet Bulvarı Bulvar 224\' ün Karşısı üzeri, Cumhuriyet, Fatih Sultan Mehmet Blv. No:5, 16130 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0543 412 90 94',
+                'rating' => 4.5,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Dr.+Meltem+UZUN+%7C+%C3%87ocuk+N%C3%B6roloji+Uzman%C4%B1/data=!4m7!3m6!1s0x14ca1421c8a69447:0xd35d891e807c32fc!8m2!3d40.219654!4d28.9774208!16s%2Fg%2F11cls7xhp2!19sChIJR5SmyCEUyhQR_DJ8gB6JXdM?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Ebru T.P.',
+                        'rating' => 5,
+                        'body' => 'Meltem hanım hastasının şikayetlerini detaylıca dinleyen, bütüncül yaklaşan, güncel tedavi yaklaşımları olan bir hekimdir.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Aslı Aksoy',
+                        'rating' => 5,
+                        'body' => 'Bir anne olarak, bir hekimin sadece tıbbi bilgisine değil, çocuğuyla kurduğu iletişime de çok önem veriyorum. Doktorumuzun hekimliğinin yanı sıra oğlumla kurduğu güzel iletişim beni en çok etkileyen yönlerinden biri oldu. Oğlumun kendisini rahat ve güvende hissetmesi, onu sabırla dinlemesi ve yaklaşımı bizim için çok kıymetli.
+
+İlgisi, anlayışı ve güven veren yaklaşımı için kendisine gönülden teşekkür ediyorum. İyi ki yollarımız kesişmiş. 🌸',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'صفا مجيد',
+                        'rating' => 5,
+                        'body' => 'Hastaya ve ailesine açıklama yapmaları için yeterli zaman tanıyan, en küçük ayrıntılara bile dikkat eden ve tüm olasılıkları değerlendiren mükemmel bir doktor. Türkiye\'de yaşamıyor olmama rağmen, her zaman benimle iletişim halindeydi ve oğlumun durumunu takip etti. Tanıdığım en insancıl doktor.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Sibel Almis Guduk',
+                        'rating' => 5,
+                        'body' => 'Meltem hocamla çocuğumun tedavisinde tanıştik alanında bilgili sabırlı güler güzlü bir doktor güven veriyor çocuğumun tedavi süresince bizimle çok güzel ilgilendi hocama ne kadar teşekkür etsem azdır.',
+                        'relative_time_text' => null,
+                    ],
+                ],
+            ],
+            // kaynak satir #26 (Nilufer test taramasi)
+            [
+                'title' => 'Doç. Dr.',
+                'name' => 'Arzu Ekici',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Konak mah. 1.Badem Sok. No :26 B Blok Kat:4 Daire:49, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0505 670 49 53',
+                'rating' => 5.0,
+                'review_count' => 3,
+                'google_maps_url' => 'https://www.google.com/maps/place/Do%C3%A7.+Dr.+Arzu+Ekici/data=!4m7!3m6!1s0x14ca3fbf6bc91485:0x399fcc687b8f0bf8!8m2!3d40.2112889!4d28.9869427!16s%2Fg%2F11jz89x61t!19sChIJhRTJa78_yhQR-AuPe2jMnzk?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'selcuk n',
+                        'rating' => 5,
+                        'body' => 'Biz hocamla tanışmadan önce Konya’dan   İstanbul Ankara Antalya bir çok ile gittik bir çok çocuk nöroloji doktoruna muayene olduk ama yaklaşık 1,5 yıldır Hocam takibindeyiz çok şükür güzel gelişmeler oluyor',
+                        'relative_time_text' => '3 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Hüseyin AYDOĞAN',
+                        'rating' => 5,
+                        'body' => 'Arzu hocamızla 2019 yılında tanıştık. Şehir dışından gelip kendisine muayene olduk. Doğumdan hemen sonra gelişen bi anomali sonucu kendisine 1 yıl boyunca tedavi olduk. Kendisi gördüğüm en naif en bilgili en sevecen doktordur. Kendisine sonsuz teşekkür ederiz 🙏 …',
+                        'relative_time_text' => '5 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Sündüs Kamalı',
+                        'rating' => 5,
+                        'body' => 'Arzu hocamla bugün tanıştık. Kendisi şimdiye kadar gördüğüm en nazik , ilgili ,şefkatli işinin ehli bir doktordu.Aile hissi veren bir ortamdaydık.Bizi kendine hayran bıraktı. Gönülden tavsiye ederim herkese.',
+                        'relative_time_text' => '10 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #27 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dr.',
+                'name' => 'Didem Ayyıldız',
+                'branch' => 'Çocuk Psikiyatrisi',
+                'branch_label' => 'Çocuk Gelişim Uzmanı',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Barış, Sümer Sk. Sinanoğlu Acıbadem iş merkezi no:2 d:15, 16140 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0549 468 28 48',
+                'rating' => 4.7,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Uzm.+Dr.+Didem+Ayy%C4%B1ld%C4%B1z,+%C3%87ocuk+ve+Ergen+Psikiyatrisi/data=!4m7!3m6!1s0x14ca157e716d61e9:0x1bf98ab56a5ee38!8m2!3d40.2137414!4d28.975773!16s%2Fg%2F11ld3m8x0g!19sChIJ6WFtcX4VyhQROO6lVquYvwE?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'ELİF',
+                        'rating' => 5,
+                        'body' => 'Sevgili doktorumuz hayatımıza girdiği günden itibaren oğlumda bende çok mutluyuz. Bizi dinlemesi anlamaya çalışması verdiği tavsiyeler bize yol gösterdi. İyi ki yollarımız kesişti iyi ki tanıdık. Daha önce yaşadığımız olumsuz deneyimlerden sonra bir şans olarak karşımıza çıktı.',
+                        'relative_time_text' => '5 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Emine Aydın',
+                        'rating' => 5,
+                        'body' => '5 ay önce oğlumun halsizlik yorgun sınav kaygısı okula gitmek istememesi bazı konularda endişeli yaklaşımı şikayetiyle çaresiz bir şekilde doktorlar takviminde doktor ararken Didem hanımla yollarımız kesişti ilk görüşmemizde önce oğlumu sonra bizimle konuşarak neler yapabileceğimizi bize bilgi vererek endişelerimizi azalttı her ay görüşmelere devam ettik günden güne iyileşme gözlemledik son 2 aydır eski enerjisine dönmüş hem sosyal olarak hem okul hayatı olarak iyileşme gözlemledik bugün de kontrolümüze gittiğimizde olumlu gelişmeleri kendisine ilettik biz mutlu Didem hanım çok daha mutlu oldu kendisinin yaklaşımı çok olumlu etkiledi bizi oğlumla hiç düşünmeden ziyaret edebilirsiniz',
+                        'relative_time_text' => '5 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Yaşar Gür',
+                        'rating' => 5,
+                        'body' => 'Didem hanımı İnternet aracılığıyla buldum. Daha ilk gorusmedeki samimiyeti, güler yüzü ve kızıma karşı olan davranışlarından çok memnun kaldık. Kızım da çok memnun. İnşallah daha da iyi olur herşey. Tavsiye ederim.',
+                        'relative_time_text' => '5 ay önce',
+                    ],
+                    [
+                        'author_name' => 'gökçen kiriş',
+                        'rating' => 5,
+                        'body' => 'Didem hocama kızım için gittik. İşini özenle yapan, ilgili, kibar birisi. Bizi detaylı bir şekilde dinledi ve gerekli gördüğü testi yapti. Kızım için kaygilandiğim durumun olmadigini anladim. Bizi karşilayan ve ilgilenen sekreter de oldukça sicak kanlı ve işini severek yapan birisiydi. Şu an bizim için takip edilecek bir durum yok ama çevremde isteyen olursa muhakkak önereceğim kişidir Didem Ayyildiz.',
+                        'relative_time_text' => '6 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #28 (Nilufer test taramasi)
+            [
+                'title' => 'Çocuk Diş Hekimi',
+                'name' => 'Tahsin Demir',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'İhsaniye, Fatih Sultan Mehmet (FSM) Bulvarı, Plaza 224. İhsaniye Mah. Leylak (110) Sok. No:5, B Blok Kat:8 Daire:36, 16200 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0555 100 55 95',
+                'rating' => 4.0,
+                'review_count' => 2,
+                'google_maps_url' => 'https://www.google.com/maps/place/%C3%87ocuk+Di%C5%9F+Hekimi+TAHS%C4%B0N+DEM%C4%B0R/data=!4m7!3m6!1s0x14ca3e00774e6bc3:0xaf4394fdbd38eee1!8m2!3d40.2141192!4d28.9777948!16s%2Fg%2F1thjr313!19sChIJw2tOdwA-yhQR4e44vf2UQ68?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Aysel ŞEN',
+                        'rating' => 5,
+                        'body' => 'Bursa da daha iyisini tanımıyorum. Oğlumun dişlerini ikna edip yapabilen tek doktor. Çok teşekkür ederiz 🙏 …',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Muhammed Burak Güney',
+                        'rating' => 1,
+                        'body' => 'Hiç beğenmedim çok yavaş bir işletme',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #29 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dr.',
+                'name' => 'Hülya Poyraz Efe',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Lotus Office, Konak, Badem Sk No:1 A Blok Kat:4 No:56, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0554 870 80 81',
+                'rating' => 5.0,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/Uzm.+Dr.+H%C3%BClya+Poyraz+Efe,+Bursa+%C3%87ocuk+Alerji+Uzman%C4%B1/data=!4m7!3m6!1s0x14ca154ca44ba833:0x556bac1cfa9f183d!8m2!3d40.2113334!4d28.9869384!16s%2Fg%2F11xm6y8fd6!19sChIJM6hLpEwVyhQRPRif-hysa1U?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'İsmail dal',
+                        'rating' => 5,
+                        'body' => 'Hülya hanıma doktorumun tavsiyesi üzerine gittim. Çocuğumun yoğun alerjik problemleri vardı. Yaptığı testler ve verdiği tedavi ile hızlıca şikayetlerimiz geriledi. Güler yüzünden ve çocuğumla iletişiminden çok memnun kaldım. Herkese tavsiyemdir.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Gözde Turan',
+                        'rating' => 5,
+                        'body' => 'Bebeğimde doğduğundan ufak tefek kızarıklıklar vardı. Birçok doktora danıştım ama bir etkisi olmadı. Eşimin mesleği nedeniyle görev yerine dönmek üzere olduğumuz gün eklem yerlerinden yaralar daha da arttı ve Hülya hanım ile tanıştık şükürler olsun. İlmi ile bebeğimin alerji olduğu besinleri tespit etti ve tedavi için ilaçlar önerdi. 3.5 Ay ne yaptıysam geçmeyen deri rahatsızlığı ertesi gün geçti. Tedavi sonrası ilgilenmesi, mesleğindeki bilgisi her şeyiyle harika bir hekim. Kliniği de oldukça güler yüzlü. Her bakımdan çok memnun kaldık.',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Betül Hatun DİNSEVER',
+                        'rating' => 5,
+                        'body' => 'Bebeğimin uzun süre geçmeyen cilt hassasiyeti ve egzama döküntüleri vardı. Hülya Hanım ilk  muayeneden itibaren durumu detaylı şekilde değerlendirip detaylı açıklamalarıyla bizlere uygun tedaviyi planladı. Beslenme diyeti önerileriyle süreci başlattı. Verdiği tedavi ve öneriler sayesinde kısa sürede belirgin bir iyileşme gördük ve bebeğimiz çok  rahatladı. Süreç halen devam ediyor fakat süreç içerisinde ilgi, açıklayıcı yaklaşımı bizi çok rahatlatıyor. Çocuk alerji ve immünoloji alanında güvenilir bir hekim ailelere gönül rahatlığıyla tavsiye ediyorum.',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Sezercan Kutku',
+                        'rating' => 4,
+                        'body' => 'Bir doktorun sadece çocuğu değil, anne babayı da rahatlatması bence çok önemli. Hülya Hanım muayene boyunca bizi sabırla dinledi ve aklımızdaki tüm soruları tek tek cevapladı. Çocuğumuza yaklaşımı çok sıcak ve ilgiliydi. Biz çok memnun kaldık.',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Beyza Gül',
+                        'rating' => 5,
+                        'body' => 'Çocuğumuzun alerji sürecinde Uzm. Dr. Hülya Poyraz Efe’ye başvurduk. Muayene sırasında her şeyi detaylı şekilde anlatması, sabırla sorularımızı yanıtlaması ve yaklaşımıyla bize gerçekten güven verdi. Çocuğumuza karşı ilgisi ve hassasiyeti için kendisine çok teşekkür ederiz. İyi ki yollarımız kesişmiş. 🌸 …',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #30 (Nilufer test taramasi)
+            [
+                'title' => 'Doç. Dr.',
+                'name' => 'Özlem Özdemir',
+                'branch' => 'Çocuk Nörolojisi',
+                'branch_label' => 'Çocuk Beyin ve Sinir Hastalıkları',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Konak, Lefkoşe Cd. No:22, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0505 106 45 46',
+                'rating' => 4.4,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Bursa+%C3%87ocuk+N%C3%B6roloji+Uzman%C4%B1+%7C+Do%C3%A7.+Dr.+%C3%96zlem+%C3%96zdemir/data=!4m7!3m6!1s0x14ca1449c723444b:0x8f1730e338d1f719!8m2!3d40.2088301!4d28.9922466!16s%2Fg%2F11bydk870g!19sChIJS0Qjx0kUyhQRGffROOMwF48?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Tuğçe Balı',
+                        'rating' => 5,
+                        'body' => 'Daha dün tanıştık özlem hanımla ondan önce 3 hastane 4doktor gördü ama net bı sonuç alamadik çok farklı şeyler soylediler fakat dün özlem hanım o kadar detaylı ve güler yüzle konustuki içim çok rahat iyiki gitmişim size çok teşekkür ediyorum herkese de tavsiye ediyorum',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Cemal Eker',
+                        'rating' => 5,
+                        'body' => 'Özlem hocaya acayip yorumlarda yazılmış tanımayan insanlarda bu yorumlarla bakışı değişmesin.kuzum iki aylıktı daha tanıdığımızda şimdi onbeşine girecek.Özlem hocamı ablamı sevgiyle selamlıyorum',
+                        'relative_time_text' => '3 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Bahar Düşmez',
+                        'rating' => 5,
+                        'body' => 'Mükemmel bir doktor insana güven veriyor,tedavi süreci iletişim de hiç bir sorun yaşamadık 2 yılı aksin süredir güven iverisinde tedavi goruyoruz',
+                        'relative_time_text' => '8 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Ümit Akyol',
+                        'rating' => 5,
+                        'body' => 'Çocuk Nöroloji doktoru olarak Bursa\'da ilk 3 te sayacağım kişidir. Nezaman ihtiyaç duysak iletişim kurdu. Teşekkür ederim kendisine Tuna adına',
+                        'relative_time_text' => '10 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #31 (Nilufer test taramasi)
+            [
+                'title' => 'Prof. Dr.',
+                'name' => 'Mehmet Okan',
+                'branch' => 'Çocuk Nörolojisi',
+                'branch_label' => 'Çocuk Beyin ve Sinir Hastalıkları',
+                'city_id' => 16,
+                'district' => 'Osmangazi',
+                'address' => 'Yılmazer Apt, Kükürtlü, 10. İnci Sk. D:3, 16060 Osmangazi̇/Bursa',
+                'clinic_name' => null,
+                'phone' => '0543 784 71 66',
+                'rating' => 4.0,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/Profes%C3%B6r+Doktor+Mehmet+Okan,+%C3%87ocuk+N%C3%B6rolojisi+Uzman%C4%B1/data=!4m7!3m6!1s0x14ca15e5bbd04173:0x54dc9fe9f6fa44d9!8m2!3d40.2039429!4d29.0303414!16s%2Fg%2F11f54sm9dl!19sChIJc0HQu-UVyhQR2UT69umf3FQ?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Ozkan Koksal',
+                        'rating' => 5,
+                        'body' => 'Hocamız mükemmel insan Allah ondan razı olsun branşında 1 numara gerçekten',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'cemil bektaş',
+                        'rating' => 5,
+                        'body' => 'Oğlum üç yaşında epilepsi hastası oldu Uzun süren bir mücadele yaptık bu süreçte önce Allah sonra Mehmet hocam sayesinde müthiş bir yol kat ettik Allah ömrüne bereket versin böyle insanlara ihtiyaç var',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'İrem Yıldırım',
+                        'rating' => 5,
+                        'body' => 'bebeklik dönemimden 18 yaşına kadar takibinde oldugum canım doktorum🌸onun sayesinde havale geçmişim bitti her şey düzeldi iyi ki tanıdığım doktorum …',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Burak Çağatay',
+                        'rating' => 1,
+                        'body' => 'Hoca çok kaliteli fakat sekreterler işini ahlaklı bir şekilde yapmıyor. Randevu saatinde gelmemize rağmen 2 saat bekletildik sekretere söylememize rağmen umursamıyor allah allah bizde anlamadık diye tepki veriyorlar dalga geçer gibi',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Melek Gungormez',
+                        'rating' => 5,
+                        'body' => 'Mehmet hocayla 9 yaşında tanıştım 11 yaşına kadar benimle ilgilendi onun sayesinde iyileştim şuan 23 yaşındayım ve gerçekten çok muazzam bı adam kendisi',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #32 (Nilufer test taramasi)
+            [
+                'title' => 'Dr.',
+                'name' => 'E. Cengiz Albayrak',
+                'branch' => 'Çocuk Psikiyatrisi',
+                'branch_label' => 'Çocuk Gelişim Uzmanı',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Cumhuriyet Mahallesi Yağmur Sokak No:14 Cadde 224 Sitesi B Blok D:2, 16140 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0533 348 31 55',
+                'rating' => 4.7,
+                'review_count' => 2,
+                'google_maps_url' => 'https://www.google.com/maps/place/Dr.+E.+Cengiz+Albayrak,+%C3%87ocuk-Gen%C3%A7+Psikiyatristi/data=!4m7!3m6!1s0x14ca143d4a39f25f:0xe367cb3bffa88270!8m2!3d40.2198057!4d28.9773331!16s%2Fg%2F11ggvxy_m9!19sChIJX_I5Sj0UyhQRcIKo_zvLZ-M?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'F. Bilge Köse',
+                        'rating' => 5,
+                        'body' => 'Bir doktor olarak hem kendi çocuğumu hem arkadaşlarımın çocuklarımı Cengiz Hocama getirdim. Çocuklardaki tek görüşmedeki dahi değişim muazzam. Hala tüm arkadaşlarıma öneriyorum',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                    [
+                        'author_name' => 'As As',
+                        'rating' => 5,
+                        'body' => 'İşinde uzman tecrübeli harika bir doktor.Sayesinde çok yol katettik.Allah razı olsun.Babacan iyi yürekli çözüm odaklı bir beyefendi.Hiç tereddüt etmeden çocuklarınızı götürebilirsiniz.',
+                        'relative_time_text' => '11 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #35 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dr.',
+                'name' => 'Emre Karaağaç',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Odunluk, Mihraplı Cd. No:6, 16000 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0537 849 00 16',
+                'rating' => 5.0,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/Bursa+%C3%87ocuk+Doktoru+Uzm.+Dr.+Emre+KARAA%C4%9EA%C3%87/data=!4m7!3m6!1s0x14ca1528d28a2e41:0x36757e2f78885304!8m2!3d40.2064079!4d28.9938224!16s%2Fg%2F11ymzp2jrn!19sChIJQS6K0igVyhQRBFOIeC9-dTY?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Emir Çağlar (Reckin)',
+                        'rating' => 5,
+                        'body' => 'Emre hocam 30hafta prematüre bebeğimizin doğum anından itibaren her safhada süreci takip etti 25gün yoğun bakımda bebeğimiz ona emanetti. Doğum sonrası tetkiklerinde duodenum tıkanıklığını teşhis edip bizi işin ehli bir çocuk cerrahına yönlendirdi. Çok şükür doğduktan 24 saat sonra başarılı bir ameliyatla bağırsakları normal sağlığına döndürüldü. Bütün süreçte özveriyle bebeğimizle ilgilenen emre beye teşekkür ediyoruz. Kendisi nadir rastlanacak doktorlardan biridir. Gönül rahatlığıyla gidebilirsiniz.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Can Topcu',
+                        'rating' => 5,
+                        'body' => 'Çok ilgili, bilgili, hastalarına önem veren bir doktor. Başarılarının devamını dilerim',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'İbrahim Aydın',
+                        'rating' => 5,
+                        'body' => 'Herşeyden önce hal durum bilen anlayışlı bir hoca, yoğun bakım da beklemek biz aileler için hiç kolay değil. Kendisi de bu özveride biri olduğu için süreçte bizi yormadı rahatlattı. Hem bilgisi ile hem tutumu ile. Emre hocam ve yoğun bakımda çalışan tüm hemşire ve hocalara gönülden Teşekkür ederiz',
+                        'relative_time_text' => '3 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Kemal Elmas',
+                        'rating' => 5,
+                        'body' => 'Emre Hocam alanında bilgili, detaylara önem veren bir hocadır. Kendisi bebeğimizle ilgili tüm süreçlerde yardımcı olmuştur.  Doğumdan itibaren bize yol göstermiştir. Beslenmesi, uyku düzeni, fiziksel ve zihinsel gelişimini yakından takip etmektedir. Atatürkün beni emanet edin dediği doktorlardandır kendisi.',
+                        'relative_time_text' => '3 ay önce',
+                    ],
+                    [
+                        'author_name' => 'Yasemin Süzer',
+                        'rating' => 5,
+                        'body' => 'Yenidoğan yoğun bakımda 28 hafta doğan prematüre yiyenime çok iyi baktılar. Hiç bir komplikasyonu olmadan bize teslim ettiler. Başta Emre hoca olmak üzere tüm ekibine teşekkür ederiz',
+                        'relative_time_text' => '4 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #36 (Nilufer test taramasi)
+            [
+                'title' => 'Op. Dr.',
+                'name' => 'Turgut Türkel',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Odunluk, Operatör Sk. Tezeller İş Merkezi No:1/7, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => 'Bursa Çocuk Cerrahisi ve Sünnet Kliniği',
+                'phone' => '0532 425 77 38',
+                'rating' => 5.0,
+                'review_count' => 5,
+                'google_maps_url' => 'https://www.google.com/maps/place/Op.+Dr.+Turgut+T%C3%BCrkel+Bursa+%C3%87ocuk+Cerrahisi+ve+S%C3%BCnnet+Klini%C4%9Fi/data=!4m7!3m6!1s0x14ca157fd0eeaa13:0x134bf04b7d700b16!8m2!3d40.2058137!4d28.9929152!16s%2Fg%2F11fr2zx8mb!19sChIJE6ru0H8VyhQRFgtwfUvwSxM?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Bediha Eraslan',
+                        'rating' => 5,
+                        'body' => 'Ailemiz adına Dr. Turgut Türkel’e gönülden teşekkür etmek istiyoruz. Oğlumuzun sünnet işlemi için kendisine başvurduk ve ilk andan itibaren göstermiş olduğu ilgi, anlayış ve güler yüzünden dolayı kendimizi gerçekten çok iyi hissettik.
+Oğlumuza yaklaşımı inanılmaz derecede güzel, sakin ve şefkatliydi. Hem çocuğumuzun rahat etmesini sağladı hem de biz aile olarak tüm süreç boyunca kendimizi güvende hissettik. İşlemi son derece başarılı ve özenli bir şekilde gerçekleştirdi.
+Bir doktor olarak mesleki başarısının yanı sıra, hastasına ve ailesine karşı nezaketi, sabrı ve insani yaklaşımı gerçekten takdire değer.
+Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmişiz. Başarılarının devamını diliyor, emeği ve güzel yaklaşımı için kendisine çok teşekkür ediyoruz. 🙏',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Gokberk Coban',
+                        'rating' => 5,
+                        'body' => '9 aylık oğlumu 6 ağustosta sünnet ettirdik. Doktor bey öncesinde detaylı şekilde her şeyi anlatıyor ve ebeveynleri rahatlatıyor. Çok şükür ki ağrısız sızısız bir operasyon geçirdi bebeğim. Operasyondan sonraki gün hiç sünnet olmamış gibi yaramazlıklarına kaldığı yerden devam etti. Aklında soru işareti olan herkese Turgut hocayı tavsiye ederim.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Ahmet',
+                        'rating' => 5,
+                        'body' => 'Oğlumuz 3 aylıkken sünetini yaptırmak için yorumlara bakarak doktor beyi bulmuştuk.  Kendisi lokal olarak bölgeyi uyuşturup sünnet işlemini gerçekleştirdi. Çok kısa sürede iyileşti. Oğlumuz şimdi büyüdü 3,5 yaşına geldi. Kendisine yorum yapma fırsatı bulamamıştım. Aklıma gelmişken kendisine de güzel bir yorumda bulunmak istedim. Kendisine çok teşekkür ederiz.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Levent AKGÜL',
+                        'rating' => 5,
+                        'body' => 'Çok değer verdiğim kişilerin tavsiyesiyle gittik ve gerçekten çok memnun kaldık ellerine sağlık, Allah razı olsun hocamdan. Ayrıca dürüst de bir doktor faturanızı falan hemen kesiyor diğer oğluma da nasip olursa yine gideceğim hocama.',
+                        'relative_time_text' => null,
+                    ],
+                    [
+                        'author_name' => 'Erdil Y.',
+                        'rating' => 5,
+                        'body' => 'Hollanda\'dan Türkiye\'ye tatile geldik gelmişken 4 aylık oğlumuzu sünnet ettirelim dedik araştırma sonucu Turgut  bey ile görüştük ve memnun kaldık tavsiye ediyorum',
+                        'relative_time_text' => '2 ay önce',
+                    ],
+                ],
+            ],
+            // kaynak satir #37 (Nilufer test taramasi)
+            [
+                'title' => 'Uzm. Dr.',
+                'name' => 'Emre Göçer',
+                'branch' => 'Pediatri',
+                'branch_label' => 'Çocuk Doktoru',
+                'city_id' => 16,
+                'district' => 'Nilüfer',
+                'address' => 'Konak, Lefkoşe Cd. No:22, 16110 Ni̇lüfer/Bursa',
+                'clinic_name' => null,
+                'phone' => '0530 641 13 30',
+                'rating' => 4.9,
+                'review_count' => 4,
+                'google_maps_url' => 'https://www.google.com/maps/place/Uz.+Dr.+Emre+G%C3%B6%C3%A7er/data=!4m7!3m6!1s0x14ca15693137c405:0xce3e9dd56a296211!8m2!3d40.209804!4d28.9924567!16s%2Fg%2F11ss0y1k8y!19sChIJBcQ3MWkVyhQREWIpatWdPs4?authuser=0&hl=tr&g_ep=EgoyMDI2MDkzMC4wIJJjKgBIAVAD&rclk=1',
+                'reviews' => [
+                    [
+                        'author_name' => 'Nilay Ğartel',
+                        'rating' => 5,
+                        'body' => 'Çok güzel bilgilendiren tek duruma odaklanmayıp genel inceleme yapan güzel bir doktor',
+                        'relative_time_text' => '2 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'Nagihan Şahin',
+                        'rating' => 5,
+                        'body' => 'Demirhan’ın biricik  doktoru emre hocamızla sonradan tanıştık ama gerçekten iyi ki tanımışız. ❤️ Çok ilgili, güler yüzlü ve her sorumu sabırla tek tek cevaplayan bir doktor. İhtiyacım olduğunda istediğim saatte ulaşabiliyor olmak da benim için inanılmaz bir güven. Özellikle benim gibi biraz pimpirikli bir anneye sabırla katlandığı için ayrıca teşekkür ediyorum. 😂 Her konuda içimi rahatlatıyor, çocuğumla ilgili en ufak şeyi bile önemseyip ilgileniyor. İyi ki yollarımız kesişmiş, gönül rahatlığıyla herkese tavsiye ederim. 🌸',
+                        'relative_time_text' => '3 hafta önce',
+                    ],
+                    [
+                        'author_name' => 'zafer gezginadam',
+                        'rating' => 5,
+                        'body' => 'Çok memnun kaldık. Tavsiye ederim. Çocuğum hasta olduğunda tedavisinden çok hızlı fayda gördük.',
+                        'relative_time_text' => '3 yıl önce',
+                    ],
+                    [
+                        'author_name' => 'rabia şahin',
+                        'rating' => 5,
+                        'body' => 'Emre hocayı iyi tanımışız uzun süredir oğlum ile ilgili hastalık süreçlerini kendisiyle atlatıyoruz . Artık oğlumu iyi tanığı için önceden önlemini alan bir doktor . Gayet samimi güleryüzlü işini iyi yapan ilgili bir doktor .Biz çok memnunuz herşey için teşekkür ediyorum',
+                        'relative_time_text' => null,
+                    ],
+                ],
+            ],
+        ];
+        $created = 0;
+        foreach ($rows as $i => $row) {
+            \App\Models\Expert::create($row + [
+                'slug' => \Illuminate\Support\Str::slug($row['name']).'-'.($i + 1),
+                'phone_type' => classify_phone_type($row['phone'] ?? null),
+                'is_published' => true,
+                'is_claimed' => false,
+                'source' => 'nilufer_oct2026_import',
+            ]);
+            $created++;
+        }
+
+        return "Silinen demo kayit: {$demoRemoved} | Olusturulan gercek doktor: {$created}";
+    }
+
+
+    private function facilityUndoRecentCentroidFill(Request $request): string
+    {
+        $sinceMinutes = max(1, (int) $request->query('since_minutes', 30));
+        $since = now()->subMinutes($sinceMinutes);
+        $centroids = config('turkiye_centroids', []);
+
+        $rows = DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')
+            ->where('facilities.updated_at', '>=', $since)
+            ->select('facilities.id', 'facilities.lat', 'facilities.lng', 'cities.name as city')
+            ->get();
+
+        $reset = 0;
+        foreach ($rows as $r) {
+            $centroid = $centroids[$r->city] ?? null;
+            if (! $centroid) {
+                continue;
+            }
+            if ((float) $r->lat === (float) $centroid[0] && (float) $r->lng === (float) $centroid[1]) {
+                DB::table('facilities')->where('id', $r->id)->update(['lat' => null, 'lng' => null]);
+                $reset++;
+            }
+        }
+
+        return "Taranan (son {$sinceMinutes} dk guncellenen): {$rows->count()} | il-merkezinden NULL'a alinan: {$reset}";
+    }
+
+    private function facilityFillLocationFromSourcePayload(Request $request): string
+    {
+        $limit = max(1, min(500, (int) $request->query('limit', 300)));
+
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->whereNull('lat')
+            ->whereNotNull('source_payload')
+            ->select('id', 'source_payload')
+            ->limit($limit)
+            ->get();
+
+        $filled = 0;
+        $noUrl = 0;
+        $noMatch = 0;
+
+        foreach ($rows as $r) {
+            $payload = json_decode((string) $r->source_payload, true);
+            $mapsUrl = is_array($payload) ? ($payload['maps_url'] ?? null) : null;
+            if (! $mapsUrl) {
+                $noUrl++;
+
+                continue;
+            }
+            if (! preg_match('/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/', $mapsUrl, $m)) {
+                $noMatch++;
+
+                continue;
+            }
+            DB::table('facilities')->where('id', $r->id)->update([
+                'lat' => $m[1],
+                'lng' => $m[2],
+                'updated_at' => now(),
+            ]);
+            $filled++;
+        }
+
+        return "Taranan: {$rows->count()} | Koordinat dolduruldu: {$filled} | maps_url yok: {$noUrl} | maps_url var ama koordinat eslesmedi: {$noMatch}";
+    }
+
+    /**
+     * 2 Ekim 2026: kullanicinin bulgusu - VeriCekici2'deki eski (artik
+     * duzeltilen) hata, aranan mahalle adini GERCEK adresin basina
+     * "{mah} Mahallesi, {gercek_adres}" seklinde ekliyordu. Bu kurumlarda
+     * district (ilce) sutunu da BOS kaliyor (import pipeline ilk segmentten
+     * ilce cikaramadigi icin). Bu action SADECE RAPOR verir, hicbir seyi
+     * DEGISTIRMEZ - ilk virgule kadar olan (uydurma) kismi atip, kalan
+     * (gercek) adresin SONUNDAN gercek ilceyi cikararak "once/sonra"
+     * gosterir.
+     */
+    private function fabricatedAddressPrefixAudit(Request $request): string
+    {
+        $minId = (int) $request->query('min_id', 0);
+        $limit = max(1, min(2000, (int) $request->query('limit', 40)));
+
+        $cityNames = [16 => 'Bursa', 34 => 'İstanbul'];
+
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->whereIn('city_id', [16, 34])
+            ->where('id', '>=', $minId)
+            ->where(function ($q) {
+                $q->whereNull('district')->orWhere('district', '');
+            })
+            ->select('id', 'city_id', 'name', 'address')
+            ->get();
+
+        $out = "Toplam aday (ilçe boş, Bursa+İstanbul, id>={$minId}): {$rows->count()}\n\n";
+        $i = 0;
+        foreach ($rows as $r) {
+            if ($i >= $limit) {
+                break;
+            }
+            $addr = (string) $r->address;
+            $comma = strpos($addr, ',');
+            if ($comma === false) {
+                continue;
+            }
+            $rest = trim(substr($addr, $comma + 1));
+            // 2 Ekim 2026: kullanicinin bulgusu - "Ni̇lüfer" gibi bozuk
+            // Turkce yazimlar (I + GORUNMEZ birlesik nokta isareti,
+            // Unicode NFD, U+0307 COMBINING DOT ABOVE) [A-ZÇĞİÖŞÜa-zçğıöşü]
+            // sinifina UYMUYOR, bu yuzden eslesme "lüfer" gibi EKSIK
+            // cikiyordu. Normalizer sinifi bu sunucuda yok (intl eklentisi
+            // kurulu degil) - bunun yerine regex karakter sinifina dogrudan
+            // Unicode "Letter" kategorisini (\p{L}, tum diller/Turkce dahil)
+            // VE birlesik isaretler blogunu (\x{0300}-\x{036F}) ekleyerek
+            // extension'a ihtiyac duymadan dogru eslesme saglanir.
+            $cityName = $cityNames[$r->city_id] ?? '';
+            $newDistrict = '';
+            if ($cityName && preg_match('/([\p{L}\x{0300}-\x{036F}]+)\s*\/\s*'.preg_quote($cityName, '/').'\s*$/u', $rest, $m)) {
+                $newDistrict = preg_replace('/[\x{0300}-\x{036F}]/u', '', $m[1]);
+            }
+            $i++;
+            $out .= "#{$r->id} {$r->name}\n  ESKİ: {$addr}\n  YENİ ADRES: {$rest}\n  YENİ İLÇE: ".($newDistrict ?: '(çıkarılamadı - boş kalır)')."\n\n";
+        }
+
+        return $out;
+    }
+
+    private function fabricatedAddressPrefixFix(Request $request): string
+    {
+        set_time_limit(0);
+        $minId = (int) $request->query('min_id', 0);
+        $limit = max(1, min(2000, (int) $request->query('limit', 300)));
+
+        // 2 Ekim 2026 (2. tur): kullanicinin talebi - Izmir'de de AYNI kalip
+        // dogrulandi (ornek: "Ataturk Mahallesi, Yeni, ... Aliaga/Izmir").
+        // Artik SADECE Bursa/Istanbul degil, TUM sehirler taranir.
+        $cityNames = DB::table('cities')->pluck('name', 'id')->all();
+
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->where('id', '>=', $minId)
+            ->where(function ($q) {
+                $q->whereNull('district')->orWhere('district', '');
+            })
+            ->select('id', 'city_id', 'address')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+
+        $fixed = 0;
+        $districtFilled = 0;
+        $lastId = 0;
+        foreach ($rows as $r) {
+            $lastId = $r->id;
+            $addr = (string) $r->address;
+            $comma = strpos($addr, ',');
+            if ($comma === false) {
+                continue;
+            }
+            $rest = trim(substr($addr, $comma + 1));
+            if ($rest === '') {
+                continue;
+            }
+
+            $cityName = $cityNames[$r->city_id] ?? '';
+            $newDistrict = null;
+            if ($cityName && preg_match('/([\p{L}\x{0300}-\x{036F}]+)\s*\/\s*'.preg_quote($cityName, '/').'\s*$/u', $rest, $m)) {
+                $newDistrict = preg_replace('/[\x{0300}-\x{036F}]/u', '', $m[1]);
+            }
+
+            // 2 Ekim 2026: GUVENLIK - ilce cikarilamayan kayitlarda address
+            // GUNCELLENMEZ. Neden: bu kayit "district bos" oldugu icin bir
+            // SONRAKI cagrida YINE sorguya girecek - eger address o an
+            // ZATEN duzeltilmis olsaydı, ikinci bir prefix-kirpma GERCEK
+            // adresin bir parcasini daha silerdi (veri kaybi). Sadece ilce
+            // basariyla cikarilabilen (yani uydurma prefix oldugu KESIN
+            // dogrulanan) kayitlar guncellenir - digerleri elle incelemeye
+            // birakilir, dongu zararsiz sekilde tekrar eder ama hicbir sey
+            // bozmaz.
+            if (! $newDistrict) {
+                continue;
+            }
+
+            DB::table('facilities')->where('id', $r->id)->update([
+                'address' => $rest,
+                'district' => $newDistrict,
+                'updated_at' => now(),
+            ]);
+            $fixed++;
+            $districtFilled++;
+        }
+
+        return "Taranan: {$rows->count()} | Düzeltilen adres: {$fixed} | İlçesi dolduruldu: {$districtFilled} | Son ID: {$lastId}";
+    }
+
+    // 4 Ekim 2026: kullanicinin bildirdigi gercek hata - "Yalova Evde Bakim"
+    // isimli bir kurumun ADRESI "...Yalova Merkez" yaziyordu ama kayitli
+    // city_id Istanbul'du (ilce de bos kalmisti). facilityWrongProvinceScan
+    // SADECE lat/lng pin konumuna bakiyor (bu kurumun pin'i hic olmayabilir
+    // ya da yanlis pin'le ayni ilde kalmis olabilir) - bu salt-okunur arac
+    // DOGRUDAN adres METNINDEKI "...Ilce/Il" kalibini okuyup kayitli
+    // city_id'nin GERCEK adiyla karsilastirir, pin'den tamamen bagimsiz
+    // ikinci bir dogrulama katmani saglar. Hicbir yazma islemi yapmaz.
+    private function facilityAddressCityMismatchScan(Request $request): string
+    {
+        $limit = max(1, min(5000, (int) $request->query('limit', 200)));
+        $norm = fn (string $s) => \Illuminate\Support\Str::slug($s);
+
+        $cities = DB::table('cities')->select('id', 'name')->get();
+        $citySlugToId = [];
+        foreach ($cities as $c) {
+            $citySlugToId[$norm($c->name)] = $c->id;
+        }
+        $cityNameById = $cities->pluck('name', 'id');
+
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->whereNotNull('address')
+            ->where('address', '!=', '')
+            ->select('id', 'name', 'city_id', 'district', 'address')
+            ->orderBy('id')
+            ->get();
+
+        $mismatches = [];
+        foreach ($rows as $f) {
+            $addr = trim((string) $f->address);
+            if (! preg_match('/([\p{L}\x{0300}-\x{036F}]+)\s*\/\s*([\p{L}\x{0300}-\x{036F}]+)\s*$/u', $addr, $m)) {
+                continue;
+            }
+            $addrProvinceSlug = $norm(preg_replace('/[\x{0300}-\x{036F}]/u', '', $m[2]));
+            $foundCityId = $citySlugToId[$addrProvinceSlug] ?? null;
+            if (! $foundCityId || $foundCityId == $f->city_id) {
+                continue;
+            }
+            $mismatches[] = [$f, $foundCityId];
+        }
+
+        $out = 'Taranan (adresi olan): '.$rows->count().' | Adres metni BASKA bir ile isaret eden: '.count($mismatches).PHP_EOL.PHP_EOL;
+        $i = 0;
+        foreach ($mismatches as [$f, $foundCityId]) {
+            if ($i++ >= $limit) {
+                break;
+            }
+            $out .= "#{$f->id} {$f->name} | kayitli il: {$cityNameById[$f->city_id]} (ilce: ".($f->district ?: '-').") | adres '{$foundCityId}' -> {$cityNameById[$foundCityId]}'yi isaret ediyor | adres: {$f->address}".PHP_EOL;
+        }
+
+        return $out;
+    }
+
+    private function cityReviewGapTargets(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id', 16);
+
+        $rows = \App\Models\Facility::with('city')
+            ->whereNull('deleted_at')
+            ->where('city_id', $cityId)
+            ->whereNotIn('id', DB::table('facility_google_reviews')->select('facility_id'))
+            ->get(['id', 'name', 'address', 'city_id', 'district']);
+
+        return $rows->map(fn ($f) => $f->id.'|'.$f->name.'|'.($f->address ?: '').'|'.($f->city?->name ?: '').'|'.($f->district ?: ''))->implode("\n");
+    }
+
+    private function cityImageReviewGapCheck(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id', 16);
+        $cityName = DB::table('cities')->where('id', $cityId)->value('name') ?? "#{$cityId}";
+
+        $facilities = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->where('city_id', $cityId)
+            ->select('id')
+            ->get();
+        $total = $facilities->count();
+        $ids = $facilities->pluck('id');
+
+        $withRealImage = DB::table('facility_images')
+            ->whereIn('facility_id', $ids)
+            ->where('path', 'not like', 'facilities/demo/%')
+            ->distinct('facility_id')
+            ->count('facility_id');
+
+        $withReview = DB::table('facility_google_reviews')
+            ->whereIn('facility_id', $ids)
+            ->distinct('facility_id')
+            ->count('facility_id');
+
+        $noImageIds = DB::table('facilities')
+            ->whereNull('deleted_at')->where('city_id', $cityId)
+            ->whereNotIn('id', DB::table('facility_images')->where('path', 'not like', 'facilities/demo/%')->select('facility_id'))
+            ->pluck('id');
+        $noReviewIds = DB::table('facilities')
+            ->whereNull('deleted_at')->where('city_id', $cityId)
+            ->whereNotIn('id', DB::table('facility_google_reviews')->select('facility_id'))
+            ->pluck('id');
+        $noBoth = $noImageIds->intersect($noReviewIds)->count();
+
+        return "Şehir: {$cityName} | Toplam kurum: {$total}\n"
+            ."Gerçek görseli OLAN: {$withRealImage} | Görseli EKSİK: ".($total - $withRealImage)."\n"
+            ."Yorumu OLAN: {$withReview} | Yorumu EKSİK: ".($total - $withReview)."\n"
+            ."İKİSİ DE eksik (ne görsel ne yorum): {$noBoth}";
+    }
+
+    private function governmentNameKamuList(): string
+    {
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->where('ownership_type', 'kamu')
+            ->select('id', 'name', 'district')
+            ->orderBy('id')
+            ->get();
+
+        return $rows->map(fn ($r) => "{$r->id}|{$r->name}|{$r->district}")->implode("\n");
+    }
+
+    private function governmentNameFix(): string
+    {
+        $service = app(\App\Services\DataQualityService::class);
+        $result = $service->governmentNameFix();
+
+        return "Kamu olarak işaretlenen kurum: {$result['fixed']}.";
+    }
+
+    private function governmentNameRevertToOzel(): string
+    {
+        $service = app(\App\Services\DataQualityService::class);
+        $result = $service->governmentNameRevertToOzel();
+
+        return "Ozel'e geri cevrilen kurum: {$result['fixed']}.";
+    }
+
+    /**
+     * 1 Ekim 2026: kullanicinin talebi - ayni isim + ayni sehir/ilce (sokak
+     * farkli olsa bile) mukerrer sayilir - Google'in ayni yeri iki ayri
+     * adres yazimiyla iki kez taramasi cok yaygin. min_id ile bugunku
+     * importla sinirlanir, salt okunur (hicbir seyi silmez).
+     */
+    private function facilityDuplicateCityDistrictScan(Request $request): string
+    {
+        $minId = (int) $request->query('min_id', 0);
+
+        $rows = DB::table('facilities as f')
+            ->join('cities as c', 'c.id', '=', 'f.city_id')
+            ->whereNull('f.deleted_at')
+            ->where('f.id', '>=', $minId)
+            ->select('f.id', 'f.name', 'f.district', 'c.name as city_name', 'f.created_at')
+            ->get();
+
+        $norm = function (string $s): string {
+            $s = mb_strtolower($s, 'UTF-8');
+
+            return preg_replace('/[^a-z0-9]+/u', '', $s) ?: $s;
+        };
+
+        $groups = [];
+        foreach ($rows as $r) {
+            $key = $norm((string) $r->name).'|'.$norm((string) $r->city_name).'|'.$norm((string) $r->district);
+            $groups[$key][] = $r;
+        }
+
+        $dupGroups = array_filter($groups, fn ($g) => count($g) > 1);
+
+        if (empty($dupGroups)) {
+            return "Taranan kurum: {$rows->count()} | Sehir/ilce+isim eslesen tekrar bulunamadi.";
+        }
+
+        $out = 'Sehir/ilce+isim eslesen tekrar grup sayisi: '.count($dupGroups).PHP_EOL.PHP_EOL;
+        foreach ($dupGroups as $g) {
+            $out .= implode(' | ', array_map(fn ($r) => "#{$r->id} {$r->name} ({$r->city_name}/{$r->district}) - {$r->created_at}", $g)).PHP_EOL;
+        }
+
+        return $out;
+    }
+
+    private function facilityDuplicateNameScan(Request $request): string
+    {
+        $cityId = (int) $request->query('city_id');
+        $categoryId = (int) $request->query('facility_category_id');
+        $minId = (int) $request->query('min_id', 0);
+
+        $rows = DB::table('facilities')
+            ->whereNull('deleted_at')
+            ->where('city_id', $cityId)
+            ->where('facility_category_id', $categoryId)
+            ->where('id', '>=', $minId)
+            ->select('id', 'name', 'address', 'phone', 'district', 'created_at')
+            ->orderBy('id')
+            ->get();
+
+        $norm = function (string $s): string {
+            $s = mb_strtolower($s, 'UTF-8');
+
+            return preg_replace('/[^a-z0-9]+/u', '', $s) ?: $s;
+        };
+
+        $groups = [];
+        foreach ($rows as $r) {
+            $key = $norm((string) $r->name);
+            $groups[$key][] = $r;
+        }
+
+        $dupGroups = array_filter($groups, fn ($g) => count($g) > 1);
+
+        if (empty($dupGroups)) {
+            return "Taranan kurum: {$rows->count()} | Ayni isimde tekrar bulunamadi.";
+        }
+
+        $out = 'Ayni isimde tekrar eden grup sayisi: '.count($dupGroups).PHP_EOL.PHP_EOL;
+        foreach ($dupGroups as $g) {
+            $out .= implode(' | ', array_map(fn ($r) => "#{$r->id} {$r->name} | adres: {$r->address} | tel: {$r->phone} | olusturma: {$r->created_at}", $g)).PHP_EOL;
+        }
+
+        return $out;
+    }
+
+    /**
      * 8 Eylul 2026: kullanicinin "harita pini gercekten dogru yerde mi,
      * mahalle/sokak seviyesinde teyit et" talimati - ilce-metni duzeltmesinden
      * (facilityDistrictFixFromGeo) FARKLI, daha SIKI bir kontrol: kayitli
@@ -4612,6 +7114,17 @@ HTML;
                 continue;
             }
 
+            // 6 Ekim 2026: kullanicinin acik talebi - "sadece yorumu yok ise
+            // yukle" - bu uc eskiden MEVCUT yorumlari HER ZAMAN silip yeniden
+            // yaziyordu (yeni import edilen, henuz yorumu olmayan kurumlar
+            // icin zararsizdi, ama zaten yorumu OLAN bir kurumda calistirilirsa
+            // o yorumlari sessizce ustune yazardi). Artik zaten yorumu olan
+            // kurumlara DOKUNULMAZ.
+            if (\App\Models\FacilityGoogleReview::where('facility_id', $facility->id)->exists()) {
+                $skipped[] = "#{$facility->id} {$facility->name}: zaten yorumu var, dokunulmadi";
+                continue;
+            }
+
             $reviews = array_slice($entry['reviews'] ?? [], 0, 5);
             if (empty($reviews)) {
                 $skipped[] = "#{$facility->id} {$facility->name}: yorum yok, atlandi";
@@ -4865,11 +7378,22 @@ HTML;
         // ile anahtar-tabanli sayfalama: her cagrinin sonunda donen son
         // id, bir sonraki cagriya bu parametre olarak verilir.
         $afterId = (int) $request->input('after_id', 0);
+        // 4 Ekim 2026: kullanicinin talebi - Bursa icin 3+ yildizli
+        // yorumlari da kullanabilmek icin opsiyonel parametreler. Varsayilan
+        // (min_rating=5, city_id yok) GUNLUK OTOMATIK komutun davranisiyla
+        // BIREBIR ayni kalir, bu yeni parametreler SADECE acikca verilirse
+        // devreye girer.
+        // 7 Ekim 2026: kullanicinin acik talebi - varsayilan esik artik 3
+        // (eskiden 5), tum site icin.
+        $minRating = max(1, min(5, (int) $request->input('min_rating', 3)));
+        $cityId = $request->filled('city_id') ? (int) $request->input('city_id') : null;
 
-        $r = (new \App\Services\ReviewBasedDescriptionGenerator())->run($limit, $afterId);
+        $r = (new \App\Services\ReviewBasedDescriptionGenerator())->run($limit, $afterId, $minRating, $cityId);
 
-        $out = "son_id={$r['son_id']}|islenen={$r['islenen']}|guncellenen={$r['guncellenen']}\n";
-        $out .= "Guncellenen kurum: {$r['guncellenen']} (id: ".implode(',', $r['guncellenen_idler']).")\nAtlanan: ".count($r['atlanan']);
+        $out = "son_id={$r['son_id']}|islenen={$r['islenen']}|guncellenen={$r['guncellenen']}|guncellenen_sadece_cta={$r['guncellenen_sadece_cta']}\n";
+        $out .= "Yorumdan aciklama uretilen: {$r['guncellenen']} (id: ".implode(',', $r['guncellenen_idler']).")\n";
+        $out .= "Sadece yonlendirme metni eklenen (yorumu yok/yetersiz): {$r['guncellenen_sadece_cta']} (id: ".implode(',', $r['guncellenen_sadece_cta_idler']).")\n";
+        $out .= "Atlanan: ".count($r['atlanan']);
         if ($r['atlanan']) {
             $out .= "\n".implode("\n", array_slice($r['atlanan'], 0, 30));
         }
@@ -5139,6 +7663,10 @@ HTML;
      */
     private function veriCekiciImportFile(Request $request, \App\Services\DataExtractorImportService $importer): string
     {
+        // 1 Ekim 2026 - buyuk xlsx importlari PHP'nin 30sn max_execution_time
+        // limitine carpip FatalError (canli hatalar #198-200) uretiyordu.
+        set_time_limit(0);
+
         $path = (string) $request->input('path');
         if (! $path || ! is_file($path)) {
             return 'HATA: gecerli bir "path" parametresi (sunucudaki xlsx dosya yolu) gerekli.';
@@ -5169,6 +7697,1136 @@ HTML;
         }
 
         return $out;
+    }
+
+    /**
+     * 7 Ekim 2026: Doktor Çekici'nin ürettiği xlsx (+ opsiyonel yorumlar.json)
+     * dosyasını DOĞRUDAN `experts` tablosuna (Facility'den TAMAMEN BAĞIMSIZ,
+     * /uzmanlar sayfası) aktaran GENEL amaçlı ilk eylem - önceki
+     * seedDemoExperts() tek seferlik elle yazılmış 37 satırlık bir testti,
+     * bu ise herhangi bir doktor_cekici xlsx'ini tekrar tekrar, güvenli
+     * (mükerrer kaydı GOOGLE HARİTALAR LİNKİNE göre engelleyerek) aktarabilen
+     * kalıcı araç. apply=0 (varsayılan) ÖNİZLEME döner, hiçbir şey yazmaz.
+     */
+    private function expertImportFile(Request $request): string
+    {
+        set_time_limit(0);
+
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki xlsx dosya yolu) gerekli.';
+        }
+        $source = (string) $request->input('source', 'expert_import_'.now()->format('Ymd_His'));
+        $apply = $request->boolean('apply');
+
+        $reviewsPath = (string) $request->input('reviews_path', '');
+        $reviewsByUrl = [];
+        if ($reviewsPath && is_file($reviewsPath)) {
+            $decoded = json_decode((string) file_get_contents($reviewsPath), true) ?: [];
+            foreach ($decoded as $entry) {
+                $u = $entry['maps_url'] ?? null;
+                if ($u) {
+                    $reviewsByUrl[$u] = $entry['reviews'] ?? [];
+                }
+            }
+        }
+
+        $cityIdByNorm = [];
+        $norm = fn (string $s) => strtr(mb_strtolower(trim($s)), ['ı' => 'i', 'İ' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c']);
+        foreach (DB::table('cities')->select('id', 'name')->get() as $c) {
+            $cityIdByNorm[$norm($c->name)] = $c->id;
+        }
+
+        $addressIl = function (string $address) {
+            if (! $address || ! str_contains($address, '/')) {
+                return '';
+            }
+            $parts = array_values(array_filter(array_map('trim', explode('/', $address))));
+            $last = end($parts) ?: '';
+            return trim(preg_replace('/\s*-\s*(avrupa|asya|europe|asia)\s*$/iu', '', $last));
+        };
+        $addressDistrict = function (string $address) {
+            if (preg_match('/\d{4,5}\s+([^,\/\d]+)\/[^\/,]+\s*$/u', $address, $m)) {
+                return trim($m[1]);
+            }
+            return '';
+        };
+        $titleUnvan = function (string $name): array {
+            if (preg_match('/^((?:Prof\.?\s*Dr\.?|Doç\.?\s*Dr\.?|Dr\.?\s*Öğr\.?\s*Üyesi|Op\.?\s*Dr\.?|Uzm\.?\s*Dr\.?|Uzman\s*Dr\.?|Dt\.?|Dr\.?))\s*\.?\s+/iu', trim($name), $m)) {
+                $unvan = trim($m[1]);
+                $kalan = trim(mb_substr($name, mb_strlen($m[0])));
+                return [$unvan, $kalan ?: $name];
+            }
+            return ['', $name];
+        };
+
+        // 11 Ekim 2026: kullanicinin talebi - "3 ve uzeri yorumu olanlar
+        // icin aciklama yaz". Expert'te Facility'deki gibi ayri bir claim/
+        // bilgi-talep formu olmadigi icin (Faz 1, sadece bilgilendirme)
+        // CTA eklenmez - sadece yorumdan sentezlenen kisa, olumlu bir
+        // tanitim cumlesi yazilir. En iyi (en yuksek puanli, yeterince
+        // uzun) 3+ yildizli yorum secilir; uygun yorum yoksa description
+        // null kalir (bos birakilir, uydurma metin yazilmaz).
+        $girisKaliplari = [
+            '{unvan} {isim}, {ilce}/{il} bölgesinde {branşLabel} olarak hizmet vermektedir.',
+            '{ilce}, {il}\'de faaliyet gösteren {unvan} {isim}, {branşLabel} alanında hastalarına hizmet sunmaktadır.',
+            '{unvan} {isim}, {il} {ilce}\'de {branşLabel} olarak çalışmaktadır.',
+        ];
+        $alintiKaliplari = [
+            'Bir hasta yorumunda şunları paylaşmış: "{alinti}"',
+            'Hastalardan biri deneyimini şöyle aktarmış: "{alinti}"',
+            'Google yorumlarından birinde şu ifadeler yer alıyor: "{alinti}"',
+        ];
+        $generateExpertDescription = function (string $unvan, string $isim, string $il, string $ilce, string $branchLabel, array $reviewsForDesc, int $seedId) use ($girisKaliplari, $alintiKaliplari) {
+            $uygun = array_values(array_filter($reviewsForDesc, fn ($r) => ($r['rating'] ?? 0) >= 3 && ! empty($r['body']) && mb_strlen(trim($r['body'])) >= 20));
+            if (! $uygun) {
+                return null;
+            }
+            usort($uygun, fn ($a, $b) => ($b['rating'] ?? 0) <=> ($a['rating'] ?? 0));
+            $kisalt = function (string $s, int $max = 200) {
+                $s = trim(preg_replace('/\s+/', ' ', $s));
+
+                return mb_strlen($s) > $max ? mb_substr($s, 0, $max).'…' : $s;
+            };
+            $sec = fn (array $havuz) => $havuz[$seedId % count($havuz)];
+            $giris = strtr($sec($girisKaliplari), [
+                '{unvan}' => $unvan, '{isim}' => $isim, '{il}' => $il,
+                '{ilce}' => $ilce ?: $il, '{branşLabel}' => $branchLabel,
+            ]);
+            $alinti = strtr($sec($alintiKaliplari), ['{alinti}' => $kisalt($uygun[0]['body'])]);
+
+            return trim($giris.' '.$alinti);
+        };
+
+        $branchLabels = [
+            'pediatri' => 'Çocuk Doktoru', 'diş hekimliği' => 'Diş Hekimi', 'dis hekimligi' => 'Diş Hekimi',
+            'ortopedi' => 'Ortopedi Uzmanı', 'nöroloji' => 'Nörolog', 'çocuk psikiyatrisi' => 'Çocuk Psikiyatristi',
+            'fiziksel tıp ve rehabilitasyon' => 'Fizik Tedavi Uzmanı', 'psikiyatri' => 'Psikiyatrist',
+            'genel cerrahi' => 'Genel Cerrah', 'kadın hastalıkları ve doğum' => 'Kadın Doğum Uzmanı',
+        ];
+
+        $rows = app(\App\Services\SimpleXlsxReader::class)->rows($path);
+        if (count($rows) < 2) {
+            return 'HATA: xlsx bos gorunuyor.';
+        }
+        $headerRow = array_shift($rows);
+        $headerCount = count($headerRow);
+        $headers = array_map(fn ($h) => trim((string) $h), $headerRow);
+        $colIdx = array_flip($headers);
+
+        // 7 Ekim 2026: doktor_cekici.py'nin kendi export_to_excel() ciktisi
+        // Turkce basliklar kullanir ("İşyeri Adı" vb.), ama bu araci farkli
+        // bir elle hazirlanmis xlsx (ör. temizlenmis ara dosya) Ingilizce
+        // anahtarlarla gelebiliyor - ikisi de kabul edilir, baslik adina
+        // gore KESIN eslesmeyen dosyalarin sessizce 0 kayit uretmesi onlenir.
+        $alias = [
+            'İşyeri Adı' => ['name', 'isim'],
+            'Branş' => ['branch', 'brans'],
+            'Kategori' => ['category', 'kategori'],
+            'Adres' => ['address', 'adres'],
+            'Telefon' => ['phone', 'telefon'],
+            'Puan' => ['rating', 'puan'],
+            'Google Haritalar Linki' => ['maps_url', 'google_maps_url'],
+            'İlçe (Kaynak Liste)' => ['district', 'ilce'],
+            'Mahalle' => ['neighborhood', 'mahalle'],
+        ];
+        $get = function (array $row, string $col) use ($colIdx, $alias) {
+            $adaylar = array_merge([$col], $alias[$col] ?? []);
+            foreach ($adaylar as $aday) {
+                if (isset($colIdx[$aday])) {
+                    return trim((string) ($row[$colIdx[$aday]] ?? ''));
+                }
+            }
+            return '';
+        };
+
+        $created = 0;
+        $skippedDup = 0;
+        $skippedNoCity = 0;
+        $withDescription = 0;
+        $errors = [];
+        $createdNames = [];
+
+        foreach ($rows as $i => $row) {
+            $name = $get($row, 'İşyeri Adı');
+            if (! $name) {
+                continue;
+            }
+            $mapsUrl = $get($row, 'Google Haritalar Linki');
+
+            if ($mapsUrl && \App\Models\Expert::where('google_maps_url', $mapsUrl)->exists()) {
+                $skippedDup++;
+                continue;
+            }
+
+            $address = $get($row, 'Adres');
+            $ilAdi = $addressIl($address);
+            $cityId = $cityIdByNorm[$norm($ilAdi)] ?? null;
+            if (! $cityId && $address) {
+                // 7 Ekim 2026: bazi adresler "/" ile bitmiyor (ör. "...06680
+                // Ankara" - slash yok), _addressIl bunlari yakalayamiyordu.
+                // Son care: adresin SONUNDA (kelime siniriyla) bilinen bir
+                // il adi geciyor mu diye bakilir - sadece sondaki kelime(ler)
+                // kontrol edilir, metnin ortasinda rastgele gecen bir il adi
+                // (ör. baska bir caddede) YANLISLIKLA eslesmesin diye.
+                foreach ($cityIdByNorm as $normIl => $cid) {
+                    if (preg_match('/(^|[^\p{L}])'.preg_quote($normIl, '/').'\s*$/u', $norm($address))) {
+                        $cityId = $cid;
+                        $ilAdi = $normIl;
+                        break;
+                    }
+                }
+            }
+            if (! $cityId) {
+                $skippedNoCity++;
+                $errors[] = "#{$i}: il tespit edilemedi (adres: {$address}) - {$name}";
+                continue;
+            }
+
+            // 7 Ekim 2026: "Mahalle" sutunu ARANAN yeri gosterir (normal/
+            // mahalle-taramasi modunda), BULUNAN kurumun gercek konumunu
+            // DEGIL - kullanicinin bulgusu: Burgazada'da arama yapilinca
+            // Kadikoy/Atasehir'de cikan sonuclara bile "Burgazada" ilcesi
+            // yaziliyordu. "İlçe (Kaynak Liste)" SADECE isim-listesi
+            // modunda (resmi kayittan, guvenilir) gelir - o varsa kullanilir,
+            // yoksa HER ZAMAN gercek adresten cikarilir, "Mahalle" ASLA
+            // ilce olarak kullanilmaz.
+            $district = $get($row, 'İlçe (Kaynak Liste)') ?: $addressDistrict($address);
+            $branch = $get($row, 'Branş') ?: $get($row, 'Kategori');
+            $branchLabel = $branchLabels[$norm($branch)] ?? $branch;
+            [$unvan, $temizIsim] = $titleUnvan($name);
+
+            $ratingRaw = $get($row, 'Puan');
+            $rating = $ratingRaw !== '' ? (float) str_replace(',', '.', $ratingRaw) : null;
+
+            $reviews = $mapsUrl ? array_slice($reviewsByUrl[$mapsUrl] ?? [], 0, 5) : [];
+            $allReviewsForDesc = $mapsUrl ? ($reviewsByUrl[$mapsUrl] ?? []) : [];
+
+            if ($apply) {
+                $paddedRow = $row + array_fill(0, $headerCount, '');
+                ksort($paddedRow);
+                $description = $generateExpertDescription($unvan, $temizIsim, $ilAdi, $district, $branchLabel ?: ($branch ?: 'Genel'), $allReviewsForDesc, $i);
+                if ($description) {
+                    $withDescription++;
+                }
+                \App\Models\Expert::create([
+                    'name' => $temizIsim,
+                    'slug' => \Illuminate\Support\Str::slug($temizIsim).'-'.\Illuminate\Support\Str::random(5),
+                    'title' => $unvan ?: null,
+                    'branch' => $branch ?: 'Genel',
+                    'branch_label' => $branchLabel ?: ($branch ?: 'Genel'),
+                    'city_id' => $cityId,
+                    'district' => $district ?: null,
+                    'address' => $address ?: null,
+                    'phone' => $get($row, 'Telefon') ?: null,
+                    'phone_type' => classify_phone_type($get($row, 'Telefon') ?: null),
+                    'clinic_name' => null,
+                    'description' => $description,
+                    'google_maps_url' => $mapsUrl ?: null,
+                    'rating' => $rating,
+                    'review_count' => count($reviews) ?: null,
+                    'reviews' => $reviews ?: null,
+                    'source' => $source,
+                    'source_payload' => ['row' => array_combine($headers, array_values($paddedRow))],
+                    'is_published' => true,
+                    'is_claimed' => false,
+                ]);
+            }
+            $created++;
+            if (count($createdNames) < 25) {
+                $createdNames[] = "{$temizIsim} ({$branch}) - {$ilAdi}/{$district}";
+            }
+        }
+
+        $out = ($apply ? 'UYGULANDI' : 'ONIZLEME')." | Olusturulan/olusturulacak: {$created} | Aciklama yazilan (3+ yildiz yorumu olan): {$withDescription} | Mukerrer (atlandi): {$skippedDup} | Il tespit edilemedi (atlandi): {$skippedNoCity}".PHP_EOL;
+        $out .= implode(PHP_EOL, $createdNames);
+        if ($errors) {
+            $out .= PHP_EOL.PHP_EOL.'Hatalar/atlananlar:'.PHP_EOL.implode(PHP_EOL, array_slice($errors, 0, 30));
+        }
+
+        return $out;
+    }
+
+    /**
+     * 11 Ekim 2026: expertImportFile() ile AYNI desen, Organization modeli
+     * icin - tek fark: "Branş" sutunu yok, kategori DOGRUDAN Google'in kendi
+     * "Kategori" alanindan gelir (resmi bir isim-listesi kaynagi degil, normal
+     * kategori taramasi). Mukerrer kontrolu yine google_maps_url ile.
+     */
+    private function organizationImportFile(Request $request): string
+    {
+        set_time_limit(0);
+
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki xlsx dosya yolu) gerekli.';
+        }
+        $source = (string) $request->input('source', 'org_import_'.now()->format('Ymd_His'));
+        $apply = $request->boolean('apply');
+
+        $reviewsPath = (string) $request->input('reviews_path', '');
+        $reviewsByUrl = [];
+        if ($reviewsPath && is_file($reviewsPath)) {
+            $decoded = json_decode((string) file_get_contents($reviewsPath), true) ?: [];
+            foreach ($decoded as $entry) {
+                $u = $entry['maps_url'] ?? null;
+                if ($u) {
+                    $reviewsByUrl[$u] = $entry['reviews'] ?? [];
+                }
+            }
+        }
+
+        $cityIdByNorm = [];
+        $norm = fn (string $s) => strtr(mb_strtolower(trim($s)), ['ı' => 'i', 'İ' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c', 'â' => 'a', 'î' => 'i', 'û' => 'u']);
+        foreach (DB::table('cities')->select('id', 'name')->get() as $c) {
+            $cityIdByNorm[$norm($c->name)] = $c->id;
+        }
+
+        $addressIl = function (string $address) {
+            if (! $address || ! str_contains($address, '/')) {
+                return '';
+            }
+            $parts = array_values(array_filter(array_map('trim', explode('/', $address))));
+            $last = end($parts) ?: '';
+
+            return trim(preg_replace('/\s*-\s*(avrupa|asya|europe|asia)\s*$/iu', '', $last));
+        };
+        $addressDistrict = function (string $address) {
+            if (preg_match('/\d{4,5}\s+([^,\/\d]+)\/[^\/,]+\s*$/u', $address, $m)) {
+                return trim($m[1]);
+            }
+
+            return '';
+        };
+
+        // 11 Ekim 2026: kullanicinin talebi - "olmayan kategori varsa
+        // organizasyon bolumunde olustur ve altina ekle". Bilinen Google
+        // kategorileri daha okunakli bir gunluk-dil etiketine cevrilir;
+        // listede olmayan YENI bir kategori gelirse ham haliyle KULLANILIR
+        // (hem service_type hem label ayni), boylece hicbir kayit "kategori
+        // yok" diye atilmaz veya uydurma bir kategoriye sikistirilmaz.
+        $serviceTypeLabels = [
+            'organizasyon sirketi' => 'Organizasyon Şirketi',
+            'dugun salonu' => 'Düğün Salonu',
+            'etkinlik mekani' => 'Etkinlik Mekânı',
+            'parti malzemeleri magazasi' => 'Parti Malzemeleri',
+            'cicekci' => 'Çiçekçi',
+            'fotograf studyosu' => 'Fotoğraf Stüdyosu',
+            'dugun hizmeti' => 'Düğün Hizmeti',
+            'acik hava etkinligi organizatoru' => 'Açık Hava Etkinliği',
+            'kostum kiralama hizmeti' => 'Kostüm Kiralama',
+            'dugun planlamacisi' => 'Düğün Planlamacısı',
+            'fotografci' => 'Fotoğrafçı',
+        ];
+
+        $rows = app(\App\Services\SimpleXlsxReader::class)->rows($path);
+        if (count($rows) < 2) {
+            return 'HATA: xlsx bos gorunuyor.';
+        }
+        $headerRow = array_shift($rows);
+        $headerCount = count($headerRow);
+        $headers = array_map(fn ($h) => trim((string) $h), $headerRow);
+        $colIdx = array_flip($headers);
+        $alias = [
+            'İşyeri Adı' => ['name', 'isim'],
+            'Kategori' => ['category', 'kategori', 'branş', 'branch'],
+            'Adres' => ['address', 'adres'],
+            'Telefon' => ['phone', 'telefon'],
+            'Puan' => ['rating', 'puan'],
+            'Google Haritalar Linki' => ['maps_url', 'google_maps_url'],
+        ];
+        $get = function (array $row, string $col) use ($colIdx, $alias) {
+            $adaylar = array_merge([$col], $alias[$col] ?? []);
+            foreach ($adaylar as $aday) {
+                if (isset($colIdx[$aday])) {
+                    return trim((string) ($row[$colIdx[$aday]] ?? ''));
+                }
+            }
+
+            return '';
+        };
+
+        $created = 0;
+        $skippedDup = 0;
+        $skippedNoCity = 0;
+        $yeniKategoriler = [];
+        $errors = [];
+        $createdNames = [];
+
+        foreach ($rows as $i => $row) {
+            $name = $get($row, 'İşyeri Adı');
+            if (! $name) {
+                continue;
+            }
+            $mapsUrl = $get($row, 'Google Haritalar Linki');
+
+            if ($mapsUrl && \App\Models\Organization::where('google_maps_url', $mapsUrl)->exists()) {
+                $skippedDup++;
+                continue;
+            }
+
+            $address = $get($row, 'Adres');
+            $ilAdi = $addressIl($address);
+            $cityId = $cityIdByNorm[$norm($ilAdi)] ?? null;
+            if (! $cityId && $address) {
+                foreach ($cityIdByNorm as $normIl => $cid) {
+                    if (preg_match('/(^|[^\p{L}])'.preg_quote($normIl, '/').'\s*$/u', $norm($address))) {
+                        $cityId = $cid;
+                        $ilAdi = $normIl;
+                        break;
+                    }
+                }
+            }
+            if (! $cityId) {
+                $skippedNoCity++;
+                $errors[] = "#{$i}: il tespit edilemedi (adres: {$address}) - {$name}";
+                continue;
+            }
+
+            $district = $addressDistrict($address);
+            $kategoriHam = $get($row, 'Kategori');
+            $serviceTypeLabel = $serviceTypeLabels[$norm($kategoriHam)] ?? $kategoriHam;
+            if ($kategoriHam && ! isset($serviceTypeLabels[$norm($kategoriHam)])) {
+                $yeniKategoriler[$kategoriHam] = true;
+            }
+
+            $ratingRaw = $get($row, 'Puan');
+            $rating = $ratingRaw !== '' ? (float) str_replace(',', '.', $ratingRaw) : null;
+
+            $reviews = $mapsUrl ? array_slice($reviewsByUrl[$mapsUrl] ?? [], 0, 5) : [];
+
+            if ($apply) {
+                $paddedRow = $row + array_fill(0, $headerCount, '');
+                ksort($paddedRow);
+                \App\Models\Organization::create([
+                    'name' => $name,
+                    'slug' => \Illuminate\Support\Str::slug($name).'-'.\Illuminate\Support\Str::random(5),
+                    'title' => null,
+                    'service_type' => $kategoriHam ?: 'Genel',
+                    'service_type_label' => $serviceTypeLabel ?: ($kategoriHam ?: 'Genel'),
+                    'city_id' => $cityId,
+                    'district' => $district ?: null,
+                    'address' => $address ?: null,
+                    'phone' => $get($row, 'Telefon') ?: null,
+                    'phone_type' => classify_phone_type($get($row, 'Telefon') ?: null),
+                    'clinic_name' => null,
+                    'google_maps_url' => $mapsUrl ?: null,
+                    'rating' => $rating,
+                    'review_count' => count($reviews) ?: null,
+                    'reviews' => $reviews ?: null,
+                    'source' => $source,
+                    'source_payload' => ['row' => array_combine($headers, array_values($paddedRow))],
+                    'is_published' => true,
+                    'is_claimed' => false,
+                ]);
+            }
+            $created++;
+            if (count($createdNames) < 30) {
+                $createdNames[] = "{$name} ({$kategoriHam}) - {$ilAdi}/{$district}";
+            }
+        }
+
+        $out = ($apply ? 'UYGULANDI' : 'ONIZLEME')." | Olusturulan/olusturulacak: {$created} | Mukerrer (atlandi): {$skippedDup} | Il tespit edilemedi (atlandi): {$skippedNoCity}".PHP_EOL;
+        if ($yeniKategoriler) {
+            $out .= 'YENI (listede olmayan) kategoriler: '.implode(', ', array_keys($yeniKategoriler)).PHP_EOL;
+        }
+        $out .= implode(PHP_EOL, $createdNames);
+        if ($errors) {
+            $out .= PHP_EOL.PHP_EOL.'Hatalar/atlananlar:'.PHP_EOL.implode(PHP_EOL, array_slice($errors, 0, 30));
+        }
+
+        return $out;
+    }
+
+    /**
+     * 11 Ekim 2026: kullanicinin bulgusu (elle arastirip telefon arayan)
+     * - "Pediatri" olarak aktarilan doktorlarin bir kismi gercekte TAMAMEN
+     * ALAKASIZ branslardan (uroloji, kardiyoloji, goz hast. vb.) cikti.
+     * Kok neden bugun erken saatlerde teshis edildi (skip_title_filter=True
+     * ile isim dogrulama kapali, Google'in ayni hastane markasindan DONDUGU
+     * alakasiz bir sonuc kabul edilebiliyordu) ama bu ISTANBUL batch'i o
+     * teshisten ONCE cekilmisti. Isim listesi satir satir (|) ayrilmis
+     * gelir, her biri icin Expert tablosunda arama yapilir.
+     */
+    private function expertNameCheck(Request $request): string
+    {
+        $namesRaw = (string) $request->input('names', '');
+        $names = array_values(array_filter(array_map('trim', explode('|', $namesRaw))));
+        if (! $names) {
+            return 'HATA: "names" parametresi (| ile ayrilmis isim listesi) gerekli.';
+        }
+
+        $out = '';
+        foreach ($names as $name) {
+            $matches = \App\Models\Expert::where('name', 'like', '%'.$name.'%')
+                ->orWhereRaw('? LIKE CONCAT("%", name, "%")', [$name])
+                ->get(['id', 'name', 'title', 'branch', 'branch_label', 'city_id', 'district', 'phone']);
+            if ($matches->isEmpty()) {
+                continue;
+            }
+            foreach ($matches as $m) {
+                $out .= "#{$m->id} | {$m->title} {$m->name} | branş: {$m->branch} | il: {$m->city_id} | ilçe: {$m->district} | tel: {$m->phone}".PHP_EOL;
+            }
+        }
+
+        return $out ?: 'Hicbir eslesme bulunamadi.';
+    }
+
+    /**
+     * 11 Ekim 2026: kullanicinin bulgusu - "Pediatri" olarak aktarilan 15
+     * kaydin GERCEKTE uroloji/kardiyoloji/goz vb. tamamen alakasiz branslar
+     * oldugu bulundu (hepsi silindi). Bu, muhtemelen daha genis bir sorunun
+     * sadece kullanicinin elle rastladigi kismi - bu tarama "Pediatri"
+     * etiketli TUM kayitlari, isminde/unvanda ACIKCA baska bir uzmanlik
+     * belirten kelime gecenleri bulup listeler (salt-okunur, hicbir sey
+     * SILMEZ - bulgular once gosterilir, silme ayrica expertRemove() ile
+     * elle onaylanir).
+     */
+    private function expertPediatriMismatchScan(): string
+    {
+        $nonPediatricKeywords = [
+            'üroloji', 'uroloji', 'kardiyoloji', 'göz doktoru', 'göz hastalık', 'goz hastalik',
+            'kadın hastalıkları', 'kadin hastaliklari', 'jinekolog', 'beyin ve sinir', 'beyin cerrah',
+            'nöroşirurji', 'ortopedi', 'kulak burun boğaz', 'kbb uzman', 'dermatoloji', 'cildiye',
+            'genel cerrahi', 'göğüs hastalıkları', 'gogus hastaliklari', 'enfeksiyon hastalıkları',
+            'medikal estetik', 'plastik cerrahi', 'psikiyatri uzman', 'üroloji uzman', 'nefroloji',
+            'gastroenteroloji', 'romatoloji', 'endokrinoloji uzman', 'algoloji', 'anestezi',
+            'radyoloji', 'patoloji', 'adli tıp', 'fizik tedavi uzman',
+        ];
+
+        $rows = \App\Models\Expert::where('branch', 'Pediatri')
+            ->whereNull('deleted_at')
+            ->get(['id', 'name', 'title', 'city_id', 'district', 'phone']);
+
+        $suspicious = [];
+        foreach ($rows as $r) {
+            $n = mb_strtolower($r->name.' '.$r->title);
+            foreach ($nonPediatricKeywords as $kw) {
+                if (str_contains($n, $kw)) {
+                    $suspicious[] = "#{$r->id} | {$r->title} {$r->name} | ilçe: {$r->district} | tel: {$r->phone} | şüpheli kelime: \"{$kw}\"";
+                    break;
+                }
+            }
+        }
+
+        return "Taranan 'Pediatri' kaydı: {$rows->count()} | Şüpheli (isminde başka branş geçen): ".count($suspicious).PHP_EOL.implode(PHP_EOL, $suspicious);
+    }
+
+    /**
+     * 11 Ekim 2026: kullanicinin elle arastirip buldugu telefon
+     * numaralarini toplu islemek icin. Format: "id:telefon|id:telefon|...".
+     */
+    private function expertPhoneSet(Request $request): string
+    {
+        $pairsRaw = (string) $request->input('pairs', '');
+        $pairs = array_values(array_filter(array_map('trim', explode('|', $pairsRaw))));
+        if (! $pairs) {
+            return 'HATA: "pairs" parametresi ("id:telefon|id:telefon") gerekli.';
+        }
+        $out = '';
+        foreach ($pairs as $pair) {
+            [$id, $phone] = array_pad(explode(':', $pair, 2), 2, null);
+            $id = (int) $id;
+            $phone = trim((string) $phone);
+            if (! $id || ! $phone) {
+                $out .= "ATLANDI (gecersiz): {$pair}".PHP_EOL;
+                continue;
+            }
+            $expert = \App\Models\Expert::find($id);
+            if (! $expert) {
+                $out .= "#{$id}: bulunamadi".PHP_EOL;
+                continue;
+            }
+            $expert->update(['phone' => $phone, 'phone_type' => classify_phone_type($phone)]);
+            $out .= "#{$id} {$expert->name} -> {$phone}".PHP_EOL;
+        }
+
+        return $out;
+    }
+
+    /**
+     * 11 Ekim 2026: kullanicinin baska bir yapay zeka ile yaptirdigi derin
+     * arastirmada, bazi kayitlarin isminin veri cekimi sirasinda bozuk/eksik
+     * geldigi (ornegin Arapca transliterasyon, veya sadece ilk ad) ve gercek
+     * kimligin baska oldugu ortaya cikti - id basina tek kayit, "title" ve
+     * "name" alanlarini dogru degerle degistirir.
+     */
+    private function expertIdentityFix(Request $request): string
+    {
+        $id = (int) $request->input('id', 0);
+        $title = (string) $request->input('title', '');
+        $name = (string) $request->input('name', '');
+        $expert = \App\Models\Expert::find($id);
+        if (! $expert) {
+            return "#{$id}: bulunamadi";
+        }
+        $old = "{$expert->title} {$expert->name}";
+        $expert->update(['title' => $title, 'name' => $name]);
+
+        return "#{$id} \"{$old}\" -> \"{$title} {$name}\"";
+    }
+
+    /**
+     * 12 Ekim 2026: kullanicinin bildirdigi "test etmeden tamam deme" uyarisi
+     * uzerine - admin/family-need-surveys sayfalarini GERCEKTEN render edip
+     * (middleware/oturum atlanarak, bkz. adminFacilityEditRender() ayni
+     * tarihli yorum/desen) hata olup olmadigini dogrudan kontrol eder.
+     */
+    private function familyNeedSurveyRenderTest(Request $incomingRequest): string
+    {
+        $admin = DB::table('admins')->first();
+        if (! $admin) {
+            return 'HATA: hic admin yok.';
+        }
+        session(['admin_id' => $admin->id]);
+
+        $out = '';
+        try {
+            $indexController = app(\App\Http\Controllers\Admin\FamilyNeedSurveyController::class);
+            $indexView = $indexController->index();
+            $indexHtml = $indexView instanceof \Illuminate\Contracts\View\View ? $indexView->render() : (string) $indexView;
+            $out .= 'INDEX render OK, uzunluk: '.strlen($indexHtml)." bayt\n";
+            $out .= str_contains($indexHtml, 'Aile Anketleri') ? "Baslik bulundu: OK\n" : "UYARI: baslik bulunamadi\n";
+        } catch (\Throwable $e) {
+            $out .= 'INDEX HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        try {
+            $createView = $indexController->create();
+            $createHtml = $createView instanceof \Illuminate\Contracts\View\View ? $createView->render() : (string) $createView;
+            $out .= 'CREATE render OK, uzunluk: '.strlen($createHtml)." bayt\n";
+        } catch (\Throwable $e) {
+            $out .= 'CREATE HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+        }
+
+        // 12 Ekim 2026: GERCEK bir kayitla akordion icini (matchingFacilities
+        // + WhatsApp butonu kosulu) zorlamak icin GECICI bir test anketi
+        // olusturulur, index() TEKRAR render edilip HTML'de hata izi aranir,
+        // sonra kayit SILINIR (canli veriye kalici bir sey eklenmez).
+        $sampleCity = \App\Models\City::whereHas('facilities', function ($q) {
+            $q->whereHas('category', fn ($cq) => $cq->where('brand_scope', 'cocuk-bakim'));
+        })->first();
+        if ($sampleCity) {
+            $testSurvey = \App\Models\FamilyNeedSurvey::create([
+                'name' => 'RENDER TEST', 'phone' => '05551234567', 'city_id' => $sampleCity->id, 'service_type' => 'kres_anaokulu',
+                'age_group' => '3_5', 'urgency' => '0_3_ay', 'ownership_preference' => 'ozel',
+            ]);
+            try {
+                $matches = $testSurvey->matchingFacilities();
+                $out .= "Test anketi (#{$testSurvey->id}, {$sampleCity->name}) matchingFacilities() OK, eslesen kurum: {$matches->count()}\n";
+
+                $indexHtml2 = $indexController->index()->render();
+                $out .= str_contains($indexHtml2, 'RENDER TEST') ? "Akordion ile INDEX tekrar render OK, dolu liste de hatasiz.\n" : "UYARI: test kaydi listede gorunmedi.\n";
+
+                // 12 Ekim 2026: kullanicinin talebi - "hangi anketler yollanilmis
+                // gorebilmeli" + "o kuruma kac anket yollanilmis" - WhatsApp
+                // gonderim KAYDININ gercekten yazildigini ve her iki ekranda
+                // (anket listesi + kurum duzenleme sayfasi) goruldugunu test et.
+                $mobileMatch = $matches->first(fn ($f) => classify_phone_type($f->phone) === 'mobile');
+                if ($mobileMatch) {
+                    $indexController->whatsapp($testSurvey, $mobileMatch);
+                    $sendCount = \App\Models\FamilyNeedSurveySend::where('family_need_survey_id', $testSurvey->id)->where('facility_id', $mobileMatch->id)->count();
+                    $out .= $sendCount === 1 ? "whatsapp() gonderim kaydi OK (1 kayit yazildi).\n" : "UYARI: whatsapp() sonrasi beklenen kayit sayisi degil ({$sendCount}).\n";
+
+                    $indexHtml3 = $indexController->index()->render();
+                    $out .= (str_contains($indexHtml3, 'Bu anket için gönderildi') && str_contains($indexHtml3, '📤 1 gönderim'))
+                        ? "INDEX gonderim rozetleri OK.\n" : "UYARI: INDEX'te gonderim rozetleri bulunamadi.\n";
+
+                    $mobileMatch->load('needSurveySends');
+                    $facilityController = app(\App\Http\Controllers\Admin\FacilityController::class);
+                    $facilityEditHtml = $facilityController->edit(Request::create('/admin/kurumlar/'.$mobileMatch->id.'/edit', 'GET'), $mobileMatch)->render();
+                    $out .= str_contains($facilityEditHtml, 'Gönderilen Aile İhtiyaç Anketleri (1)')
+                        ? "Kurum duzenleme sayfasinda gonderim kaydi OK.\n" : "UYARI: kurum sayfasinda gonderim kaydi gorunmedi.\n";
+                    // 12 Ekim 2026: kullanicinin talebi - "ozet satirini tam
+                    // icerikle genislet" - isim/telefon/yas/aciliyet/tercih
+                    // artik kurum sayfasinda da gorunmeli.
+                    $detayOk = str_contains($facilityEditHtml, 'RENDER TEST')
+                        && str_contains($facilityEditHtml, '05551234567')
+                        && str_contains($facilityEditHtml, '3–5 yaş')
+                        && str_contains($facilityEditHtml, '0–3 ay içinde')
+                        && str_contains($facilityEditHtml, 'Özel');
+                    $out .= $detayOk ? "Kurum sayfasinda TAM anket detayi (isim/telefon/yas/aciliyet/tercih) OK.\n" : "UYARI: kurum sayfasinda tam anket detayi eksik.\n";
+
+                    \App\Models\FamilyNeedSurveySend::where('family_need_survey_id', $testSurvey->id)->delete();
+                } else {
+                    $out .= "Eslesen kurumlarin hicbirinde cep telefonu yok, whatsapp() adimi atlandi.\n";
+                }
+            } catch (\Throwable $e) {
+                $out .= 'DOLU LISTE HATA: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine()."\n";
+            } finally {
+                \App\Models\FamilyNeedSurveySend::where('family_need_survey_id', $testSurvey->id)->delete();
+                $testSurvey->delete();
+            }
+        } else {
+            $out .= "Test icin uygun (cocuk-bakim kategorili kurumu olan) bir il bulunamadi.\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 11 Ekim 2026: kullanicinin talebi - "butun doktorlari kontrol et"
+     * (sadece Pediatri degil). Her Expert kaydinin cekildigi ANDAKI ham
+     * Google kategori metnini (source_payload.row.Kategori veya .Branş,
+     * dosya formatina gore degisir) bizim atadigimiz 'branch' alanıyla
+     * karsilastirir - salt okunur, HICBIR SEY SILMEZ/DEGISTIRMEZ, sadece
+     * supheli olanlari listeler (elle incelenip expertRemove() ile
+     * silinir). "Cocuk X" / "Pediatrik X" gibi gercek pediatri alt
+     * dallari supheli SAYILMAZ.
+     */
+    private function expertCategoryCrosscheck(): string
+    {
+        $rows = \App\Models\Expert::whereNull('deleted_at')
+            ->whereNotNull('source_payload')
+            ->get(['id', 'name', 'title', 'branch', 'district', 'source_payload']);
+
+        // 11 Ekim 2026: strtr buyuk/kucuk harfe duyarli, mb_strtolower'dan ONCE
+        // calisiyordu ama sadece kucuk "ç/ş/ğ/ü/ö/ı" eslesmesi vardi - buyuk
+        // "Ç/Ş/Ğ/Ü/Ö" (ornegin "Çocuk") donusturulemeden kaliyor, sonraki
+        // mb_strtolower de onu cedilla'li "çocuk" yapiyordu. Bu da duz "cocuk"
+        // arayan str_contains kontrollerini atlatip GECERLI "Cocuk Kardiyolojisi"
+        // gibi kayitlari yanlislikla supheli gosteriyordu - buyuk harfli
+        // karsiliklari da eklendi.
+        $norm = fn (string $s) => mb_strtolower(strtr($s, ['ı' => 'i', 'İ' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c', 'Ş' => 's', 'Ğ' => 'g', 'Ü' => 'u', 'Ö' => 'o', 'Ç' => 'c']));
+
+        // Her brans icin, gercek Google kategori metninde GECMESI beklenen
+        // kok kelimeler - bunlardan HICBIRI gecmiyor VE bilinen BASKA bir
+        // uzmanlik kelimesi aciyorsa supheli sayilir.
+        $branchRoots = [
+            'pediatri' => ['pediatri', 'cocuk', 'çocuk'],
+            'ortopedi' => ['ortoped', 'travmatoloji'],
+            'diş hekimliği' => ['dis', 'diş', 'dental', 'agiz', 'ağız'],
+            'nöroloji' => ['noroloji', 'nöroloji', 'norofizyoloji'],
+            'çocuk psikiyatrisi' => ['psikiyatri', 'cocuk', 'çocuk'],
+            'fiziksel tıp ve rehabilitasyon' => ['fizik', 'rehabilitasyon', 'fizyoterapi'],
+        ];
+        $otherSpecialtyWords = ['üroloji', 'uroloji', 'kardiyoloji', 'göz hastalık', 'goz hastalik', 'kadın hastalıkları', 'kadin hastaliklari', 'jinekolog', 'beyin ve sinir', 'beyin cerrah', 'kulak burun boğaz', 'kbb', 'dermatoloji', 'cildiye', 'genel cerrahi', 'göğüs hastalıkları', 'gogus hastaliklari', 'enfeksiyon hastalıkları', 'medikal estetik', 'plastik cerrahi', 'nefroloji', 'gastroenteroloji', 'romatoloji', 'algoloji', 'anestezi', 'radyoloji', 'patoloji'];
+
+        $suspicious = [];
+        foreach ($rows as $r) {
+            $payload = is_array($r->source_payload) ? $r->source_payload : null;
+            $row = $payload['row'] ?? null;
+            if (! $row) {
+                continue;
+            }
+            $kategori = $row['Kategori'] ?? $row['Branş'] ?? '';
+            if (! $kategori) {
+                continue;
+            }
+            $kategoriNorm = $norm($kategori);
+            $branchKey = $norm($r->branch);
+            $expectedRoots = $branchRoots[$branchKey] ?? [$branchKey];
+
+            $hasExpected = false;
+            foreach ($expectedRoots as $root) {
+                if (str_contains($kategoriNorm, $norm($root))) {
+                    $hasExpected = true;
+                    break;
+                }
+            }
+            if ($hasExpected) {
+                continue;
+            }
+
+            // Pediatrik alt dal ("Cocuk X") her zaman GECERLI sayilir.
+            if (str_contains($kategoriNorm, 'cocuk') || str_contains($kategoriNorm, 'pediatrik')) {
+                continue;
+            }
+
+            foreach ($otherSpecialtyWords as $word) {
+                if (str_contains($kategoriNorm, $word)) {
+                    $suspicious[] = "#{$r->id} | {$r->title} {$r->name} | atanan branş: {$r->branch} | ilçe: {$r->district} | GERÇEK kategori: \"{$kategori}\"";
+                    break;
+                }
+            }
+        }
+
+        return "Taranan (source_payload'u olan) kayıt: {$rows->count()} | Şüpheli: ".count($suspicious).PHP_EOL.implode(PHP_EOL, $suspicious);
+    }
+
+    /**
+     * 11 Ekim 2026: yukaridaki expertNameCheck() ile bulunan, GERCEKTEN
+     * ALAKASIZ (yanlis brans/yanlis kisi) kayitlari kalici silmek icin -
+     * facility-remove ile AYNI desen (id listesi).
+     */
+    private function expertRemove(Request $request): string
+    {
+        // 14 Ekim 2026: kullanicinin talebi - "fizyoterapistleri yanlis
+        // yere (Doktorlar) eklemissin, kurumlara eklemen gerekiyordu"
+        // hatasini geri almak icin - "source" ile TOPLU silme eklendi,
+        // tek tek ID yazmaya gerek kalmadi. "ids" eski kullanim bicimiyle
+        // AYNEN calismaya devam eder.
+        $source = (string) $request->input('source', '');
+        if ($source) {
+            $deleted = \App\Models\Expert::where('source', $source)->get(['id', 'name'])->map(fn ($e) => "#{$e->id} {$e->name}")->implode(', ');
+            // forceDelete: yanlislikla baska bir yere (Doktorlar) eklenen
+            // kayitlar GERCEKTEN silinsin istendi, cop kutusunda kalmasin.
+            $count = \App\Models\Expert::where('source', $source)->forceDelete();
+
+            return "Silinen (source='{$source}'): {$count}".PHP_EOL.$deleted;
+        }
+
+        $ids = array_filter(array_map('intval', explode(',', (string) $request->input('ids', ''))));
+        if (! $ids) {
+            return 'HATA: "ids" veya "source" parametresi gerekli.';
+        }
+        $deleted = \App\Models\Expert::whereIn('id', $ids)->get(['id', 'name'])->map(fn ($e) => "#{$e->id} {$e->name}")->implode(', ');
+        $count = \App\Models\Expert::whereIn('id', $ids)->delete();
+
+        return "Silinen: {$count}".PHP_EOL.$deleted;
+    }
+
+    /**
+     * 11 Ekim 2026: kullanicinin talebi - "telefon numarasi eksik olan
+     * doktorlarin telefon numaralarini bulmamissin" geri bildirimi uzerine,
+     * SADECE kullanicinin elle arastirip yapistirdigi Umraniye/Pendik
+     * listesindeki (30 kayit, 12'si gercek pediatri) doktorlara telefon
+     * eklendigi, ama bunun SITE GENELINDE telefonu eksik TUM doktorlari
+     * kapsamadigi anlasildi - bu, gercek kapsami (sehir/ilce dagilimi,
+     * toplam sayi) gormek icin salt-okunur bir rapor. Admin panelindeki
+     * yeni "Telefonu Eksik" filtresiyle (bkz. ExpertController) AYNI
+     * kosulu kullanir.
+     */
+    private function expertPhoneMissingReport(Request $request): string
+    {
+        $query = \App\Models\Expert::whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->whereNull('phone')->orWhere('phone', '')->orWhereRaw("phone REGEXP '[0-9]' = 0");
+            });
+
+        $total = $query->count();
+        $byCity = (clone $query)->selectRaw('city_id, count(*) as c')->groupBy('city_id')->with('city')->orderByDesc('c')->get()
+            ->map(fn ($r) => ($r->city->name ?? 'Şehir yok').': '.$r->c)->implode(', ');
+
+        $limit = min((int) $request->input('limit', 40), 100);
+        $afterId = (int) $request->input('after_id', 0);
+        $sample = (clone $query)->where('id', '>', $afterId)->orderBy('id')->limit($limit)
+            ->get(['id', 'name', 'title', 'branch', 'city_id', 'district'])
+            ->map(fn ($e) => "#{$e->id} {$e->title} {$e->name} | {$e->branch} | {$e->city?->name}/{$e->district}")
+            ->implode(PHP_EOL);
+
+        return "Telefonu eksik toplam: {$total}".PHP_EOL."Şehir dağılımı: {$byCity}".PHP_EOL.PHP_EOL."Örnek (id>{$afterId}, limit {$limit}):".PHP_EOL.$sample;
+    }
+
+    /**
+     * 11 Ekim 2026: kullanicinin "telefon numarasi eksik olan doktorlarin
+     * telefon numaralarini bulmamissin" geri bildirimi uzerine - telefonu
+     * eksik TUM doktorlarin (73 kayit) ham source_payload'indaki website/
+     * adres bilgisini TEK bir cagrida donduren toplu rapor. Amac: 73 ayri
+     * /_ops cagrisi yerine (10/dk throttle'a carpar) TEK cagriyla hastane/
+     * klinik baglantisini (varsa) gorup, aynı hastaneye bagli doktorlarin
+     * telefonunu TEK bir arastirmayla (hastane santral numarasi) cozebilmek.
+     */
+    private function expertPhoneMissingDetail(Request $request): string
+    {
+        $rows = \App\Models\Expert::whereNull('deleted_at')
+            ->where(function ($q) {
+                $q->whereNull('phone')->orWhere('phone', '')->orWhereRaw("phone REGEXP '[0-9]' = 0");
+            })
+            ->orderBy('id')
+            ->get(['id', 'name', 'title', 'branch', 'district', 'source_payload']);
+
+        $out = [];
+        foreach ($rows as $r) {
+            $row = (is_array($r->source_payload) ? $r->source_payload['row'] ?? null : null) ?? [];
+            $website = $row['Web Sitesi'] ?? $row['website'] ?? '';
+            $address = $row['Adres'] ?? $row['address'] ?? '';
+            $out[] = "#{$r->id} | {$r->title} {$r->name} | {$r->branch} | {$r->district} | web: {$website} | adres: {$address}";
+        }
+
+        return count($out)." kayıt:".PHP_EOL.implode(PHP_EOL, $out);
+    }
+
+    // 14 Ekim 2026: kullanicinin "bursa_fizyoterapist" aktarimindan sonra
+    // "gercekten kaydedildi mi" diye GERCEKTEN dogrulamak icin - kayitli
+    // olmayan degil, az once eklenen 128 satirin gercekten veritabaninda
+    // olup olmadigini TEYIT eder.
+    private function expertCountBySource(Request $request): string
+    {
+        $source = (string) $request->input('source', '');
+        $query = \App\Models\Expert::query();
+        if ($source) {
+            $query->where('source', $source);
+        }
+        $count = $query->count();
+        $withReviews = (clone $query)->whereNotNull('reviews')->count();
+        $withDescription = (clone $query)->whereNotNull('description')->count();
+        $sample = (clone $query)->limit(5)->get(['id', 'name', 'city_id', 'district', 'phone', 'rating', 'reviews', 'description']);
+
+        $out = "source='{$source}' | toplam: {$count} | yorumlu: {$withReviews} | aciklamali: {$withDescription}\n\n";
+        foreach ($sample as $e) {
+            $out .= "#{$e->id} {$e->name} | {$e->district} | tel:{$e->phone} | puan:{$e->rating} | yorum_sayisi:".count($e->reviews ?? [])." | aciklama_var:".($e->description ? 'EVET' : 'HAYIR')."\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 14 Ekim 2026: kullanıcının talebi - "bireysel fizyoterapist Doktorlar
+     * değil Kurumlar'a eklenmeliydi". DataExtractorImportService::import()
+     * (admin "Veri Çekici" ekranının KANITLANMIŞ, tüm iş kurallarını
+     * (mükerrer kontrolü, kamu/belediye filtresi, resim ekleme, bölüm
+     * detayı, SEO açıklaması) uygulayan metodu) tek farkla çağrılır:
+     * $district=null verilir, bu da az önce o metoda eklenen per-row
+     * ilçe tespiti dalını tetikler - tek dosyada BİRDEN FAZLA ilçeye
+     * yayılmış (ör. tüm Bursa) veri TEK seferde doğru ilçelere dağılır.
+     * Yorumlar AYRI bir adımda (zaten var olan
+     * veriCekiciImportGoogleReviewsByMapsUrl ucu, google_maps_url ile
+     * eşleştirir) içe aktarılmalı - bu action SADECE kurum kayıtlarını açar.
+     */
+    private function facilityImportScrapedMultiDistrict(Request $request): string
+    {
+        set_time_limit(0);
+
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki xlsx dosya yolu) gerekli.';
+        }
+        $citySlug = (string) $request->input('city_slug');
+        $categorySlug = (string) $request->input('category_slug');
+        $publish = $request->boolean('publish', true);
+        $fileName = (string) $request->input('file_name', basename($path));
+
+        $city = \App\Models\City::where('slug', $citySlug)->first();
+        if (! $city) {
+            return "HATA: '{$citySlug}' slug'li il bulunamadi.";
+        }
+        $category = \App\Models\FacilityCategory::where('slug', $categorySlug)->first();
+        if (! $category) {
+            return "HATA: '{$categorySlug}' slug'li kategori bulunamadi.";
+        }
+
+        $result = app(\App\Services\DataExtractorImportService::class)->import(
+            $path, $city, $category, null, $publish, null, $fileName
+        );
+
+        $out = "Olusturulan: {$result['created']} | Atlanan: {$result['skipped']} | Hata: ".count($result['errors'])." | batch_id: {$result['batch_id']}\n";
+        if ($result['errors']) {
+            $out .= "\nHatalar:\n".implode("\n", array_slice($result['errors'], 0, 30));
+        }
+
+        return $out;
+    }
+
+    /**
+     * 14 Ekim 2026: facility-import-scraped-multi-district HTTP seviyesinde
+     * zaman asimina ugradiginda ("Request Timeout") ne kadarinin GERCEKTEN
+     * islendigini gormek icin - DataExtractorImportService::import()
+     * Facility.source'u her zaman sabit 'google_maps_veri_cekici' yazdigi
+     * icin (parametrik degil), bu dosyaya ozel sorgu DataImportBatch'in
+     * file_name'i uzerinden yapilir.
+     */
+    private function facilityCountBySource(Request $request): string
+    {
+        // 14 Ekim 2026: sadece import ANINDAKI (statik) batch_rows kaydina
+        // degil, ŞU ANKI CANLI duruma (sonradan silinenler dahil) bakan
+        // kesin dogrulama - category_id verilirse bu CANLI sayiyi gosterir.
+        if ($categoryId = (int) $request->input('category_id', 0)) {
+            $live = \App\Models\Facility::where('facility_category_id', $categoryId)->get(['id', 'name', 'city_id', 'district', 'lat', 'lng', 'neighborhood', 'address']);
+            $noLat = $live->whereNull('lat')->count();
+            $noNeighborhood = $live->filter(fn ($f) => ! filled($f->neighborhood))->count();
+            $out = "category_id={$categoryId} | CANLI toplam: {$live->count()} | lat eksik: {$noLat} | mahalle eksik: {$noNeighborhood}\n\n";
+            foreach ($live->whereNull('lat') as $f) {
+                $out .= "#{$f->id} {$f->name} | city_id:{$f->city_id} | adres: {$f->address}\n";
+            }
+
+            return $out;
+        }
+
+        $fileName = (string) $request->input('file_name', '');
+        $batch = $fileName ? \App\Models\DataImportBatch::where('file_name', $fileName)->latest()->first() : null;
+        if ($fileName && ! $batch) {
+            return "'{$fileName}' adiyla bir DataImportBatch bulunamadi (import hic baslamamis/kaydedilmemis olabilir).";
+        }
+
+        $out = '';
+        if ($batch) {
+            $createdRows = $batch->rows()->where('status', 'created')->count();
+            $out .= "batch #{$batch->id} | status: {$batch->status} | toplam_satir: {$batch->total_rows} | created_count: {$batch->created_count} | skipped_count: {$batch->skipped_count} | error_count: {$batch->error_count} | GERCEK olusturulan satir (rows tablosu): {$createdRows}\n\n";
+            // 14 Ekim 2026: kullanicinin talebi - "Bursa fizyoterapist" dosyasinin
+            // TUM adrese bakmadan tek sehre (Bursa) sabitlenmesi, aslinda
+            // BASKA sehirde olan birkac satirin yanlislikla Bursa'ya
+            // etiketlenme riski tasiyordu - tum olusturulan satirlarin GERCEK
+            // adresini goster ki "Bursa" gecmeyen/baska il gecen satirlar
+            // elle tespit edilip duzeltilebilsin.
+            if ($request->boolean('full_dump')) {
+                foreach ($batch->rows()->where('status', 'created')->get(['facility_id', 'name', 'phone', 'payload']) as $r) {
+                    $adres = $r->payload['address'] ?? '???';
+                    $out .= "facility_id={$r->facility_id} | {$r->name} | adres: {$adres}\n";
+                }
+
+                return $out;
+            }
+
+            $sample = $batch->rows()->where('status', 'created')->limit(5)->get(['facility_id', 'name', 'phone']);
+            foreach ($sample as $r) {
+                $out .= "facility_id={$r->facility_id} | {$r->name} | {$r->phone}\n";
+            }
+            $out .= "\n-- atlanan satirlar (ilk 70) --\n";
+            foreach ($batch->rows()->where('status', '!=', 'created')->limit(70)->get(['name', 'message']) as $r) {
+                $out .= "{$r->name}: {$r->message}\n";
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * 14 Ekim 2026: kullanıcının bildirdiği GERÇEK hata - admin "Konum
+     * Eksik" filtresinde Bursa fizyoterapist importundan gelen kurumlar
+     * görünüyordu. Kök neden: Python kazıyıcısının (doktor_cekici.py)
+     * ürettiği "İlçe" metinlerinde "İ" harfi bozuk - gerçek İ yerine
+     * "i" + GÖRÜNMEZ BİRLEŞİK NOKTA İŞARETİ (U+0307, COMBINING DOT ABOVE)
+     * ikilisi var ("Ni̇lüfer" gibi gözüküyor ama aslında "Nilüfer" değil).
+     * Nominatim (ücretsiz geocoding servisi) bu bozuk diziyi hiçbir gerçek
+     * yerle eşleştiremiyor, adres ne kadar doğru olursa olsun geocoding
+     * HER ZAMAN başarısız oluyor. Bu action o tek karakteri adres/ilçe
+     * alanlarından temizler - metnin GERİ KALANI (gerçek ç/ğ/ı/ö/ş/ü gibi
+     * Türkçe harfler) DOKUNULMADAN kalır, sadece bu TEK bozuk kombinasyon.
+     */
+    /**
+     * 14 Ekim 2026: geocode-missing-now() TUM GERCEK adresler icin bile
+     * %100 "cozumlenemedi" verince - gercek Nominatim HTTP yanitini
+     * dogrudan gormek icin (rate-limit/IP engeli mi, format mi, baska bir
+     * sey mi?).
+     */
+    /**
+     * 14 Ekim 2026: kullanıcı "mahallesini ben manuel yazarsam koordinatlarını
+     * ekleyebilir misin" diye sormuş, sonra mahalle alanını admin panelden
+     * KENDİSİ elle doldurmuş ("mahalleler eksiksiz tamam"). Bu action artık
+     * metinden tahmin ETMİYOR - sadece Facility.neighborhood alanı zaten dolu
+     * ama lat/lng boş olan kayıtları bulup "Mahalle Mahallesi, İlçe, İl,
+     * Türkiye" seviyesinde geocode ediyor (tam adres aşırı detaylı olduğu
+     * için başarısız oluyordu, mahalle seviyesi kanıtlanmış şekilde çalışıyor).
+     * Nominatim kullanım politikasına uymak için istekler arasında 1.1 saniye
+     * bekleme var (bkz. geocodeMissingNow() aynı desen).
+     */
+    private function facilityGeocodeByNeighborhood(Request $request): string
+    {
+        $categoryId = (int) $request->input('category_id', 0);
+
+        $facilities = \App\Models\Facility::whereNull('lat')
+            ->whereNotNull('neighborhood')
+            ->where('neighborhood', '!=', '')
+            ->when($categoryId, fn ($q) => $q->where('facility_category_id', $categoryId))
+            ->with('city')
+            ->get();
+
+        $geocodingService = app(\App\Services\GeocodingService::class);
+
+        $updated = 0;
+        $failed = [];
+        foreach ($facilities as $f) {
+            $mahalle = trim((string) $f->neighborhood);
+            $query = trim($mahalle.' Mahallesi, '.($f->district ?: '').', '.($f->city?->name ?: '').', Türkiye');
+            $coords = $geocodingService->geocodeAddress($mahalle.' Mahallesi', $f->district, $f->city?->name);
+            if ($coords) {
+                $f->update(['lat' => $coords['lat'], 'lng' => $coords['lng']]);
+                $updated++;
+            } else {
+                $failed[] = "#{$f->id} {$f->name}: '{$mahalle}' cozumlenemedi ({$query})";
+            }
+            usleep(1100000);
+        }
+
+        $out = "Guncellenen: {$updated} / toplam: {$facilities->count()}\n";
+        if ($failed) {
+            $out .= "\nBasarisiz:\n".implode("\n", $failed);
+        }
+
+        return $out;
+    }
+
+    private function nominatimRawDebug(Request $request): string
+    {
+        // 14 Ekim 2026: kullanicinin bilgisayarindan (Git Bash/curl) gelen
+        // Turkce karakterli sorgu metni terminal/encoding sorunlariyla
+        // bozulabiliyor (bilinen bir ortam sorunu) - facility_id verilirse
+        // DOGRUDAN veritabanindaki GERCEK adres metni kullanilir, hicbir
+        // sekilde elle yazilmis/aktarilmis bir sorgu metnine guvenilmez.
+        if ($facilityId = (int) $request->input('facility_id', 0)) {
+            $f = \App\Models\Facility::withTrashed()->find($facilityId);
+            if (! $f) {
+                return "facility_id={$facilityId}: bulunamadi.";
+            }
+            $q = trim($f->address.', Türkiye');
+            $q2 = trim(implode(', ', array_filter([$f->address, $f->district, $f->city?->name, 'Türkiye'])));
+            $out = "DB'deki ham adres (bayt uzunlugu: ".strlen($f->address).", gecerli UTF-8: ".(mb_check_encoding($f->address, 'UTF-8') ? 'EVET' : 'HAYIR').")\n";
+            $out .= "adres: {$f->address}\n1. sorgu: {$q}\n2. sorgu: {$q2}\n\n";
+            foreach ([$q, $q2] as $i => $query) {
+                try {
+                    $response = \Illuminate\Support\Facades\Http::withHeaders([
+                        'User-Agent' => config('app.name').' facility geocoder ('.config('app.url').', '.config('mail.from.address').')',
+                    ])->timeout(8)->get('https://nominatim.openstreetmap.org/search', [
+                        'q' => $query, 'format' => 'json', 'limit' => 1, 'countrycodes' => 'tr',
+                    ]);
+                    $out .= ($i + 1).". sorgu sonucu -> HTTP {$response->status()}: ".$response->body()."\n\n";
+                } catch (\Throwable $e) {
+                    $out .= ($i + 1).'. sorgu ISTISNA: '.$e->getMessage()."\n\n";
+                }
+            }
+
+            return $out;
+        }
+
+        $q = (string) $request->input('q', 'Konak, Nilüfer, Bursa, Türkiye');
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'User-Agent' => config('app.name').' facility geocoder ('.config('app.url').', '.config('mail.from.address').')',
+            ])->timeout(8)->get('https://nominatim.openstreetmap.org/search', [
+                'q' => $q, 'format' => 'json', 'limit' => 1, 'countrycodes' => 'tr',
+            ]);
+
+            return "sorgu: {$q}\nHTTP status: {$response->status()}\nbasarili mi: ".($response->successful() ? 'EVET' : 'HAYIR')."\ngovde:\n".$response->body();
+        } catch (\Throwable $e) {
+            return 'ISTISNA: '.get_class($e).' - '.$e->getMessage();
+        }
+    }
+
+    private function facilityCleanCombiningMarks(Request $request): string
+    {
+        $categoryId = (int) $request->input('category_id', 0);
+        $query = \App\Models\Facility::query();
+        if ($categoryId) {
+            $query->where('facility_category_id', $categoryId);
+        }
+
+        $affected = $query->where(function ($q) {
+            $q->where('address', 'like', '%'."\u{0307}".'%')
+                ->orWhere('district', 'like', '%'."\u{0307}".'%')
+                ->orWhere('neighborhood', 'like', '%'."\u{0307}".'%');
+        })->get();
+
+        $cleaned = 0;
+        foreach ($affected as $f) {
+            $updates = [];
+            foreach (['address', 'district', 'neighborhood'] as $field) {
+                if ($f->$field && str_contains($f->$field, "\u{0307}")) {
+                    // i + U+0307 -> plain i (asil harf zaten noktali, fazladan
+                    // bindirilmis gorunmez isaret siliniyor), geriye kalan
+                    // herhangi bir "yalniz" U+0307 de (ör. baska bir harften
+                    // sonra) ayni sekilde temizlenir.
+                    $updates[$field] = str_replace("\u{0307}", '', $f->$field);
+                }
+            }
+            if ($updates) {
+                $f->update($updates);
+                $cleaned++;
+            }
+        }
+
+        return "Temizlenen kurum: {$cleaned} / taranan: {$affected->count()}";
+    }
+
+    private function expertSourcePayload(Request $request): string
+    {
+        $id = (int) $request->query('id', 0);
+        $e = \App\Models\Expert::withTrashed()->find($id);
+        if (! $e) {
+            return "id={$id}: bulunamadi.";
+        }
+
+        return "#{$e->id} {$e->name} | phone: {$e->phone}\nsource: {$e->source}\nsource_payload:\n".json_encode($e->source_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -6100,6 +9758,41 @@ HTML;
         $result = app(\App\Services\DataQualityService::class)->phoneTypeFix($citySlug);
 
         return "Duzeltilen phone_type: {$result['fixedPhoneType']}\nBirlikte duzeltilen davet_durumu: {$result['fixedStatus']} (kalanlarda davet sureci zaten ilerlemisti, dokunulmadi)";
+    }
+
+    // 5 Ekim 2026: kaynak veride bozuk ek tasiyan tek tek telefon
+    // numaralarini (ör. "+90 224 220 58 47. 1") elle, onaylanmis temiz
+    // numarayla duzeltmek icin - ownershipFix() ile ayni desen (id + yeni
+    // deger, toplu/otomatik degil).
+    // 5 Ekim 2026: sendWhatsapp() GECMISTE status'u hic guncellemiyordu
+    // (bkz. phone-fix yanindaki aciklama) - bu uc SADECE o eski hatali
+    // donemde WhatsApp'tan ZATEN gonderilmis (sent_to_facility_at dolu)
+    // ama status hala "yeni/new" kalmis kayitlari BIR KEREYE MAHSUS
+    // gunceller. Yeni kayitlar zaten dogru guncelleniyor, bu sadece
+    // gecmis kalinti icin.
+    private function feeInfoRequestStatusBackfill(): string
+    {
+        $offerFixed = DB::table('offer_requests')
+            ->whereNotNull('sent_to_facility_at')
+            ->where('status', 'new')
+            ->update(['status' => 'contacted', 'updated_at' => now()]);
+
+        $leadFixed = DB::table('facility_interest_leads')
+            ->whereNotNull('sent_to_facility_at')
+            ->where('status', 'yeni')
+            ->update(['status' => 'iletisime_gecildi', 'updated_at' => now()]);
+
+        return "Duzeltilen OfferRequest: {$offerFixed}\nDuzeltilen FacilityInterestLead: {$leadFixed}";
+    }
+
+    private function phoneFix(Request $request): string
+    {
+        $id = (int) $request->query('id', 0);
+        $phone = (string) $request->query('phone', '');
+
+        $result = app(\App\Services\DataQualityService::class)->phoneFix($id, $phone);
+
+        return ($result['ok'] ? 'OK: ' : 'HATA: ') . $result['message'];
     }
 
     // 28 Temmuz 2026: "BURSA SEFKAT HUZUREVI..." aslinda ozel isletme ama
@@ -7959,6 +11652,54 @@ HTML;
         );
 
         return "OK: sayfa kaydedildi/guncellendi -> id={$page->id}, brand=bakimevibul, slug=cocuk-istanbul-kres-anaokulu-rehberi";
+    }
+
+    // 4 Ekim 2026: kullanicinin talebi - her bolum (cocuk/yasli-bakim/
+    // rehabilitasyon) icin uzmanlik alani bazli, SEO odakli "on bilgilendirme"
+    // makaleleri. Kullanicinin acik talimati: SADECE bakimevleri.com'a
+    // eklenecek (diger 2 markaya AYNI icerik kopyalanirsa Google kopya icerik
+    // sayabilir - 3 marka icin 3 ayri ozgun metin yazmak bu turda kapsam disi
+    // birakildi). JSON path'ten okunur, path sunucu disinda bir yerde
+    // olabilecegi icin is_file() ile dogrulanir (veri-cekici-import-file ile
+    // ayni guvenlik deseni).
+    private function guidesBulkCreate(Request $request): string
+    {
+        $path = (string) $request->input('path');
+        if (! $path || ! is_file($path)) {
+            return 'HATA: gecerli bir "path" parametresi (sunucudaki json dosya yolu) gerekli.';
+        }
+
+        // 4 Ekim 2026: kullanicinin talebi - "her site icin farkli olmali"
+        // (kopya icerik Google tarafindan cezalandirilabilir). Varsayilan
+        // bakimevleri'ydi, artik hangi JSON hangi markaya yukleniyorsa brand
+        // parametresiyle acikca belirtiliyor.
+        $brand = (string) $request->input('brand', 'bakimevleri');
+        if (! in_array($brand, ['bakimevleri', 'bakimevibul', 'bakimeviara'], true)) {
+            return 'HATA: gecersiz brand (bakimevleri/bakimevibul/bakimeviara olmali).';
+        }
+
+        $items = json_decode(file_get_contents($path), true);
+        if (! is_array($items)) {
+            return 'HATA: dosya gecerli bir JSON dizisi degil.';
+        }
+
+        $n = 0;
+        $out = [];
+        foreach ($items as $item) {
+            $page = \App\Models\ContentPage::updateOrCreate(
+                ['brand' => $brand, 'slug' => $item['slug']],
+                [
+                    'type' => 'guide',
+                    'title' => $item['title'],
+                    'summary' => $item['summary'],
+                    'body' => $item['body'],
+                ]
+            );
+            $n++;
+            $out[] = "#{$page->id} {$item['slug']}";
+        }
+
+        return "OK: {$n} makale kaydedildi/guncellendi (brand={$brand})".PHP_EOL.implode(PHP_EOL, $out);
     }
 
     private function seedBursaKresRehberi(): string

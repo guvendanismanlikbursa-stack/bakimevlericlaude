@@ -167,17 +167,16 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h2 class="font-bold mb-3">Son Importlar</h2>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="text-left text-gray-500 bg-gray-50"><tr><th class="p-2">Kaynak</th><th class="p-2">Durum</th><th class="p-2">Satir</th><th class="p-2">Eklenen</th><th class="p-2">Tarih</th></tr></thead>
-          <tbody class="divide-y">
-            @forelse($recentImports as $batch)
-              <tr><td class="p-2">{{ $batch->file_name ?: '-' }}</td><td class="p-2">{{ $batch->status }}</td><td class="p-2">{{ $batch->total_rows }}</td><td class="p-2">{{ $batch->created_count }}</td><td class="p-2">{{ $batch->created_at->format('d.m.Y H:i') }}</td></tr>
-            @empty
-              <tr><td class="p-2 text-gray-400" colspan="5">Henüz import yok.</td></tr>
-            @endforelse
-          </tbody>
-        </table>
+      {{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap kart. --}}
+      <div class="divide-y divide-gray-100">
+        @forelse($recentImports as $batch)
+          <div class="py-2 flex items-center justify-between gap-3 flex-wrap text-sm">
+            <span class="font-semibold">{{ $batch->file_name ?: '-' }}</span>
+            <span class="text-xs text-gray-500">{{ $batch->status }} · {{ $batch->total_rows }} satır · {{ $batch->created_count }} eklendi · {{ $batch->created_at->format('d.m.Y H:i') }}</span>
+          </div>
+        @empty
+          <div class="py-2 text-gray-400 text-sm">Henüz import yok.</div>
+        @endforelse
       </div>
     </div>
   </div>

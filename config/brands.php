@@ -36,10 +36,18 @@ return [
             // gerekmiyor (zaten bu diziyi oldugu gibi okuyor) - sadece veri.
             'features' => ['7/24 hemşire', 'Doktor kontrolü', 'Alzheimer bakımı', 'Demans bakımı', 'Palyatif bakım', 'Gündüz bakım', 'Tam zamanlı bakım', 'Fizik tedavi', 'Fiziksel aktivite', 'Diyetisyen', 'Sosyal etkinlik', 'Özel oda', 'Bahçe alanı', 'Psikolog desteği', 'Fizyoterapi seansı', 'Yatalak hasta bakımı', 'Kamera sistemi', 'Aile ziyaret programı', 'Engelli erişimi'],
             'profile_fields' => ['Kapasite', 'Oda tipleri', 'Hemşire/doktor desteği', 'Demans/Alzheimer bakımı', 'Ziyaret saatleri', 'Beslenme planı'],
+            // 13 Ekim 2026 (3): kullanicinin talebi - "her bolumde en az 5 can
+            // alici cok kritik soru sorulmali", onceki liste sadece 3 ogeydi.
+            // Eklenen 3 yeni oge GERCEKTEN eslesme kalitesini degistiriyor
+            // (yukaridaki 'features' icindeki gercek anahtar kelimelere baglı),
+            // dekoratif soru eklenmedi.
             'advisor_concerns' => [
                 ['key' => 'has_dementia', 'label' => 'Demans/Alzheimer var', 'keywords' => ['demans' => 'Demans/Alzheimer bakımı', 'alzheimer' => 'Demans/Alzheimer bakımı']],
                 ['key' => 'is_bedridden', 'label' => 'Yatalak', 'keywords' => ['yatalak' => 'Yatalak hasta bakımı', '7/24' => '7/24 hemşire desteği', 'hemşire' => '7/24 hemşire desteği']],
                 ['key' => 'needs_physio', 'label' => 'Fizik tedavi gerekiyor', 'keywords' => ['fizik tedavi' => 'Fizik tedavi', 'fizyoterap' => 'Fizik tedavi']],
+                ['key' => 'has_chronic_illness', 'label' => 'Kronik hastalığı var (diyabet, kalp vb.)', 'keywords' => ['doktor' => 'Doktor kontrolü', 'diyet' => 'Diyetisyen', 'kronik' => 'Doktor kontrolü']],
+                ['key' => 'needs_night_care', 'label' => 'Gece boyunca sürekli gözetim gerekiyor', 'keywords' => ['7/24' => '7/24 hemşire desteği', 'gece' => '7/24 hemşire desteği']],
+                ['key' => 'independent_social_only', 'label' => 'Bağımsız, sadece sosyal ortam/arkadaşlık istiyor', 'keywords' => ['sosyal' => 'Sosyal etkinlik', 'gündüz bakım' => 'Gündüz bakım']],
             ],
         ],
         'cocuk' => [
@@ -57,12 +65,43 @@ return [
             // bkz. yasli-bakim bolumundeki 24 Agustos 2026 yorumu - ayni sebep.
             'hero_image_card' => '/images/hero-cocuk-card.webp',
             'theme' => ['primary' => '#5b3a8e', 'secondary' => '#ffd166', 'soft' => '#faf5ff'],
-            'features' => ['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı', 'Kamera sistemi', 'Bahçe/oyun parkı', 'Müzik/spor atölyesi', 'Psikolojik danışmanlık', 'Sağlık kontrolü'],
-            'profile_fields' => ['Yaş aralığı', 'Sınıf mevcudu', 'Eğitim programı', 'Rehberlik/psikolog', 'Servis güzergahı', 'Yemek/uyku düzeni'],
+            // 11 Ekim 2026: kullanicinin talebi - okul.com.tr'nin anaokulu/kres
+            // bolumu detayli incelendi, oradaki "Egitim Sistemi / Fiziksel
+            // Imkanlar / Aktiviteler / Yabanci Diller" zenginligine yetismek
+            // icin liste 13'ten 45+'a cikarildi. BILEREK duz (flat) liste
+            // olarak kaldi (asagidaki feature_groups SADECE profil formunda
+            // GORSEL gruplama icin, 8 ayri yerde kullanilan bu 'features'
+            // dizisinin SEKLINI degistirmek riskli olurdu - services
+            // DB sutunu/home filtresi/admin formu hepsi AYNI duz diziyi bekler).
+            'features' => [
+                'Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı', 'Kamera sistemi', 'Bahçe/oyun parkı', 'Müzik/spor atölyesi', 'Psikolojik danışmanlık', 'Sağlık kontrolü',
+                'Yaz okulu programı', 'Organik/sağlıklı beslenme', 'Oyun grupları', 'Güvenlik görevlisi',
+                'MEB müfredatı', 'Montessori', 'Reggio Emilia', 'STEM eğitimi', 'Waldorf pedagojisi', 'İki dilli eğitim (Bilingual)', 'Cambridge müfredatı', 'Uluslararası Bakalorya (IB)',
+                'Yüzme havuzu', 'Kapalı spor salonu', 'Laboratuvar', 'Sanat atölyesi', 'Kütüphane', 'Müzik odası',
+                'Futbol', 'Basketbol', 'Yüzme', 'Bale', 'Drama/tiyatro', 'Robotik ve kodlama', 'Karate', 'Yoga',
+                'İngilizce', 'Almanca', 'Fransızca', 'Çince', 'İspanyolca',
+            ],
+            // 11 Ekim 2026: SADECE profil duzenleme formunda (bkz.
+            // facility/profile.blade.php) yukaridaki duz 'features' listesini
+            // okul.com.tr tarzi basliklar altinda GORSEL olarak gruplamak
+            // icin - veri katmanini etkilemez, her grup sadece 'features'
+            // icindeki ayni metinlere referans verir.
+            'feature_groups' => [
+                'Temel Özellikler' => ['Yaş grubu', 'Oyun alanı', 'Rehberlik servisi', 'Servis imkanı', 'Yemek programı', 'Uyku odası', 'Özel eğitim', 'Dil/atölye programı', 'Kamera sistemi', 'Bahçe/oyun parkı', 'Müzik/spor atölyesi', 'Psikolojik danışmanlık', 'Sağlık kontrolü'],
+                'Sunulan Servisler' => ['Yaz okulu programı', 'Organik/sağlıklı beslenme', 'Oyun grupları', 'Güvenlik görevlisi'],
+                'Eğitim Sistemi' => ['MEB müfredatı', 'Montessori', 'Reggio Emilia', 'STEM eğitimi', 'Waldorf pedagojisi', 'İki dilli eğitim (Bilingual)', 'Cambridge müfredatı', 'Uluslararası Bakalorya (IB)'],
+                'Fiziksel İmkanlar' => ['Yüzme havuzu', 'Kapalı spor salonu', 'Laboratuvar', 'Sanat atölyesi', 'Kütüphane', 'Müzik odası'],
+                'Aktiviteler' => ['Futbol', 'Basketbol', 'Yüzme', 'Bale', 'Drama/tiyatro', 'Robotik ve kodlama', 'Karate', 'Yoga'],
+                'Yabancı Diller' => ['İngilizce', 'Almanca', 'Fransızca', 'Çince', 'İspanyolca'],
+            ],
+            'profile_fields' => ['Yaş aralığı', 'Sınıf mevcudu', 'Eğitim programı', 'Rehberlik/psikolog', 'Servis güzergahı', 'Yemek/uyku düzeni', 'Çalışma saatleri'],
             'advisor_concerns' => [
                 ['key' => 'needs_special_education', 'label' => 'Özel eğitim ihtiyacı var', 'keywords' => ['özel eğitim' => 'Özel eğitim', 'otizm' => 'Otizm/gelişimsel destek', 'gelişim' => 'Gelişimsel destek']],
                 ['key' => 'needs_daycare', 'label' => 'Kreş/gündüz bakım gerekiyor', 'keywords' => ['kreş' => 'Kreş hizmeti', 'gündüz bakım' => 'Gündüz bakım']],
                 ['key' => 'needs_guidance', 'label' => 'Rehberlik/psikolog desteği gerekiyor', 'keywords' => ['rehberlik' => 'Rehberlik servisi', 'psikolog' => 'Psikolog desteği']],
+                ['key' => 'needs_fullday', 'label' => 'Tam gün bakım gerekiyor (ebeveyn çalışıyor)', 'keywords' => ['tam gün' => 'Tam zamanlı bakım', 'tam zamanlı' => 'Tam zamanlı bakım']],
+                ['key' => 'needs_feeding_program', 'label' => 'Beslenme/alerji için özel program gerekiyor', 'keywords' => ['beslenme' => 'Yemek programı', 'organik' => 'Organik/sağlıklı beslenme', 'alerji' => 'Organik/sağlıklı beslenme']],
+                ['key' => 'needs_transport', 'label' => 'Servis (ulaşım) gerekiyor', 'keywords' => ['servis' => 'Servis imkanı']],
             ],
         ],
         'rehabilitasyon' => [
@@ -87,6 +126,9 @@ return [
                 ['key' => 'needs_physio', 'label' => 'Fizik tedavi gerekiyor', 'keywords' => ['fizik tedavi' => 'Fizik tedavi', 'fizyoterap' => 'Fizik tedavi']],
                 ['key' => 'needs_neuro_rehab', 'label' => 'Nörolojik rehabilitasyon gerekiyor', 'keywords' => ['nörolojik' => 'Nörolojik rehabilitasyon', 'inme' => 'İnme sonrası rehabilitasyon', 'felç' => 'Felç sonrası rehabilitasyon']],
                 ['key' => 'needs_speech_therapy', 'label' => 'Konuşma/dil terapisi gerekiyor', 'keywords' => ['konuşma terapisi' => 'Konuşma terapisi', 'dil terapisi' => 'Dil terapisi']],
+                ['key' => 'needs_home_visit', 'label' => 'Evde tedavi/takip gerekiyor', 'keywords' => ['evde' => 'Evde takip']],
+                ['key' => 'needs_device_support', 'label' => 'Cihaz/ekipman desteği gerekiyor (tekerlekli sandalye, ortez vb.)', 'keywords' => ['cihaz' => 'Cihaz desteği']],
+                ['key' => 'needs_autism_support', 'label' => 'Otizm/gelişimsel destek gerekiyor', 'keywords' => ['otizm' => 'Ergoterapi', 'gelişim' => 'Ergoterapi']],
             ],
         ],
     ],

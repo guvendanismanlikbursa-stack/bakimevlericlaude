@@ -45,41 +45,34 @@
   @endif
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr><th class="p-3">Marka</th><th class="p-3">Ziyaretçi</th><th class="p-3">Bölüm</th><th class="p-3">Tercih</th><th class="p-3">Şehir</th><th class="p-3">Son mesaj</th><th class="p-3">İlgilenen</th><th class="p-3">Tarih</th><th class="p-3"></th></tr>
-    </thead>
-    <tbody class="divide-y">
-      @forelse($threads as $thread)
-        <tr class="{{ $thread->unread_by_admin ? 'bg-amber-50' : '' }}">
-          <td class="p-3 font-medium">{{ $thread->brand }}</td>
-          <td class="p-3">
-            <div class="flex items-center gap-2">
-              @if($thread->guest_avatar_url)
-                <img src="{{ $thread->guest_avatar_url }}" alt="" class="w-6 h-6 rounded-full shrink-0">
-              @endif
-              <span>{{ $thread->guest_name ?? 'Misafir #'.$thread->id }}{{ $thread->guest_age ? ' ('.$thread->guest_age.')' : '' }}</span>
-              @if($thread->sibling_threads_count > 1)
-                <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $thread->sibling_threads_count }} sohbet</span>
-              @endif
-            </div>
-          </td>
-          <td class="p-3">{{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }}</td>
-          <td class="p-3">{{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }}</td>
-          <td class="p-3">{{ $thread->city_name ?? '—' }}</td>
-          <td class="p-3 max-w-xs truncate">{{ $thread->last_message_preview ?? '—' }}
-            @if($thread->unread_by_admin)<span class="ml-1 bg-orange-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">yeni</span>@endif
-          </td>
-          <td class="p-3">{{ $thread->assignedAdmin->name ?? '—' }}</td>
-          <td class="p-3 text-gray-400">{{ ($thread->last_message_at ?? $thread->created_at)->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right"><a href="{{ route('admin.chat.show', $thread) }}" class="text-blue-600">Görüntüle</a></td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="9">Kayıt yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($threads as $thread)
+    <div class="p-4 flex items-start justify-between gap-3 flex-wrap {{ $thread->unread_by_admin ? 'bg-amber-50' : '' }}">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          @if($thread->guest_avatar_url)
+            <img src="{{ $thread->guest_avatar_url }}" alt="" class="w-6 h-6 rounded-full shrink-0">
+          @endif
+          <span class="font-bold text-gray-900">{{ $thread->guest_name ?? 'Misafir #'.$thread->id }}{{ $thread->guest_age ? ' ('.$thread->guest_age.')' : '' }}</span>
+          @if($thread->sibling_threads_count > 1)
+            <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $thread->sibling_threads_count }} sohbet</span>
+          @endif
+          @if($thread->unread_by_admin)<span class="bg-orange-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">yeni</span>@endif
+        </div>
+        <div class="text-xs text-gray-500 mt-0.5">
+          {{ $thread->brand }} · {{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }} ·
+          {{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }} ·
+          {{ $thread->city_name ?? '—' }} · İlgilenen: {{ $thread->assignedAdmin->name ?? '—' }} · {{ ($thread->last_message_at ?? $thread->created_at)->format('d.m.Y H:i') }}
+        </div>
+        <div class="text-xs text-gray-600 mt-1 break-words">{{ $thread->last_message_preview ?? '—' }}</div>
+      </div>
+      <a href="{{ route('admin.chat.show', $thread) }}" class="text-blue-600 text-sm font-semibold whitespace-nowrap">Görüntüle</a>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Kayıt yok.</div>
+  @endforelse
 </div>
 <div class="mt-6">{{ $threads->links() }}</div>
 @endsection

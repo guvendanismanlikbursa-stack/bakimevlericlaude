@@ -9,12 +9,12 @@ class Facility extends Model
 {
     use SoftDeletes;
     protected $fillable = [
-        'name', 'slug', 'old_slug', 'city_id', 'district_id', 'facility_category_id', 'ownership_type', 'district',
+        'name', 'slug', 'old_slug', 'city_id', 'district_id', 'facility_category_id', 'ownership_type', 'district', 'neighborhood',
         'address', 'lat', 'lng', 'phone', 'phone_type', 'email', 'source', 'source_payload', 'description', 'capacity', 'price_min',
         'price_max', 'services', 'cover_image', 'is_published',
         'is_featured', 'rating', 'is_claimed', 'claimed_at', 'ministry_verification',
         'free_quote_credits', 'balance', 'quote_price_override', 'views_count', 'boosted_views_count', 'boosted_views_count_weekly',
-        'views_count_at_week_start', 'views_count_at_month_start', 'favorites_count',
+        'views_count_at_week_start', 'views_count_at_month_start', 'views_count_at_quarter_start', 'favorites_count',
         'invitation_status', 'invitation_status_at', 'menu_image_path', 'menu_image_updated_at',
         'is_broker_managed', 'vacant_beds_male', 'vacant_beds_female', 'vacant_beds_updated_at',
         'allows_visit_service', 'video_path', 'video_updated_at',
@@ -72,6 +72,44 @@ class Facility extends Model
             'marketing_brochure_requested' => 'boolean',
             'marketing_callback_at' => 'datetime',
         ];
+    }
+
+    // 6 Ekim 2026: kullanicinin bulgusu - telefon numarasi herhangi bir
+    // yoldan (admin duzenleme formu, Veri Cekici importu, ops/phone-fix,
+    // vb.) degistiginde invitation_status ("Telefon yok"/"Sabit Hatli"/
+    // "Gonderilecek" etiketleri) ESKI DEGERDE KALIYORDU - bu senkronizasyon
+    // SADECE DataQualityService::phoneFix()/phoneTypeFix() GIBI belirli
+    // tek-seferlik araclarin icinde elle yapiliyordu, baska HICBIR
+    // yoldan telefon degisince calismiyordu. Ayni hata tekrar tekrar
+    // (farkli kurumlarda) rapor edildi. Artik TEK, MERKEZI bir yerde -
+    // model olay dinleyicisinde - telefon her ne sekilde degisirse degissin
+    // otomatik calisir, ayrica hicbir yerde elle cagirmaya gerek kalmaz.
+    // Davet sureci ilerlemis (opened/sent/claimed/onaylanmis/istemiyor/
+    // ulasilamadi/yanlis-numara/haric-tutulmus) kurumlara DOKUNMAZ.
+    protected static function booted(): void
+    {
+        static::saving(function (Facility $facility) {
+            if (! $facility->isDirty('phone')) {
+                return;
+            }
+
+            $autoStatuses = ['not_started', 'landline_only', 'contact_missing'];
+            if (! in_array($facility->invitation_status, $autoStatuses, true)) {
+                return;
+            }
+
+            $computed = classify_phone_type($facility->phone);
+            $desired = match ($computed) {
+                'mobile' => 'not_started',
+                'landline' => 'landline_only',
+                default => 'contact_missing',
+            };
+
+            if ($facility->invitation_status !== $desired) {
+                $facility->invitation_status = $desired;
+                $facility->invitation_status_at = now();
+            }
+        });
     }
 
     // 22 Eylul 2026: kullanicinin talebi - "abonelik" ozelligi. Kasitli
@@ -220,6 +258,20 @@ class Facility extends Model
     public function balanceLogs()
     {
         return $this->hasMany(BalanceLog::class)->latest();
+    }
+
+    // 12 Ekim 2026: bu kuruma hangi aile ihtiyac anketleri icin WhatsApp
+    // gonderildiginin kaydi - bkz. FamilyNeedSurveyController::whatsapp().
+    public function needSurveySends()
+    {
+        return $this->hasMany(FamilyNeedSurveySend::class)->latest();
+    }
+
+    // 13 Ekim 2026: Bakim Danismani uzerinden gelen (persist edilmis) lead'lere
+    // bu kurumun WhatsApp'tan ulastigi kayitlar - bkz. CareAdvisorLeadSend.
+    public function careAdvisorLeadSends()
+    {
+        return $this->hasMany(CareAdvisorLeadSend::class)->latest();
     }
     public function reviews()
     {

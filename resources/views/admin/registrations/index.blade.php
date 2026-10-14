@@ -13,25 +13,20 @@
   </select>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Kurum Adı</th><th class="p-3">Kategori</th><th class="p-3">Şehir</th><th class="p-3">Başvuran</th><th class="p-3">E-posta</th><th class="p-3">Tarih</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($registrations as $registration)
-        <tr>
-          <td class="p-3 font-medium">{{ $registration->name }}</td>
-          <td class="p-3">{{ $registration->category->name ?? '-' }}</td>
-          <td class="p-3">{{ $registration->city->name ?? '-' }}</td>
-          <td class="p-3">{{ $registration->applicant_name }}</td>
-          <td class="p-3">{{ $registration->applicant_email }}</td>
-          <td class="p-3 text-gray-400">{{ $registration->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right"><a href="{{ route('admin.registrations.show', $registration) }}" class="text-blue-600">İncele</a></td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="7">Kayıt yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($registrations as $registration)
+    <div class="p-4 flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900 break-words">{{ $registration->name }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ $registration->category->name ?? '-' }} · {{ $registration->city->name ?? '-' }} · {{ $registration->applicant_name }} · {{ $registration->applicant_email }} · {{ $registration->created_at->format('d.m.Y H:i') }}</div>
+      </div>
+      <a href="{{ route('admin.registrations.show', $registration) }}" class="text-blue-600 text-sm font-semibold whitespace-nowrap">İncele</a>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Kayıt yok.</div>
+  @endforelse
 </div>
 <div class="mt-6">{{ $registrations->links() }}</div>
 @endsection

@@ -70,4 +70,15 @@
     <button class="bg-gray-900 text-white px-6 py-2 rounded-lg font-semibold">Kaydet</button>
   </div>
 </form>
+
+{{-- 14 Ekim 2026: kullanıcının talebi - "admin tarafındaki mantık
+     çatışmalarının hepsini düzelt". Aile/kurum panelinde zaten var olan
+     bildirim açma/kapama ekranı admin için hiç yoktu - admin HİÇBİR
+     bildirim türünü kapatamıyordu. Bu, giriş yapmış adminin KENDİ
+     tercihidir, diğer adminleri etkilemez. --}}
+@include('themes._shared.partials.notification-preferences-form', [
+    'notificationGroups' => $notificationGroups,
+    'preferences' => $notificationPreferences,
+    'notificationFormAction' => route('admin.settings.notifications.update'),
+])
 @endsection

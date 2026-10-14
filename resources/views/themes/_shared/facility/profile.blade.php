@@ -4,7 +4,11 @@
 @php
   $selectedServices = collect($facility->services ?? []);
   $imageCount = $facility->images->count();
-  $remainingImages = max(0, 10 - $imageCount);
+  // 11 Ekim 2026: kullanicinin talebi - aktif abone kurumlara sinirsiz
+  // gorsel yukleme hakki (bkz. Facility::isActiveSubscriber(), ayni mantik
+  // ProfileController::uploadImage() dogrulamasinda da uygulanir).
+  $isUnlimitedGallery = $facility->isActiveSubscriber();
+  $remainingImages = $isUnlimitedGallery ? null : max(0, 10 - $imageCount);
 @endphp
 @include('themes._shared.partials.facility-panel-header', ['title' => 'Kurum Bilgilerimi Düzenle', 'subtitle' => $serviceSection ? $serviceSection['title'].' bölümünde hizmet veriyorsunuz. Ana sayfa filtreleri ve kuruma özel detay alanları bu bölüme göre hazırlanır.' : null])
 
@@ -112,15 +116,38 @@
           @include('themes._shared.partials.section-icon', ['section' => $serviceSection, 'class' => 'w-5 h-5'])
           <label class="text-sm font-black">Ana sayfa filtrelerinde görünen {{ $serviceSection['title'] }} özellikleri</label>
         </div>
-        <p class="text-xs text-gray-500 mb-3">Burada seçilen özellikler ziyaretçinin ana sayfa ve kurum listesi filtresinde kurumunuzu bulmasını sağlar.</p>
-        <div class="grid grid-cols-2 gap-2">
-          @foreach($serviceSection['features'] as $feature)
-            <label class="flex items-center gap-2 text-sm bg-white border rounded-lg px-3 py-2">
-              <input type="checkbox" name="services[]" value="{{ $feature }}" @checked($selectedServices->contains($feature))>
-              <span>{{ $feature }}</span>
-            </label>
-          @endforeach
-        </div>
+        <p class="text-xs text-gray-500 mb-3">Burada seçilen özellikler ziyaretçinin ana sayfa ve kurum listesi filtresinde kurumunuzu bulmasını sağlar. Ne kadar çok işaretlerseniz kurumunuz o kadar zengin/ilgi çekici görünür.</p>
+        {{-- 11 Ekim 2026: kullanicinin talebi - okul.com.tr'deki gibi
+             kategorilere ayrilmis, taranmasi kolay bir ozellik secimi.
+             feature_groups TANIMLIYSA (su an sadece 'cocuk' bolumunde)
+             basliklar altinda gruplanir; yoksa (digerindiger bolumler) eski
+             duz grid'e geri duser - geriye donuk tamamen uyumlu. --}}
+        @if(!empty($serviceSection['feature_groups']))
+          <div class="space-y-4">
+            @foreach($serviceSection['feature_groups'] as $groupLabel => $groupFeatures)
+              <div>
+                <div class="text-xs font-black text-gray-500 uppercase tracking-wider mb-2">{{ $groupLabel }}</div>
+                <div class="grid grid-cols-2 gap-2">
+                  @foreach($groupFeatures as $feature)
+                    <label class="flex items-center gap-2 text-sm bg-white border rounded-lg px-3 py-2">
+                      <input type="checkbox" name="services[]" value="{{ $feature }}" @checked($selectedServices->contains($feature))>
+                      <span>{{ $feature }}</span>
+                    </label>
+                  @endforeach
+                </div>
+              </div>
+            @endforeach
+          </div>
+        @else
+          <div class="grid grid-cols-2 gap-2">
+            @foreach($serviceSection['features'] as $feature)
+              <label class="flex items-center gap-2 text-sm bg-white border rounded-lg px-3 py-2">
+                <input type="checkbox" name="services[]" value="{{ $feature }}" @checked($selectedServices->contains($feature))>
+                <span>{{ $feature }}</span>
+              </label>
+            @endforeach
+          </div>
+        @endif
       </div>
     @endif
 
@@ -152,15 +179,25 @@
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
       <div>
         <h2 class="font-bold">Kurum Galerisi</h2>
-        <p class="text-sm text-gray-500">En fazla 10 görsel eklenebilir. Şu an {{ $imageCount }}/10 görsel yüklü.</p>
+        @if($isUnlimitedGallery)
+          <p class="text-sm text-gray-500">Abone kurum olarak sınırsız görsel ekleyebilirsiniz. Şu an {{ $imageCount }} görsel yüklü.</p>
+        @else
+          <p class="text-sm text-gray-500">En fazla 10 görsel eklenebilir. Şu an {{ $imageCount }}/10 görsel yüklü.</p>
+        @endif
       </div>
-      <span class="text-xs font-semibold rounded-full px-3 py-1 {{ $remainingImages > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500' }}">Kalan hak: {{ $remainingImages }}</span>
+      @if($isUnlimitedGallery)
+        <span class="text-xs font-semibold rounded-full px-3 py-1 bg-amber-50 text-amber-700">★ Sınırsız</span>
+      @else
+        <span class="text-xs font-semibold rounded-full px-3 py-1 {{ $remainingImages > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500' }}">Kalan hak: {{ $remainingImages }}</span>
+      @endif
     </div>
 
     <div id="ps-gallery-facility-profile" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
       {{-- 19 Agustos 2026: kullanicinin talebi - hangi gorselin ANA (kapak)
-           gorsel oldugu buradan secilebilir (bkz. Facility::primaryImage()). --}}
-      @foreach($facility->images->take(10) as $img)
+           gorsel oldugu buradan secilebilir (bkz. Facility::primaryImage()).
+           11 Ekim 2026: sinirsiz abone kurumlarda TUM gorseller gosterilir,
+           digerlerinde eski 10 sinirlamasi aynen korunur. --}}
+      @foreach(($isUnlimitedGallery ? $facility->images : $facility->images->take(10)) as $img)
         <div class="relative group">
           <a href="{{ facility_asset($img->path) }}" data-pswp-width="1600" data-pswp-height="1200" target="_blank" rel="noopener">
             <img src="{{ facility_asset($img->path) }}" class="rounded-lg h-28 w-full object-cover border-2 {{ $img->is_primary ? 'border-amber-400' : 'border-gray-100' }} cursor-zoom-in hover:opacity-90 transition" alt="{{ $facility->name }} görseli">
@@ -179,14 +216,16 @@
           </form>
         </div>
       @endforeach
-      @for($i = $imageCount; $i < 10; $i++)
-        <div class="h-28 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-center px-2 text-xs text-gray-400">Görsel alanı<br>{{ $i + 1 }}/10</div>
-      @endfor
+      @if(! $isUnlimitedGallery)
+        @for($i = $imageCount; $i < 10; $i++)
+          <div class="h-28 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-center px-2 text-xs text-gray-400">Görsel alanı<br>{{ $i + 1 }}/10</div>
+        @endfor
+      @endif
     </div>
     @include('themes._shared.partials.image-lightbox')
     <script>document.addEventListener('DOMContentLoaded', function () { initFacilityGallery('ps-gallery-facility-profile'); });</script>
 
-    @if($remainingImages > 0)
+    @if($isUnlimitedGallery || $remainingImages > 0)
       <form method="POST" action="{{ brand_route('facility.profile.image.store') }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row">
         @csrf
         <input type="file" name="images[]" multiple accept="image/*" required class="border rounded-lg px-3 py-2 text-sm flex-1">

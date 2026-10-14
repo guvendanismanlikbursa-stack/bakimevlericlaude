@@ -28,11 +28,18 @@ class FeeInfoRequestController extends Controller
         $interestLeads = FacilityInterestLead::with('facility.city')->latest()->limit(500)->get()
             ->map(fn (FacilityInterestLead $l) => $this->normalizeLead($l));
 
+        // 5 Ekim 2026: kullanicinin talebi - "İşlem Yapıldı" sekmesi olmali
+        // ki islenmis talepler "bekleyen/yeni" gorunumunden ayrilsin, surekli
+        // aktif gibi gorunmesin. sent_to_facility_at artik hem WhatsApp
+        // gonderiminde hem elle "İşlem Yapıldı" isaretlemesinde doluyor
+        // (bkz. sendWhatsapp/markHandled) - "islendi" ile ayni anlam.
         $all = $offerRequests->concat($interestLeads)
             ->filter(fn ($row) => $row !== null)
             ->when($scope === 'anlasmali', fn ($c) => $c->where('kurum_durumu', 'anlasmali'))
             ->when($scope === 'on_kayitli', fn ($c) => $c->where('kurum_durumu', 'on_kayitli'))
             ->when($scope === 'sahipli', fn ($c) => $c->where('kurum_durumu', 'sahipli'))
+            ->when($scope === 'bekleyen', fn ($c) => $c->where('kurum_durumu', '!=', 'sahipli')->whereNull('sent_to_facility_at'))
+            ->when($scope === 'islem_yapildi', fn ($c) => $c->whereNotNull('sent_to_facility_at'))
             ->sortByDesc('created_at')
             ->values();
 
@@ -45,6 +52,8 @@ class FeeInfoRequestController extends Controller
             'anlasmali' => $tamListe->where('kurum_durumu', 'anlasmali')->count(),
             'on_kayitli' => $tamListe->where('kurum_durumu', 'on_kayitli')->count(),
             'sahipli' => $tamListe->where('kurum_durumu', 'sahipli')->count(),
+            'bekleyen' => $tamListe->where('kurum_durumu', '!=', 'sahipli')->whereNull('sent_to_facility_at')->count(),
+            'islem_yapildi' => $tamListe->whereNotNull('sent_to_facility_at')->count(),
         ];
 
         $page = (int) $request->query('page', 1);
@@ -74,10 +83,49 @@ class FeeInfoRequestController extends Controller
             return back()->with('error', 'Kurumun geçerli bir cep telefonu numarası yok, WhatsApp gönderilemedi.');
         }
 
-        $model->update(['sent_to_facility_at' => now()]);
+        // 5 Ekim 2026: kullanicinin bildirdigi gercek hata - "WhatsApp
+        // Gonder" sent_to_facility_at'i dolduruyordu ama status HICBIR
+        // ZAMAN degismiyordu, bu yuzden dashboard'daki "yeni talep/ilgi"
+        // sayaci (bkz. Admin\DashboardController) islem yapilmis kayitlari
+        // da SURESIZ "yeni" sayiyordu - admin kacini gercekten islediğini
+        // ayirt edemiyordu, uyari HICBIR ZAMAN azalmiyordu. Gonderim aninda
+        // durum da "islendi" olarak guncellenir. Iki tablo FARKLI status
+        // sozlugu kullaniyor (OfferRequest Ingilizce: new/contacted/closed,
+        // FacilityInterestLead Turkce: yeni/...) - her biri kendi sozluguyle
+        // guncellenir.
+        $model->update([
+            'sent_to_facility_at' => now(),
+            'status' => $type === 'teklif' ? 'contacted' : 'iletisime_gecildi',
+        ]);
         log_admin_event('fee_info_request_sent_whatsapp', $model, ['type' => $type]);
 
         return redirect($url);
+    }
+
+    // 5 Ekim 2026: kullanicinin talebi - "İşlem Yapıldı" sekmesi/butonu
+    // olmali. WhatsApp butonu SADECE cep telefonlu kurumlarda gorunuyor -
+    // sabit hatli/telefonsuz kurumlarin talepleri telefonla/baska yoldan
+    // isleniyor olsa bile hicbir zaman "yeni"den cikamiyordu, dashboard'daki
+    // uyari o kurumlar icin SURESIZ kalirdi. Bu, WhatsApp gondermeden de
+    // (telefonla arandi, zaten biliniyordu vb.) admin'in talebi elle
+    // "islendi" isaretlemesini saglar - ayni status gecisini (ve ayni
+    // sent_to_facility_at alanini, "Durum" kolonundaki "islendi" rozeti
+    // icin) kullanir, sadece WhatsApp linki acmaz.
+    public function markHandled(string $type, int $id)
+    {
+        [$model, $facility] = $this->findRecord($type, $id);
+        if (! $model) {
+            return back()->with('error', 'Kayıt bulunamadı.');
+        }
+        abort_if($facility && $facility->is_claimed && ! $facility->is_broker_managed, 403, 'Sahipli kurum talepleri buradan yönetilemez.');
+
+        $model->update([
+            'sent_to_facility_at' => $model->sent_to_facility_at ?? now(),
+            'status' => $type === 'teklif' ? 'contacted' : 'iletisime_gecildi',
+        ]);
+        log_admin_event('fee_info_request_marked_handled', $model, ['type' => $type]);
+
+        return back()->with('success', 'Talep işlendi olarak işaretlendi.');
     }
 
     public function destroy(string $type, int $id)

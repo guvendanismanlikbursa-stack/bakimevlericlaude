@@ -53,33 +53,24 @@
 
 @include('themes._shared.partials.location-filter-script')
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <div class="admin-table-scroll overflow-x-auto">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr>
-        <th class="p-3 w-56">Kurum</th>
-        <th class="p-3">Şehir</th>
-        <th class="p-3">Plan</th>
-        <th class="p-3">Ücret</th>
-        <th class="p-3">Başlangıç</th>
-        <th class="p-3">Ödeme Bitiş Tarihi</th>
-        <th class="p-3">Durum</th>
-        <th class="p-3"></th>
-      </tr>
-    </thead>
-    <tbody class="divide-y">
-      @forelse($subscriptions as $f)
-        <tr>
-          <td class="p-3 font-medium w-56 break-words">
-            <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600">{{ $f->name }}</a>
-          </td>
-          <td class="p-3">{{ $f->city->name }}</td>
-          <td class="p-3">{{ ['monthly'=>'Aylık','quarterly'=>'3 Aylık','semiannual'=>'6 Aylık','yearly'=>'Yıllık'][$f->subscription_plan] ?? $f->subscription_plan }}</td>
-          <td class="p-3 text-gray-700 whitespace-nowrap">{{ $f->subscription_amount ? number_format($f->subscription_amount, 0, ',', '.').' TL' : '—' }}</td>
-          <td class="p-3 text-gray-500 whitespace-nowrap">{{ $f->subscription_started_at?->format('d.m.Y') ?? '—' }}</td>
-          <td class="p-3 text-gray-700 whitespace-nowrap">{{ $f->subscription_paid_until?->format('d.m.Y') ?? '—' }}</td>
-          <td class="p-3">
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> (daha once yatay
+     kaydirmali) yerine flex-wrap kart (bkz. admin/facilities/_results.blade.php
+     ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($subscriptions as $f)
+    @php
+      $planDuration = ['monthly' => '1 ay', 'quarterly' => '3 ay', 'semiannual' => '6 ay', 'yearly' => '1 yıl'][$f->subscription_plan] ?? '1 ay';
+    @endphp
+    <div class="p-4 flex flex-col gap-2">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600 font-bold">{{ $f->name }}</a>
+          <div class="text-xs text-gray-500 mt-0.5">
+            {{ $f->city->name }} · {{ ['monthly'=>'Aylık','quarterly'=>'3 Aylık','semiannual'=>'6 Aylık','yearly'=>'Yıllık'][$f->subscription_plan] ?? $f->subscription_plan }} ·
+            {{ $f->subscription_amount ? number_format($f->subscription_amount, 0, ',', '.').' TL' : '—' }} ·
+            Başlangıç: {{ $f->subscription_started_at?->format('d.m.Y') ?? '—' }} · Bitiş: {{ $f->subscription_paid_until?->format('d.m.Y') ?? '—' }}
+          </div>
+          <div class="mt-1">
             @if($f->isActiveSubscriber())
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:#dcfce7;color:#15803d;">Aktif</span>
             @elseif($f->subscription_paid_until)
@@ -87,28 +78,24 @@
             @else
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">Ödeme Bekliyor</span>
             @endif
-          </td>
-          @php
-            $planDuration = ['monthly' => '1 ay', 'quarterly' => '3 ay', 'semiannual' => '6 ay', 'yearly' => '1 yıl'][$f->subscription_plan] ?? '1 ay';
-          @endphp
-          <td class="p-3 text-right whitespace-nowrap">
-            <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline flex items-center gap-1 justify-end" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? {{ $f->subscription_paid_until ? 'Bitiş tarihi '.$planDuration.' uzatılacak.' : 'Abonelik süresi bu ödemeyle başlayıp '.$planDuration.' geçerli olacak.' }}');">
-              @csrf
-              <input type="number" name="amount" step="0.01" min="0" value="{{ $f->subscription_amount }}" placeholder="TL" class="text-xs border rounded w-20" onclick="event.stopPropagation()">
-              <button class="text-green-700 font-semibold">Ödeme Aldım</button>
-            </form>
-            <form method="POST" action="{{ route('admin.facilities.subscription.cancel', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} aboneliği iptal edilsin mi?');">
-              @csrf
-              <button style="color:#a21caf;">İptal Et</button>
-            </form>
-          </td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="8">Henüz abone kurum yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
-  </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+          <form method="POST" action="{{ route('admin.facilities.subscription.extend', $f) }}" class="inline-flex items-center gap-1 flex-wrap" onsubmit="return confirm('{{ $f->name }} için ödeme alındı mı? {{ $f->subscription_paid_until ? 'Bitiş tarihi '.$planDuration.' uzatılacak.' : 'Abonelik süresi bu ödemeyle başlayıp '.$planDuration.' geçerli olacak.' }}');">
+            @csrf
+            <input type="number" name="amount" step="0.01" min="0" value="{{ $f->subscription_amount }}" placeholder="TL" class="text-xs border rounded w-20">
+            <button class="text-green-700 text-sm font-semibold whitespace-nowrap">Ödeme Aldım</button>
+          </form>
+          <form method="POST" action="{{ route('admin.facilities.subscription.cancel', $f) }}" class="inline" onsubmit="return confirm('{{ $f->name }} aboneliği iptal edilsin mi?');">
+            @csrf
+            <button class="text-sm font-semibold whitespace-nowrap" style="color:#a21caf;">İptal Et</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Henüz abone kurum yok.</div>
+  @endforelse
 </div>
 <div class="mt-6">
   @include('partials.pagination-info', ['paginator' => $subscriptions])

@@ -25,42 +25,27 @@
   @endif
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500">
-      <tr>
-        <th class="p-3">Kurum</th>
-        <th class="p-3">Şehir</th>
-        <th class="p-3">Kapasite</th>
-        <th class="p-3">Bay için boş yer</th>
-        <th class="p-3">Bayan için boş yer</th>
-        <th class="p-3">Son güncelleme</th>
-        <th class="p-3"></th>
-      </tr>
-    </thead>
-    <tbody class="divide-y align-top">
-      @forelse($facilities as $facility)
-        <form id="occ-{{ $facility->id }}" method="POST" action="{{ route('admin.occupancy.update', $facility) }}">@csrf</form>
-        <tr>
-          <td class="p-3 font-medium">{{ $facility->name }}</td>
-          <td class="p-3 text-gray-500">{{ $facility->city->name ?? '-' }}</td>
-          <td class="p-3 text-gray-500">{{ $facility->capacity ?: '-' }}</td>
-          <td class="p-3">
-            <input type="number" min="0" name="vacant_beds_male" form="occ-{{ $facility->id }}" value="{{ $facility->vacant_beds_male }}" placeholder="-" class="border rounded-lg px-2 py-1 text-xs w-20">
-          </td>
-          <td class="p-3">
-            <input type="number" min="0" name="vacant_beds_female" form="occ-{{ $facility->id }}" value="{{ $facility->vacant_beds_female }}" placeholder="-" class="border rounded-lg px-2 py-1 text-xs w-20">
-          </td>
-          <td class="p-3 text-gray-400 text-xs">{{ $facility->vacant_beds_updated_at?->diffForHumans() ?: 'hiç girilmedi' }}</td>
-          <td class="p-3">
-            <button type="submit" form="occ-{{ $facility->id }}" class="bg-gray-900 text-white rounded-lg px-3 py-1.5 text-xs font-bold whitespace-nowrap">Kaydet</button>
-          </td>
-        </tr>
-      @empty
-        <tr><td colspan="7" class="p-6 text-center text-gray-400">Kurum bulunamadı.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). form="occ-id"
+     ozniteligi HTML5'te kendi disindaki input/button'lari da forma baglar,
+     kart yapisinda da calismaya devam eder. --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($facilities as $facility)
+    <form id="occ-{{ $facility->id }}" method="POST" action="{{ route('admin.occupancy.update', $facility) }}">@csrf</form>
+    <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $facility->name }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ $facility->city->name ?? '-' }} · Kapasite: {{ $facility->capacity ?: '-' }} · Son güncelleme: {{ $facility->vacant_beds_updated_at?->diffForHumans() ?: 'hiç girilmedi' }}</div>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-xs text-gray-500">Bay boş yer <input type="number" min="0" name="vacant_beds_male" form="occ-{{ $facility->id }}" value="{{ $facility->vacant_beds_male }}" placeholder="-" class="border rounded-lg px-2 py-1 text-xs w-20 ml-1"></label>
+        <label class="text-xs text-gray-500">Bayan boş yer <input type="number" min="0" name="vacant_beds_female" form="occ-{{ $facility->id }}" value="{{ $facility->vacant_beds_female }}" placeholder="-" class="border rounded-lg px-2 py-1 text-xs w-20 ml-1"></label>
+        <button type="submit" form="occ-{{ $facility->id }}" class="bg-gray-900 text-white rounded-lg px-3 py-1.5 text-xs font-bold whitespace-nowrap">Kaydet</button>
+      </div>
+    </div>
+  @empty
+    <div class="p-6 text-center text-gray-400">Kurum bulunamadı.</div>
+  @endforelse
 </div>
 
 <div class="mt-4">{{ $facilities->links() }}</div>

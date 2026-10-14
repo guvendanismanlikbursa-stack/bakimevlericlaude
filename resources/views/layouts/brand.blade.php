@@ -221,6 +221,33 @@
 @endphp
 <body class="{{ $bodyClass }}">
 
+<script>
+// 7 Ekim 2026: kullanicinin bildirdigi gercek hata - sitedeki TUM
+// filtreleme/listeleme sayfalarinda (kurumlar, doktorlar, vb.) sayfalama
+// linkiyle (ör. 1. sayfadan 2. sayfaya) gecince tarayici onceki sayfadaki
+// kaydirma konumunu (asagida kalmis) KORUYORDU - yeni sayfanin sonuclari
+// en basindan degil, kullanicinin eski sayfada kaldigi yerden gorunuyordu.
+// Kok neden: tarayicinin varsayilan "scroll restoration" davranisi (ayni
+// gorunumlu bir sayfaya gecince eski kaydirma konumunu hatirlamaya
+// calisir). Bu SENKRON script (body acilir acilmaz, hicbir gecikme
+// olmadan calisir ki goz ile fark edilecek bir "ziplama" olmasin) bu
+// davranisi KAPATIR ve URL'de ?page= varsa (bir sayfalama linkinden
+// gelindiyse) sayfayi en basa alir.
+if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
+if (new URLSearchParams(window.location.search).has('page')) {
+  // 7 Ekim 2026: tek seferlik erken reset bazen tarayicinin kendi
+  // "sayfa yuklenirken kaydirma konumunu koru" davranisi tarafindan
+  // GERI EZILIYORDU (resimler/gec yuklenen icerik geldikce tarayici
+  // eski konuma geri kayiyordu) - bu yuzden hem hemen, hem sayfa
+  // TAMAMEN yuklenince (load), hem de kisa bir gecikmeyle tekrar
+  // uygulanir, boylece hangi asamada "geri cekilirse cekilsin" son
+  // soz hep en-basa-dondurme olur.
+  window.scrollTo(0, 0);
+  window.addEventListener('load', function () { window.scrollTo(0, 0); });
+  setTimeout(function () { window.scrollTo(0, 0); }, 300);
+}
+</script>
+
 {{-- 15 Agustos 2026: kullanicinin "asla hata kalmamali" talebi uzerine
      yapilan erisilebilirlik denetiminde bulundu - klavye kullanicisi her
      sayfada ana icerige ulasmadan once 6-10 navigasyon linkini Tab ile tek
@@ -463,7 +490,7 @@
     <div>
       <div class="{{ $theme === 'bakimeviara' ? 'text-gray-950' : 'text-white' }} font-bold mb-2">Keşfet</div>
       <ul class="space-y-1">
-        <li><a href="{{ brand_route('care-advisor.form') }}" class="hover:text-primary">Bakım Danışmanı</a></li>
+        <li><a href="{{ brand_route('care-advisor.form') }}" class="hover:text-primary">Pusula</a></li>
         <li><a href="{{ brand_route('engagement.wizard', ['bolum' => $defaultSection]) }}" class="hover:text-primary">Karar sihirbazı</a></li>
         <li><a href="{{ brand_route('engagement.compare') }}" class="hover:text-primary">Karşılaştırma</a></li>
         @if(session('family_user_id'))<li><a href="{{ brand_route('engagement.favorites') }}" class="hover:text-primary">Favoriler</a></li>@endif
@@ -514,6 +541,14 @@
   <div class="text-center text-xs py-4 {{ $theme === 'bakimeviara' ? 'border-t border-gray-200' : 'border-t border-white/10' }}">© {{ date('Y') }} {{ $brand['logo_text'] }}. Tüm hakları saklıdır.</div>
 </footer>
 
+{{-- Pusula'nın kendi sayfasındayken aynı sayfaya giden kayan butonu
+     göstermenin anlamı yok, bu yüzden orada gizli. Adım/ilerleme script'i
+     hem bu sayfada hem widget panelinde kullanıldığı için her zaman dahil
+     edilir (veri gerektirmez, ücretsiz). --}}
+@include('themes._shared.partials.care-advisor-quiz-stepper')
+@unless(request()->routeIs('*care-advisor*'))
+  @include('themes._shared.partials.pusula-float-widget')
+@endunless
 @include('themes._shared.partials.support-chat-widget')
 {{-- 17 Eylul 2026: kullanicinin talebi - "Uygulamayi Yukle" bannerinin
      bazi tarayici ortamlarinda kalici kapatma isaretine ragmen tekrar

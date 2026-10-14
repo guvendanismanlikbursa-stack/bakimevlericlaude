@@ -21,37 +21,37 @@
   </select>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Tarih</th><th class="p-3">Pazarlamacı</th><th class="p-3">Kurum</th><th class="p-3">Durum</th><th class="p-3">Not</th><th class="p-3">Broşür</th><th class="p-3">Randevu</th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($notes as $note)
-        <tr>
-          <td class="p-3 text-gray-400 whitespace-nowrap">{{ $note->created_at->format('d.m.Y H:i') }}</td>
-          <td class="p-3">{{ $note->marketer?->name ?? '—' }}</td>
-          <td class="p-3 font-medium">
-            @if($note->facility)
-              <a href="{{ route('admin.facilities.edit', $note->facility) }}" class="text-blue-600">{{ $note->facility->name }}</a>
-              <div class="text-xs text-gray-400">{{ $note->facility->district }} / {{ $note->facility->city?->name }}</div>
-            @else
-              <span class="text-gray-300">(silinmiş kurum)</span>
-            @endif
-          </td>
-          <td class="p-3"><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{{ $statusLabels[$note->status] ?? $note->status }}</span></td>
-          <td class="p-3 text-gray-600 max-w-xs break-words">{{ $note->note ?: '—' }}</td>
-          <td class="p-3">
-            @if($note->brochure_requested === null) <span class="text-gray-300">—</span>
-            @elseif($note->brochure_requested) <span class="text-green-700 text-xs font-semibold">İstiyor</span>
-            @else <span class="text-gray-500 text-xs">İstemiyor</span>
-            @endif
-          </td>
-          <td class="p-3 text-gray-500 whitespace-nowrap">{{ $note->callback_at?->format('d.m.Y H:i') ?? '—' }}</td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="7">Henüz görüşme kaydı yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($notes as $note)
+    <div class="p-4 flex flex-col gap-2">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div class="min-w-0">
+          @if($note->facility)
+            <a href="{{ route('admin.facilities.edit', $note->facility) }}" class="text-blue-600 font-bold">{{ $note->facility->name }}</a>
+            <div class="text-xs text-gray-400">{{ $note->facility->district }} / {{ $note->facility->city?->name }}</div>
+          @else
+            <span class="text-gray-300 font-bold">(silinmiş kurum)</span>
+          @endif
+          <div class="text-xs text-gray-500 mt-0.5">{{ $note->created_at->format('d.m.Y H:i') }} · {{ $note->marketer?->name ?? '—' }}</div>
+        </div>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">{{ $statusLabels[$note->status] ?? $note->status }}</span>
+      </div>
+      <div class="text-xs text-gray-600 break-words">{{ $note->note ?: '—' }}</div>
+      <div class="flex items-center gap-3 flex-wrap text-xs text-gray-500">
+        <span>Broşür:
+          @if($note->brochure_requested === null) —
+          @elseif($note->brochure_requested) <span class="text-green-700 font-semibold">İstiyor</span>
+          @else İstemiyor
+          @endif
+        </span>
+        <span>Randevu: {{ $note->callback_at?->format('d.m.Y H:i') ?? '—' }}</span>
+      </div>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Henüz görüşme kaydı yok.</div>
+  @endforelse
 </div>
 <div class="mt-6">{{ $notes->links() }}</div>
 @endsection

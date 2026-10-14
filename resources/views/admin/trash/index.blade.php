@@ -10,25 +10,23 @@
   @endforeach
 </div>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">ID</th><th class="p-3">Özet</th><th class="p-3">Silinme Tarihi</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @forelse($items as $item)
-        <tr>
-          <td class="p-3 text-gray-400">#{{ $item->id }}</td>
-          <td class="p-3">{{ $item->name ?? $item->full_name ?? $item->applicant_name ?? ('Kayıt #'.$item->id) }}</td>
-          <td class="p-3 text-gray-400">{{ optional($item->deleted_at)->format('d.m.Y H:i') }}</td>
-          <td class="p-3 text-right whitespace-nowrap space-x-3">
-            <form method="POST" action="{{ route('admin.trash.restore', ['type' => $activeType, 'id' => $item->id]) }}" class="inline">@csrf<button class="text-emerald-600 font-semibold">Geri Yükle</button></form>
-            <form method="POST" action="{{ route('admin.trash.force-destroy', ['type' => $activeType, 'id' => $item->id]) }}" class="inline" onsubmit="return confirm('Bu kayıt kalıcı olarak silinecek, emin misiniz?');">@csrf @method('DELETE')<button class="text-red-600 font-semibold">Kalıcı Sil</button></form>
-          </td>
-        </tr>
-      @empty
-        <tr><td class="p-3 text-gray-400" colspan="4">Bu kategoride silinmiş kayıt yok.</td></tr>
-      @endforelse
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @forelse($items as $item)
+    <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $item->name ?? $item->full_name ?? $item->applicant_name ?? ('Kayıt #'.$item->id) }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">#{{ $item->id }} · Silindi: {{ optional($item->deleted_at)->format('d.m.Y H:i') }}</div>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap justify-end">
+        <form method="POST" action="{{ route('admin.trash.restore', ['type' => $activeType, 'id' => $item->id]) }}" class="inline">@csrf<button class="text-emerald-600 text-sm font-semibold whitespace-nowrap">Geri Yükle</button></form>
+        <form method="POST" action="{{ route('admin.trash.force-destroy', ['type' => $activeType, 'id' => $item->id]) }}" class="inline" onsubmit="return confirm('Bu kayıt kalıcı olarak silinecek, emin misiniz?');">@csrf @method('DELETE')<button class="text-red-600 text-sm font-semibold whitespace-nowrap">Kalıcı Sil</button></form>
+      </div>
+    </div>
+  @empty
+    <div class="p-4 text-gray-400 text-sm">Bu kategoride silinmiş kayıt yok.</div>
+  @endforelse
 </div>
 
 <div class="mt-4">{{ $items->links() }}</div>

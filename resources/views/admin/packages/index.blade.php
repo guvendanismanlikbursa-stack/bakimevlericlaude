@@ -24,24 +24,20 @@
   <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold md:col-span-2">{{ $editingPackage ? 'Güncelle' : 'Ekle' }}</button>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Ad</th><th class="p-3">Fiyat</th><th class="p-3">Bonus Hak</th><th class="p-3">Süre</th><th class="p-3">Durum</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @foreach($packages as $package)
-        <tr>
-          <td class="p-3">{{ $package->name }}</td>
-          <td class="p-3">{{ number_format($package->price,2,',','.') }}₺</td>
-          <td class="p-3">{{ $package->bonus_quote_credits }}</td>
-          <td class="p-3 text-gray-400">{{ $package->duration_days ? $package->duration_days.' gün' : '—' }}</td>
-          <td class="p-3">{{ $package->is_active ? 'Yayında' : 'Pasif' }}</td>
-          <td class="p-3 text-right whitespace-nowrap">
-            <a href="{{ route('admin.packages.index', ['edit' => $package->id]) }}" class="text-primary font-semibold mr-3">Düzenle</a>
-            <form method="POST" action="{{ route('admin.packages.destroy', $package) }}" onsubmit="return confirm('Silinsin mi?');" class="inline">@csrf @method('DELETE')<button class="text-red-600">Sil</button></form>
-          </td>
-        </tr>
-      @endforeach
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @foreach($packages as $package)
+    <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900">{{ $package->name }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ number_format($package->price,2,',','.') }}₺ · Bonus hak: {{ $package->bonus_quote_credits }} · {{ $package->duration_days ? $package->duration_days.' gün' : 'süresiz' }} · {{ $package->is_active ? 'Yayında' : 'Pasif' }}</div>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap justify-end">
+        <a href="{{ route('admin.packages.index', ['edit' => $package->id]) }}" class="text-primary text-sm font-semibold whitespace-nowrap">Düzenle</a>
+        <form method="POST" action="{{ route('admin.packages.destroy', $package) }}" onsubmit="return confirm('Silinsin mi?');" class="inline">@csrf @method('DELETE')<button class="text-red-600 text-sm font-semibold whitespace-nowrap">Sil</button></form>
+      </div>
+    </div>
+  @endforeach
 </div>
 @endsection

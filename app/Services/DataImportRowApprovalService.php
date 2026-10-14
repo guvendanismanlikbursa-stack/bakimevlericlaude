@@ -215,6 +215,11 @@ class DataImportRowApprovalService
             $parts[] = 'Telefon bilgisi admin tarafından doğrulanabilir: '.$item['phone'].'.';
         }
         $parts[] = 'Kurum yetkilisi sahiplenme başvurusu yaptığında profil bilgileri, görseller ve hizmet detayları resmi belge kontrolünden sonra güncellenebilir.';
+        // 7 Ekim 2026: kullanicinin acik talebi - henuz yorumu olmayan
+        // kurumlarda da ucret/bilgi talep formuna yonlendirme MUTLAKA
+        // bulunmali (bkz. DataExtractorImportService::description() ayni
+        // tarihli, AYNI gerekce).
+        $parts[] = 'Güncel fiyat bilgisi ve uygunluk durumu için aşağıdaki formu doldurarak bu kurumdan bilgi talep edebilirsiniz.';
 
         return implode(' ', $parts);
     }

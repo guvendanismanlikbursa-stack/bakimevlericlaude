@@ -35,23 +35,20 @@
   <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold md:col-span-2">{{ $editingFaq ? 'Güncelle' : 'Ekle' }}</button>
 </form>
 
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 text-left text-gray-500"><tr><th class="p-3">Marka</th><th class="p-3">Soru</th><th class="p-3">Sıra</th><th class="p-3">Durum</th><th class="p-3"></th></tr></thead>
-    <tbody class="divide-y">
-      @foreach($faqs as $faq)
-        <tr>
-          <td class="p-3">{{ $brands[$faq->brand]['name'] ?? $faq->brand }}</td>
-          <td class="p-3">{{ $faq->question }}</td>
-          <td class="p-3 text-gray-400">{{ $faq->sort_order }}</td>
-          <td class="p-3">{{ $faq->is_active ? 'Yayında' : 'Pasif' }}</td>
-          <td class="p-3 text-right whitespace-nowrap">
-            <a href="{{ route('admin.faqs.index', ['edit' => $faq->id]) }}" class="text-primary font-semibold mr-3">Düzenle</a>
-            <form method="POST" action="{{ route('admin.faqs.destroy', $faq) }}" class="inline" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600">Sil</button></form>
-          </td>
-        </tr>
-      @endforeach
-    </tbody>
-  </table>
+{{-- 11 Ekim 2026: kullanicinin talebi - genis <table> yerine flex-wrap
+     kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+  @foreach($faqs as $faq)
+    <div class="p-4 flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <div class="font-bold text-gray-900 break-words">{{ $faq->question }}</div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ $brands[$faq->brand]['name'] ?? $faq->brand }} · Sıra: {{ $faq->sort_order }} · {{ $faq->is_active ? 'Yayında' : 'Pasif' }}</div>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap justify-end">
+        <a href="{{ route('admin.faqs.index', ['edit' => $faq->id]) }}" class="text-primary text-sm font-semibold whitespace-nowrap">Düzenle</a>
+        <form method="POST" action="{{ route('admin.faqs.destroy', $faq) }}" class="inline" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600 text-sm font-semibold whitespace-nowrap">Sil</button></form>
+      </div>
+    </div>
+  @endforeach
 </div>
 @endsection

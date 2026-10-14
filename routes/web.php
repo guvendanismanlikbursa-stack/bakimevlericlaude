@@ -92,6 +92,7 @@ $siteRoutes = function () {
     Route::get('/karar-sihirbazi', [EngagementController::class, 'wizard'])->middleware('static.cache')->name('engagement.wizard');
     Route::get('/bakim-danismani', [CareAdvisorController::class, 'form'])->middleware('static.cache')->name('care-advisor.form');
     Route::get('/bakim-danismani/sonuclar', [CareAdvisorController::class, 'results'])->name('care-advisor.results');
+    Route::post('/bakim-danismani/ilerleme', [CareAdvisorController::class, 'progress'])->name('care-advisor.progress');
     Route::get('/karsilastir', [EngagementController::class, 'compare'])->name('engagement.compare');
     Route::get('/favoriler', [EngagementController::class, 'favorites'])->middleware('family.auth')->name('engagement.favorites');
     // 24 Agustos 2026: Google Search Console'da bulundu - bolum belirtilmeden
@@ -107,7 +108,19 @@ $siteRoutes = function () {
     Route::get('/rehber/{sectionSlug}', [LocationGuideController::class, 'index'])->middleware('static.cache')->name('location-guide.index');
     Route::get('/rehber/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [LocationGuideController::class, 'showCategory'])->middleware('static.cache')->name('location-guide.category');
     Route::get('/rehber/{sectionSlug}/{citySlug}/{districtSlug?}', [LocationGuideController::class, 'show'])->middleware('static.cache')->name('location-guide.show');
+    // 13 Ekim 2026: kullanicinin talebi - pazar arastirmasinda ailelerin
+    // genel "rehabilitasyon" degil dogrudan TANI (disleksi, otizm, vb.)
+    // aradigi tespit edildi, bkz. TaniRehberiController ayni tarihli yorum.
+    Route::get('/tani-rehberi/{taniSlug}/{citySlug}/{districtSlug?}', [\App\Http\Controllers\Public\TaniRehberiController::class, 'show'])->middleware('static.cache')->name('tani-rehberi.show');
     Route::get('/kurumlar', [FacilityController::class, 'index'])->middleware('throttle:public-browse')->name('facilities.index');
+    // 7 Ekim 2026: kullanicinin talebi - "Özel Doktorlar" (doktorlar), 4.
+    // bolum. BILEREK henuz hicbir menude linklenmiyor (sadece dogrudan
+    // URL ile erisilir) - kullanici onaylamadan public hale getirilmeyecek.
+    Route::get('/uzmanlar', [\App\Http\Controllers\Public\ExpertController::class, 'index'])->middleware('throttle:public-browse')->name('experts.index');
+    // 7 Ekim 2026: "Organizasyon Şirketleri" - Uzmanlar ile AYNI desen,
+    // BILEREK henuz hicbir menude linklenmiyor (sadece dogrudan URL ile
+    // erisilir) - kullanici onaylamadan public hale getirilmeyecek.
+    Route::get('/organizasyonlar', [\App\Http\Controllers\Public\OrganizationController::class, 'index'])->middleware('throttle:public-browse')->name('organizations.index');
     Route::get('/kurumlar-sayisi', [FacilityController::class, 'count'])->middleware('throttle:public-light')->name('facilities.count');
     Route::get('/kurumlar/{slug}', [FacilityController::class, 'show'])->middleware('throttle:public-browse')->name('facilities.show');
     Route::post('/kurumlar/{slug}/yorum', [FacilityReviewController::class, 'store'])->middleware('throttle:public-form')->name('reviews.store');
@@ -309,6 +322,11 @@ $siteRoutes = function () {
             Route::get('/sorular', [FacilityQuestionPanelController::class, 'index'])->name('questions.index');
             Route::post('/sorular/{question}/cevapla', [FacilityQuestionPanelController::class, 'answer'])->name('questions.answer');
 
+            // 13 Ekim 2026: kullanicinin talebi - "Karar Sihirbazi/Bakim
+            // Danismani"ndan gelen talepleri sadece premium kurumlar gorsun.
+            Route::get('/firsat-havuzu', [\App\Http\Controllers\Facility\CareAdvisorLeadController::class, 'index'])->name('care-advisor-leads.index');
+            Route::get('/firsat-havuzu/{lead}/whatsapp', [\App\Http\Controllers\Facility\CareAdvisorLeadController::class, 'whatsapp'])->name('care-advisor-leads.whatsapp');
+
             Route::get('/yorumlar', [\App\Http\Controllers\Facility\ReviewController::class, 'index'])->name('reviews.index');
             Route::post('/yorumlar/{review}/cevapla', [\App\Http\Controllers\Facility\ReviewController::class, 'reply'])->name('reviews.reply');
 
@@ -405,6 +423,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->parameters(['kurumlar' => 'facility'])
             ->names('facilities')
             ->except(['show']);
+        // 7 Ekim 2026: kullanicinin talebi - "Doktorlar" admin bolumu,
+        // Kurumlar'daki temel islemlerin (listele/filtrele/ekle/duzenle/
+        // sil) aynisi, Expert modeli icin.
+        Route::resource('doktorlar', \App\Http\Controllers\Admin\ExpertController::class)
+            ->parameters(['doktorlar' => 'expert'])
+            ->names('experts')
+            ->except(['show']);
+        Route::post('/doktorlar/{id}/geri-yukle', [\App\Http\Controllers\Admin\ExpertController::class, 'restore'])->name('experts.restore');
+        Route::post('/doktorlar/{expert}/yayin-durumu', [\App\Http\Controllers\Admin\ExpertController::class, 'togglePublish'])->name('experts.toggle-publish');
+        // 7 Ekim 2026: "Organizasyon Şirketleri" admin bolumu - Doktorlar ile
+        // BIREBIR AYNI desen, Organization modeli icin.
+        Route::resource('organizasyonlar', \App\Http\Controllers\Admin\OrganizationController::class)
+            ->parameters(['organizasyonlar' => 'organization'])
+            ->names('organizations')
+            ->except(['show']);
+        Route::post('/organizasyonlar/{id}/geri-yukle', [\App\Http\Controllers\Admin\OrganizationController::class, 'restore'])->name('organizations.restore');
+        Route::post('/organizasyonlar/{organization}/yayin-durumu', [\App\Http\Controllers\Admin\OrganizationController::class, 'togglePublish'])->name('organizations.toggle-publish');
         Route::delete('/kurumlar/gorsel/{image}', [AdminFacilityController::class, 'deleteImage'])->name('facilities.image.destroy');
         Route::post('/kurumlar/gorsel/{image}/ana-gorsel-yap', [AdminFacilityController::class, 'setPrimaryImage'])->name('facilities.image.set-primary');
         Route::delete('/kurumlar/{facility}/video', [AdminFacilityController::class, 'deleteVideo'])->name('facilities.video.destroy');
@@ -425,6 +460,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/kurum-davetleri/hizli-gonderim', [AdminFacilityInvitationController::class, 'quickSend'])->name('invitations.quick-send');
         Route::get('/kurum-davetleri/{facility}/whatsapp-ac', [AdminFacilityInvitationController::class, 'openWhatsapp'])->name('invitations.whatsapp');
         Route::post('/kurum-davetleri/{facility}/durum', [AdminFacilityInvitationController::class, 'updateStatus'])->name('invitations.update-status');
+
+        Route::get('/aile-anketleri', [\App\Http\Controllers\Admin\FamilyNeedSurveyController::class, 'index'])->name('family-need-surveys.index');
+        Route::get('/aile-anketleri/yeni', [\App\Http\Controllers\Admin\FamilyNeedSurveyController::class, 'create'])->name('family-need-surveys.create');
+        Route::post('/aile-anketleri', [\App\Http\Controllers\Admin\FamilyNeedSurveyController::class, 'store'])->name('family-need-surveys.store');
+        Route::delete('/aile-anketleri/{familyNeedSurvey}', [\App\Http\Controllers\Admin\FamilyNeedSurveyController::class, 'destroy'])->name('family-need-surveys.destroy');
+        Route::get('/aile-anketleri/{familyNeedSurvey}/kurum/{facility}/whatsapp-ac', [\App\Http\Controllers\Admin\FamilyNeedSurveyController::class, 'whatsapp'])->name('family-need-surveys.whatsapp');
+
+        Route::get('/pusula-anketleri', [\App\Http\Controllers\Admin\CareAdvisorLeadController::class, 'index'])->name('care-advisor-leads.index');
+        Route::get('/pusula-anketleri/{careAdvisorLead}', [\App\Http\Controllers\Admin\CareAdvisorLeadController::class, 'show'])->name('care-advisor-leads.show');
+        Route::put('/pusula-anketleri/{careAdvisorLead}', [\App\Http\Controllers\Admin\CareAdvisorLeadController::class, 'update'])->name('care-advisor-leads.update');
+        Route::delete('/pusula-anketleri/{careAdvisorLead}', [\App\Http\Controllers\Admin\CareAdvisorLeadController::class, 'destroy'])->name('care-advisor-leads.destroy');
 
         Route::get('/aracilik/kurumlar', [AdminBrokerController::class, 'facilities'])->name('broker.facilities');
         Route::post('/aracilik/kurumlar/{facility}/degistir', [AdminBrokerController::class, 'toggleFacility'])->name('broker.facilities.toggle');
@@ -447,6 +493,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // birlesik sayfaya link veriliyor.
         Route::get('/ucret-bilgi-talepleri', [\App\Http\Controllers\Admin\FeeInfoRequestController::class, 'index'])->name('fee-info-requests.index');
         Route::post('/ucret-bilgi-talepleri/{type}/{id}/whatsapp', [\App\Http\Controllers\Admin\FeeInfoRequestController::class, 'sendWhatsapp'])->name('fee-info-requests.whatsapp');
+        Route::post('/ucret-bilgi-talepleri/{type}/{id}/islem-yapildi', [\App\Http\Controllers\Admin\FeeInfoRequestController::class, 'markHandled'])->name('fee-info-requests.mark-handled');
         Route::delete('/ucret-bilgi-talepleri/{type}/{id}', [\App\Http\Controllers\Admin\FeeInfoRequestController::class, 'destroy'])->name('fee-info-requests.destroy');
 
         Route::get('/doluluk-durumu', [AdminOccupancyController::class, 'index'])->name('occupancy.index');
@@ -471,6 +518,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/ayarlar', [AdminSettingController::class, 'edit'])->name('settings.edit');
         Route::put('/ayarlar', [AdminSettingController::class, 'update'])->name('settings.update');
+        Route::put('/ayarlar/bildirimler', [AdminSettingController::class, 'updateNotifications'])->name('settings.notifications.update');
         Route::get('/bakiye-yuklemeleri', [AdminWalletTopupController::class, 'index'])->name('topups.index');
         Route::post('/bakiye-yuklemeleri/{topup}/onayla', [AdminWalletTopupController::class, 'approve'])->name('topups.approve');
         Route::post('/bakiye-yuklemeleri/{topup}/reddet', [AdminWalletTopupController::class, 'reject'])->name('topups.reject');
@@ -573,12 +621,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/hatalar/{platformError}/coz', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'resolve'])->name('platform-errors.resolve');
         Route::delete('/hatalar/{platformError}', [\App\Http\Controllers\Admin\PlatformErrorController::class, 'destroy'])->name('platform-errors.destroy');
 
+        Route::get('/satis-firsatlari', [\App\Http\Controllers\Admin\SalesOpportunitiesController::class, 'index'])->name('sales-opportunities.index');
+
         Route::get('/veri-denetimi', [\App\Http\Controllers\Admin\DataQualityController::class, 'index'])->name('data-quality.index');
         Route::post('/veri-denetimi/kategori-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixMiscategory'])->name('data-quality.fix-miscategory');
         Route::post('/veri-denetimi/telefon-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixPhoneType'])->name('data-quality.fix-phone-type');
         Route::post('/veri-denetimi/ilce-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixDistrict'])->name('data-quality.fix-district');
         Route::post('/veri-denetimi/isim-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixNameCleanup'])->name('data-quality.fix-name-cleanup');
         Route::post('/veri-denetimi/sahiplik-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixOwnership'])->name('data-quality.fix-ownership');
+        Route::post('/veri-denetimi/izmir-mukerrer-sil', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixIzmirOct1Duplicates'])->name('data-quality.fix-izmir-oct1-duplicates');
+        Route::post('/veri-denetimi/antalya-ekim6-mukerrer-sil', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixAntalyaOct6Duplicates'])->name('data-quality.fix-antalya-oct6-duplicates');
+        Route::post('/veri-denetimi/bursa-istanbul-mukerrer-sil', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixBursaIstanbulOct1Duplicates'])->name('data-quality.fix-bursa-istanbul-oct1-duplicates');
+        Route::post('/veri-denetimi/adres-il-uyumsuzluk-sil', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixAddressCityMismatch'])->name('data-quality.fix-address-city-mismatch');
+        Route::post('/veri-denetimi/devlet-kurumu-isaretle', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixGovernmentName'])->name('data-quality.fix-government-name');
 
         Route::get('/aile-sorulari', [AdminFacilityQuestionController::class, 'index'])->name('questions.index');
         Route::delete('/aile-sorulari/{question}', [AdminFacilityQuestionController::class, 'destroy'])->name('questions.destroy');
@@ -602,6 +657,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/bildirimler', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/bildirimler/{notification}/okundu', [\App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');
         Route::delete('/bildirimler/{notification}', [\App\Http\Controllers\Admin\NotificationController::class, 'destroy'])->name('notifications.destroy');
+        Route::get('/bildirimler/sayi', [\App\Http\Controllers\Admin\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
         Route::post('/kurumlar/{facility}/abone-yap-ve-panel-ac', [AdminFacilityController::class, 'subscribeWithPanelAccount'])->name('facilities.subscription.enable-with-account');
     });
 });

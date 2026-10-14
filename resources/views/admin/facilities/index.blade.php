@@ -61,6 +61,11 @@
       @endforeach
     @endif
   </select>
+  {{-- 11 Ekim 2026: kullanicinin talebi - il/ilce gibi mahalleye gore de
+       filtreleme. Mahalle serbest metin oldugu icin (sabit bir liste degil,
+       bkz. FacilityController::filteredQuery() ayni tarihli yorum) dropdown
+       degil, diger metin aramasi gibi bir kutu. --}}
+  <input type="text" name="mahalle" value="{{ request('mahalle') }}" placeholder="Mahalle ara..." class="border rounded-lg px-3 py-2 text-sm w-40">
   <select name="category" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm Kategoriler</option>
     @foreach($categories as $category)
@@ -80,6 +85,17 @@
     <option value="broker_managed" @selected(request('status')==='broker_managed')>Anlaşmalı</option>
     <option value="claimed" @selected(request('status')==='claimed')>Sahipli</option>
   </select>
+  {{-- 1 Ekim 2026: kullanicinin talebi - "kamu/belediye kurumlari zaten
+       veritabaninda yok" varsayimiyla 3 Eylul'de kaldirilan bu filtre,
+       TOKI/BUSMEK/YUVAMIZ ice aktarimlariyla bu varsayimin yanlis oldugu
+       kanitlanmasi uzerine geri eklendi. --}}
+  <select name="ownership" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="">Kuruluş Türü: Tümü</option>
+    @foreach($ownershipTypes as $key => $label)
+      <option value="{{ $key }}" @selected(request('ownership')===$key)>{{ $label }}</option>
+    @endforeach
+    <option value="isaretsiz" @selected(request('ownership')==='isaretsiz')>İşaretlenmemiş</option>
+  </select>
   {{-- 22 Eylul 2026: kullanicinin talebi - konumvericekici'nin Google'da
        net eslesme bulamadigi icin BILEREK atladigi kurumlari admin elle
        tamamlayabilsin diye. --}}
@@ -87,9 +103,16 @@
        zaten "data-instant-filter" AJAX mekanizmasini kullaniyor
        (location-filter-script.blade.php, TUM select'lere 'change'
        dinleyicisi ekliyor), ikisi birlikte cift-gonderime yol aciyordu. --}}
-  <select name="konum" class="border rounded-lg px-3 py-2 text-sm">
-    <option value="">Konum: Tümü</option>
-    <option value="eksik" @selected(request('konum')==='eksik')>📍 Konumu Eksik</option>
+  {{-- 11 Ekim 2026: kullanicinin talebi - ayri konum/telefon/gorsel
+       kutulari yerine TEK, sade bir "Eksiklik" dropdown'u. Gorsel icin
+       demo/ klasorundeki placeholder'i olan kurum da "gorseli yok" sayilir
+       (bkz. FacilityController::filteredQuery() ayni tarihli yorum). --}}
+  <select name="eksik" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="">Eksiklik: Yok</option>
+    <option value="konum" @selected(request('eksik')==='konum')>📍 Konumu Eksik</option>
+    <option value="telefon" @selected(request('eksik')==='telefon')>📞 Telefonu Eksik</option>
+    <option value="gorsel" @selected(request('eksik')==='gorsel')>🖼️ Görseli Eksik</option>
+    <option value="mahalle" @selected(request('eksik')==='mahalle')>🏘️ Mahallesi Eksik</option>
   </select>
   {{-- 30 Eylul 2026: kullanicinin talebi - "hangi kurum ne kadar GERCEKTEN
        goruntulenme almis" sorusuna cevap. Bu filtre/siralama otomatik
@@ -103,7 +126,7 @@
     <option value="views_desc" @selected(request('sort')==='views_desc')>👁️ Görüntülenme (çoktan aza)</option>
     <option value="views_asc" @selected(request('sort')==='views_asc')>👁️ Görüntülenme (azdan çoğa)</option>
   </select>
-  @if(request('city') || request('district') || request('category') || request('brand') || request('status') || request('q') || request('konum') || request('views_min') || request('sort'))
+  @if(request('city') || request('district') || request('mahalle') || request('category') || request('brand') || request('status') || request('q') || request('eksik') || request('views_min') || request('sort') || request('ownership'))
     <a href="{{ route('admin.facilities.index', array_filter(['status' => request('status')])) }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreleri temizle</a>
   @endif
 </form>
@@ -121,5 +144,37 @@
      sonuc guncellenmiyordu (public sitedeki ayni partial dogru sirada,
      bu yuzden orada sorun yoktu). Include artik sonuc div'inden SONRA. --}}
 @include('themes._shared.partials.location-filter-script')
+
+<script>
+  // 1 Ekim 2026: kullanicinin talebi - Revize/Panelde Gor/Sil/Abone gibi
+  // formlar sayfayi yeniden yukluyor (POST->redirect), tarayici varsayilan
+  // olarak sayfa basina atiyor. Veri Denetimi sayfasinda uygulanan ayni
+  // cozum (bkz. admin/data-quality/index.blade.php ayni tarihli yorum)
+  // burada da: gonderim oncesi kayma konumu kaydedilip yeni sayfada geri
+  // yukleniyor.
+  document.addEventListener('submit', function (e) {
+    if (e.target.tagName === 'FORM') {
+      sessionStorage.setItem('kurumlarScrollY', String(window.scrollY));
+    }
+  });
+  // 1 Ekim 2026 (3): kullanicinin bildirdigi gercek hata - "bazi silmelerde
+  // hala basa atiyor". Kok neden: sayfanin son kaydini silince
+  // RedirectsOutOfRangePagination devreye girip AYRI bir yonlendirme
+  // yapiyor (bkz. Admin/Concerns/RedirectsOutOfRangePagination.php), bu da
+  // tek 'load' olayinin bazen cok erken/tutarsiz ateslenmesine yol aciyordu.
+  // Tek seferlik denemek yerine, kaydirmayi ilk 1.5 saniye boyunca birkac
+  // kez tekrar "sabitleyerek" - gec yuklenen gorsel/icerik sayfa
+  // uzunlugunu degistirse bile - hedef konumda kalmasi garanti ediliyor.
+  (function () {
+    var y = sessionStorage.getItem('kurumlarScrollY');
+    if (y === null) return;
+    var target = parseInt(y, 10);
+    var denemeler = [0, 50, 150, 300, 600, 1000, 1500];
+    denemeler.forEach(function (gecikme) {
+      setTimeout(function () { window.scrollTo(0, target); }, gecikme);
+    });
+    setTimeout(function () { sessionStorage.removeItem('kurumlarScrollY'); }, 1600);
+  })();
+</script>
 @endsection
 

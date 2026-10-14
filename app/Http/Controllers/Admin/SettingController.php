@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 
@@ -32,7 +33,40 @@ class SettingController extends Controller
             ];
         }
 
-        return view('admin.settings.edit', compact('settings', 'bankAccounts'));
+        // 14 Ekim 2026: kullanicinin talebi - admin daha once HICBIR bildirim
+        // turunu kapatamiyordu (aile/kurum panelinde var olan AYNI ekran
+        // admin icin hic yoktu). Giris yapan adminin KENDI tercihleri.
+        $admin = Admin::find(session('admin_id'));
+        $notificationGroups = notification_preference_groups('admin');
+        $notificationPreferences = $admin?->notification_preferences ?? [];
+
+        return view('admin.settings.edit', compact('settings', 'bankAccounts', 'notificationGroups', 'notificationPreferences'));
+    }
+
+    /**
+     * 14 Ekim 2026: kullanıcının talebi - Facility\ProfileController::
+     * updateNotifications() ile AYNI desen, bilerek ana ayarlar formundan
+     * AYRI bir <form>/rota - o formun validasyonuna dokunmadan, giriş
+     * yapan adminin KENDİ notification_preferences'ını günceller (diğer
+     * adminleri etkilemez).
+     */
+    public function updateNotifications(Request $request)
+    {
+        $admin = Admin::findOrFail(session('admin_id'));
+
+        $prefs = [];
+        foreach (notification_preference_groups('admin') as $group => $meta) {
+            foreach ($meta['types'] as $type) {
+                $prefs[$type] = [
+                    'email' => $request->boolean("notifications.{$group}.email"),
+                    'push' => $request->boolean("notifications.{$group}.push"),
+                ];
+            }
+        }
+
+        $admin->update(['notification_preferences' => $prefs]);
+
+        return back()->with('success', 'Bildirim tercihleriniz güncellendi.');
     }
 
     public function update(Request $request)

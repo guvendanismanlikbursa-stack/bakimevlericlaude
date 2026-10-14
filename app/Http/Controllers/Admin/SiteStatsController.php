@@ -19,6 +19,7 @@ class SiteStatsController extends Controller
         $today = now()->toDateString();
         $last7 = now()->subDays(6)->toDateString();
         $last30 = now()->subDays(29)->toDateString();
+        $last90 = now()->subDays(89)->toDateString();
 
         $visitStats = [];
         foreach ($brands as $slug => $brand) {
@@ -31,7 +32,10 @@ class SiteStatsController extends Controller
             ];
         }
 
-        $dailySeries = SiteVisit::where('visit_date', '>=', $last30)
+        // 5 Ekim 2026: kullanicinin talebi - trend grafiginde 90 gunluk secenek
+        // de olsun, bu yuzden sorgu artik 90 gune cikti (30/7/1 gorunumler
+        // JS tarafinda bu ayni veriden dilimlenir, ekstra sorgu gerekmez).
+        $dailySeries = SiteVisit::where('visit_date', '>=', $last90)
             ->orderBy('visit_date')
             ->get()
             ->groupBy(fn ($row) => $row->visit_date->toDateString());

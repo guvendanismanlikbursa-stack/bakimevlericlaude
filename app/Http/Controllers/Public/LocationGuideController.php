@@ -87,7 +87,7 @@ class LocationGuideController extends Controller
         $category = null;
         $topicTitle = $section['seo_title'] ?? $section['title'];
         $guideContent = guide_page_content($brand, $city->name, $districtName, $section['title'].' kurumları', $facilityCount);
-        $content['faq_preview'] = $this->withLocalFaq($content['faq_preview'] ?? [], $city->name, $districtName, $topicTitle, $priceRange, $facilityCount);
+        $content['faq_preview'] = $this->withLocalFaq($content['faq_preview'] ?? [], $city->name, $districtName, $topicTitle, $priceRange, $facilityCount, $section['slug']);
 
         return view("themes.{$brand['theme']}.location-guide", compact(
             'brand',
@@ -155,7 +155,7 @@ class LocationGuideController extends Controller
         $content = site_section_content($brand['slug'], $section['slug']);
         $sectionCategories = FacilityCategory::cachedAll()->whereIn('brand_scope', $section['scopes'])->values();
         $guideContent = guide_page_content($brand, $city->name, $districtName, $category->name, $facilityCount);
-        $content['faq_preview'] = $this->withLocalFaq($content['faq_preview'] ?? [], $city->name, $districtName, $category->name, $priceRange, $facilityCount);
+        $content['faq_preview'] = $this->withLocalFaq($content['faq_preview'] ?? [], $city->name, $districtName, $category->name, $priceRange, $facilityCount, $section['slug']);
 
         return view("themes.{$brand['theme']}.location-guide", compact(
             'brand',
@@ -246,7 +246,7 @@ class LocationGuideController extends Controller
      * fiyat girilmis kurum yoksa) sadece kurum sayisina dayanan tek bir
      * soru eklenir - hicbir zaman uydurma/genellenmis bir rakam kullanilmaz.
      */
-    private function withLocalFaq(array $baseFaq, string $cityName, ?string $districtName, string $topicTitle, ?array $priceRange, int $facilityCount): array
+    private function withLocalFaq(array $baseFaq, string $cityName, ?string $districtName, string $topicTitle, ?array $priceRange, int $facilityCount, ?string $sectionSlug = null): array
     {
         $location = trim(($districtName ? $districtName.', ' : '').$cityName);
         $local = [];
@@ -264,6 +264,25 @@ class LocationGuideController extends Controller
             $local[] = [
                 "{$location} bölgesinde kaç {$topicTitle} kurumu var?",
                 "Şu anda platformumuzda {$location} bölgesinde {$facilityCount} adet {$topicTitle} kurumu listelenmektedir, güncel listeye sayfadaki kurum kartlarından ulaşabilirsiniz.",
+            ];
+        }
+
+        // 13 Ekim 2026: kullanicinin talebi - pazar arastirmasinda tespit
+        // edilen, sik aranan ama platformda hic karsiligi olmayan uzun
+        // kuyruklu ifadeler (ornegin "calisan anne kres destegi", "7/24
+        // hemsireli yasli bakim evi") buraya bolume ozel, GERCEK bir
+        // bilgilendirme cumlesiyle eklenir - uydurma veri degil, genel
+        // dogru bilgi.
+        if ($sectionSlug === 'cocuk-bakim' || $sectionSlug === 'cocuk') {
+            $local[] = [
+                "{$location} bölgesinde çalışan anne/baba için kreş desteği var mı?",
+                "Bazı belediyeler ve işletmeler çalışan ebeveynler için kreş desteği/indirimi sunabilir; bu, kurumdan kuruma ve dönemden döneme değişir. {$location} bölgesindeki kurumlarla doğrudan görüşerek güncel kreş desteği ve erken kayıt fırsatlarını öğrenebilirsiniz.",
+            ];
+        }
+        if ($sectionSlug === 'yasli-bakim') {
+            $local[] = [
+                "{$location} bölgesinde 7/24 hemşireli yaşlı bakım evi var mı?",
+                "{$location} bölgesindeki kurumların çoğu 7/24 hemşire/bakım personeli desteği sunar; Alzheimer/demans veya yatalak hasta bakımı gibi özel ihtiyaçlar için bu hizmetin kapsamını kuruma doğrudan sormanızı öneririz.",
             ];
         }
 

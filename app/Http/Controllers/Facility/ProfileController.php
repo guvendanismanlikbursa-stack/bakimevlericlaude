@@ -223,9 +223,14 @@ class ProfileController extends Controller
             throw ValidationException::withMessages(['images' => 'En az bir görsel seçmelisiniz.']);
         }
 
-        if ($currentCount + $files->count() > self::MAX_GALLERY_IMAGES) {
+        // 11 Ekim 2026: kullanicinin talebi - okul.com.tr'deki gibi, AKTIF
+        // ABONE kurumlara sinirsiz gorsel yukleme hakki taninir (bkz.
+        // Facility::isActiveSubscriber() - odeme suresi canli kontrol edilir,
+        // ayri bir "premium" bayragi YOK). Abone olmayanlarda eski 10 gorsel
+        // sinirlamasi AYNEN devam eder.
+        if (! $user->facility->isActiveSubscriber() && $currentCount + $files->count() > self::MAX_GALLERY_IMAGES) {
             $remaining = max(0, self::MAX_GALLERY_IMAGES - $currentCount);
-            throw ValidationException::withMessages(['images' => "En fazla 10 görsel eklenebilir. Kalan yükleme hakkı: {$remaining}."]);
+            throw ValidationException::withMessages(['images' => "En fazla 10 görsel eklenebilir. Kalan yükleme hakkı: {$remaining}. Sınırsız görsel yüklemek için abone olabilirsiniz."]);
         }
 
         // 3 Agustos 2026: bkz. FacilityClaimController ayni yorum - disk
