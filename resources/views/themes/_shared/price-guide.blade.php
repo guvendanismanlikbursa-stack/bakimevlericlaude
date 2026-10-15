@@ -132,6 +132,52 @@
     </div>
   @endif
 
+  {{-- 15 Ekim 2026: kullanicinin talebi - "siteyi daha profesyonel gosterme"
+       fikirlerinden biri: fiyat rehberi sayfalarina bolume ozel, gercekten
+       kullanisli bir "neye dikkat edilmeli" kontrol listesi. Hem SEO icerigini
+       zenginlestirir hem de ailenin somut, pratik bir fayda gormesini saglar -
+       genel/soyut "guven" ifadeleri yerine. --}}
+  @php
+    $seciminKriterleri = [
+      'yasli-bakim' => [
+        '7/24 hemşire veya sağlık personeli bulunuyor mu, acil durumda hangi hastaneye yönlendiriliyor?',
+        'Oda/yatak başına düşen personel sayısı ve gece vardiyası nasıl işliyor?',
+        'Alzheimer/demans veya yatalak hasta bakımı için ayrı bir birim/deneyim var mı?',
+        'Ziyaret saatleri ve aile ile iletişim (günlük/haftalık bilgilendirme) nasıl sağlanıyor?',
+        'Fiyata dahil olan/olmayan kalemler (ilaç, bez, fizyoterapi, özel bakım) net mi?',
+      ],
+      'cocuk' => [
+        'Bina ve bahçe güvenliği (kamera, giriş-çıkış kontrolü, kaza önleyici tedbirler) yeterli mi?',
+        'Öğretmen/bakıcı başına düşen çocuk sayısı yaş grubuna uygun mu?',
+        'Günlük beslenme menüsü ve alerji/özel diyet durumunda esneklik var mı?',
+        'Kurum, Milli Eğitim Bakanlığı\'na bağlı mı, ruhsatı/onayı güncel mi?',
+        'Devamsızlık, hastalık veya ani alım gecikmesi gibi durumlarda kurumun politikası ne?',
+      ],
+      'rehabilitasyon' => [
+        'İlk değerlendirme uzman (fizyoterapist/doktor) tarafından mı yapılıyor, yazılı bir program sunuluyor mu?',
+        'Seans süresi, sıklığı ve toplam süreç net olarak belirtiliyor mu?',
+        'Cihaz/terapi alanları ihtiyaca (ortopedik, nörolojik, gelişimsel vb.) uygun mu?',
+        'Ev programı ve aileye ilerleme raporu paylaşılıyor mu?',
+        'Seans paketleri iptal/iade koşulları nasıl işliyor?',
+      ],
+    ];
+    $kriterler = $seciminKriterleri[$section['slug']] ?? [];
+  @endphp
+  @if(!empty($kriterler))
+    <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mt-8">
+      <h2 class="text-lg font-black text-gray-950 mb-1">{{ $topicTitle }} Seçerken Nelere Dikkat Etmeli?</h2>
+      <p class="text-sm text-gray-500 mb-4">Fiyat tek başına yeterli bir kriter değildir — görüşme sırasında kuruma şu soruları sormanızı öneririz:</p>
+      <ul class="space-y-2.5">
+        @foreach($kriterler as $kriter)
+          <li class="flex items-start gap-2 text-sm text-gray-700">
+            <span class="text-primary font-black mt-0.5">✓</span>
+            <span>{{ $kriter }}</span>
+          </li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
+
   {{-- 13 Ekim 2026: kullanicinin talebi - JSON-LD'deki SSS gorunur icerikle
        de eslesmeli (Google'in "gizli/sadece schema'da olan icerik" karsiti
        politikasina uymak icin), bkz. yukaridaki $faqPreview ayni tarihli yorum. --}}
