@@ -55,7 +55,10 @@
       <span class="text-[10px] font-black px-2 py-1 rounded-md shadow" style="background:linear-gradient(to right,#059669,#10b981);color:#ffffff;">⭐ ÖNERİLEN</span>
     @endif
   </div>
-  <button type="button" class="js-engagement-toggle absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-lg text-gray-400" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}" data-icon="1" aria-label="Favori">♥</button>
+  {{-- 15 Ekim 2026: kullanicinin talebi - favori kalp ikonu SIMDILIK
+       gizlendi (silinmedi, "hidden" ile - istenirse tek kelime kaldirilip
+       geri acilabilir). --}}
+  <button type="button" class="js-engagement-toggle hidden absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-lg text-gray-400" data-mode="favorites" data-id="{{ $facility->id }}" data-slug="{{ $facility->slug }}" data-icon="1" aria-label="Favori">♥</button>
   <a href="{{ brand_route('facilities.show', ['slug' => $facility->slug]) }}" class="block">
     <div class="h-44 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center relative">
       <img src="{{ $cardImage }}" alt="{{ $facility->imageAltText() }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">

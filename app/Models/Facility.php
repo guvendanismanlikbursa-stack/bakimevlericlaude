@@ -412,10 +412,18 @@ class Facility extends Model
         // kullaniyor, orada "near CURDATE: syntax error" ile patlardi.
         // Bugunun tarihini PHP'den parametre olarak gecmek her iki
         // veritabaninda da calisir.
+        // 15 Ekim 2026: kullanicinin talebi - "siteyi daha profesyonel
+        // gosterme" fikirlerinden biri: gercek (demo olmayan) fotograf
+        // yukleyen kurumlar aramalarda hafifce one cikar. BILEREK sadece
+        // AYNI katman ICINDE bir ikinci kriter (is_broker_managed/is_featured/
+        // is_claimed katmanlarindan SONRA, rating'den ONCE) - odeme yapan/
+        // sahiplenen bir kurumun onune ASLA gecmez, sadece ayni katmandaki
+        // kurumlar arasinda gercek fotografi olan hafifce one cikar.
         return $query
             ->orderByDesc('is_broker_managed')
             ->orderByRaw('(is_featured OR (is_subscribed AND subscription_paid_until >= ?)) DESC', [now()->toDateString()])
             ->orderByDesc('is_claimed')
+            ->orderByRaw("EXISTS (SELECT 1 FROM facility_images fi WHERE fi.facility_id = facilities.id AND fi.path NOT LIKE 'facilities/demo/%') DESC")
             ->orderByDesc('rating');
     }
 
