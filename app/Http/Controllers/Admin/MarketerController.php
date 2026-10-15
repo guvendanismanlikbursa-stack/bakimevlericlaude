@@ -17,8 +17,11 @@ class MarketerController extends Controller
     public function index()
     {
         $marketers = Marketer::withCount('notes')->orderBy('name')->get();
+        $cities = \App\Models\City::orderBy('name')->get();
+        $categories = \App\Models\FacilityCategory::orderBy('name')->get();
+        $districtMap = $cities->mapWithKeys(fn ($city) => [$city->id => districts_for_city($city->name)]);
 
-        return view('admin.marketers.index', compact('marketers'));
+        return view('admin.marketers.index', compact('marketers', 'cities', 'categories', 'districtMap'));
     }
 
     public function store(Request $request)
@@ -95,5 +98,34 @@ class MarketerController extends Controller
         log_admin_event('marketer_password_reset', $marketer);
 
         return back()->with('success', "{$marketer->name} için yeni şifre: {$password} (bu şifre sadece şimdi gösterilir, not alın).");
+    }
+
+    /**
+     * 15 Ekim 2026: kullanicinin talebi - "pazarlamacilar icin il/ilce/
+     * kategori sinirlamasi koyabilir miyiz". Hicbir kutu secilmezse alan
+     * null kaydedilir (Marketer::hasScopeRestriction() false doner) ve
+     * pazarlamaci ESKISI GIBI sinirsiz gorur - geriye donuk uyumluluk
+     * bozulmaz, bu TAMAMEN opsiyonel bir kisitlama.
+     */
+    public function updateScope(Request $request, Marketer $marketer)
+    {
+        $data = $request->validate([
+            'city_ids' => 'nullable|array',
+            'city_ids.*' => 'integer',
+            'districts' => 'nullable|array',
+            'districts.*' => 'string',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'integer',
+        ]);
+
+        $marketer->update([
+            'assigned_city_ids' => $data['city_ids'] ?? null,
+            'assigned_districts' => $data['districts'] ?? null,
+            'assigned_category_ids' => $data['category_ids'] ?? null,
+        ]);
+
+        log_admin_event('marketer_scope_updated', $marketer, $data);
+
+        return back()->with('success', "{$marketer->name} için kapsam güncellendi.");
     }
 }

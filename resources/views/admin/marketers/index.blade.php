@@ -54,8 +54,90 @@
         </form>
       </div>
     </div>
+
+    {{-- 15 Ekim 2026: kullanicinin talebi - pazarlamaciya il/ilce/kategori
+         bazinda bolge/kapsam atamasi. Hicbir kutu secilmezse kisitlama
+         kaldirilir, pazarlamaci her seyi gorur (bkz. Marketer::
+         hasScopeRestriction()). --}}
+    <details class="px-4 pb-4 -mt-1">
+      <summary class="text-sm font-semibold text-gray-600 cursor-pointer select-none">
+        Kapsam
+        @if($marketer->hasScopeRestriction())
+          <span class="text-amber-700 font-normal">(sınırlı)</span>
+        @else
+          <span class="text-gray-400 font-normal">(sınırsız - tümünü görüyor)</span>
+        @endif
+      </summary>
+      <form method="POST" action="{{ route('admin.marketers.update-scope', $marketer) }}" class="js-scope-form mt-3 bg-gray-50 rounded-lg p-3 space-y-3" data-district-map='@json($districtMap)'>
+        @csrf
+        <div>
+          <div class="text-xs font-semibold text-gray-500 mb-1">İller (seçili yoksa tüm iller)</div>
+          <div class="flex flex-wrap gap-2 max-h-28 overflow-y-auto border rounded-lg p-2 bg-white">
+            @foreach($cities as $city)
+              <label class="inline-flex items-center gap-1 text-xs bg-gray-100 rounded px-2 py-1">
+                <input type="checkbox" class="js-city-check" name="city_ids[]" value="{{ $city->id }}" data-city-id="{{ $city->id }}"
+                  @checked(in_array($city->id, $marketer->assigned_city_ids ?? []))>
+                {{ $city->name }}
+              </label>
+            @endforeach
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-gray-500 mb-1">İlçeler (seçili yoksa seçilen illerin tümü)</div>
+          <div class="js-district-groups flex flex-wrap gap-2 max-h-28 overflow-y-auto border rounded-lg p-2 bg-white">
+            @foreach($cities as $city)
+              <div class="js-district-group" data-city-id="{{ $city->id }}" style="display:none">
+                @foreach($districtMap[$city->id] ?? [] as $district)
+                  <label class="inline-flex items-center gap-1 text-xs bg-gray-100 rounded px-2 py-1 mb-1">
+                    <input type="checkbox" name="districts[]" value="{{ $district }}" @checked(in_array($district, $marketer->assigned_districts ?? []))>
+                    {{ $district }}
+                  </label>
+                @endforeach
+              </div>
+            @endforeach
+            <div class="js-district-empty-hint text-xs text-gray-400">Önce yukarıdan il seçin.</div>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-gray-500 mb-1">Kategoriler (seçili yoksa tüm kategoriler)</div>
+          <div class="flex flex-wrap gap-2 max-h-28 overflow-y-auto border rounded-lg p-2 bg-white">
+            @foreach($categories as $category)
+              <label class="inline-flex items-center gap-1 text-xs bg-gray-100 rounded px-2 py-1">
+                <input type="checkbox" name="category_ids[]" value="{{ $category->id }}" @checked(in_array($category->id, $marketer->assigned_category_ids ?? []))>
+                {{ $category->name }}
+              </label>
+            @endforeach
+          </div>
+        </div>
+        <button class="btn-primary px-4 py-2 rounded-lg text-xs font-semibold">Kapsamı Kaydet</button>
+      </form>
+    </details>
   @empty
     <div class="p-4 text-gray-400 text-sm">Henüz pazarlamacı eklenmedi.</div>
   @endforelse
 </div>
+
+<script>
+document.querySelectorAll('.js-scope-form').forEach(function (form) {
+  function syncDistrictGroups() {
+    var anyChecked = false;
+    form.querySelectorAll('.js-district-group').forEach(function (group) {
+      var cityId = group.getAttribute('data-city-id');
+      var cityCheck = form.querySelector('.js-city-check[data-city-id="' + cityId + '"]');
+      var visible = cityCheck && cityCheck.checked;
+      group.style.display = visible ? '' : 'none';
+      if (visible) anyChecked = true;
+      if (!visible) {
+        group.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = false; });
+      }
+    });
+    var hint = form.querySelector('.js-district-empty-hint');
+    if (hint) hint.style.display = anyChecked ? 'none' : '';
+  }
+  form.querySelectorAll('.js-city-check').forEach(function (cb) {
+    cb.addEventListener('change', syncDistrictGroups);
+  });
+  syncDistrictGroups();
+});
+</script>
 @endsection

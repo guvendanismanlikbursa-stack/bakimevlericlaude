@@ -83,6 +83,21 @@ class CrmController extends Controller
             $q->whereHas('category', fn ($c) => $c->where('slug', $request->category));
         }
 
+        // 15 Ekim 2026: kullanicinin talebi - pazarlamaciya il/ilce/kategori
+        // bazinda bolge atanmissa, CRM listesi sadece o kapsamla sinirlanir
+        // (iki pazarlamaci ayni kurumu aramasin). Atama yoksa davranis
+        // ESKISI GIBI sinirsizdir (bkz. Marketer::hasScopeRestriction()).
+        $marketer = \App\Models\Marketer::find(session('marketer_id'));
+        if ($marketer?->assigned_city_ids) {
+            $q->whereIn('city_id', $marketer->assigned_city_ids);
+        }
+        if ($marketer?->assigned_districts) {
+            $q->whereIn('district', $marketer->assigned_districts);
+        }
+        if ($marketer?->assigned_category_ids) {
+            $q->whereIn('facility_category_id', $marketer->assigned_category_ids);
+        }
+
         return $q;
     }
 
@@ -142,9 +157,22 @@ class CrmController extends Controller
             }
         }
 
-        $cities = City::orderBy('name')->get();
-        $categories = FacilityCategory::orderBy('name')->get();
-        $districtMap = $cities->mapWithKeys(fn ($city) => [$city->slug => districts_for_city($city->name)]);
+        // 15 Ekim 2026: kullanicinin talebi - pazarlamacinin kendi filtre
+        // acilir menuleri de ATANMIS kapsamiyla sinirlanir, kapsaminin
+        // disindaki il/kategoriyi secip bos liste gormesin.
+        $marketer = \App\Models\Marketer::find(session('marketer_id'));
+        $cities = City::orderBy('name')
+            ->when($marketer?->assigned_city_ids, fn ($q) => $q->whereIn('id', $marketer->assigned_city_ids))
+            ->get();
+        $categories = FacilityCategory::orderBy('name')
+            ->when($marketer?->assigned_category_ids, fn ($q) => $q->whereIn('id', $marketer->assigned_category_ids))
+            ->get();
+        $districtMap = $cities->mapWithKeys(function ($city) use ($marketer) {
+            $all = districts_for_city($city->name);
+            $scoped = $marketer?->assigned_districts ? array_values(array_intersect($all, $marketer->assigned_districts)) : $all;
+
+            return [$city->slug => $scoped];
+        });
         $groups = self::GROUPS;
         $statusLabels = self::STATUSES;
 
