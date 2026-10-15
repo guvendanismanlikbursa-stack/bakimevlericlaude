@@ -52,6 +52,11 @@
           @csrf
           <button class="text-sm font-semibold whitespace-nowrap {{ $marketer->is_active ? 'text-red-600' : 'text-green-700' }}">{{ $marketer->is_active ? 'Devre Dışı Bırak' : 'Aktif Et' }}</button>
         </form>
+        <form method="POST" action="{{ route('admin.marketers.destroy', $marketer) }}" class="inline" onsubmit="return confirm('{{ $marketer->name }} silinsin mi? Bir daha asla giriş yapamaz. Geçmiş görüşme notları (Tüm Görüşmeler ekranında) korunur.');">
+          @csrf
+          @method('DELETE')
+          <button class="text-sm font-semibold whitespace-nowrap text-red-800">Sil</button>
+        </form>
       </div>
     </div>
 

@@ -25,7 +25,11 @@ class FacilityMarketingNote extends Model
 
     public function marketer()
     {
-        return $this->belongsTo(Marketer::class);
+        // 15 Ekim 2026: kullanicinin talebi - artik sildigi pazarlamacilarin
+        // GECMIS gorusme notlari (admin "Tum Gorusmeler" ekrani) kaybolmasin
+        // ya da isim bos gorunmesin, bu yuzden silinmis pazarlamaci da
+        // bulunabilir kalir (sadece giris yapamaz, bkz. MarketerAuth).
+        return $this->belongsTo(Marketer::class)->withTrashed();
     }
 
     public function admin()

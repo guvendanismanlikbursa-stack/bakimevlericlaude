@@ -652,6 +652,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/pazarlamacilar/{marketer}/durum', [\App\Http\Controllers\Admin\MarketerController::class, 'toggleActive'])->name('marketers.toggle-active');
         Route::post('/pazarlamacilar/{marketer}/sifre-sifirla', [\App\Http\Controllers\Admin\MarketerController::class, 'resetPassword'])->name('marketers.reset-password');
         Route::post('/pazarlamacilar/{marketer}/kapsam', [\App\Http\Controllers\Admin\MarketerController::class, 'updateScope'])->name('marketers.update-scope');
+        Route::delete('/pazarlamacilar/{marketer}', [\App\Http\Controllers\Admin\MarketerController::class, 'destroy'])->name('marketers.destroy');
         Route::get('/pazarlamaci-gorusmeleri', [\App\Http\Controllers\Admin\MarketerController::class, 'conversations'])->name('marketers.conversations');
         Route::get('/pazarlamaci-hunisi', [\App\Http\Controllers\Admin\MarketerController::class, 'funnel'])->name('marketers.funnel');
 

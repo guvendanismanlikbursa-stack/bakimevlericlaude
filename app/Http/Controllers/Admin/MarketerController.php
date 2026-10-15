@@ -59,6 +59,28 @@ class MarketerController extends Controller
     }
 
     /**
+     * 15 Ekim 2026: kullanicinin talebi - artik calismayan pazarlamacilarin
+     * hesabini TAMAMEN silebilsin ve bu kisiler BIR DAHA ASLA giris
+     * yapamasin. Once is_active=false + is_logged_in=false (acik oturum
+     * varsa MarketerAuth middleware'i bir sonraki istekte hemen duser),
+     * sonra soft-delete (bkz. Marketer::class use SoftDeletes) - Marketer::
+     * find()/all() silinmis hesabi bir daha asla bulamaz, giris ve acik
+     * oturum kontrolu BAŞKA BİR KOD DEĞİŞİKLİĞİNE GEREK KALMADAN kendiliginden
+     * calisir. Soft-delete (hard degil) secildi ki FacilityMarketingNote
+     * gecmisi (admin "Tum Gorusmeler" ekrani) kaybolmasin - bkz.
+     * FacilityMarketingNote::marketer() withTrashed().
+     */
+    public function destroy(Marketer $marketer)
+    {
+        $marketer->update(['is_active' => false, 'is_logged_in' => false]);
+        $marketer->delete();
+
+        log_admin_event('marketer_deleted', $marketer);
+
+        return back()->with('success', "{$marketer->name} silindi, bir daha giriş yapamaz.");
+    }
+
+    /**
      * 28 Eylul 2026: kullanicinin talebi - "admin hangi pazarlamacının
      * hangi kurumlarla görüşüp sonucu nasıl görecek". Tum pazarlamacilarin
      * TUM notlarinin kronolojik gecmisi, pazarlamaci bazinda filtrelenebilir.

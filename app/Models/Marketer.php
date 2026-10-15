@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Marketer extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'name', 'phone', 'password', 'is_active', 'last_login_at', 'is_logged_in',
         'assigned_city_ids', 'assigned_districts', 'assigned_category_ids',
