@@ -79,7 +79,18 @@ class GeocodingService
 
             $addr = $response->json('address') ?? [];
 
-            return $addr['suburb'] ?? $addr['neighbourhood'] ?? $addr['quarter'] ?? null;
+            // 16 Ekim 2026: kullanıcının talebi - köy/belde statüsündeki ya da
+            // kırsal mahallelerde (Alanya Oba/Mahmutlar, Kaş Kalkan, Bursa
+            // Kükürtlü vb.) Nominatim mahalleyi "village" ya da "city_district"
+            // alanında döndürüyor; bu kurumların mahallesi boş kalıyordu.
+            // city_district bazı yerlerde ilçe adı taşıdığı için yalnızca
+            // değeri "Mahallesi" ile bitiyorsa kabul edilir.
+            $cityDistrict = $addr['city_district'] ?? null;
+            if ($cityDistrict && ! preg_match('/mahallesi$/iu', $cityDistrict)) {
+                $cityDistrict = null;
+            }
+
+            return $addr['suburb'] ?? $addr['neighbourhood'] ?? $addr['quarter'] ?? $addr['village'] ?? $cityDistrict ?? null;
         } catch (\Throwable $e) {
             Log::warning('Reverse geocoding (mahalle) basarisiz: '.$e->getMessage(), ['lat' => $lat, 'lng' => $lng]);
 
