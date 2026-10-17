@@ -81,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
             // ayni notify_user() cagrisinin urettigi okunmamis bildirim
             // turune gore sayiliyor - TUM nav ogeleri icin TEK, tutarli kural.
             $view->with('pendingJobApplicationsCount', JobApplication::where('status', 'yeni')->count());
+            $view->with('pendingReviewsCount', \App\Models\FacilityReview::where('status', 'pending')->count());
             $view->with('unreadContactMessagesCount', ContactMessage::where('is_read', false)->count());
             $view->with('newFeeInfoRequestsCount', FacilityInterestLead::where('status', 'yeni')->count() + OfferRequest::where('status', 'new')->count());
 

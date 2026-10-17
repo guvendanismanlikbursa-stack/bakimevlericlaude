@@ -82,6 +82,9 @@ class HealthController extends Controller
         // yok, bu yuzden testing ortaminda atlanir.
         if (app()->environment('testing')) {
             $checks['backup'] = 'atlandi (test ortami)';
+        } elseif (! is_primary_site()) {
+            // 17 Ekim 2026: yedek artık yalnızca ana sitede alınıyor (bkz. BackupDatabase).
+            $checks['backup'] = 'ok (ana sitede aliniyor)';
         } else {
             try {
                 $backupDir = storage_path('app/private/backups');

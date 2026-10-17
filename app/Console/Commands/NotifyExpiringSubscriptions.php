@@ -31,7 +31,28 @@ class NotifyExpiringSubscriptions extends Command
 
         $justExpired = Facility::where('is_subscribed', true)
             ->whereDate('subscription_paid_until', now()->subDay()->toDateString())
-            ->get(['id', 'name', 'subscription_plan', 'subscription_paid_until']);
+            ->get(['id', 'name', 'subscription_plan', 'subscription_paid_until', 'is_broker_managed']);
+
+        // 17 Ekim 2026: kullanıcının talebi (denetim bulgusu) - süre dolunca
+        // kurumun telefon/WhatsApp butonları gizleniyordu ama kurumun kendisine
+        // hiçbir uyarı gitmiyordu; sebebini bilmeden müşteri kaybediyordu.
+        // Kuruma iki kez haber verilir: bitişe tam 3 gün kala ve bittiğinin
+        // ertesi günü (her gün çalışan komutta tekrar tekrar gitmesin diye
+        // tarihler tam eşleşmeyle seçilir). Anlaşmalı kurumlar adminlerce
+        // yönetildiği için onlara ayrıca gönderilmez (admin özeti yeterli).
+        $this->notifyFacilities(
+            Facility::where('is_subscribed', true)->where('is_broker_managed', false)
+                ->whereDate('subscription_paid_until', now()->addDays(3)->toDateString())->get(),
+            'subscription_expiring',
+            'Aboneliğiniz 3 gün içinde sona eriyor',
+            fn ($f) => 'Aboneliğiniz '.$f->subscription_paid_until->format('d.m.Y').' tarihinde sona erecek. Süre dolduğunda kurum sayfanızdaki telefon ve WhatsApp butonları gizlenir. Yenilemek için bizimle iletişime geçebilirsiniz.'
+        );
+        $this->notifyFacilities(
+            $justExpired->where('is_broker_managed', false),
+            'subscription_expired',
+            'Aboneliğinizin süresi doldu',
+            fn ($f) => 'Aboneliğiniz '.$f->subscription_paid_until->format('d.m.Y').' tarihinde sona erdi. Kurum sayfanızdaki telefon ve WhatsApp butonları şu an gizli. Yeniledikten sonra butonlar otomatik olarak tekrar görünür.'
+        );
 
         if ($expiringSoon->isEmpty() && $justExpired->isEmpty()) {
             $this->info('Bildirilecek abonelik yok.');
@@ -67,5 +88,18 @@ class NotifyExpiringSubscriptions extends Command
         $this->info(($expiringSoon->count() + $justExpired->count()).' abonelik icin ozet mail gonderildi.');
 
         return self::SUCCESS;
+    }
+
+    private function notifyFacilities($facilities, string $type, string $title, \Closure $body): void
+    {
+        foreach ($facilities as $facility) {
+            \App\Models\FacilityUser::where('facility_id', $facility->id)->get()->each(function ($user) use ($facility, $type, $title, $body) {
+                try {
+                    notify_user($user, $type, $title, $body($facility), ['facility_id' => $facility->id]);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Abonelik kurum bildirimi gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+                }
+            });
+        }
     }
 }

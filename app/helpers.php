@@ -564,7 +564,7 @@ if (! function_exists('notification_preference_groups')) {
             'leads' => ['label' => 'Yeni talep veya soru geldiğinde', 'types' => ['offer_request', 'new_question']],
             'messages' => ['label' => 'Aile mesaj gönderdiğinde', 'types' => ['new_message']],
             'wallet' => ['label' => 'Bakiye işlemlerimde', 'types' => ['topup_approved', 'topup_rejected']],
-            'reminders' => ['label' => 'Hatırlatmalarda', 'types' => ['question_reminder']],
+            'reminders' => ['label' => 'Hatırlatmalarda', 'types' => ['question_reminder', 'subscription_expiring', 'subscription_expired']],
             // 14 Ekim 2026: kullanicinin talebi - kurum tarafindaki Firsat
             // Havuzu'na (Pusula eslesmesi) artik bildirim gidiyor, kurum da
             // bunu kapatabilmeli.
@@ -614,6 +614,7 @@ if (! function_exists('notification_action_url')) {
                 'question_answered' => isset($data['facility_slug'])
                     ? brand_route('facilities.show', $data['facility_slug']) : null,
                 'question_reminder' => brand_route('facility.questions.index'),
+                'subscription_expiring', 'subscription_expired' => brand_route('facility.dashboard'),
                 'review_invite' => isset($data['facility_slug']) ? brand_route('facilities.show', $data['facility_slug']) : null,
                 'saved_search_match' => isset($data['facility_slug']) ? brand_route('facilities.show', $data['facility_slug']) : brand_route('family.dashboard'),
                 'new_message' => isset($data['offer_request_id'])
@@ -622,6 +623,7 @@ if (! function_exists('notification_action_url')) {
                 'topup_approved', 'topup_rejected' => brand_route('facility.wallet.index'),
                 'claim_submitted' => route('admin.claims.index'),
                 'job_application_submitted' => route('admin.job-applications.index'),
+                'review_submitted' => route('admin.reviews.index', ['status' => 'pending']),
                 'visit_service_request_submitted' => isset($data['visit_service_request_id'])
                     ? route('admin.visit-service.show', $data['visit_service_request_id']) : route('admin.visit-service.index'),
                 'visit_service_report_logged' => isset($data['visit_service_request_id']) && $isFamilyUser
@@ -1364,5 +1366,19 @@ if (! function_exists('fix_locative_suffix')) {
 
             return $w."'".$hard.$vowel;
         }, $text);
+    }
+}
+
+if (! function_exists('is_primary_site')) {
+    /**
+     * 17 Ekim 2026: 3 site aynı kodla 3 ayrı klasörde çalışıyor; ortak dosya
+     * klasörleri (kurum görselleri, belgeler) ana sitede (public_html) duruyor,
+     * diğer ikisinde oraya symlink var. Ağır, tek seferlik işler (dosya
+     * yedeği gibi) yalnızca ana sitede çalışmalı. Yerel geliştirme ve test
+     * ortamı da ana site sayılır.
+     */
+    function is_primary_site(): bool
+    {
+        return ! in_array(basename(base_path()), ['public_html_bakimevibul', 'bakimeviara.com'], true);
     }
 }

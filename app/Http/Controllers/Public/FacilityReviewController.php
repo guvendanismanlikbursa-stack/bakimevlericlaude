@@ -65,6 +65,18 @@ class FacilityReviewController extends Controller
             'status' => 'pending',
         ]);
 
+        // 17 Ekim 2026: kullanıcının talebi (denetim bulgusu) - yorum onay
+        // bekliyordu ama admine hiçbir bildirim gitmiyordu, admin menüsünde de
+        // sayaç yoktu; yorumlar fark edilmeden günlerce bekleyebiliyordu.
+        // İş başvurusu/sahiplenme ile aynı desen.
+        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
+            $admin,
+            'review_submitted',
+            'Yeni kurum yorumu (onay bekliyor)',
+            "\"{$facility->name}\" kurumuna {$validated['rating']} yıldızlı yeni bir yorum geldi.",
+            ['facility_id' => $facility->id],
+        ));
+
         return back()->with('success', 'Yorumunuz alındı. Admin onayından sonra yayına alınacak.');
     }
 }

@@ -83,6 +83,11 @@ class CheckGalleryHealth extends Command
     // sorunlarindan ayirt edilebilsin.
     private function checkBackupCompleted(): void
     {
+        // 17 Ekim 2026: yedek artık yalnızca ana sitede alınıyor (bkz. BackupDatabase).
+        if (! is_primary_site()) {
+            return;
+        }
+
         $dir = storage_path('app/private/backups');
         $today = now()->format('Y-m-d');
 
@@ -119,9 +124,16 @@ class CheckGalleryHealth extends Command
         $message = implode("\n", $problems);
         $this->error("Yedekleme kontrolu basarisiz:\n{$message}");
 
+        // 17 Ekim 2026: kullanıcının talebi (denetim bulgusu) - 3 site aynı
+        // veritabanını paylaşıp her biri bu kontrolü kendi diskinde ayrı
+        // çalıştırdığından Hatalar panelinde birbirinin aynısı 3 kayıt
+        // görünüyordu, hangisinin hangi siteye ait olduğu anlaşılmıyordu.
+        // Başlığa site adı eklenir.
+        $site = parse_url((string) config('app.url'), PHP_URL_HOST) ?: basename(base_path());
+
         record_platform_error(
             'daily-backup-check',
-            'Günlük yedekleme kontrolü başarısız',
+            "Günlük yedekleme kontrolü başarısız ({$site})",
             $message
         );
     }

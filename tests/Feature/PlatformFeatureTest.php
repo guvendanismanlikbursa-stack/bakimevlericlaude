@@ -637,6 +637,47 @@ class PlatformFeatureTest extends TestCase
     // yapilan spam/kotuye kullanim denetiminde bulundu - ayni aile hesabi
     // ayni kuruma sinirsiz sayida tekrar yorum birakabiliyordu (bkz.
     // Public\FacilityReviewController::store).
+    // 17 Ekim 2026: denetim bulgusu - yeni aile yorumu admine bildirilmiyordu.
+    public function test_new_facility_review_notifies_admins(): void
+    {
+        Mail::fake();
+        OfferRequest::create(array_merge(
+            $this->offerData('bakimevleri', $this->rehabCategory, 'Rehab icin bilgi'),
+            ['facility_id' => $this->rehabFacilityClaimed->id]
+        ));
+
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug.'/yorum', [
+                'rating' => 4,
+                'body' => 'Guzel bir kurum.',
+            ])->assertRedirect();
+
+        $this->assertTrue(PlatformNotification::where('notifiable_type', Admin::class)
+            ->where('notifiable_id', $this->admin->id)->where('type', 'review_submitted')->exists());
+    }
+
+    // 17 Ekim 2026: denetim bulgusu - abonelik bitince kuruma haber verilmiyordu.
+    public function test_expiring_subscription_notifies_facility_once_at_three_days(): void
+    {
+        Mail::fake();
+        $facility = $this->childFacility;
+        $facility->update(['is_subscribed' => true, 'is_broker_managed' => false, 'subscription_paid_until' => now()->addDays(3)->toDateString()]);
+
+        $this->artisan('subscriptions:notify-expiring')->assertSuccessful();
+        $this->assertSame(1, PlatformNotification::where('notifiable_type', FacilityUser::class)
+            ->where('notifiable_id', $this->facilityUser->id)->where('type', 'subscription_expiring')->count());
+
+        // 2 gün kala tekrar gönderilmez.
+        $facility->update(['subscription_paid_until' => now()->addDays(2)->toDateString()]);
+        $this->artisan('subscriptions:notify-expiring')->assertSuccessful();
+        $this->assertSame(1, PlatformNotification::where('type', 'subscription_expiring')->count());
+
+        // Bittiğinin ertesi günü ikinci (son) bildirim.
+        $facility->update(['subscription_paid_until' => now()->subDay()->toDateString()]);
+        $this->artisan('subscriptions:notify-expiring')->assertSuccessful();
+        $this->assertSame(1, PlatformNotification::where('notifiable_id', $this->facilityUser->id)->where('type', 'subscription_expired')->count());
+    }
+
     public function test_facility_review_rejects_duplicate_submission_from_same_family(): void
     {
         OfferRequest::create(array_merge(
@@ -714,8 +755,10 @@ class PlatformFeatureTest extends TestCase
         $this->get('http://bakimevleri.com/sitemap.xml')
             ->assertOk()
             ->assertHeader('content-type', 'application/xml; charset=UTF-8')
-            ->assertSee('bakimevleri.com/rehber/yasli-bakim/istanbul', false)
-            ->assertSee('bakimevleri.com/kurumlar/'.$this->elderlyFacility->slug, false)
+            // 17 Ekim 2026: bakimevleri'nin varsayılan bölümü yasli-bakim'den
+            // cocuk'a takas edildi (bkz. config/brands.php), test güncellendi.
+            ->assertSee('bakimevleri.com/rehber/cocuk/istanbul', false)
+            ->assertSee('bakimevleri.com/kurumlar/'.$this->childFacility->slug, false)
             ->assertDontSee('bakimevleri.com/rehber/rehabilitasyon/', false)
             ->assertDontSee('bakimevibul.com', false);
 
@@ -726,7 +769,7 @@ class PlatformFeatureTest extends TestCase
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/kurumlar')
             ->assertOk()
-            ->assertSee('Profil Kalitesi')
+            // 17 Ekim 2026: liste karta çevrilince 'Profil Kalitesi' tablo başlığı kalktı, puan kartta gösteriliyor.
             ->assertSee('/100');
 
         $this->withSession(['facility_user_id' => $this->facilityUser->id])
@@ -4298,12 +4341,14 @@ class PlatformFeatureTest extends TestCase
         foreach ($pages as $page) {
             $initial = $this->withSession(['admin_id' => $this->admin->id])->get($page);
             $initial->assertOk();
-            $this->assertStringContainsString('admin-table-scroll', $initial->getContent(), "{$page} ilk yuklemede kaydirilabilir degil.");
+            // 17 Ekim 2026: bu listeler 1 ve 11 Ekim'de tablodan, yana kaydırma
+            // gerektirmeyen karta çevrildi; artık hiç geniş tablo olmamalı.
+            $this->assertStringNotContainsString('<table', $initial->getContent(), "{$page} ilk yuklemede genis tablo iceriyor.");
 
             $ajax = $this->withSession(['admin_id' => $this->admin->id])
                 ->get($page.'?q=', ['X-Requested-With' => 'XMLHttpRequest']);
             $ajax->assertOk();
-            $this->assertStringContainsString('admin-table-scroll', $ajax->json('html'), "{$page} AJAX yenilemesinden sonra kaydirilabilir degil.");
+            $this->assertStringNotContainsString('<table', $ajax->json('html'), "{$page} AJAX yenilemesinden sonra genis tablo iceriyor.");
         }
     }
 
@@ -4706,7 +4751,8 @@ class PlatformFeatureTest extends TestCase
     // kurum bulunamadi" gosteriliyordu. Artik son gecerli sayfaya yonlendirir.
     public function test_facility_listing_redirects_out_of_range_page_to_last_valid_page(): void
     {
-        for ($i = 0; $i < 22; $i++) {
+        // 17 Ekim 2026: sayfa başı kurum sayısı 24 (bkz. FacilityController 6 Ekim), test güncellendi.
+        for ($i = 0; $i < 30; $i++) {
             $this->facility("Rehab Sayfalama Kurum {$i}", $this->rehabCategory, true);
         }
 

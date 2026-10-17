@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Mail;
 // buildFilesZip()) ve boyutu izin verdigi surece o da e-postaya ekleniyor.
 class BackupDatabase extends Command
 {
-    protected $signature = 'backup:database {--keep-days=14 : Bu gunden eski yedekler silinir} {--if-missing : Bugun icin SQL yedegi zaten varsa hicbir sey yapma} {--with-files : Dosya (gorsel) zip yedegini de al (varsayilan: sadece Pazar)}';
+    protected $signature = 'backup:database {--keep-days=3 : Bu gunden eski SQL yedekleri silinir} {--if-missing : Bugun icin SQL yedegi zaten varsa hicbir sey yapma} {--with-files : Dosya (gorsel) zip yedegini de al (varsayilan: sadece Pazar)}';
 
     protected $description = 'Veritabanini + yuklenen dosyalari/.env\'i storage/app/private/backups altina yedekler';
 
@@ -43,6 +43,22 @@ class BackupDatabase extends Command
         $dir = storage_path('app/private/backups');
         if (! File::isDirectory($dir)) {
             File::makeDirectory($dir, 0755, true);
+        }
+
+        // 17 Ekim 2026: kullanıcının talebi - 3 site aynı veritabanını
+        // paylaştığı için aynı SQL yedeği her gece 3 kez (her sitenin kendi
+        // klasörüne) alınıyordu. Yedek artık yalnızca ana sitede alınır;
+        // diğer sitelerde kalmış eski yedekler temizlenir (klasörlerin ayrı
+        // olduğu FTP ile doğrulandı, ana sitenin yedeklerine dokunulmaz).
+        if (! is_primary_site() && ! $this->option('with-files')) {
+            foreach (File::files($dir) as $file) {
+                if (preg_match('/^(backup-.*\.sql\.gz|files-backup-.*\.zip)$/', $file->getFilename())) {
+                    File::delete($file->getPathname());
+                }
+            }
+            $this->info('Ana site degil, yedek ana sitede (public_html) aliniyor - atlandi.');
+
+            return self::SUCCESS;
         }
 
         if ($this->option('if-missing') && count(glob($dir.DIRECTORY_SEPARATOR.'backup-'.now()->format('Y-m-d').'_*.sql.gz') ?: []) > 0) {
@@ -85,7 +101,13 @@ class BackupDatabase extends Command
         // 8 gun beklemeden, admin Hatalar panelinde hemen gorulur.
         $filesZipPath = null;
         $filesZipSize = 0;
-        if ($this->option('with-files') || now()->isSunday()) {
+        // 17 Ekim 2026: denetim bulgusu (FTP ile doğrulandı) - bakimevibul ve
+        // bakimeviara'nın storage/app/public/facilities klasörü ana sitenin
+        // (public_html) klasörüne symlink. Üç sitenin cron'u Pazar 03:30'da
+        // AYNI 3,6+ GB'lık klasörü AYNI ANDA zipliyordu; paylaşımlı sunucu
+        // süreçleri log bırakmadan öldürüyor, hiçbir sitede zip oluşmuyordu.
+        // Dosya zip'i artık yalnızca ana sitede alınır (SQL yedeği her sitede aynen sürer).
+        if ($this->option('with-files') || (now()->isSunday() && is_primary_site())) {
             try {
                 [$filesZipPath, $filesZipSize] = $this->buildFilesZip($dir);
                 if (! $filesZipPath) {
@@ -280,11 +302,28 @@ class BackupDatabase extends Command
         $cutoff = now()->subDays($keepDays)->timestamp;
         $deleted = 0;
 
+        // 17 Ekim 2026: kullanıcının talebi - SQL yedeğinden son $keepDays
+        // gün (varsayılan 3), 3,6+ GB'lık haftalık dosya zip'inden ise
+        // yalnızca EN SON olan saklanır. Zip'ler gün sınırına göre
+        // silinmez; aksi halde haftalık zip 3 gün sonra silinir, hafta
+        // ortasında hiç dosya yedeği kalmazdı.
+        $zips = [];
         foreach (File::files($dir) as $file) {
+            if (str_starts_with($file->getFilename(), 'files-backup-')) {
+                $zips[] = $file;
+
+                continue;
+            }
             if ($file->getMTime() < $cutoff) {
                 File::delete($file->getPathname());
                 $deleted++;
             }
+        }
+
+        usort($zips, fn ($a, $b) => $b->getMTime() <=> $a->getMTime());
+        foreach (array_slice($zips, 1) as $old) {
+            File::delete($old->getPathname());
+            $deleted++;
         }
 
         if ($deleted > 0) {
