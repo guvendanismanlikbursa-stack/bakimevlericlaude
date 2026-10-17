@@ -100,15 +100,18 @@ class FacilityController extends Controller
         }
 
         // "Harita mantiginda bolgesel dagilim" TUM filtrelenmis sonuclar
-        // uzerinden hesaplanmali, sadece o anki sayfadaki 9 kayittan degil;
+        // uzerinden hesaplanmali, sadece o anki sayfadaki kayitlardan degil;
         // bu yuzden aggregate icin filtreyi tekrar (sayfalama olmadan) kurup
         // sehir+ilce bazinda ayri bir count sorgusu calistiriyoruz.
+        // 15 Ekim 2026: kullanicinin talebi - "en buyuk 8 ilcesi yeterli"
+        // (9'dan 8'e dusuruldu, asagidaki grid de 4 sutuna cekilip tam 2
+        // satir/8 kutu halinde duzgun gorunsun diye guncellendi).
         $regionGroups = $this->filteredQuery($request, $scope, $brand['category_scope'])
             ->join('cities', 'cities.id', '=', 'facilities.city_id')
             ->selectRaw('cities.name as city_name, cities.slug as city_slug, facilities.district, count(*) as total')
             ->groupBy('cities.name', 'cities.slug', 'facilities.district')
             ->orderByDesc('total')
-            ->limit(9)
+            ->limit(8)
             ->get();
 
         // "En cok aranan kurumlar/bolgeler" icin: site serbest metin arama

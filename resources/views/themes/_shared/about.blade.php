@@ -36,7 +36,7 @@
 {{-- ISTATISTIK SERIDI: gercek, canli platform verisi - "vitrin" sayfasina
      guven veren somut rakamlar. --}}
 <section class="bg-white border-b border-gray-100">
-  <div class="max-w-4xl mx-auto px-4 py-8 grid grid-cols-3 gap-4 text-center">
+  <div class="max-w-4xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
     <div>
       <div class="text-2xl md:text-3xl font-black text-gray-950">{{ number_format($facilityCount, 0, ',', '.') }}</div>
       <div class="text-xs md:text-sm text-gray-500 mt-1">Listelenen kurum</div>
@@ -48,6 +48,10 @@
     <div>
       <div class="text-2xl md:text-3xl font-black text-gray-950">{{ number_format($claimedCount, 0, ',', '.') }}</div>
       <div class="text-xs md:text-sm text-gray-500 mt-1">Doğrulanmış/sahiplenilmiş kurum</div>
+    </div>
+    <div>
+      <div class="text-2xl md:text-3xl font-black text-gray-950">10dk-1sa</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-1">Taleplere dönüş süresi</div>
     </div>
   </div>
 </section>

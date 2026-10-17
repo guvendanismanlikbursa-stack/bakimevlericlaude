@@ -592,6 +592,53 @@ class Facility extends Model
     }
 
     /**
+     * 15 Ekim 2026: kullanicinin talebi - "herkese acik performans rozeti"
+     * icin ONA AIT bir "X talep aldi, Y dakikada yanitladi" rakami UYDURULMAZ
+     * (boyle bir veri YOK - sahiplenilmemis/anlasmali kurumlarin taleplerine
+     * kurumun KENDISI degil, platform ekibi bakiyor, bkz. facilities/
+     * show.blade.php'deki ayni tarihli "10-30 dk"/"30 dk - 1 sa" metinleri).
+     * Bunun yerine, GERCEKTEN TAAHHUT EDILEN (ve tutulan) sureye dayali,
+     * durust bir rozet donuyor. Sahipli kurumlarda GERCEK olculen
+     * hasFastResponseBadge() zaten varsa, onunla CAKISMASIN diye bu metot
+     * null doner - iki ayri "hizli yanit" iddiasi yan yana gorunmez.
+     */
+    public function responseTimePromiseBadge(): ?string
+    {
+        if ($this->hasFastResponseBadge()) {
+            return null;
+        }
+        if ($this->is_broker_managed) {
+            return '10-30 dk içinde yanıt';
+        }
+        if (! $this->is_claimed) {
+            return '30 dk-1 sa içinde yanıt';
+        }
+
+        return null;
+    }
+
+    /**
+     * 15 Ekim 2026: kullanicinin talebi - "ozellikle anlasmali kurumlarda
+     * tesvik edici sayilar olmali ki diger kurumlar da anlasmali/uye olmak
+     * istesin". Talep sayisi UYDURULAMAZ (gercegi yok denecek kadar az) ama
+     * GORUNTULENME sayisi GERCEK ve dogrulandi: anlasmali kurumlarda
+     * ortalama 146 (en dusuk 77), sahiplenilmemis/anlasmasiz kurumlarda
+     * ortalama 41 - yani anlasmalilik GERCEKTEN daha fazla goruntulenme
+     * getiriyor (oncelikli listeleme sayesinde), uydurma rakam GEREKMIYOR.
+     * Sadece anlasmali VE yeterince yuksek (>=50) goruntulenmesi olan
+     * kurumlarda gosterilir - dusuk/yeni bir anlasmali kurumda hic
+     * gosterilmez (kullanicinin "0/az sayi asla gorunmesin" talebi).
+     */
+    public function viewsBoostBadge(): ?string
+    {
+        if ($this->is_broker_managed && $this->views_count >= 50) {
+            return number_format($this->views_count, 0, ',', '.').'+ görüntülenme';
+        }
+
+        return null;
+    }
+
+    /**
      * 10 Eylul 2026: kullanicinin talebi - bakimevleri.com, anlasmali
      * (is_broker_managed) KRES ve ANAOKULLARINA kayit yaptiran cocuklar
      * icin 1 yillik ferdi kaza sigortasini UCRETSIZ yaptiriyor. Bu bir

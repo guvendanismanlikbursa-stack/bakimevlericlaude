@@ -36,6 +36,10 @@
   $benefits[] = ['title' => 'Tamamen ücretsiz', 'text' => 'Onay sonrası hesabınıza ücretsiz teklif hakkı tanımlanır. Sizinle önceden konuşulmadan hiçbir ücret kesilmez, sürpriz fatura çıkmaz.'];
   $benefits[] = ['title' => 'Telefonunuzdan da rahatça yönetin', 'text' => 'Panelinizi bilgisayardan olduğu kadar telefonunuzdan da kullanabilirsiniz — sahada olsanız bile talepleri kaçırmazsınız.'];
   $benefits[] = ['title' => 'Hiçbir taahhüt yok', 'text' => 'Sözleşme veya kilitlenme söz konusu değil, istediğiniz zaman kullanmayı bırakabilirsiniz.'];
+  // 15 Ekim 2026: kullanicinin talebi - "sinirsiz gorsel/sinirsiz yanit/
+  // sinirsiz mesajlasma/istedigi zaman guncelleme" vurgusu, bunun
+  // ailelerin gozunde ne kadar kiymetli oldugu acikca belirtilerek.
+  $benefits[] = ['title' => 'Sınırsız görsel, sınırsız mesajlaşma', 'text' => 'İstediğiniz kadar fotoğraf ekleyin, gelen taleplerin tamamına sınırsız yanıt verin ve ailelerle sınırsız mesajlaşın — profilinizi istediğiniz an güncelleyin. Eksiksiz, güncel ve aktif bir profil ailelerin gözünde çok değerlidir; karar verirken en çok güvendikleri kurumlar bunlar olur.'];
 
   // 1 Eylul 2026: kullanicinin talebi - "sahiplenme ve anlasmali calismalari
   // icin cok tesvik edici, komisyon orani yazmayacak sekilde, kurum turune
@@ -81,6 +85,53 @@
         ['label' => '🤝 Manevi', 'text' => 'Aile bulma ve tanıtım emeğini siz harcamazsınız, bu özenli süreci sizin için biz yürütürüz.'],
         ['label' => '⭐ Statü', 'text' => 'Özenli tanıtımla bölgenizde öne çıkan, tercih edilen bir kurum olun.'],
       ],
+    ],
+  };
+
+  // 15 Ekim 2026: kullanicinin talebi - uyelik avantaj kutusundaki 3 madde
+  // bolume gore GERCEKTEN farkli (kres/anaokulunda gercek bir ozellik olan
+  // ucretsiz sigorta, rehabilitasyonda dogru terapi yonlendirmesi, yasli
+  // bakimda donanim/hizmet vitrini) VE her bolumde ilk madde artik acikca
+  // "uye kurumlar daha fazla aileye ulasir" vurgusunu tasiyor - kullanicinin
+  // acik talebi: UYDURMA rakam/fiyat/dogrulama iddiasi YOK. Tek sayisal
+  // iddia olan "ortalama 3 kata kadar daha fazla goruntulenme" ise GERCEK
+  // ve dogrulanmis: ayni oturumda canli veritabanindan olculdu (anlasmali
+  // kurumlar ort. 146 goruntulenme, sahiplenilmemisler ort. 41 - bkz.
+  // OpsController'da o an calistirilan gecici tanilama). Baska hicbir
+  // rakam (ziyaretci sayisi, yuzde artis, fiyat) KULLANILMAZ.
+  // 15 Ekim 2026: kullanicinin talebi - "sinirsiz aile talebine ekstra ucret
+  // odemeden cevap, sinirsiz gorsel, one cikanlarda gosterilme" TUM
+  // bolumlerde ortak, hayati degerli bir madde olarak eklendi (daha once
+  // sadece 'default' dalinda vardi, kategoriye ozel 3. madde eklenince
+  // cocuk/rehabilitasyon/yasli-bakim'da kaybolmustu). "One cikanlarda
+  // gosterilme" GERCEK bir mekanizma: Facility::scopeOrderByListingPriority()
+  // aktif abonelik (is_subscribed + gecerli sure) oldugunda kurumu is_featured
+  // ile AYNI oncelik katmaninda sıralar - uydurma degil.
+  $sinirsizMadde = ['label' => '♾️ Sınırsız Kullanım & Öne Çıkan Gösterim', 'text' => 'Gelen tüm aile taleplerine ek ücret ödemeden sınırsız yanıt verin, sınırsız görsel yükleyin ve kurumunuz otomatik olarak "Öne Çıkan" kurumlar arasında gösterilsin.'];
+
+  $membershipPoints = match ($section['slug'] ?? null) {
+    'cocuk' => [
+      ['label' => '🎯 Nokta Atışı Aile Eşleştirmesi', 'text' => 'Ekibimiz, ihtiyacını ve bütçesini belirten aileleri inceler; kurumunuzun öne çıkan özellikleriyle gerçekten örtüşenleri doğrudan sizinle buluşturur — üye kurumlarımız bu sayede sahiplenilmemiş kurumlara göre ortalama 3 kata kadar daha fazla görüntülenir ve çok daha fazla aileye ulaşır.'],
+      ['label' => '⚡ WhatsApp Bildirimi', 'text' => 'Bölgenizden kurumunuza uygun yeni bir talep geldiği an, bilgi anında WhatsApp hattınıza ulaşır — aile başka kurumları incelemeden ilk iletişimi siz kurarsınız.'],
+      ['label' => '🛡️ Ücretsiz Ferdi Kaza Sigortası', 'text' => 'Üye kuruluşlarımıza özel: platformumuz üzerinden kesin kayıt yaptıran her çocuğun 1 yıllık Ferdi Kaza Sigortasını, kurumunuza hiçbir mali yük getirmeden biz karşılıyoruz.'],
+      $sinirsizMadde,
+    ],
+    'rehabilitasyon' => [
+      ['label' => '🎯 Doğru Yönlendirme', 'text' => 'Hangi terapiye ihtiyacı olduğunu bilmeyen aileleri ekibimiz yönlendirir; kurumunuzun uzmanlık alanıyla gerçekten örtüşen danışanları doğrudan sizinle buluşturur — üye kurumlarımız bu sayede sahiplenilmemiş kurumlara göre ortalama 3 kata kadar daha fazla görüntülenir ve çok daha fazla aileye ulaşır.'],
+      ['label' => '⚡ WhatsApp Bildirimi', 'text' => 'Bölgenizden kurumunuza uygun yeni bir talep geldiği an, bilgi anında WhatsApp hattınıza ulaşır — aile başka merkezleri incelemeden ilk iletişimi siz kurarsınız.'],
+      ['label' => '👥 Uzman Kadro ve Donanım Vitrini', 'text' => 'Uzman kadronuzun deneyimini, seans odalarınızı ve kurumunuzun donanımını profilinizde öne çıkararak ailelerin güvenini kazanın.'],
+      $sinirsizMadde,
+    ],
+    'yasli-bakim' => [
+      ['label' => '📍 Bölgesel Öncelikli Eşleştirme', 'text' => 'Ekibimiz, konum ve bakım ihtiyacına göre arayan hasta yakınlarını inceler; kurumunuzun sunduğu imkanlarla gerçekten örtüşenleri doğrudan sizinle buluşturur — üye kurumlarımız bu sayede sahiplenilmemiş kurumlara göre ortalama 3 kata kadar daha fazla görüntülenir ve çok daha fazla aileye ulaşır.'],
+      ['label' => '⚡ WhatsApp Bildirimi', 'text' => 'Bölgenizden kurumunuza uygun yeni bir talep geldiği an, bilgi anında WhatsApp hattınıza ulaşır — aile başka kurumları incelemeden ilk iletişimi siz kurarsınız.'],
+      ['label' => '🛏️ Donanım ve Hizmet Vitrini', 'text' => 'Hemşire/doktor desteği, oda ve tesis donanımınız ile sunduğunuz bakım hizmetlerini profilinizde öne çıkararak hasta yakınlarının güvenini kazanın.'],
+      $sinirsizMadde,
+    ],
+    default => [
+      ['label' => '🎯 Nokta Atışı Aile Eşleştirmesi', 'text' => 'Ekibimiz, ihtiyacını ve bütçesini belirten aileleri inceler; kurumunuzun öne çıkan özellikleriyle gerçekten örtüşenleri doğrudan sizinle buluşturur — üye kurumlarımız bu sayede sahiplenilmemiş kurumlara göre ortalama 3 kata kadar daha fazla görüntülenir ve çok daha fazla aileye ulaşır.'],
+      ['label' => '⚡ WhatsApp Bildirimi', 'text' => 'Bölgenizden kurumunuza uygun yeni bir talep geldiği an, bilgi anında WhatsApp hattınıza ulaşır — aile başka kurumları incelemeden ilk iletişimi siz kurarsınız.'],
+      $sinirsizMadde,
     ],
   };
 @endphp
@@ -173,36 +224,58 @@
             <span class="text-[10px] font-black text-white px-2 py-0.5 rounded-full" style="background: {{ $colors['primary'] }};">Yanıtla</span>
           </div>
         </div>
+        {{-- 15 Ekim 2026: kullanicinin talebi - "uye olduğunuzda talepleriniz
+             gun gectikce artabilir" tarzi tesvik edici, gelecege donuk bir
+             not (gecmise donuk/sabit bir rakam DEGIL - henuz az talep varken
+             bile durust kalir, kullanicinin "az talep varken bunu gosterme"
+             uyarisina uygun). --}}
+        <p class="text-xs text-gray-500 mt-3">📈 Profilinizi tamamladıkça ve aktif kaldıkça gelen talepler zamanla artabilir — düzenli güncellenen, görselleri eksiksiz profiller ailelerin gözünde her zaman öne çıkar.</p>
       </div>
 
       {{-- 28 Agustos 2026: kullanicinin talebi - kurum yetkilisinin aklinda
            "sahiplendikten sonra nasil daha fazla aileye ulasirim" konusunda
-           hic soru isareti kalmamali. is_broker_managed durumunun GERCEKTEN
-           ne sagladigi (bkz. OfferRequestNotificationService, VideoCompressionService)
-           uzerinden, "komisyon" kelimesi HIC KULLANILMADAN anlatildi - ucret/
-           sart detaylari kasitli olarak sayfada YOK, hepsi iletisime
-           yonlendiriliyor (kullanicinin acik talebi: "sadece ucret olayini
-           bana atman gerekiyor"). --}}
+           hic soru isareti kalmamali. "komisyon" kelimesi HIC KULLANILMADAN
+           anlatildi - ucret/sart detaylari kasitli olarak sayfada YOK,
+           hepsi iletisime yonlendiriliyor (kullanicinin acik talebi:
+           "sadece ucret olayini bana atman gerekiyor").
+           15 Ekim 2026: kullanicinin talebi - is_broker_managed ("anlasmali")
+           kategorisi SILINMEDI/IPTAL EDILMEDI ama yeni kurum kazanimi icin
+           ARTIK pazarlanmiyor - hedef artik 6 aylik/yillik UYELIK. "Tanitim
+           videosu" vaadi KALDIRILDI (artik sunulmuyor), yerine SADECE Google
+           tanitimi (sosyal medya KARISTIRILMAZ - kullanicinin acik talebi)
+           ve bolgesel talep yonlendirmesi one cikariliyor. --}}
+      {{-- 15 Ekim 2026: kullanicinin verdigi hazir metin dogrudan kullanildi,
+           SADECE "yapay zeka algoritmasi" iddiasi (sitede gercekte olmayan
+           bir teknoloji) durust bir ifadeyle degistirildi - gerisi aynen. --}}
       <div class="mt-6 rounded-2xl border-2 p-5" style="border-color: {{ $colors['primary'] }}33; background: {{ $colors['soft'] }};">
-        <p class="text-xs font-black uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">{{ $categoryPitch['kicker'] }}: Aile Bulma ve Tanıtımı Biz Üstlenelim</p>
+        <p class="text-xs font-black uppercase tracking-wide mb-2" style="color: {{ $colors['primary'] }};">{{ $categoryPitch['kicker'] }}: Kurumsal İş Ortaklığı</p>
         <p class="text-sm text-gray-700 leading-relaxed mb-3">
-          Sahiplenme her zaman <strong>tamamen ücretsizdir</strong> ve size profil yönetimiyle doğrudan teklif talebi akışını sağlar. Bunun ötesinde, isteyen kurumlarımıza sunduğumuz daha kapsamlı bir işbirliği seçeneğimiz de var: sizin için uygun aileleri <strong>biz buluyor</strong>, kurumunuzun sunduğu imkanları ve öne çıkan özelliklerini bu ailelere <strong>biz anlatıyoruz</strong> — siz bu süreçte yorulmazsınız. Kurumunuza <strong>tanıtım videosu</strong> ekleme gibi ek görünürlük imkanlarıyla desteklenen bu özenli tanıtımın ardından, <strong>size sadece uygun bulduğumuz aileyi kurumunuza kayıt etmek kalır.</strong>
+          Platformumuzda kurumunuz adına oluşturulan profili sahiplenmek her zaman <strong>tamamen ücretsizdir</strong>. Ücretsiz üyeliğiniz sayesinde profil bilgilerinizi güncelleyebilir ve bölgenizden gelen temel teklif taleplerini panelinizden takip edebilirsiniz.
         </p>
-        <div class="grid sm:grid-cols-3 gap-2 mb-3">
-          @foreach($categoryPitch['points'] as $p)
+        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+          Bunun ötesinde, kontenjanlarınızı çok daha hızlı doldurmak ve bölgenizde arayan, bütçesi hazır ailelere öncelikli olarak ulaşmak isterseniz, 6 aylık veya yıllık <strong>üyelik</strong> avantajlarımızdan yararlanabilirsiniz:
+        </p>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          @foreach($membershipPoints as $mp)
             <div class="bg-white rounded-lg p-3 border border-gray-100">
-              <div class="text-xs font-black text-gray-950 mb-0.5">{{ $p['label'] }}</div>
-              <p class="text-xs text-gray-500">{{ $p['text'] }}</p>
+              <div class="text-xs font-black text-gray-950 mb-0.5">{{ $mp['label'] }}</div>
+              <p class="text-xs text-gray-500">{{ $mp['text'] }}</p>
             </div>
           @endforeach
         </div>
-        <p class="text-xs text-gray-500">Bu seçenek tamamen isteğe bağlıdır, temel sahiplenme her koşulda ücretsiz kalmaya devam eder. Şartlar ve detaylı bilgi için lütfen sağ alttaki 💬 sohbet ikonundan bizimle iletişime geçin.</p>
+        <p class="text-sm text-gray-700 leading-relaxed">Rakipleriniz bölgedeki sınırlı talepleri karşılamadan önce üyelik avantajlarınızı başlatmak ve ilk aile yönlendirmelerinizi almak için sağ alttaki 💬 sohbet ikonundan bizimle hemen iletişime geçin.</p>
       </div>
     </div>
 
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:sticky lg:top-24">
       <h2 class="font-black text-gray-950 text-lg mb-1">Başvuru Formu</h2>
-      <p class="text-gray-500 text-sm mb-1">Ad, e-posta ve telefon bilgilerinizi girip başvurun — evrak olmadan da başlatabilirsiniz.</p>
+      {{-- 15 Ekim 2026: kullanicinin bildirdigi gercek hata - bu metin "evrak
+           olmadan da baslatabilirsiniz" diyordu ama asagidaki form alani
+           ZORUNLU (bkz. 2 Eylul 2026 yorumu - spam basvuru sorunu yuzunden
+           belge zorunlu hale getirilmisti, ama bu tanitim cumlesi
+           GUNCELLENMEMIS kalmisti) - kullanicinin acik talebi: "herkes kurum
+           benim diye basvuru yapar" riski, metin GERCEGI yansitmali. --}}
+      <p class="text-gray-500 text-sm mb-1">Ad, e-posta ve telefon bilgilerinizi girip, kurum yetkilisi olduğunuzu gösteren bir evrakla başvurun.</p>
       {{-- 14 Agustos 2026: kullanicinin talebi - "uzun surer" tereddudunu
            kirmak icin somut bir zaman tahmini; onay suresi zaten vardi,
            formu DOLDURMA suresi eksikti. --}}

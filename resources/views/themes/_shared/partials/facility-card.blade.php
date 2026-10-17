@@ -89,7 +89,9 @@
         @if($section)<span class="bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $section['title'] }}</span>@endif
         @if($facility->is_claimed)<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">Onaylı</span>
         @elseif($facility->is_broker_managed)<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">🤝 Anlaşmalı</span>@endif
-        @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>@endif
+        @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>
+        @elseif($promiseBadge = $facility->responseTimePromiseBadge())<span class="bg-blue-50 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ {{ $promiseBadge }}</span>@endif
+        @if($viewsBadge = $facility->viewsBoostBadge())<span class="bg-amber-50 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">👀 {{ $viewsBadge }}</span>@endif
         @if($facility->hasFreeChildAccidentInsurance())<span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
         {{-- 30 Eylul 2026: kullanicinin talebi - "hepsi tek kart tipi"

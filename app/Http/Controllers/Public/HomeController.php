@@ -68,10 +68,22 @@ class HomeController extends Controller
                 ->distinct('cities.id')->count('cities.id');
             $claimedCount = Facility::discoverable()->forBrand($brand['category_scope'])->where('is_claimed', true)->count();
 
-            return compact('facilities', 'facilityCount', 'cityCount', 'claimedCount');
+            // 15 Ekim 2026: kullanicinin talebi - "editor secimi/bu ay one
+            // cikanlar" vitrini icin AYRI bir sorgu ACILMAZ - zaten yukarida
+            // cekilen ilk 12 kurum icinden, odeme bazli is_featured'dan
+            // FARKLI bir sinyalle (gercek puan + yeterli yorum sayisi) sadece
+            // en iyileri secilir. Hicbiri esigi gecmezse bolum HIC gosterilmez
+            // (az sayida/zayif bir vitrin yerine, kullanicinin "az sayi asla
+            // gorunmesin" talebine uygun olarak).
+            $editorsPicks = $facilities->filter(fn ($f) => $f->is_claimed
+                && $f->rating >= 4.5
+                && ($f->approved_reviews_count + $f->google_reviews_count) >= 3
+            )->take(3)->values();
+
+            return compact('facilities', 'facilityCount', 'cityCount', 'claimedCount', 'editorsPicks');
         });
 
-        ['facilities' => $facilities, 'facilityCount' => $facilityCount, 'cityCount' => $cityCount, 'claimedCount' => $claimedCount] = $homeData;
+        ['facilities' => $facilities, 'facilityCount' => $facilityCount, 'cityCount' => $cityCount, 'claimedCount' => $claimedCount, 'editorsPicks' => $editorsPicks] = $homeData;
 
         // 14 Eylul 2026: kullanicinin talebi - anlaşmalı (is_broker_managed)
         // kurumlari il secilmemisse Turkiye genelinde, il secilmisse SADECE
@@ -171,6 +183,7 @@ class HomeController extends Controller
             'facilityCount',
             'cityCount',
             'claimedCount',
+            'editorsPicks',
             'sectionBreakdown'
         ));
     }

@@ -47,6 +47,10 @@ class FacilityInterestLeadController extends Controller
             ['facility_id' => $facility->id, 'lead_id' => $lead->id]
         ));
 
-        return back()->with('success', 'Talebiniz alındı, en kısa sürede size dönüş yapılacaktır.');
+        // 15 Ekim 2026: kullanicinin talebi - "en kisa surede" belirsizligi
+        // yerine, formun kendisinde de gosterilen somut taahhut (bkz.
+        // facilities/show.blade.php ayni tarihli "30 dk-1 sa" metni) burada
+        // da tekrarlanir - gonderim SONRASI da ayni guven devam etsin.
+        return back()->with('success', 'Talebiniz alındı — ortalama 30 dakika - 1 saat içinde size dönüş yapılacaktır.');
     }
 }

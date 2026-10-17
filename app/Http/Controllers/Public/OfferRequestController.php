@@ -70,7 +70,15 @@ class OfferRequestController extends Controller
             $offerRequest = OfferRequest::create($validated);
             $notifier->notify($offerRequest);
 
-            return redirect(brand_route('family.dashboard'))->with('success', 'Talebiniz kuruma iletildi. Kurum yanıt verdiğinde burada bildirim alacak, teklifi inceleyip mesajlaşmaya başlayabileceksiniz.');
+            // 15 Ekim 2026: kullanicinin talebi - somut taahhut, sadece TEK
+            // bir anlasmali kuruma gonderilen talepte (facility bilinirken)
+            // eklenir - city/category bazinda TOPLU talepte kurum turu
+            // bilinmedigi icin genel mesaj degismez.
+            $successMsg = (isset($facility) && $facility->is_broker_managed)
+                ? 'Talebiniz kuruma iletildi (ortalama 10-30 dakika içinde dönüş yapılır). Kurum yanıt verdiğinde burada bildirim alacak, teklifi inceleyip mesajlaşmaya başlayabileceksiniz.'
+                : 'Talebiniz kuruma iletildi. Kurum yanıt verdiğinde burada bildirim alacak, teklifi inceleyip mesajlaşmaya başlayabileceksiniz.';
+
+            return redirect(brand_route('family.dashboard'))->with('success', $successMsg);
         }
 
         // 30 Eylul 2026: kullanicinin talebi - "formlari kullanici
@@ -84,7 +92,11 @@ class OfferRequestController extends Controller
         $offerRequest = OfferRequest::create($validated);
         $notifier->notify($offerRequest);
 
-        return back()->with('success', 'Talebiniz kuruma iletildi, en kısa sürede sizinle iletişime geçecekler. Dilerseniz ücretsiz bir aile hesabı oluşturup tüm tekliflerinizi tek yerden takip edebilirsiniz.');
+        $successMsg = (isset($facility) && $facility->is_broker_managed)
+            ? 'Talebiniz kuruma iletildi — ortalama 10-30 dakika içinde sizinle iletişime geçecekler. Dilerseniz ücretsiz bir aile hesabı oluşturup tüm tekliflerinizi tek yerden takip edebilirsiniz.'
+            : 'Talebiniz kuruma iletildi, en kısa sürede sizinle iletişime geçecekler. Dilerseniz ücretsiz bir aile hesabı oluşturup tüm tekliflerinizi tek yerden takip edebilirsiniz.';
+
+        return back()->with('success', $successMsg);
     }
 
     /**

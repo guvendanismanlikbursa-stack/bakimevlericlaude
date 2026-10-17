@@ -119,6 +119,8 @@
 
 
 @include('themes._shared.partials.trust-stats')
+@include('themes._shared.partials.how-it-works')
+@include('themes._shared.partials.editors-picks')
 
 @include('themes._shared.partials.discover-links')
 @include('themes._shared.partials.broker-map-script')

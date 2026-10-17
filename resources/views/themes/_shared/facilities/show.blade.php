@@ -82,6 +82,11 @@
       @endif
       @if($facility->hasFastResponseBadge())
         <span class="bg-blue-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
+      @elseif($promiseBadge = $facility->responseTimePromiseBadge())
+        <span class="bg-blue-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">⚡ {{ $promiseBadge }}</span>
+      @endif
+      @if($viewsBadge = $facility->viewsBoostBadge())
+        <span class="bg-amber-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">👀 {{ $viewsBadge }}</span>
       @endif
       @if($facility->hasFreeChildAccidentInsurance())
         <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
@@ -1128,6 +1133,13 @@
           {{-- 30 Eylul 2026: kullanicinin talebi - "giris yapma sartini
                kaldir", bu metin artik gercek disi oldugu icin guncellendi. --}}
           <p class="text-xs text-gray-400">Hesap oluşturmanıza gerek yok — talebiniz doğrudan kuruma iletilir.</p>
+          {{-- 15 Ekim 2026: kullanicinin talebi - SADECE anlasmali
+               (is_broker_managed) kurumlarda bu sure belirtilir (gercek
+               operasyonel pratik: 10-30 dakika) - sahipli (is_claimed)
+               kurumlarda EKLENMEZ, kullanicinin acik talebi. --}}
+          @if($facility->is_broker_managed)
+            <p class="text-xs font-semibold mt-1" style="color: {{ $colors['primary'] }};">⚡ Talebiniz ortalama 10-30 dakika içinde değerlendirilir.</p>
+          @endif
         </form>
         {{-- 31 Agustos 2026: kullanicinin bildirdigi gercek hata - burada
              anlasmali kurumlarda bile HALA kurumun kendi ham numarasi
@@ -1253,6 +1265,10 @@
           <label for="lead-message" class="sr-only">Mesajınız (opsiyonel)</label>
           <textarea id="lead-message" name="message" placeholder="Mesajınız (opsiyonel)" rows="2" class="border rounded-lg px-3 py-2 w-full">{{ old('message') }}</textarea>
           <button class="w-full flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition" style="background: {{ $colors['primary'] }};">📩 Bilgi ve Fiyat Talep Et</button>
+          {{-- 15 Ekim 2026: kullanicinin talebi - on kayitli (sahipsiz,
+               anlasmasiz) kurumlarda gercek operasyonel pratik: 30 dakika-1
+               saat. --}}
+          <p class="text-xs font-semibold mt-1" style="color: {{ $colors['primary'] }};">⚡ Talebiniz ortalama 30 dakika - 1 saat içinde değerlendirilir.</p>
         </form>
         <script>
         document.querySelectorAll('[data-contact-track]').forEach(function (el) {

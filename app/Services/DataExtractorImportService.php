@@ -244,8 +244,14 @@ class DataExtractorImportService
     {
         $normalizedPhone = $this->normalizePhone($item['phone'] ?? '');
 
+        // 16 Ekim 2026: kullanicinin talebi - admin tarafindan silinmis
+        // (soft-delete) kurumlar "zaten islenmis, bir daha aktarilmayacak"
+        // sayilmali. withTrashed() olmadan Eloquent'in varsayilan global
+        // scope'u silinenleri gormezden geliyordu, bu yuzden ayni veri
+        // dosyasi tekrar calistirilirsa bilerek silinen kayitlar (ör.
+        // alakasiz/yanlis kategoriye dusmus kurumlar) GERI OLUSTURULUYORDU.
         if ($normalizedPhone !== '') {
-            $phoneMatch = Facility::where('city_id', $city->id)
+            $phoneMatch = Facility::withTrashed()->where('city_id', $city->id)
                 ->whereNotNull('phone')
                 ->get(['id', 'phone'])
                 ->contains(fn ($f) => $this->normalizePhone($f->phone) === $normalizedPhone);
@@ -270,7 +276,7 @@ class DataExtractorImportService
         // da mukerrer sayilir - cadde/sokak/kapi no kismi sabit kaldigi surece
         // sadece mahalle on eki degisimini yakalar, farkli isimli kurumlari
         // (ayri sart - normalizedName hala tam esit olmali) etkilemez.
-        return Facility::where('city_id', $city->id)
+        return Facility::withTrashed()->where('city_id', $city->id)
             ->get(['id', 'name', 'address'])
             ->contains(function ($f) use ($normalizedName, $normalizedAddress) {
                 if ($this->normalizeName($f->name) !== $normalizedName) {

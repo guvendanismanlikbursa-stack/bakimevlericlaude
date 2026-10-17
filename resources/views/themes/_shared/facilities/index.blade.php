@@ -143,7 +143,7 @@
           <a href="{{ brand_route('location-guide.show', ['sectionSlug' => $activeSection['slug'], 'citySlug' => $selectedCity->slug]) }}" class="rounded-xl border border-gray-200 px-4 py-3 text-sm font-black text-gray-700 hover:shadow-sm">{{ $selectedCity->name }} rehberini aç</a>
         @endif
       </div>
-      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-3">
+      <div class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-4">
         @forelse($regionGroups as $group)
           <a href="{{ brand_route('facilities.index', array_filter(['bolum' => $activeSection['slug'], 'city' => $group->city_slug, 'district' => $group->district])) }}" class="rounded-xl border border-gray-100 bg-gray-50 p-4 hover:bg-white hover:shadow-md transition flex items-start gap-3">
             <span class="inline-flex rounded-lg p-2 shrink-0" style="background: {{ $sectionColors['soft'] }}; color: {{ $sectionColors['primary'] }};">
