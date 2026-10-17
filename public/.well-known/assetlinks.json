@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.bakimevleri.admin",
+    "sha256_cert_fingerprints": ["12:99:04:5B:41:96:92:95:E8:50:86:E1:FA:09:F1:EA:49:58:21:A4:B0:ED:59:74:48:47:14:C7:BD:63:D9:12"]
+  }
+}]
