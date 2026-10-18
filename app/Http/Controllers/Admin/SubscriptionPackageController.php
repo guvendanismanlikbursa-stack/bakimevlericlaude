@@ -50,7 +50,6 @@ class SubscriptionPackageController extends Controller
         $membership = [
             'live' => membership_live(),
             'impact_patients' => \App\Models\Setting::get('membership_impact_patients'),
-            'impact_hours' => \App\Models\Setting::get('membership_impact_hours'),
             'impact_period' => \App\Models\Setting::get('membership_impact_period'),
             'office_image' => \App\Models\Setting::get('membership_office_image'),
             'active_members' => \App\Models\Facility::where('is_subscribed', true)->whereNotNull('subscription_package_id')
@@ -152,13 +151,13 @@ class SubscriptionPackageController extends Controller
     {
         $data = $request->validate([
             'impact_patients' => 'nullable|integer|min:0|max:100000',
-            'impact_hours' => 'nullable|integer|min:0|max:10000000',
             'impact_period' => 'nullable|string|max:60',
             'office_image' => 'nullable|mimes:jpg,jpeg,png,webp|max:6144',
             'remove_office_image' => 'boolean',
         ]);
 
-        foreach (['impact_patients', 'impact_hours', 'impact_period'] as $key) {
+        // 18 Ekim 2026: kullanıcının talebi - "bakım saati diye bir şeye ihtiyaç yok", yalnızca hasta sayısı.
+        foreach (['impact_patients', 'impact_period'] as $key) {
             \App\Models\Setting::set('membership_'.$key, $data[$key] ?? null);
         }
 
@@ -174,7 +173,7 @@ class SubscriptionPackageController extends Controller
             \App\Models\Setting::set('membership_office_image', $path);
         }
 
-        log_admin_event('membership_impact_updated', null, $request->only(['impact_patients', 'impact_hours', 'impact_period']));
+        log_admin_event('membership_impact_updated', null, $request->only(['impact_patients', 'impact_period']));
 
         return back()->with('success', 'Şeffaflık bilgileri kaydedildi.');
     }

@@ -6862,8 +6862,13 @@ class PlatformFeatureTest extends TestCase
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/paketler')
             ->assertOk()
-            ->assertSee('İyilik Hareketi Üyelik Programı', false)
+            ->assertSee('Üyelik Paketleri', false)->assertSee('Bakiye Paketleri', false)->assertDontSee('Toplam bakım saati', false)
             ->assertSee('Yayına Al', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/paketler?edit='.$package->id)
+            ->assertOk()->assertSee('Rozet adı', false)->assertDontSee('Hediye teklif hakkı', false);
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/paketler?yeni=credit')
+            ->assertOk()->assertSee('Hediye teklif hakkı', false)->assertDontSee('Rozet adı', false);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->put(route('admin.packages.update', $package), [
@@ -6878,14 +6883,14 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue($package->isMembership());
 
         $this->withSession(['admin_id' => $this->admin->id])
-            ->post(route('admin.membership.impact'), ['impact_patients' => 14, 'impact_hours' => 320, 'impact_period' => 'Ekim 2026'])
+            ->post(route('admin.membership.impact'), ['impact_patients' => 14, 'impact_period' => 'Ekim 2026'])
             ->assertRedirect();
         $this->withSession(['admin_id' => $this->admin->id])
             ->post(route('admin.membership.toggle'), ['live' => 1])
             ->assertRedirect();
         $this->assertTrue(membership_live());
 
-        $this->get('/site/bakimevleri/iyilik-hareketi')->assertOk()->assertSee('Ekim 2026', false)->assertSee('320', false);
+        $this->get('/site/bakimevleri/iyilik-hareketi')->assertOk()->assertSee('Ekim 2026', false)->assertSee('14', false)->assertDontSee('saat profesyonel bakım', false);
     }
 
     public function test_signed_preview_link_opens_membership_pages_without_login(): void

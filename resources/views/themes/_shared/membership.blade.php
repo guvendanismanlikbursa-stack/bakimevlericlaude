@@ -60,23 +60,15 @@
 </section>
 
 {{-- ŞEFFAFLIK SAYACI (admin panelinden girilir; boşsa görünmez) --}}
-@if($impact['patients'] || $impact['hours'])
+@if($impact['patients'])
   <section style="background:#fdf4ff;">
     <div class="max-w-4xl mx-auto px-4 py-10 text-center">
       <div class="text-xs font-black uppercase tracking-wide mb-4" style="color:#a21caf;">Şeffaflık Paneli · {{ $impact['period'] }}</div>
-      <div class="grid {{ $impact['patients'] && $impact['hours'] ? 'grid-cols-2' : 'grid-cols-1' }} gap-4 max-w-xl mx-auto">
-        @if($impact['patients'])
-          <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="text-4xl font-black" style="color:#701a75;">{{ number_format($impact['patients'], 0, ',', '.') }}</div>
-            <div class="text-sm text-gray-600 mt-1">üyelerimiz sayesinde bakımı üstlenilen hasta</div>
-          </div>
-        @endif
-        @if($impact['hours'])
-          <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="text-4xl font-black" style="color:#701a75;">{{ number_format($impact['hours'], 0, ',', '.') }}</div>
-            <div class="text-sm text-gray-600 mt-1">saat profesyonel bakım</div>
-          </div>
-        @endif
+      <div class="max-w-sm mx-auto">
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="text-4xl font-black" style="color:#701a75;">{{ number_format($impact['patients'], 0, ',', '.') }}</div>
+          <div class="text-sm text-gray-600 mt-1">üyelerimiz sayesinde bakımı üstlenilen hasta</div>
+        </div>
       </div>
     </div>
   </section>
@@ -164,7 +156,7 @@
 <section style="background:linear-gradient(135deg,#4a044e 0%,#701a75 100%);" class="text-white">
   <div class="max-w-3xl mx-auto px-4 py-12 text-center">
     <h2 class="text-2xl md:text-3xl font-black mb-4">Şeffaflık Sözümüz</h2>
-    <p class="text-white/90 leading-relaxed">Üyelerimizin katkısıyla kaç hastamıza ne kadar bakım sağlandığı bu sayfada düzenli olarak paylaşılır. Gelin, markanızı büyütürken bir büyük çınarın duasında buluşalım.</p>
+    <p class="text-white/90 leading-relaxed">Üyelerimizin katkısıyla kaç hastamızın bakımının üstlenildiği bu sayfada düzenli olarak paylaşılır. Gelin, markanızı büyütürken bir büyük çınarın duasında buluşalım.</p>
     <div class="mt-8 flex flex-wrap justify-center gap-3">
       <a href="{{ brand_route('facility.login') }}" class="bg-white font-black px-5 py-3 rounded-xl" style="color:#701a75;">Kurum Panelime Giriş Yap</a>
       <a href="{{ brand_route('facility-registration.create') }}" class="border font-bold px-5 py-3 rounded-xl" style="border-color:rgba(255,255,255,.4);">Kurumumu Kaydet</a>

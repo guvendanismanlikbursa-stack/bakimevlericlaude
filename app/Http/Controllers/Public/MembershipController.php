@@ -91,12 +91,10 @@ class MembershipController extends Controller
     private function impact(): ?array
     {
         $patients = Setting::get('membership_impact_patients');
-        $hours = Setting::get('membership_impact_hours');
         $office = Setting::get('membership_office_image');
 
         return [
             'patients' => $patients !== null && $patients !== '' ? (int) $patients : null,
-            'hours' => $hours !== null && $hours !== '' ? (int) $hours : null,
             'period' => Setting::get('membership_impact_period') ?: 'Bu ay',
             'office_image_url' => $office ? facility_asset($office) : null,
         ];
