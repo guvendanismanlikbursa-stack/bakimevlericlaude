@@ -67,6 +67,7 @@
           <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600 font-bold">{{ $f->name }}</a>
           <div class="text-xs text-gray-500 mt-0.5">
             {{ $f->city->name }} · {{ ['monthly'=>'Aylık','quarterly'=>'3 Aylık','semiannual'=>'6 Aylık','yearly'=>'Yıllık'][$f->subscription_plan] ?? $f->subscription_plan }} ·
+            @if($f->subscriptionPackage)<span class="font-bold" style="color:#a21caf;">{{ $f->subscriptionPackage->badge_emoji }} {{ $f->subscriptionPackage->badge_label }}</span> ·@endif
             {{ $f->subscription_amount ? number_format($f->subscription_amount, 0, ',', '.').' TL' : '—' }} ·
             Başlangıç: {{ $f->subscription_started_at?->format('d.m.Y') ?? '—' }} · Bitiş: {{ $f->subscription_paid_until?->format('d.m.Y') ?? '—' }}
           </div>

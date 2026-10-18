@@ -1,3 +1,4 @@
+@php($membershipPackagesForSelect = \App\Models\SubscriptionPackage::membership()->active()->orderBy('sort_order')->get())
 <div class="bg-white rounded-xl shadow-sm">
   {{-- 1 Ekim 2026: kullanicinin talebi - "hangi olcude olursa olsun (tam
        ekran, daraltilmis, mobil) butun islemleri gorebilmeliyim, saga sola
@@ -51,6 +52,12 @@
                   <option value="semiannual">6 Aylık</option>
                   <option value="yearly">Yıllık</option>
                 </select>
+                @if($membershipPackagesForSelect->isNotEmpty())
+                  <select name="package_id" class="text-xs border rounded" onclick="event.stopPropagation()" title="İyilik Hareketi üyelik paketi seçilirse plan ve ücret paketten gelir">
+                    <option value="">Paket yok</option>
+                    @foreach($membershipPackagesForSelect as $mp)<option value="{{ $mp->id }}">{{ $mp->badge_emoji }} {{ $mp->badge_label }}</option>@endforeach
+                  </select>
+                @endif
                 <input type="number" name="amount" step="0.01" min="0" placeholder="TL" class="text-xs border rounded w-16" onclick="event.stopPropagation()">
                 <button class="text-sm font-semibold whitespace-nowrap" style="color:#a21caf;">Abone Yap</button>
               </form>

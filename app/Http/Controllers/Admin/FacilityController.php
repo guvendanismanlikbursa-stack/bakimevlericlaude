@@ -786,7 +786,7 @@ class FacilityController extends Controller
      */
     public function subscriptions(Request $request)
     {
-        $query = Facility::where('is_subscribed', true)->with(['city', 'category']);
+        $query = Facility::where('is_subscribed', true)->with(['city', 'category', 'subscriptionPackage']);
 
         if ($request->filled('plan')) {
             $query->where('subscription_plan', $request->string('plan'));
@@ -838,7 +838,9 @@ class FacilityController extends Controller
             // 22 Eylul 2026: kullanicinin talebi - ucret SABIT degil, kurum
             // bazinda degisken - her kurumun kendi ucreti burada girilir.
             'amount' => 'nullable|numeric|min:0',
+            'package_id' => 'nullable|integer|exists:subscription_packages,id',
         ]);
+        [$plan, $amount, $packageId] = $this->resolveMembershipChoice($data);
 
         // 23 Eylul 2026: kullanicinin bildirdigi gercek hata - burada
         // subscription_paid_until'e HEMEN "simdi + 1 ay/yil" yaziliyordu,
@@ -854,15 +856,33 @@ class FacilityController extends Controller
         // gerekmedi).
         $facility->update([
             'is_subscribed' => true,
-            'subscription_plan' => $data['plan'],
-            'subscription_amount' => $data['amount'] ?? null,
+            'subscription_plan' => $plan,
+            'subscription_amount' => $amount,
+            'subscription_package_id' => $packageId,
             'subscription_started_at' => now(),
             'subscription_paid_until' => null,
         ]);
 
-        log_admin_event('facility_subscription_enabled', $facility, ['plan' => $data['plan'], 'amount' => $data['amount'] ?? null]);
+        log_admin_event('facility_subscription_enabled', $facility, ['plan' => $plan, 'amount' => $amount, 'package_id' => $packageId]);
 
         return back()->with('success', "{$facility->name} abone paneline eklendi. Telefon/WhatsApp butonlarının aktif olması için ilk ödeme alındığında Ödeme Aldım butonuna basın.");
+    }
+
+    /**
+     * 18 Ekim 2026: admin bir İyilik Hareketi üyelik paketi seçtiyse plan
+     * (süre) ve tutar paketten gelir; seçmediyse eski serbest plan/tutar
+     * davranışı aynen sürer.
+     *
+     * @return array{0: string, 1: ?float, 2: ?int}
+     */
+    private function resolveMembershipChoice(array $data): array
+    {
+        $package = ! empty($data['package_id']) ? \App\Models\SubscriptionPackage::membership()->find($data['package_id']) : null;
+        if ($package) {
+            return [$package->planKey(), isset($data['amount']) ? (float) $data['amount'] : $package->price, $package->id];
+        }
+
+        return [$data['plan'], isset($data['amount']) ? (float) $data['amount'] : null, null];
     }
 
     /**
@@ -896,6 +916,8 @@ class FacilityController extends Controller
             $update['subscription_amount'] = $data['amount'];
         }
         $facility->update($update);
+        // 18 Ekim 2026: üyelik başlayınca panel hesabı olan kurum sahipli olur (program yayındaysa).
+        $facility->grantOwnerFeaturesForMembership();
 
         log_admin_event('facility_subscription_payment', $facility, ['paid_until' => $paidUntil->toDateString(), 'amount' => $facility->subscription_amount]);
 
@@ -928,6 +950,7 @@ class FacilityController extends Controller
         $data = $request->validate([
             'plan' => 'required|in:monthly,quarterly,semiannual,yearly',
             'amount' => 'nullable|numeric|min:0',
+            'package_id' => 'nullable|integer|exists:subscription_packages,id',
             'applicant_name' => 'required|string|max:120',
             'applicant_email' => 'required|email|max:150',
             'applicant_phone' => 'required|string|max:30',
@@ -958,10 +981,12 @@ class FacilityController extends Controller
                 'email_verified_at' => null,
             ]);
 
+            [$plan, $amount, $packageId] = $this->resolveMembershipChoice($data);
             $facility->update([
                 'is_subscribed' => true,
-                'subscription_plan' => $data['plan'],
-                'subscription_amount' => $data['amount'] ?? null,
+                'subscription_plan' => $plan,
+                'subscription_amount' => $amount,
+                'subscription_package_id' => $packageId,
                 'subscription_started_at' => now(),
                 'subscription_paid_until' => null,
             ]);

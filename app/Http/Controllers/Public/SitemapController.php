@@ -57,6 +57,10 @@ class SitemapController extends Controller
         $urls->push($this->url($prefix.'/karsilastir', 'weekly', '0.7'));
         $urls->push($this->url($prefix.'/favoriler', 'weekly', '0.7'));
         $urls->push($this->url($prefix.'/sss', 'monthly', '0.6'));
+        // 18 Ekim 2026: İyilik Hareketi sayfası yalnızca yayına alındıktan sonra.
+        if (membership_live()) {
+            $urls->push($this->url($prefix.'/iyilik-hareketi', 'monthly', '0.6'));
+        }
         $urls->push($this->url($prefix.'/bakim-rehberi', 'weekly', '0.7'));
         $urls->push($this->url($prefix.'/fiyat-rehberi', 'weekly', '0.7'));
         $urls->push($this->url($prefix.'/istatistikler', 'weekly', '0.5'));

@@ -86,6 +86,16 @@
           </span>
         </div>
         <div class="flex items-center gap-2 flex-wrap justify-end">
+          {{-- 18 Ekim 2026: İyilik Hareketi kuruma özel teklif linki. --}}
+          <a href="{{ route('admin.invitations.offer-link', $facility) }}" target="_blank" rel="noopener"
+             class="inline-block rounded-lg border px-3 py-1.5 text-xs font-bold whitespace-nowrap" style="border-color:#e9d5ff;color:#a21caf;">💛 Teklifi Aç</a>
+          @if($facility->phone_type === 'mobile')
+            <a href="{{ route('admin.invitations.offer-link', ['facility' => $facility, 'via' => 'whatsapp']) }}" target="_blank" rel="noopener"
+               class="inline-block rounded-lg px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap" style="background:#a21caf;">💛 Teklifi WhatsApp'tan Gönder</a>
+          @endif
+          @if($facility->offer_link_opened_at)
+            <span class="text-[11px] font-semibold text-green-700 whitespace-nowrap" title="Kurumun teklif linkini açtığı son tarih">Teklifi açtı: {{ $facility->offer_link_opened_at->format('d.m H:i') }} ({{ $facility->offer_link_open_count }}x)</span>
+          @endif
           @if($facility->phone_type === 'mobile')
             <a href="{{ route('admin.invitations.whatsapp', $facility) }}" target="_blank" rel="noopener"
                class="inline-block rounded-lg bg-green-600 text-white px-3 py-1.5 text-xs font-bold hover:bg-green-700 whitespace-nowrap">WhatsApp Aç</a>

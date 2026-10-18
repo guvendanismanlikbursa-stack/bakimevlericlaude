@@ -21,6 +21,7 @@ class Facility extends Model
         'vacancy_male', 'vacancy_female', 'vacancy_general', 'vacancy_updated_at',
         'site_visited_at', 'google_maps_url', 'google_reviews_fetched_at',
         'is_subscribed', 'subscription_plan', 'subscription_started_at', 'subscription_paid_until', 'subscription_amount',
+        'subscription_package_id', 'offer_token', 'offer_link_opened_at', 'offer_link_open_count',
         'marketing_status', 'marketing_status_at', 'marketing_brochure_requested', 'marketing_callback_at',
     ];
 
@@ -67,6 +68,7 @@ class Facility extends Model
             'is_subscribed' => 'boolean',
             'subscription_started_at' => 'datetime',
             'subscription_paid_until' => 'date',
+            'offer_link_opened_at' => 'datetime',
             'subscription_amount' => 'float',
             'marketing_status_at' => 'datetime',
             'marketing_brochure_requested' => 'boolean',
@@ -123,6 +125,85 @@ class Facility extends Model
         return $this->is_subscribed
             && $this->subscription_paid_until
             && ! $this->subscription_paid_until->copy()->endOfDay()->isPast();
+    }
+
+    public function subscriptionPackage()
+    {
+        return $this->belongsTo(SubscriptionPackage::class);
+    }
+
+    // 18 Ekim 2026: kullanıcının talebi - İyilik Hareketi üyeliği. Program
+    // yayına alınmadan (membership_live()) hiçbir davranış değişmez.
+    public function isMember(): bool
+    {
+        return membership_live() && $this->isActiveSubscriber();
+    }
+
+    /**
+     * Kartta/profilde gösterilecek üyelik rozeti. Program yayında değilse
+     * veya kurumun bir üyelik paketi yoksa null döner (görünüm eski
+     * "Yardımsever Kurum" rozetine düşer).
+     *
+     * @return array{label: string, emoji: string}|null
+     */
+    public function membershipBadge(): ?array
+    {
+        if (! $this->isMember()) {
+            return null;
+        }
+        $package = $this->subscriptionPackage;
+        if (! $package || ! $package->badge_label) {
+            return null;
+        }
+
+        return ['label' => $package->badge_label, 'emoji' => $package->badge_emoji ?: '💜'];
+    }
+
+    /**
+     * Ödeme alındığında (dekont onayı veya admin "Ödeme Aldım") üyeliği
+     * başlatır/uzatır. Kullanıcının 18 Ekim 2026 onayı: üyelik başlayınca
+     * panel hesabı olan kurum sahipli olur, böylece sahipli kurumların tüm
+     * özellikleri açılır; üyelik bitince sahipli kalır, teklif başı ücrete
+     * döner. Panel hesabı olmayan kuruma sahiplik verilmez (aile talepleri
+     * kimsesiz bir hesaba düşmesin diye).
+     */
+    public function activateMembership(SubscriptionPackage $package, ?float $amount = null): void
+    {
+        $base = ($this->subscription_paid_until && ! $this->subscription_paid_until->copy()->endOfDay()->isPast())
+            ? $this->subscription_paid_until->copy()
+            : now();
+
+        $update = [
+            'is_subscribed' => true,
+            'subscription_plan' => $package->planKey(),
+            'subscription_package_id' => $package->id,
+            'subscription_amount' => $amount ?? $package->price,
+            'subscription_paid_until' => $base->addMonths(max(1, (int) $package->months))->toDateString(),
+        ];
+        if (! $this->subscription_started_at) {
+            $update['subscription_started_at'] = now();
+        }
+        $this->update($update);
+        $this->grantOwnerFeaturesForMembership();
+    }
+
+    public function grantOwnerFeaturesForMembership(): void
+    {
+        if (membership_live() && ! $this->is_claimed && ! $this->is_broker_managed && $this->facilityUsers()->exists()) {
+            $this->update(['is_claimed' => true, 'claimed_at' => now()]);
+        }
+    }
+
+    /**
+     * Kuruma özel, tahmin edilemeyen teklif sayfası linki için token.
+     */
+    public function ensureOfferToken(): string
+    {
+        if (! $this->offer_token) {
+            $this->forceFill(['offer_token' => \Illuminate\Support\Str::random(40)])->save();
+        }
+
+        return $this->offer_token;
     }
 
     public function city()
@@ -488,6 +569,11 @@ class Facility extends Model
      */
     public function canSendQuote(): bool
     {
+        // 18 Ekim 2026: üyelik süresince teklif ücretsiz ve sınırsız.
+        if ($this->isMember()) {
+            return true;
+        }
+
         if ($this->free_quote_credits > 0) {
             return true;
         }
@@ -500,6 +586,20 @@ class Facility extends Model
      */
     public function chargeForQuote(): void
     {
+        if ($this->isMember()) {
+            BalanceLog::create([
+                'facility_id' => $this->id,
+                'type' => 'quote_charge_membership',
+                'amount' => 0,
+                'credits_amount' => 0,
+                'balance_after' => $this->balance,
+                'credits_after' => $this->free_quote_credits,
+                'note' => 'Üyelik kapsamında ücretsiz teklif gönderimi.',
+            ]);
+
+            return;
+        }
+
         if ($this->free_quote_credits > 0) {
             $this->decrement('free_quote_credits');
 

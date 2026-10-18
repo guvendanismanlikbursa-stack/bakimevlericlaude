@@ -126,6 +126,29 @@ class FacilityInvitationController extends Controller
      * kaydedilir). Daha ileri bir durumdaysa (sent/claimed/approved vb.)
      * geriye dusurmez.
      */
+    /**
+     * 18 Ekim 2026: kullanıcının talebi - İyilik Hareketi kuruma özel teklif
+     * linki. Token yoksa üretilir. ?via=whatsapp -> kurumun cep telefonuna
+     * hazır mesajla WhatsApp açılır; aksi halde teklif sayfası (admin
+     * önizlemesi, açılış sayılmaz) açılır - adres çubuğundan kopyalanabilir.
+     */
+    public function offerLink(Request $request, Facility $facility)
+    {
+        $url = facility_offer_url($facility);
+
+        if ($request->query('via') === 'whatsapp') {
+            $message = "Merhaba, {$facility->name} için hazırladığımız İyilik Hareketi üyelik teklifini aşağıdaki linkten inceleyebilirsiniz. "
+                ."Bu sayfa yalnızca kurumunuza özeldir; kurumunuzun son 30 günlük ilgi rakamlarını ve üyelik seçeneklerini içerir.\n\n{$url}";
+            $waUrl = facility_whatsapp_url_with_message($facility, $message);
+            abort_if(! $waUrl, 404, 'Bu kurumun cep telefonu yok. Linki kopyalayıp başka kanaldan gönderebilirsiniz: '.$url);
+            log_admin_event('membership_offer_link_whatsapp', $facility);
+
+            return redirect()->away($waUrl);
+        }
+
+        return redirect()->away($url);
+    }
+
     public function openWhatsapp(Facility $facility)
     {
         $url = facility_whatsapp_url($facility);

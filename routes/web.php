@@ -145,6 +145,11 @@ $siteRoutes = function () {
     Route::get('/sayfa/hakkimizda', [\App\Http\Controllers\Public\AboutController::class, 'show'])->middleware('static.cache')->name('pages.about');
     Route::get('/sayfa/{slug}', [PageController::class, 'show'])->middleware('static.cache')->name('pages.show');
     Route::get('/sss', [FaqController::class, 'index'])->middleware('static.cache')->name('faq.index');
+    // 18 Ekim 2026: İyilik Hareketi üyelik programı - yayına alınana kadar
+    // yalnızca admin önizlemesi (bkz. MembershipController). static.cache
+    // BİLEREK yok: önizleme/yayın durumu her istekte canlı kontrol edilir.
+    Route::get('/iyilik-hareketi', [\App\Http\Controllers\Public\MembershipController::class, 'show'])->name('pages.membership');
+    Route::get('/kurum-teklifi/{token}', [\App\Http\Controllers\Public\MembershipController::class, 'offer'])->middleware('throttle:public-browse')->name('membership.offer');
 
     // Kesif / vitrin sayfalari
     Route::get('/dogrulanmis-kurumlar', [DiscoveryController::class, 'verified'])->middleware('static.cache')->name('discovery.verified');
@@ -460,6 +465,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/kurum-davetleri/hizli-gonderim', [AdminFacilityInvitationController::class, 'quickSend'])->name('invitations.quick-send');
         Route::get('/kurum-davetleri/{facility}/whatsapp-ac', [AdminFacilityInvitationController::class, 'openWhatsapp'])->name('invitations.whatsapp');
         Route::post('/kurum-davetleri/{facility}/durum', [AdminFacilityInvitationController::class, 'updateStatus'])->name('invitations.update-status');
+        Route::get('/kurum-davetleri/{facility}/teklif-linki', [AdminFacilityInvitationController::class, 'offerLink'])->name('invitations.offer-link');
 
         Route::get('/aile-anketleri', [\App\Http\Controllers\Admin\FamilyNeedSurveyController::class, 'index'])->name('family-need-surveys.index');
         Route::get('/aile-anketleri/yeni', [\App\Http\Controllers\Admin\FamilyNeedSurveyController::class, 'create'])->name('family-need-surveys.create');
@@ -603,6 +609,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/sss/{faq}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy');
 
         Route::get('/paketler', [AdminSubscriptionPackageController::class, 'index'])->name('packages.index');
+        Route::post('/uyelik-programi/yayin', [AdminSubscriptionPackageController::class, 'toggleProgram'])->name('membership.toggle');
+        Route::post('/uyelik-programi/seffaflik', [AdminSubscriptionPackageController::class, 'updateImpact'])->name('membership.impact');
         Route::post('/paketler', [AdminSubscriptionPackageController::class, 'store'])->name('packages.store');
         Route::put('/paketler/{package}', [AdminSubscriptionPackageController::class, 'update'])->name('packages.update');
         Route::delete('/paketler/{package}', [AdminSubscriptionPackageController::class, 'destroy'])->name('packages.destroy');

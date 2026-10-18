@@ -157,6 +157,15 @@
                   <option value="monthly">Aylık</option>
                 </select>
               </div>
+              <div>
+                <label class="text-xs text-gray-500 block">Üyelik paketi (İyilik Hareketi)</label>
+                <select name="package_id" class="border rounded-lg px-3 py-1.5 text-sm">
+                  <option value="">Paket seçme (plan + ücret serbest)</option>
+                  @foreach(\App\Models\SubscriptionPackage::membership()->active()->orderBy('sort_order')->get() as $mp)
+                    <option value="{{ $mp->id }}">{{ $mp->badge_emoji }} {{ $mp->badge_label }} — {{ number_format($mp->price, 0, ',', '.') }} TL</option>
+                  @endforeach
+                </select>
+              </div>
               <div><label class="text-xs text-gray-500 block">Ücret (TL)</label><input type="number" name="amount" step="0.01" min="0" class="border rounded-lg px-3 py-1.5 text-sm w-28"></div>
               <div><label class="text-xs text-gray-500 block">Yetkili Adı Soyadı</label><input type="text" name="applicant_name" required class="border rounded-lg px-3 py-1.5 text-sm w-44"></div>
               <div><label class="text-xs text-gray-500 block">E-posta</label><input type="email" name="applicant_email" required class="border rounded-lg px-3 py-1.5 text-sm w-52"></div>

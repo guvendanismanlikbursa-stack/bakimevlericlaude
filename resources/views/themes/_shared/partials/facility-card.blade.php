@@ -104,7 +104,7 @@
              sahiplenilmis kurumlarla ayni buyuk kartta, "Yardımsever Kurum"
              rozetiyle gosterilir. --}}
         @if($isActiveSubscriberCard)
-          <span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#fae8ff;color:#a21caf;">💜 Yardımsever Kurum</span>
+          @include('themes._shared.partials.membership-badge', ['facility' => $facility])
         @endif
         @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
         @isset($badge){!! $badge !!}@endisset

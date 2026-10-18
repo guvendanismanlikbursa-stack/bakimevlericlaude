@@ -19,9 +19,19 @@ class SubscriptionController extends Controller
         $user = FacilityUser::with('facility')->findOrFail(session('facility_user_id'));
 
         // Paket katalogu nadiren degisir; admin panelde CRUD yapilinca temizlenir.
+        // 18 Ekim 2026: aynı tabloda artık İyilik Hareketi üyelik paketleri de
+        // var; bu liste yalnızca bakiye paketleri. Üyelik paketleri program
+        // yayındaysa (membership_live()) ayrı bölümde, önbelleksiz gösterilir
+        // (admin fiyat değiştirince 3 sitede de anında güncel olsun diye).
         $packages = Cache::remember('subscription_packages:active', 3600, function () {
-            return SubscriptionPackage::active()->orderBy('sort_order')->orderBy('price')->get();
+            return SubscriptionPackage::active()->credit()->orderBy('sort_order')->orderBy('price')->get();
         });
+
+        $membershipPackages = membership_live()
+            ? SubscriptionPackage::active()->membership()->orderBy('sort_order')->orderBy('price')->get()
+                ->filter(fn ($p) => $p->isAvailableForFacility($user->facility))->values()
+            : collect();
+        $currentMembership = $user->facility->isMember() ? $user->facility->subscriptionPackage : null;
 
         $myTopups = WalletTopup::where('facility_id', $user->facility_id)
             ->whereNotNull('subscription_package_id')
@@ -29,7 +39,7 @@ class SubscriptionController extends Controller
             ->limit(10)
             ->get();
 
-        return view('themes._shared.facility.packages', compact('user', 'packages', 'myTopups'));
+        return view('themes._shared.facility.packages', compact('user', 'packages', 'myTopups', 'membershipPackages', 'currentMembership'));
     }
 
     public function store(Request $request)
@@ -45,7 +55,13 @@ class SubscriptionController extends Controller
 
         abort_unless($package->is_active, 404);
 
-        $user = FacilityUser::findOrFail(session('facility_user_id'));
+        $user = FacilityUser::with('facility.city')->findOrFail(session('facility_user_id'));
+
+        // Üyelik paketleri yalnızca program yayındayken ve paketin satıldığı
+        // ilde (ör. premium yalnızca Bursa) talep edilebilir.
+        if ($package->isMembership()) {
+            abort_unless(membership_live() && $package->isAvailableForFacility($user->facility), 404);
+        }
 
         // 14 Agustos 2026: kullanicinin talebi uzerine yapilan genis
         // denetimde bulunan guvenlik acigi - 'image' kurali tek basina
@@ -94,6 +110,8 @@ class SubscriptionController extends Controller
             'status' => 'pending',
         ]);
 
-        return back()->with('success', 'Paket talebiniz alindi, admin onayindan sonra bakiyenize islenecek.');
+        return back()->with('success', $package->isMembership()
+            ? 'Üyelik talebiniz alındı. Admin onayından sonra üyeliğiniz başlayacak ve rozetiniz görünür olacak.'
+            : 'Paket talebiniz alindi, admin onayindan sonra bakiyenize islenecek.');
     }
 }

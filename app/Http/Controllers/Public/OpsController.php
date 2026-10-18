@@ -12105,6 +12105,8 @@ HTML;
             'admin.family-need-surveys.whatsapp' => 'WhatsApp yonlendirmesi',
             'admin.documents.show' => 'dosya sunar (her sabah check-admin-flows ayrica dener)',
             'admin.login.verify' => 'giris kodu oturumu gerektirir',
+            'admin.invitations.offer-link' => 'teklif linkine veya WhatsApp yonlendirmesi yapar, token yazar',
+            'admin.membership.toggle' => 'yayin durumunu degistirir',
         ];
 
         $routes = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())

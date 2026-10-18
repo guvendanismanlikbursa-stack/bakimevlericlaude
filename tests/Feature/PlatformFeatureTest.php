@@ -6700,4 +6700,191 @@ class PlatformFeatureTest extends TestCase
             'body' => 'Teklifinizi kabul ettim.',
         ]);
     }
+
+    // ---- 18 Ekim 2026: İyilik Hareketi üyelik programı ----
+
+    private function membershipPackage(string $badge): \App\Models\SubscriptionPackage
+    {
+        return \App\Models\SubscriptionPackage::membership()->where('badge_label', $badge)->firstOrFail();
+    }
+
+    public function test_membership_page_is_hidden_until_published_but_admin_can_preview(): void
+    {
+        $this->get('/site/bakimevleri/iyilik-hareketi')->assertNotFound();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/site/bakimevleri/iyilik-hareketi')
+            ->assertOk()
+            ->assertSee('Önizleme', false)
+            ->assertSee('noindex,nofollow', false)
+            ->assertSee('Altın Kalpli Kurum', false)
+            ->assertDontSee('9.000', false);
+
+        \App\Models\Setting::set('membership_live', '1');
+        $this->get('/site/bakimevleri/iyilik-hareketi')
+            ->assertOk()
+            ->assertDontSee('Önizleme — bu sayfa', false)
+            ->assertSee('Bir Çocuğun Geleceğini Büyütürken', false)
+            ->assertSee('Vizyoner İyilik Elçisi', false);
+    }
+
+    public function test_membership_offer_page_shows_prices_only_via_token_and_tracks_real_opens(): void
+    {
+        $facility = $this->rehabFacility;
+        $token = $facility->ensureOfferToken();
+
+        $this->get('/site/bakimevleri/kurum-teklifi/'.$token)->assertNotFound();
+
+        // Admin önizlemesi açılış sayılmaz.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/site/bakimevleri/kurum-teklifi/'.$token)
+            ->assertOk()
+            ->assertSee($facility->name, false)
+            ->assertSee('9.000₺', false)
+            ->assertSee('noindex,nofollow', false)
+            // İstanbul'daki kurum - premium yalnızca Bursa'da satılır.
+            ->assertDontSee('50.000₺', false)
+            ->assertSee('şehrinizdeki', false);
+        $this->assertSame(0, (int) $facility->fresh()->offer_link_open_count);
+
+        \App\Models\Setting::set('membership_live', '1');
+        $this->flushSession();
+        $this->get('/site/bakimevleri/kurum-teklifi/'.$token)->assertOk()->assertSee('Kurumumu Sahiplen', false);
+        $this->assertSame(1, (int) $facility->fresh()->offer_link_open_count);
+        $this->assertNotNull($facility->fresh()->offer_link_opened_at);
+
+        $this->get('/site/bakimevleri/kurum-teklifi/'.str_repeat('x', 40))->assertNotFound();
+    }
+
+    public function test_facility_panel_shows_membership_packages_only_after_publish(): void
+    {
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimeviara/kurum-panel/paketler')
+            ->assertOk()
+            ->assertDontSee('Kurumsal İyilik Ortağı', false);
+
+        $package = $this->membershipPackage('Altın Kalpli Kurum');
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/paketler/'.$package->id, ['receipt' => \Illuminate\Http\UploadedFile::fake()->image('d.jpg')])
+            ->assertNotFound();
+
+        \App\Models\Setting::set('membership_live', '1');
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->get('/site/bakimeviara/kurum-panel/paketler')
+            ->assertOk()
+            ->assertSee('Kurumsal İyilik Ortağı', false)
+            ->assertSee('9.000₺', false)
+            ->assertDontSee('Vizyoner İyilik Elçisi', false);
+    }
+
+    public function test_membership_topup_approval_starts_membership_without_touching_balance_and_grants_owner_features(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+        \App\Models\Setting::set('membership_live', '1');
+        $facility = $this->childFacility;
+        $facility->update(['is_claimed' => false, 'claimed_at' => null, 'balance' => 0]);
+        $package = $this->membershipPackage('Kurumsal İyilik Ortağı');
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post('/site/bakimeviara/kurum-panel/paketler/'.$package->id, ['receipt' => \Illuminate\Http\UploadedFile::fake()->image('dekont.jpg')])
+            ->assertRedirect();
+        $topup = WalletTopup::where('facility_id', $facility->id)->latest('id')->firstOrFail();
+        $this->assertSame(5000.0, (float) $topup->amount);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.topups.approve', $topup))
+            ->assertRedirect();
+
+        $facility->refresh();
+        $this->assertSame(0.0, (float) $facility->balance);
+        $this->assertTrue($facility->is_subscribed);
+        $this->assertSame($package->id, $facility->subscription_package_id);
+        $this->assertSame('semiannual', $facility->subscription_plan);
+        $this->assertEqualsWithDelta(now()->addMonths(6)->timestamp, $facility->subscription_paid_until->timestamp, 86400 * 2);
+        $this->assertTrue($facility->is_claimed);
+        $this->assertTrue($facility->isMember());
+        $this->assertSame(['label' => 'Kurumsal İyilik Ortağı', 'emoji' => '💚'], $facility->membershipBadge());
+        $this->assertTrue(BalanceLog::where('facility_id', $facility->id)->where('type', 'membership_payment')->exists());
+    }
+
+    public function test_member_sends_quotes_for_free_only_while_program_is_live(): void
+    {
+        $facility = $this->childFacility;
+        $facility->update([
+            'free_quote_credits' => 0, 'balance' => 0,
+            'is_subscribed' => true, 'subscription_package_id' => $this->membershipPackage('Altın Kalpli Kurum')->id,
+            'subscription_paid_until' => now()->addMonth()->toDateString(),
+        ]);
+        $facility->refresh();
+
+        // Yayında değilken davranış aynen eski: bakiye yok -> teklif verilemez.
+        $this->assertFalse($facility->canSendQuote());
+
+        \App\Models\Setting::set('membership_live', '1');
+        $facility->refresh();
+        $this->assertTrue($facility->canSendQuote());
+        $facility->chargeForQuote();
+        $facility->refresh();
+        $this->assertSame(0.0, (float) $facility->balance);
+        $this->assertSame(0, (int) $facility->free_quote_credits);
+        $this->assertTrue(BalanceLog::where('facility_id', $facility->id)->where('type', 'quote_charge_membership')->exists());
+
+        // Üyelik bitince teklif başı ücrete döner.
+        $facility->update(['subscription_paid_until' => now()->subDays(2)->toDateString()]);
+        $this->assertFalse($facility->fresh()->canSendQuote());
+    }
+
+    public function test_member_badge_replaces_generic_badge_only_after_publish(): void
+    {
+        $facility = $this->rehabFacilityClaimed;
+        $facility->update([
+            'is_subscribed' => true, 'subscription_package_id' => $this->membershipPackage('Altın Kalpli Kurum')->id,
+            'subscription_paid_until' => now()->addMonth()->toDateString(),
+        ]);
+
+        $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)
+            ->assertOk()
+            ->assertSee('Yardımsever Kurum', false)
+            ->assertDontSee('Altın Kalpli Kurum', false);
+
+        \App\Models\Setting::set('membership_live', '1');
+        $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)
+            ->assertOk()
+            ->assertSee('💛 Altın Kalpli Kurum', false)
+            ->assertDontSee('Yardımsever Kurum', false);
+    }
+
+    public function test_admin_can_edit_membership_package_and_publish_program(): void
+    {
+        $package = $this->membershipPackage('Altın Kalpli Kurum');
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/paketler')
+            ->assertOk()
+            ->assertSee('İyilik Hareketi Üyelik Programı', false)
+            ->assertSee('Yayına Al', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put(route('admin.packages.update', $package), [
+                'kind' => 'membership', 'name' => 'Yıllık Üyelik', 'price' => 8500, 'months' => 12,
+                'badge_label' => 'Altın Kalpli Kurum', 'badge_emoji' => '💛', 'free_months_label' => '4 ay ücretsiz',
+                'tagline' => 'Yeni mesaj', 'features' => "Sertifika\nEk hak", 'is_active' => 1,
+            ])->assertRedirect();
+        $package->refresh();
+        $this->assertSame(8500.0, $package->price);
+        $this->assertSame('4 ay ücretsiz', $package->free_months_label);
+        $this->assertSame(['Sertifika', 'Ek hak'], $package->featureList());
+        $this->assertTrue($package->isMembership());
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.membership.impact'), ['impact_patients' => 14, 'impact_hours' => 320, 'impact_period' => 'Ekim 2026'])
+            ->assertRedirect();
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.membership.toggle'), ['live' => 1])
+            ->assertRedirect();
+        $this->assertTrue(membership_live());
+
+        $this->get('/site/bakimevleri/iyilik-hareketi')->assertOk()->assertSee('Ekim 2026', false)->assertSee('320', false);
+    }
 }

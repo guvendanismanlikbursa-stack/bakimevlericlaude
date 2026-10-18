@@ -4,9 +4,12 @@
 @php
   $topupStatusLabels = ['pending' => 'Onay bekliyor', 'approved' => 'Onaylandı', 'rejected' => 'Reddedildi'];
 @endphp
-@include('themes._shared.partials.facility-panel-header', ['title' => 'Paketler', 'subtitle' => 'Bir paket seçip dekont yükleyin; admin onayından sonra tutar bakiyenize, bonus hak varsa ücretsiz hak sayınıza eklenir.'])
+@include('themes._shared.partials.facility-panel-header', ['title' => 'Paketler', 'subtitle' => $membershipPackages->isNotEmpty() ? 'Üyelik veya bakiye paketi seçip dekont yükleyin; admin onayından sonra üyeliğiniz başlar ya da tutar bakiyenize eklenir.' : 'Bir paket seçip dekont yükleyin; admin onayından sonra tutar bakiyenize, bonus hak varsa ücretsiz hak sayınıza eklenir.'])
 
-<div class="max-w-4xl mx-auto px-4 py-10">
+<div class="{{ $membershipPackages->isNotEmpty() ? 'max-w-6xl' : 'max-w-4xl' }} mx-auto px-4 py-10">
+  @if($membershipPackages->isNotEmpty())
+    @include('themes._shared.facility._membership-packages')
+  @endif
   <div class="grid md:grid-cols-3 gap-4 mb-10">
     @forelse($packages as $package)
       <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col">

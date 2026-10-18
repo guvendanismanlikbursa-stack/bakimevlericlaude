@@ -78,7 +78,7 @@
         <span class="bg-emerald-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">🤝 Yerinde Ziyaret Edildi</span>
       @endif
       @if($facility->isActiveSubscriber())
-        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#fae8ff;color:#a21caf;">💜 Yardımsever Kurum</span>
+        @include('themes._shared.partials.membership-badge', ['facility' => $facility, 'size' => 'md', 'linked' => true])
       @endif
       @if($facility->hasFastResponseBadge())
         <span class="bg-blue-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
@@ -120,7 +120,7 @@
         <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded-full">🤝 Yerinde Ziyaret Edildi</span>
       @endif
       @if($facility->isActiveSubscriber())
-        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#fae8ff;color:#a21caf;">💜 Yardımsever Kurum</span>
+        @include('themes._shared.partials.membership-badge', ['facility' => $facility, 'size' => 'md', 'linked' => true])
       @endif
       @if($facility->hasFastResponseBadge())
         <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>

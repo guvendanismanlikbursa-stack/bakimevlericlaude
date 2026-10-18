@@ -1382,3 +1382,46 @@ if (! function_exists('is_primary_site')) {
         return ! in_array(basename(base_path()), ['public_html_bakimevibul', 'bakimeviara.com'], true);
     }
 }
+
+if (! function_exists('membership_live')) {
+    /**
+     * 18 Ekim 2026: kullanıcının talebi - İyilik Hareketi üyelik programı,
+     * admin "Yayına al" diyene kadar ailelere ve kurumlara görünmez; bu
+     * süre boyunca ücretsiz teklif, yeni rozetler ve panel paketleri de
+     * devreye girmez. Tek açma/kapama noktası budur.
+     */
+    function membership_live(): bool
+    {
+        return (string) \App\Models\Setting::get('membership_live', '0') === '1';
+    }
+}
+
+if (! function_exists('membership_viewable')) {
+    /**
+     * Program sayfaları: yayındaysa herkes, değilse yalnızca admin (önizleme).
+     */
+    function membership_viewable(): bool
+    {
+        return membership_live() || (bool) session('admin_id');
+    }
+}
+
+if (! function_exists('facility_offer_url')) {
+    /**
+     * 18 Ekim 2026: kuruma özel İyilik Hareketi teklif sayfasının tam adresi,
+     * kurumun kendi markasının alan adıyla (bkz. facility_brand_login_url()).
+     */
+    function facility_offer_url(\App\Models\Facility $facility): string
+    {
+        $token = $facility->ensureOfferToken();
+        $brandSlug = facility_login_brand_slug($facility);
+        $domain = config("brands.brands.{$brandSlug}.domains.0");
+
+        if (app()->environment(['local', 'testing']) || ! $domain || ! str_ends_with($domain, '.com')) {
+            return route('brand.membership.offer', ['brand' => $brandSlug, 'token' => $token]);
+        }
+
+        return 'https://'.$domain.'/kurum-teklifi/'.$token;
+    }
+}
+

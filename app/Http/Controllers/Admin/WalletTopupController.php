@@ -34,11 +34,42 @@ class WalletTopupController extends Controller
 
     public function approve(WalletTopup $topup)
     {
-        DB::transaction(function () use ($topup) {
+        $isMembership = false;
+        DB::transaction(function () use ($topup, &$isMembership) {
             $topup = WalletTopup::whereKey($topup->id)->lockForUpdate()->firstOrFail();
             abort_if($topup->status !== 'pending', 400, 'Bu talep zaten islenmis.');
 
             $facility = $topup->facility()->lockForUpdate()->firstOrFail();
+
+            // 18 Ekim 2026: İyilik Hareketi üyelik paketi dekontu - tutar
+            // bakiyeye EKLENMEZ, onun yerine üyelik başlar/uzar (bkz.
+            // Facility::activateMembership()).
+            $package = $topup->subscription_package_id ? \App\Models\SubscriptionPackage::find($topup->subscription_package_id) : null;
+            if ($package && $package->isMembership()) {
+                $isMembership = true;
+                $facility->activateMembership($package, (float) $topup->amount);
+                $facility->refresh();
+
+                BalanceLog::create([
+                    'facility_id' => $facility->id,
+                    'type' => 'membership_payment',
+                    'amount' => 0,
+                    'credits_amount' => 0,
+                    'balance_after' => $facility->balance,
+                    'credits_after' => $facility->free_quote_credits,
+                    'admin_id' => session('admin_id'),
+                    'note' => "Üyelik onaylandı: {$package->name} (".number_format($topup->amount, 2, ',', '.')."₺), bitiş: ".$facility->subscription_paid_until?->format('d.m.Y'),
+                ]);
+
+                $topup->update([
+                    'status' => 'approved',
+                    'reviewed_by' => session('admin_id'),
+                    'reviewed_at' => now(),
+                ]);
+
+                return;
+            }
+
             $facility->increment('balance', $topup->amount);
 
             // 21 Temmuz 2026: canli $package->bonus_quote_credits yerine satin
@@ -73,6 +104,11 @@ class WalletTopupController extends Controller
         log_admin_event('wallet_topup_approved', $topup, ['facility_id' => $topup->facility_id, 'amount' => $topup->amount]);
 
         $facilityUser = $topup->facility_user_id ? \App\Models\FacilityUser::find($topup->facility_user_id) : null;
+        if ($isMembership) {
+            notify_user($facilityUser, 'topup_approved', 'Üyeliğiniz başladı', ($topup->package_name_snapshot ?? 'Üyelik').' onaylandı. Üyelik süresince teklifleriniz ücretsiz, rozetiniz kurum sayfanızda görünür.');
+
+            return back()->with('success', 'Üyelik onaylandı, kurumun üyeliği başlatıldı.');
+        }
         notify_user($facilityUser, 'topup_approved', 'Bakiye yükleme onaylandı', number_format($topup->amount, 2, ',', '.').'₺ hesabınıza işlendi.');
 
         return back()->with('success', 'Bakiye yukleme onaylandi, kurum bakiyesine islendi.');

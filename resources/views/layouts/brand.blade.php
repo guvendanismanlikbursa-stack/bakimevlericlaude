@@ -515,6 +515,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       <div class="{{ $theme === 'bakimeviara' ? 'text-gray-950' : 'text-white' }} font-bold mb-2 mt-5">Kurumsal</div>
       <ul class="space-y-1">
         <li><a href="{{ brand_route('pages.show', ['slug' => 'hakkimizda']) }}" class="hover:text-primary">Hakkımızda</a></li>
+        @if(membership_live())<li><a href="{{ brand_route('pages.membership') }}" class="hover:text-primary">💛 İyilik Hareketi</a></li>@endif
         <li><a href="{{ brand_route('pages.show', ['slug' => 'kvkk']) }}" class="hover:text-primary">KVKK</a></li>
         <li><a href="{{ brand_route('pages.show', ['slug' => 'gizlilik-politikasi']) }}" class="hover:text-primary">Gizlilik Politikası</a></li>
         <li><a href="{{ brand_route('pages.show', ['slug' => 'kullanim-sartlari']) }}" class="hover:text-primary">Kullanım Şartları</a></li>
