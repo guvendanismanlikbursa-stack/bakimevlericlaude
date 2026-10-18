@@ -176,9 +176,28 @@ class CrmController extends Controller
         $groups = self::GROUPS;
         $statusLabels = self::STATUSES;
 
+        $canViewOfferPage = (bool) $marketer?->can_view_offer_page;
+
         return view('marketer.crm.index', compact(
-            'facilities', 'group', 'groups', 'groupCounts', 'cities', 'categories', 'districtMap', 'statusLabels'
+            'facilities', 'group', 'groups', 'groupCounts', 'cities', 'categories', 'districtMap', 'statusLabels', 'canViewOfferPage'
         ));
+    }
+
+    /**
+     * 18 Ekim 2026: kullanıcının talebi - pazarlamacı kurumu telefonla
+     * ararken kuruma özel İyilik Hareketi teklif sayfasını (fiyatlar +
+     * kurumun gerçek son 30 gün rakamları) açabilsin. Yalnızca admin bu
+     * pazarlamacıya izin verdiyse ve kurum pazarlamacının kendi CRM
+     * kapsamındaysa. Süreli imzalı link kullanılır: program yayında olmasa
+     * da açılır ve kurumun "teklifi açtı" sayacına eklenmez.
+     */
+    public function offerPage(Request $request, Facility $facility)
+    {
+        $marketer = \App\Models\Marketer::find(session('marketer_id'));
+        abort_unless($marketer?->can_view_offer_page, 403, 'Teklif sayfasını görme yetkiniz yok.');
+        abort_unless($this->baseQuery(new Request)->whereKey($facility->id)->exists(), 404);
+
+        return redirect()->away(membership_signed_preview_url('membership.offer', ['token' => $facility->ensureOfferToken()]));
     }
 
     public function storeNote(Request $request, Facility $facility)

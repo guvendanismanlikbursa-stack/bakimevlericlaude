@@ -6900,4 +6900,33 @@ class PlatformFeatureTest extends TestCase
         // İmzalı önizleme, kurumun gerçek açılışı sayılmaz.
         $this->assertSame(0, (int) $facility->fresh()->offer_link_open_count);
     }
+
+    public function test_marketer_offer_page_button_is_admin_controlled_and_scoped(): void
+    {
+        $marketer = \App\Models\Marketer::create(['name' => 'Pazarlamaci', 'phone' => '05559998877', 'password' => Hash::make('x'), 'is_active' => true]);
+        $facility = $this->rehabFacility;
+        $facility->update(['phone' => '05321112233', 'phone_type' => 'mobile']);
+
+        // Varsayılan: kapalı - düğme yok, adres 403.
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm')->assertOk()->assertDontSee('Teklif Sayfasını Gör', false);
+        $this->withSession(['marketer_id' => $marketer->id])->get(route('marketer.crm.offer-page', $facility))->assertForbidden();
+
+        // Admin kapsam ekranından açar.
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.marketers.update-scope', $marketer), ['can_view_offer_page' => 1])
+            ->assertRedirect();
+        $this->assertTrue($marketer->fresh()->can_view_offer_page);
+
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm')->assertOk()->assertSee('Teklif Sayfasını Gör', false);
+        $redirect = $this->withSession(['marketer_id' => $marketer->id])->get(route('marketer.crm.offer-page', $facility));
+        $redirect->assertRedirect();
+        $this->flushSession();
+        $this->get($redirect->headers->get('Location'))->assertOk()->assertSee('9.000₺', false);
+        $this->assertSame(0, (int) $facility->fresh()->offer_link_open_count);
+
+        // Kapsam dışındaki kurum (başka il) açılamaz.
+        $otherCity = City::firstOrCreate(['slug' => 'ankara'], ['name' => 'Ankara']);
+        $marketer->update(['assigned_city_ids' => [$otherCity->id]]);
+        $this->withSession(['marketer_id' => $marketer->id])->get(route('marketer.crm.offer-page', $facility))->assertNotFound();
+    }
 }

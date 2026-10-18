@@ -72,6 +72,7 @@
         @else
           <span class="text-gray-400 font-normal">(sınırsız - tümünü görüyor)</span>
         @endif
+        @if($marketer->can_view_offer_page)<span class="font-normal" style="color:#a21caf;">· 💛 teklif sayfası açık</span>@endif
       </summary>
       <form method="POST" action="{{ route('admin.marketers.update-scope', $marketer) }}" class="js-scope-form mt-3 bg-gray-50 rounded-lg p-3 space-y-3" data-district-map='@json($districtMap)'>
         @csrf
@@ -114,6 +115,12 @@
             @endforeach
           </div>
         </div>
+        {{-- 18 Ekim 2026: kullanıcının talebi - pazarlamacı CRM'inde kuruma özel
+             İyilik Hareketi teklif sayfasını görebilsin mi (varsayılan kapalı). --}}
+        <label class="flex items-start gap-2 text-sm bg-white border rounded-lg p-2">
+          <input type="checkbox" name="can_view_offer_page" value="1" class="mt-0.5" @checked($marketer->can_view_offer_page)>
+          <span><strong>"💛 Teklif Sayfasını Gör" düğmesi</strong> — işaretliyse pazarlamacı, kapsamındaki kurumların kuruma özel üyelik teklif sayfasını (fiyatlar ve kurumun son 30 günlük rakamları) açabilir.</span>
+        </label>
         <button class="btn-primary px-4 py-2 rounded-lg text-xs font-semibold">Kapsamı Kaydet</button>
       </form>
     </details>

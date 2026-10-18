@@ -105,6 +105,9 @@
               <div class="font-bold">{{ $facility->name }}</div>
               <div class="text-sm text-gray-500">{{ $facility->category?->name }} · {{ $facility->district }} / {{ $facility->city?->name }}</div>
               <div class="text-sm mt-1">📞 <a href="tel:{{ $facility->phone }}" class="font-semibold text-blue-700">{{ $facility->phone }}</a></div>
+              @if($canViewOfferPage)
+                <a href="{{ route('marketer.crm.offer-page', $facility) }}" target="_blank" rel="noopener" class="inline-block mt-2 rounded-lg border px-3 py-1 text-xs font-bold" style="border-color:#e9d5ff;color:#a21caf;">💛 Teklif Sayfasını Gör</a>
+              @endif
             </div>
             <div class="text-right">
               @if($facility->marketing_status)

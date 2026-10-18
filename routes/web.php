@@ -687,5 +687,6 @@ Route::prefix('pazarlamaci')->name('marketer.')->group(function () {
         Route::get('/crm', [\App\Http\Controllers\Marketer\CrmController::class, 'index'])->name('crm.index');
         Route::post('/crm/{facility}/not', [\App\Http\Controllers\Marketer\CrmController::class, 'storeNote'])->name('crm.store-note');
         Route::post('/crm/{facility}/admine-bildir', [\App\Http\Controllers\Marketer\CrmController::class, 'notifyAdmin'])->name('crm.notify-admin');
+        Route::get('/crm/{facility}/teklif-sayfasi', [\App\Http\Controllers\Marketer\CrmController::class, 'offerPage'])->name('crm.offer-page');
     });
 });

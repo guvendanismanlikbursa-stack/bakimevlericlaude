@@ -11,7 +11,7 @@ class Marketer extends Model
 
     protected $fillable = [
         'name', 'phone', 'password', 'is_active', 'last_login_at', 'is_logged_in',
-        'assigned_city_ids', 'assigned_districts', 'assigned_category_ids',
+        'assigned_city_ids', 'assigned_districts', 'assigned_category_ids', 'can_view_offer_page',
     ];
 
     protected $hidden = ['password'];
@@ -25,6 +25,7 @@ class Marketer extends Model
             'assigned_city_ids' => 'array',
             'assigned_districts' => 'array',
             'assigned_category_ids' => 'array',
+            'can_view_offer_page' => 'boolean',
         ];
     }
 

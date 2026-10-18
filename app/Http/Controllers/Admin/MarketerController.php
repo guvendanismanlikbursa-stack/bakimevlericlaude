@@ -138,12 +138,15 @@ class MarketerController extends Controller
             'districts.*' => 'string',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'integer',
+            'can_view_offer_page' => 'nullable|boolean',
         ]);
 
         $marketer->update([
             'assigned_city_ids' => $data['city_ids'] ?? null,
             'assigned_districts' => $data['districts'] ?? null,
             'assigned_category_ids' => $data['category_ids'] ?? null,
+            // 18 Ekim 2026: "Teklif Sayfasını Gör" düğmesi yetkisi (bkz. Marketer\CrmController::offerPage()).
+            'can_view_offer_page' => $request->boolean('can_view_offer_page'),
         ]);
 
         log_admin_event('marketer_scope_updated', $marketer, $data);
