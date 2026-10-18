@@ -16,7 +16,7 @@
   @php($badgeStyle = $badgeStyles[$membershipBadge['emoji']] ?? 'background:#fae8ff;color:#a21caf;')
   {{-- Kurum kartı bütünüyle bir <a> içinde - iç içe <a> HTML'i bozar, bu
        yüzden kartta ($linked yok) yalnızca açıklamalı etiket, profilde link. --}}
-  @if($linked ?? false)
+  @if(($linked ?? false) && membership_live())
     <a href="{{ brand_route('pages.membership') }}" title="Bu kurum, üyeliğiyle kimsesiz yaşlı hastaların bakımına katkı sağlıyor. İyilik Hareketi hakkında bilgi alın." class="text-xs font-black {{ $badgePad }} rounded-full inline-block" style="{{ $badgeStyle }}">{{ $membershipBadge['emoji'] }} {{ $membershipBadge['label'] }}</a>
   @else
     <span title="Bu kurum, üyeliğiyle kimsesiz yaşlı hastaların bakımına katkı sağlıyor." class="text-xs font-black {{ $badgePad }} rounded-full" style="{{ $badgeStyle }}">{{ $membershipBadge['emoji'] }} {{ $membershipBadge['label'] }}</span>

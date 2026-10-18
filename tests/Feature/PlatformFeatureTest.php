@@ -6821,10 +6821,18 @@ class PlatformFeatureTest extends TestCase
         ]);
         $facility->refresh();
 
-        // Yayında değilken davranış aynen eski: bakiye yok -> teklif verilemez.
-        $this->assertFalse($facility->canSendQuote());
+        // 18 Ekim 2026 (ikinci karar): paket ödemiş üyenin hakkı program
+        // kapalıyken de sürer.
+        $this->assertTrue($facility->canSendQuote());
+
+        // Paketi olmayan eski abone: yalnızca program yayındayken ücretsiz.
+        $old = $this->rehabFacilityClaimed;
+        $old->update(['free_quote_credits' => 0, 'balance' => 0, 'is_subscribed' => true, 'subscription_package_id' => null,
+            'subscription_paid_until' => now()->addMonth()->toDateString()]);
+        $this->assertFalse($old->fresh()->canSendQuote());
 
         \App\Models\Setting::set('membership_live', '1');
+        $this->assertTrue($old->fresh()->canSendQuote());
         $facility->refresh();
         $this->assertTrue($facility->canSendQuote());
         $facility->chargeForQuote();
@@ -6846,10 +6854,16 @@ class PlatformFeatureTest extends TestCase
             'subscription_paid_until' => now()->addMonth()->toDateString(),
         ]);
 
+        // Paket ödemiş üyenin rozeti program kapalıyken de görünür (linksiz).
         $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)
             ->assertOk()
-            ->assertSee('Yardımsever Kurum', false)
-            ->assertDontSee('Altın Kalpli Kurum', false);
+            ->assertSee('💛 Altın Kalpli Kurum', false)
+            ->assertDontSee('Yardımsever Kurum', false);
+
+        // Paketsiz eski abone: kapalıyken eski rozet.
+        $old = $this->elderlyFacility;
+        $old->update(['is_subscribed' => true, 'subscription_package_id' => null, 'subscription_paid_until' => now()->addMonth()->toDateString()]);
+        $this->assertNull($old->fresh()->membershipBadge());
 
         \App\Models\Setting::set('membership_live', '1');
         $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)

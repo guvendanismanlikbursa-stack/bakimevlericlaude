@@ -132,11 +132,15 @@ class Facility extends Model
         return $this->belongsTo(SubscriptionPackage::class);
     }
 
-    // 18 Ekim 2026: kullanıcının talebi - İyilik Hareketi üyeliği. Program
-    // yayına alınmadan (membership_live()) hiçbir davranış değişmez.
+    // 18 Ekim 2026: kullanıcının talebi - İyilik Hareketi üyeliği.
+    // Kullanıcının ikinci kararı: "Yayından Kaldır" yalnızca TANITIMI
+    // (sayfa, menü, bant, teklif linkleri, panelde yeni satış) kapatır;
+    // üyelik paketi ödeyerek üye olmuş kurumun hakları (ücretsiz teklif,
+    // rozet, Vizyoner'de video, sahiplik) üyelik bitene kadar sürer. Paketi
+    // seçilmemiş eski aboneler ise yalnızca program yayındayken üye sayılır.
     public function isMember(): bool
     {
-        return membership_live() && $this->isActiveSubscriber();
+        return $this->isActiveSubscriber() && ($this->subscription_package_id || membership_live());
     }
 
     /**
@@ -200,7 +204,7 @@ class Facility extends Model
 
     public function grantOwnerFeaturesForMembership(): void
     {
-        if (membership_live() && ! $this->is_claimed && ! $this->is_broker_managed && $this->facilityUsers()->exists()) {
+        if (($this->subscription_package_id || membership_live()) && ! $this->is_claimed && ! $this->is_broker_managed && $this->facilityUsers()->exists()) {
             $this->update(['is_claimed' => true, 'claimed_at' => now()]);
         }
     }
