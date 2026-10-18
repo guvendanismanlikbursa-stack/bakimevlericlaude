@@ -28,7 +28,7 @@
         @php($membershipPreviewUrl = membership_signed_preview_url('pages.membership'))
         <a href="{{ $membershipPreviewUrl }}" target="_blank" class="text-primary font-semibold underline">Bilgilendirme sayfasını önizle</a>
         <span class="text-gray-500">Giriş gerektirmeyen 7 günlük önizleme linki (başkasıyla paylaşmadan önce düşünün): <input type="text" readonly value="{{ $membershipPreviewUrl }}" onclick="this.select()" class="border rounded px-2 py-0.5 text-xs w-72"></span>
-        <span class="text-gray-500">Kuruma özel teklif sayfası: Kurum Davetleri ekranında her kurumun yanındaki "Teklif" bağlantısı.</span>
+        <span class="text-gray-500">Kuruma özel teklif sayfası: Kurum Davetleri ekranında her kurumun yanındaki "💛 Teklif Sayfasını Gör" düğmesi.</span>
       </div>
     </div>
     <form method="POST" action="{{ route('admin.membership.toggle') }}" onsubmit="return confirm('{{ $membership['live'] ? 'İyilik Hareketi yayından kaldırılsın mı? Sayfa, rozetler, üyelik paketleri ve ücretsiz teklif kuralı gizlenecek.' : 'İyilik Hareketi 3 sitede birden yayına alınsın mı? Sayfa, rozetler, kurum panelindeki üyelik paketleri ve üyelere ücretsiz teklif kuralı hemen aktif olacak.' }}');">

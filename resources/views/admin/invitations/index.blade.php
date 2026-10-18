@@ -88,7 +88,7 @@
         <div class="flex items-center gap-2 flex-wrap justify-end">
           {{-- 18 Ekim 2026: İyilik Hareketi kuruma özel teklif linki. --}}
           <a href="{{ route('admin.invitations.offer-link', $facility) }}" target="_blank" rel="noopener"
-             class="inline-block rounded-lg border px-3 py-1.5 text-xs font-bold whitespace-nowrap" style="border-color:#e9d5ff;color:#a21caf;">💛 Teklifi Aç</a>
+             class="inline-block rounded-lg border px-3 py-1.5 text-xs font-bold whitespace-nowrap" style="border-color:#e9d5ff;color:#a21caf;">💛 Teklif Sayfasını Gör</a>
           @if($facility->phone_type === 'mobile')
             <a href="{{ route('admin.invitations.offer-link', ['facility' => $facility, 'via' => 'whatsapp']) }}" target="_blank" rel="noopener"
                class="inline-block rounded-lg px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap" style="background:#a21caf;">💛 Teklifi WhatsApp'tan Gönder</a>
