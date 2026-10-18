@@ -293,22 +293,22 @@
     <div class="mb-4">
       <h2 class="font-bold">
         Tanıtım Videosu
-        @if(! $facility->is_broker_managed)
-          <span class="text-xs font-normal text-amber-600">🔒 anlaşmalı kurumlara özel</span>
+        @if(! $facility->canUploadVideo())
+          <span class="text-xs font-normal text-amber-600">🔒 anlaşmalı kurumlara ve Vizyoner üyelere özel</span>
         @else
-          <span class="text-xs font-normal text-gray-400">(anlaşmalı kurumlara özel)</span>
+          <span class="text-xs font-normal text-gray-400">(anlaşmalı kurumlara ve Vizyoner üyelere özel)</span>
         @endif
       </h2>
       <p class="text-sm text-gray-500">En fazla 60 saniyelik bir video yükleyin, ziyaretçiler kurum sayfanızda görüntüleyebilir. Yüklenince otomatik sıkıştırılır, biraz zaman alabilir.</p>
     </div>
 
-    @if(! $facility->is_broker_managed)
+    @if(! $facility->canUploadVideo())
       <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 mb-4">
-        🔒 Bu alan şu anda <strong>pasif</strong>. Kurumunuz <strong>anlaşmalı (komisyon usulü)</strong> statüye geçtiğinde otomatik olarak aktif hale gelecek ve video yükleyebileceksiniz. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.
+        🔒 Bu alan şu anda <strong>pasif</strong>. Kurumunuz <strong>anlaşmalı (komisyon usulü)</strong> statüye geçtiğinde{{ membership_live() ? ' veya Vizyoner İyilik Elçisi üyesi olduğunda' : '' }} otomatik olarak aktif hale gelecek ve video yükleyebileceksiniz. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.
       </div>
     @endif
 
-    <div @if(! $facility->is_broker_managed) class="opacity-50 grayscale pointer-events-none select-none" @endif>
+    <div @if(! $facility->canUploadVideo()) class="opacity-50 grayscale pointer-events-none select-none" @endif>
       @if($facility->video_path)
         <video src="{{ facility_asset($facility->video_path) }}" controls class="w-full max-w-sm rounded-lg mb-3"></video>
         <p class="text-xs text-gray-400 mb-3">Son güncelleme: {{ $facility->video_updated_at?->diffForHumans() }}</p>

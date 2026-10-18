@@ -6546,7 +6546,7 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertNull($this->childFacility->fresh()->video_path);
         $this->assertSame(
-            'Video yalnızca komisyon usulü anlaşmalı kurumlar tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.',
+            'Video yalnızca anlaşmalı kurumlar ve Vizyoner İyilik Elçisi üyeleri tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.',
             session('errors')->first('video')
         );
     }
@@ -7065,5 +7065,28 @@ class PlatformFeatureTest extends TestCase
         $this->get('/site/bakimevleri/kurumlar')->assertOk()
             ->assertDontSee('Kurumlarımız üyelikleriyle', false)
             ->assertSee('💛 İyilik Hareketi</a>', false);
+    }
+
+    public function test_only_broker_or_visionary_members_can_upload_video_from_panel(): void
+    {
+        \App\Models\Setting::set('membership_live', '1');
+        $facility = $this->childFacility;
+        $facility->update(['is_broker_managed' => false, 'is_subscribed' => true,
+            'subscription_package_id' => $this->membershipPackage('Altın Kalpli Kurum')->id,
+            'subscription_paid_until' => now()->addMonth()->toDateString()]);
+        $this->assertFalse($facility->fresh()->canUploadVideo());
+
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])
+            ->post(route('brand.facility.profile.video.store', ['brand' => 'bakimeviara']), ['video' => \Illuminate\Http\UploadedFile::fake()->create('v.mp4', 100, 'video/mp4')])
+            ->assertSessionHasErrors('video');
+
+        $facility->update(['subscription_package_id' => $this->membershipPackage('Vizyoner İyilik Elçisi')->id]);
+        $this->assertTrue($facility->fresh()->canUploadVideo());
+
+        $facility->update(['subscription_paid_until' => now()->subDays(2)->toDateString()]);
+        $this->assertFalse($facility->fresh()->canUploadVideo());
+
+        $facility->update(['is_broker_managed' => true]);
+        $this->assertTrue($facility->fresh()->canUploadVideo());
     }
 }

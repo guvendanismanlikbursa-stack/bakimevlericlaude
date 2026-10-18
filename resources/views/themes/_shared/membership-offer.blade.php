@@ -71,7 +71,7 @@
 <section class="bg-white">
   <div class="max-w-5xl mx-auto px-4 py-10">
     <h2 class="text-xl font-black text-gray-900 mb-2">Üyelik seçenekleri</h2>
-    <p class="text-sm text-gray-600 mb-6">Her üyelikte, üyelik süresi boyunca <strong>ücretsiz ve sınırsız teklif</strong> verir, sahipli kurumların tüm panel özelliklerini kullanırsınız; kurum kartınızda ve sayfanızda üyelik rozetiniz görünür.</p>
+    <p class="text-sm text-gray-600 mb-6">Her üyelikte, üyelik süresi boyunca <strong>ücretsiz ve sınırsız teklif</strong> verir, <strong>sınırsız fotoğraf</strong> yükler, sahipli kurumların tüm panel özelliklerini kullanırsınız; kurum kartınızda ve sayfanızda üyelik rozetiniz görünür. Kurum panelinden tanıtım videosu yükleme yalnızca Vizyoner İyilik Elçisi üyeliğinde.</p>
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
       @foreach($packages as $package)
         <div class="rounded-2xl p-5 border-2 {{ $package->is_premium ? 'border-amber-300' : 'border-gray-100' }} bg-white shadow-sm flex flex-col">

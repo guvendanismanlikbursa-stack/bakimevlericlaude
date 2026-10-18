@@ -187,6 +187,17 @@ class Facility extends Model
         $this->grantOwnerFeaturesForMembership();
     }
 
+    /**
+     * 18 Ekim 2026: kullanıcının talebi - kurum panelinden tanıtım videosu:
+     * anlaşmalı kurumlar (27 Ağustos kararı) + aktif Vizyoner İyilik Elçisi
+     * (premium) üyeleri. Diğer üyeler yükleyemez.
+     */
+    public function canUploadVideo(): bool
+    {
+        return $this->is_broker_managed
+            || ($this->isMember() && (bool) $this->subscriptionPackage?->is_premium);
+    }
+
     public function grantOwnerFeaturesForMembership(): void
     {
         if (membership_live() && ! $this->is_claimed && ! $this->is_broker_managed && $this->facilityUsers()->exists()) {

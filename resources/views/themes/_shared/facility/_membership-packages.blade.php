@@ -22,6 +22,8 @@
         <ul class="text-sm text-gray-600 space-y-1 mb-4">
           <li>✓ {{ $package->months }} ay boyunca ücretsiz ve sınırsız teklif</li>
           <li>✓ Sahipli kurumların tüm panel özellikleri</li>
+          <li>✓ Sınırsız fotoğraf yükleme</li>
+          @if($package->is_premium)<li>✓ Kurum panelinden tanıtım videosu yükleme</li>@endif
           @foreach($package->featureList() as $feature)<li>✓ {{ $feature }}</li>@endforeach
         </ul>
         <form method="POST" action="{{ brand_route('facility.packages.store', $package) }}" enctype="multipart/form-data" class="mt-auto space-y-2" onsubmit="this.querySelector('button[type=submit]').disabled=true; this.querySelector('button[type=submit]').textContent='Gönderiliyor...';">

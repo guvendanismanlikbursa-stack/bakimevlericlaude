@@ -436,11 +436,12 @@ class ProfileController extends Controller
         $user = FacilityUser::findOrFail(session('facility_user_id'));
         $facility = $user->facility;
 
-        if (! $facility->is_broker_managed) {
+        if (! $facility->canUploadVideo()) {
             // 27 Agustos 2026: kullanicinin talebi - alan anlasmasiz kurumlara
             // da GORUNSUN (komisyonlu calismaya tesvik) ama pasif kalsin,
             // yuklemeye calisinca bu tesvik mesaji cikssin.
-            return back()->withErrors(['video' => 'Video yalnızca komisyon usulü anlaşmalı kurumlar tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.']);
+            // 18 Ekim 2026: Vizyoner İyilik Elçisi üyeleri de yükleyebilir.
+            return back()->withErrors(['video' => 'Video yalnızca anlaşmalı kurumlar ve Vizyoner İyilik Elçisi üyeleri tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.']);
         }
 
         $request->validate(['video' => 'required|file']);
