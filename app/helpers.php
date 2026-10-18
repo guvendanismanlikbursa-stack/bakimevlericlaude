@@ -1425,3 +1425,18 @@ if (! function_exists('facility_offer_url')) {
     }
 }
 
+if (! function_exists('membership_signed_preview_url')) {
+    /**
+     * 18 Ekim 2026: İyilik Hareketi sayfaları için 7 gün geçerli, giriş
+     * gerektirmeyen imzalı önizleme linki (admin'in bulunduğu sitenin adresiyle).
+     */
+    function membership_signed_preview_url(string $routeName, array $params = []): string
+    {
+        if (app()->environment(['local', 'testing'])) {
+            return \Illuminate\Support\Facades\URL::temporarySignedRoute('brand.'.$routeName, now()->addDays(7), $params + ['brand' => current_brand()['slug']]);
+        }
+
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute($routeName, now()->addDays(7), $params);
+    }
+}
+

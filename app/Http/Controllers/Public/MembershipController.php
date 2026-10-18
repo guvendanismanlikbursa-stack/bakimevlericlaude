@@ -17,9 +17,14 @@ use App\Models\SubscriptionPackage;
 // oturumunda açılır (önizleme), diğer herkese 404.
 class MembershipController extends Controller
 {
-    public function show()
+    public function show(\Illuminate\Http\Request $request)
     {
-        abort_unless(membership_viewable(), 404);
+        // 18 Ekim 2026: kullanıcının bildirdiği gerçek sorun - önizleme
+        // yalnızca admin oturumu olan AYNI tarayıcıda açılıyordu; admin'e
+        // telefondaki uygulamadan girildiğinde link başka tarayıcıda 404
+        // veriyordu. Admin panelinden üretilen süreli imzalı link
+        // (?expires=&signature=) her tarayıcıda önizleme açar.
+        abort_unless(membership_viewable() || $request->hasValidSignature(), 404);
 
         $brand = current_brand();
         $packages = SubscriptionPackage::active()->membership()->orderBy('sort_order')->orderBy('price')->get();
@@ -39,14 +44,15 @@ class MembershipController extends Controller
         // Rota hem düz hem /site/{brand} önekli kayıtlı - parametre konumla
         // değil adıyla okunur (bkz. Facility\SubscriptionController::store()).
         $token = (string) $request->route('token');
-        abort_unless(membership_viewable(), 404);
+        $signedPreview = $request->hasValidSignature();
+        abort_unless(membership_viewable() || $signedPreview, 404);
         abort_if(strlen($token) < 32, 404);
 
         $facility = Facility::with(['city', 'category', 'subscriptionPackage'])->where('offer_token', $token)->firstOrFail();
 
         // Admin önizlemesi "açıldı" sayılmaz - admin ekranındaki "linki açtı mı"
         // bilgisi yalnızca kurumun gerçek açılışlarını gösterir.
-        if (! session('admin_id')) {
+        if (! session('admin_id') && ! $signedPreview) {
             $facility->forceFill([
                 'offer_link_opened_at' => now(),
                 'offer_link_open_count' => (int) $facility->offer_link_open_count + 1,

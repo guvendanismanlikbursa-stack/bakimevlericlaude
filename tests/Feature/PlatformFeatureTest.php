@@ -6887,4 +6887,17 @@ class PlatformFeatureTest extends TestCase
 
         $this->get('/site/bakimevleri/iyilik-hareketi')->assertOk()->assertSee('Ekim 2026', false)->assertSee('320', false);
     }
+
+    public function test_signed_preview_link_opens_membership_pages_without_login(): void
+    {
+        $url = membership_signed_preview_url('pages.membership');
+        $this->get($url)->assertOk()->assertSee('Önizleme', false);
+        $this->get(preg_replace('/signature=[a-f0-9]+/', 'signature=deadbeef', $url))->assertNotFound();
+
+        $facility = $this->rehabFacility;
+        $offerUrl = membership_signed_preview_url('membership.offer', ['token' => $facility->ensureOfferToken()]);
+        $this->get($offerUrl)->assertOk()->assertSee('9.000₺', false);
+        // İmzalı önizleme, kurumun gerçek açılışı sayılmaz.
+        $this->assertSame(0, (int) $facility->fresh()->offer_link_open_count);
+    }
 }

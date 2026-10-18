@@ -25,7 +25,9 @@
         · Aktif üye kurum: <strong>{{ $membership['active_members'] }}</strong>
       </div>
       <div class="text-sm mt-2 flex gap-4 flex-wrap">
-        <a href="{{ brand_route('pages.membership') }}" target="_blank" class="text-primary font-semibold underline">Bilgilendirme sayfasını önizle</a>
+        @php($membershipPreviewUrl = membership_signed_preview_url('pages.membership'))
+        <a href="{{ $membershipPreviewUrl }}" target="_blank" class="text-primary font-semibold underline">Bilgilendirme sayfasını önizle</a>
+        <span class="text-gray-500">Giriş gerektirmeyen 7 günlük önizleme linki (başkasıyla paylaşmadan önce düşünün): <input type="text" readonly value="{{ $membershipPreviewUrl }}" onclick="this.select()" class="border rounded px-2 py-0.5 text-xs w-72"></span>
         <span class="text-gray-500">Kuruma özel teklif sayfası: Kurum Davetleri ekranında her kurumun yanındaki "Teklif" bağlantısı.</span>
       </div>
     </div>

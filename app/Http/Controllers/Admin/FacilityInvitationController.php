@@ -146,6 +146,12 @@ class FacilityInvitationController extends Controller
             return redirect()->away($waUrl);
         }
 
+        // Program yayında değilken "Teklifi Aç" süreli imzalı önizleme linkine
+        // gider - admin uygulamasından açılan oturumsuz tarayıcı da görebilsin.
+        if (! membership_live()) {
+            return redirect()->away(membership_signed_preview_url('membership.offer', ['token' => $facility->offer_token]));
+        }
+
         return redirect()->away($url);
     }
 
