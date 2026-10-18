@@ -65,6 +65,10 @@
       </div>
 
       @if($formKind === 'membership')
+        <div class="md:col-span-2">
+          <label class="text-sm font-semibold block mb-1">Liste fiyatı (TL) <span class="font-normal text-gray-500">— ilk yıldan sonra gerçekten uygulayacağınız fiyat. Doluysa teklif sayfasında ve panelde üstü çizili görünür, yukarıdaki fiyat "lansman fiyatı" olur. Boş bırakılabilir.</span></label>
+          <input type="number" step="0.01" min="0" name="list_price" value="{{ old('list_price', $editingPackage?->list_price) }}" class="border rounded-lg px-3 py-2 w-full">
+        </div>
         <div>
           <label class="text-sm font-semibold block mb-1">Süre (ay)</label>
           <input type="number" min="1" max="60" name="months" value="{{ old('months', $editingPackage?->months) }}" required class="border rounded-lg px-3 py-2 w-full">
@@ -135,6 +139,7 @@
       <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col {{ $package->is_active ? '' : 'opacity-60' }}">
         <div class="text-xs font-black px-2 py-1 rounded-full self-start" style="background:#fae8ff;color:#a21caf;">{{ $package->badge_emoji }} {{ $package->badge_label }}</div>
         <div class="font-bold mt-3">{{ $package->name }}</div>
+        @if($package->hasLaunchDiscount())<div class="text-sm text-gray-400 mt-1" style="text-decoration:line-through;">{{ number_format($package->list_price, 0, ',', '.') }} TL</div>@endif
         <div class="text-2xl font-black my-1">{{ number_format($package->price, 0, ',', '.') }} TL</div>
         <div class="text-sm text-gray-600">{{ $package->months }} ay{{ $package->free_months_label ? ' · '.$package->free_months_label : '' }}</div>
         @if($package->only_city_slug)<div class="text-xs font-bold text-amber-700 mt-1">Sadece {{ mb_convert_case($package->only_city_slug, MB_CASE_TITLE, 'UTF-8') }}</div>@endif

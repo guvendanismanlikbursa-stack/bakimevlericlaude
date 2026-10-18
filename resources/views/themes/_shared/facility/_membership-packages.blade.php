@@ -19,6 +19,10 @@
       <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col border-2 {{ $package->is_premium ? 'border-amber-300' : '' }}" style="{{ $package->is_premium ? '' : 'border-color:transparent;' }}">
         <div class="text-xs font-black px-2 py-1 rounded-full self-start" style="background:#fae8ff;color:#a21caf;">{{ $package->badge_emoji }} {{ $package->badge_label }}</div>
         <div class="font-bold text-lg mt-3">{{ $package->name }}</div>
+        @if($package->hasLaunchDiscount())
+          <div class="text-sm text-gray-400 mt-1"><span style="text-decoration:line-through;">{{ number_format($package->list_price, 0, ',', '.') }}₺</span> <span class="text-xs">liste fiyatı</span></div>
+          <div class="text-xs font-black mt-1" style="color:#92400e;">Lansman fiyatı</div>
+        @endif
         <div class="text-2xl font-black text-primary my-1">{{ number_format($package->price, 0, ',', '.') }}₺</div>
         @if($package->free_months_label)<div class="text-xs font-bold text-green-700 mb-2">🎁 {{ $package->free_months_label }}</div>@endif
         @if($package->tagline)<p class="text-sm text-gray-600 mb-3">{{ $package->tagline }}</p>@endif

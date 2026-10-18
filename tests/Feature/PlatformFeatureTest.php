@@ -7108,4 +7108,23 @@ class PlatformFeatureTest extends TestCase
         $this->flushSession();
         $this->get('/site/bakimevleri/iyilik-hareketi')->assertDontSee('Lansman dönemine özel fiyatlar', false)->assertDontSee('İlk yılımıza özel', false);
     }
+
+    public function test_list_price_shows_struck_through_only_when_set(): void
+    {
+        $package = $this->membershipPackage('Farkındalık Destekçisi');
+        $token = $this->rehabFacility->ensureOfferToken();
+        $url = membership_signed_preview_url('membership.offer', ['token' => $token]);
+
+        $this->get($url)->assertOk()->assertDontSee('Lansman fiyatı', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put(route('admin.packages.update', $package), [
+                'kind' => 'membership', 'name' => $package->name, 'price' => 1000, 'list_price' => 2500, 'months' => 1,
+                'badge_label' => $package->badge_label, 'badge_emoji' => $package->badge_emoji, 'is_active' => 1,
+            ])->assertRedirect();
+        $this->assertSame(2500.0, $package->fresh()->list_price);
+
+        $this->flushSession();
+        $this->get($url)->assertOk()->assertSee('2.500₺', false)->assertSee('Lansman fiyatı', false)->assertSee('1.000₺', false);
+    }
 }

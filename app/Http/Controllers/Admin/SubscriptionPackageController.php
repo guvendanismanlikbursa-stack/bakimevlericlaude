@@ -14,6 +14,7 @@ class SubscriptionPackageController extends Controller
     // satıldığı il) admin panelinden düzenlenebilir.
     private const MEMBERSHIP_RULES = [
         'kind' => 'nullable|in:credit,membership',
+        'list_price' => 'nullable|numeric|min:0',
         'months' => 'nullable|integer|min:1|max:60',
         'badge_label' => 'nullable|string|max:80',
         'badge_emoji' => 'nullable|string|max:16',

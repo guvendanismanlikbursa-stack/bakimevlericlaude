@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SubscriptionPackage extends Model
 {
     protected $fillable = [
-        'kind', 'name', 'description', 'price', 'bonus_quote_credits',
+        'kind', 'name', 'description', 'price', 'list_price', 'bonus_quote_credits',
         'duration_days', 'months', 'badge_label', 'badge_emoji', 'free_months_label',
         'tagline', 'features', 'only_city_slug', 'is_premium', 'is_active', 'sort_order',
     ];
@@ -16,6 +16,7 @@ class SubscriptionPackage extends Model
     {
         return [
             'price' => 'float',
+            'list_price' => 'float',
             'is_active' => 'boolean',
             'is_premium' => 'boolean',
             'months' => 'integer',
@@ -37,6 +38,15 @@ class SubscriptionPackage extends Model
     public function scopeCredit($query)
     {
         return $query->where(fn ($q) => $q->where('kind', 'credit')->orWhereNull('kind'));
+    }
+
+    /**
+     * 18 Ekim 2026: liste fiyatı girilmiş ve şimdiki fiyattan yüksekse
+     * lansman indirimi gösterilir.
+     */
+    public function hasLaunchDiscount(): bool
+    {
+        return $this->list_price && $this->list_price > $this->price;
     }
 
     public function isMembership(): bool

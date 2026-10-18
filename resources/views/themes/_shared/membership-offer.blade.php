@@ -80,6 +80,10 @@
         <div class="rounded-2xl p-5 border-2 {{ $package->is_premium ? 'border-amber-300' : 'border-gray-100' }} bg-white shadow-sm flex flex-col">
           <div class="text-xs font-black px-2 py-1 rounded-full self-start" style="background:#fae8ff;color:#a21caf;">{{ $package->badge_emoji }} {{ $package->badge_label }}</div>
           <div class="font-bold text-gray-900 mt-3">{{ $package->name }}</div>
+          @if($package->hasLaunchDiscount())
+            <div class="text-sm text-gray-400 mt-1"><span style="text-decoration:line-through;">{{ number_format($package->list_price, 0, ',', '.') }}₺</span> <span class="text-xs">liste fiyatı</span></div>
+            <div class="text-xs font-black mt-1" style="color:#92400e;">Lansman fiyatı</div>
+          @endif
           <div class="text-3xl font-black my-1" style="color:#701a75;">{{ number_format($package->price, 0, ',', '.') }}₺</div>
           @if($package->free_months_label)<div class="text-xs font-bold text-green-700">🎁 {{ $package->free_months_label }}</div>@endif
           @if($package->tagline)<p class="text-sm text-gray-600 mt-3">{{ $package->tagline }}</p>@endif
