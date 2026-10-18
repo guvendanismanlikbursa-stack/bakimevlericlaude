@@ -8,8 +8,13 @@
 # DOGRUDAN kendisi isler (FastCGI/PHP-FPM'in aksine, burada "bilinmeyen
 # direktif" hatasiyla tum siteyi 500'e dusurme riski YOK) - bu yuzden burada
 # guvenle kullanilabilir.
-php_value upload_max_filesize 10M
-php_value post_max_size 60M
+# 18 Ekim 2026: kullanicinin bildirdigi gercek hata - "video yuklemek icin
+# 10MB'dan kucuk olmali". 3 Eylul'deki video duzeltmesi .user.ini'ye
+# yapilmisti ama bu satirlar (LiteSpeed'de .user.ini ve cPanel ayarlarindan
+# once gelir) hala 10M/60M idi ve hepsini eziyordu. Diger tum ayar
+# dosyalariyla ayni degere cekildi; uygulamanin kendi video siniri 200MB/60sn.
+php_value upload_max_filesize 210M
+php_value post_max_size 220M
 
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
