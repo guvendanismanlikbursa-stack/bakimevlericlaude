@@ -3035,7 +3035,9 @@ class PlatformFeatureTest extends TestCase
             'notifiable_id' => $this->family->id,
             'type' => 'quote_received',
         ]);
-        Mail::assertNotSent(NotificationMail::class);
+        // 18 Ekim 2026: sahipli kurum teklif verince adminlere de e-posta gider
+        // (owner_activity) - susturulması gereken yalnızca AİLEYE giden e-posta.
+        Mail::assertNotSent(NotificationMail::class, fn ($mail) => $mail->hasTo($this->family->email));
     }
 
     public function test_facility_message_poll_returns_only_messages_after_given_id(): void
@@ -7002,5 +7004,66 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Mehmet Kaya (Sahibi)', false)
             ->assertSee('Salı tekrar ara', false);
         $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.facilities.create'))->assertOk();
+    }
+
+    public function test_admin_is_notified_of_claimed_facility_activity_but_not_qatest(): void
+    {
+        Mail::fake();
+        $this->withSession(['family_user_id' => $this->family->id])
+            ->post('/site/bakimeviara/teklif-talebi', [
+                'facility_id' => $this->childFacility->id, 'full_name' => 'Sahipli Hareket', 'phone' => '05551230001',
+            ])->assertRedirect();
+
+        $adminNote = PlatformNotification::where('notifiable_type', Admin::class)->where('type', 'owner_activity')->first();
+        $this->assertNotNull($adminNote);
+        $this->assertStringContainsString('Sahipli kurum · Cocuk Kurum', $adminNote->title);
+        // Kuruma giden bildirim de aynen duruyor.
+        $this->assertTrue(PlatformNotification::where('notifiable_type', FacilityUser::class)->where('type', 'offer_request')->exists());
+
+        $qa = $this->facility('QATEST Daily Bakimeviara Claimed', $this->childCategory, true);
+        $before = PlatformNotification::where('type', 'owner_activity')->count();
+        notify_admins_owner_activity($qa, 'x', 'y');
+        $this->assertSame($before, PlatformNotification::where('type', 'owner_activity')->count());
+
+        // Ön kayıtlı (sahipsiz) kurumda tetiklenmez.
+        notify_admins_owner_activity($this->rehabFacility, 'x', 'y');
+        $this->assertSame($before, PlatformNotification::where('type', 'owner_activity')->count());
+    }
+
+    public function test_owner_daily_digest_lists_requests_without_quotes(): void
+    {
+        Mail::fake();
+        $request = OfferRequest::create(array_merge(
+            $this->offerData('bakimeviara', $this->childCategory, 'Cevapsiz talep'),
+            ['facility_id' => $this->childFacility->id]
+        ));
+        $request->forceFill(['created_at' => now()->subDay()->setTime(12, 0)])->save();
+
+        $this->artisan('owners:daily-digest')->assertSuccessful();
+
+        $digest = PlatformNotification::where('notifiable_type', Admin::class)->where('type', 'owner_daily_digest')->first();
+        $this->assertNotNull($digest);
+        $this->assertStringContainsString('cevapsız talep', $digest->title);
+        $this->assertStringContainsString('Cocuk Kurum: 1 talep', $digest->body);
+
+        // Hareket yoksa özet gönderilmez.
+        OfferRequest::query()->delete();
+        PlatformNotification::query()->delete();
+        $this->artisan('owners:daily-digest')->assertSuccessful();
+        $this->assertSame(0, PlatformNotification::where('type', 'owner_daily_digest')->count());
+    }
+
+    public function test_membership_menu_link_and_home_band_appear_only_when_live(): void
+    {
+        $this->get('/site/bakimevleri')->assertOk()->assertDontSee('💛 İyilik Hareketi', false);
+
+        \App\Models\Setting::set('membership_live', '1');
+        $this->get('/site/bakimevleri')->assertOk()
+            ->assertSee('💛 İyilik Hareketi:</span> Kurumlarımız üyelikleriyle', false)
+            ->assertSee('💛 İyilik Hareketi</a>', false);
+        // Band yalnızca ana sayfada, menü bağlantısı her sayfada.
+        $this->get('/site/bakimevleri/kurumlar')->assertOk()
+            ->assertDontSee('Kurumlarımız üyelikleriyle', false)
+            ->assertSee('💛 İyilik Hareketi</a>', false);
     }
 }

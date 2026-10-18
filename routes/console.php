@@ -195,6 +195,14 @@ ScheduledJobMonitor::attach(
 // butonlarinin gizlenmesi bu gorevden BAGIMSIZ, canli hesaplanir (bkz.
 // Facility::isActiveSubscriber()) - bu sadece admin'in odeme suresi
 // yaklasan/yeni dolan abonelikleri fark edip kuruma ulasabilmesi icin.
+// 18 Ekim 2026: kullanıcının talebi - sahipli kurum hareketlerinin günlük
+// özeti ve 24 saattir cevapsız kalan talepler (bkz. NotifyOwnerActivityDigest).
+ScheduledJobMonitor::attach(
+    Schedule::command('owners:daily-digest')->dailyAt('09:10'),
+    'owners:daily-digest',
+    60 * 24
+);
+
 ScheduledJobMonitor::attach(
     Schedule::command('subscriptions:notify-expiring')->dailyAt('09:00'),
     'subscriptions:notify-expiring',

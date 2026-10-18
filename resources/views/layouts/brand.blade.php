@@ -278,6 +278,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       <a href="{{ brand_route('engagement.compare') }}" class="hover:text-white">Karşılaştır</a>
       @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="hover:text-white">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="hover:text-white">Kurumları Bul</a>
+      @if(membership_live()) <a href="{{ brand_route('pages.membership') }}" class="hover:text-white">💛 İyilik Hareketi</a> @endif
       <a href="{{ brand_route('contact.create') }}" class="hover:text-white">İletişim</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
@@ -313,6 +314,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       <a href="{{ brand_route('engagement.compare') }}" class="py-2 hover:text-white">Karşılaştır</a>
       @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="py-2 hover:text-white">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-white">Kurumları Bul</a>
+      @if(membership_live()) <a href="{{ brand_route('pages.membership') }}" class="py-2 hover:text-white">💛 İyilik Hareketi</a> @endif
       <a href="{{ brand_route('contact.create') }}" class="py-2 hover:text-white">İletişim</a>
       <hr class="border-white/10 my-1">
       @unless(session('facility_user_id'))
@@ -342,6 +344,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       <a href="{{ brand_route('engagement.compare') }}" class="px-3 py-2 rounded-full hover:bg-white">Karşılaştır</a>
       @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="px-3 py-2 rounded-full hover:bg-white">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="px-3 py-2 rounded-full hover:bg-white">Kurumlar</a>
+      @if(membership_live()) <a href="{{ brand_route('pages.membership') }}" class="px-3 py-2 rounded-full hover:bg-white">💛 İyilik Hareketi</a> @endif
     </nav>
     <div class="flex items-center gap-3 text-sm">
       @unless(session('facility_user_id'))
@@ -365,6 +368,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       <a href="{{ brand_route('engagement.compare') }}" class="py-2 hover:text-primary">Karşılaştır</a>
       @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="py-2 hover:text-primary">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-primary">Kurumlar</a>
+      @if(membership_live()) <a href="{{ brand_route('pages.membership') }}" class="py-2 hover:text-primary">💛 İyilik Hareketi</a> @endif
       <hr class="border-gray-100 my-1">
       @unless(session('facility_user_id'))
         @if(session('family_user_id'))<a href="{{ brand_route('family.dashboard') }}" class="py-2 hover:text-primary">Aile Panelim</a>@else<a href="{{ brand_route('family.login') }}" class="py-2 hover:text-primary">Aile Girişi</a>@endif
@@ -393,6 +397,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       <a href="{{ brand_route('engagement.compare') }}" class="hover:text-primary">Karşılaştır</a>
       @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="hover:text-primary">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="hover:text-primary">Kurumları Bul</a>
+      @if(membership_live()) <a href="{{ brand_route('pages.membership') }}" class="hover:text-primary">💛 İyilik Hareketi</a> @endif
       <a href="{{ brand_route('contact.create') }}" class="hover:text-primary">İletişim</a>
     </nav>
     <div class="flex items-center gap-3 text-sm">
@@ -417,6 +422,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       <a href="{{ brand_route('engagement.compare') }}" class="py-2 hover:text-primary">Karşılaştır</a>
       @if(session('family_user_id'))<a href="{{ brand_route('engagement.favorites') }}" class="py-2 hover:text-primary">Favoriler</a>@endif
       <a href="{{ brand_route('facilities.index') }}" class="py-2 hover:text-primary">Kurumları Bul</a>
+      @if(membership_live()) <a href="{{ brand_route('pages.membership') }}" class="py-2 hover:text-primary">💛 İyilik Hareketi</a> @endif
       <a href="{{ brand_route('contact.create') }}" class="py-2 hover:text-primary">İletişim</a>
       <hr class="border-gray-100 my-1">
       @unless(session('facility_user_id'))
@@ -474,6 +480,13 @@ if (new URLSearchParams(window.location.search).has('page')) {
 @endif
 
 <main id="main-content">
+  {{-- 18 Ekim 2026: kullanıcının talebi - İyilik Hareketi ana sayfada da
+       görünür olsun (yalnızca program yayındayken, yalnızca ana sayfada). --}}
+  @if(membership_live() && request()->routeIs('home', 'brand.home'))
+    <a href="{{ brand_route('pages.membership') }}" class="block text-white text-center text-sm px-4 py-2.5" style="background:linear-gradient(90deg,#701a75,#92400e);">
+      <span class="font-black">💛 İyilik Hareketi:</span> Kurumlarımız üyelikleriyle Bursa Şehir Hastanesi'ndeki kimsesiz yaşlılarımızın bakımına destek oluyor. <span class="underline font-bold whitespace-nowrap">Detay →</span>
+    </a>
+  @endif
   {{ $slot ?? '' }}
   @yield('content')
 </main>

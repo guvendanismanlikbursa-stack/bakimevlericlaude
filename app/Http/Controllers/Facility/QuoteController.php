@@ -100,6 +100,7 @@ class QuoteController extends Controller
             $user->facility->name.' talebinize teklif gönderdi.',
             ['offer_request_id' => $offerRequest->id]
         );
+        notify_admins_owner_activity($user->facility, 'Kurum teklif verdi', $user->facility->name.' bir aile talebine teklif gönderdi.', ['offer_request_id' => $offerRequest->id]);
 
         return back()->with('success', 'Teklifiniz aileye iletildi.');
     }

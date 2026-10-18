@@ -47,6 +47,11 @@ class QuestionController extends Controller
             );
         }
 
+        $question->loadMissing('facility');
+        if ($question->facility) {
+            notify_admins_owner_activity($question->facility, 'Kurum soruyu cevapladı', \Illuminate\Support\Str::limit((string) $question->answer, 120));
+        }
+
         return back()->with('success', 'Cevabınız yayınlandı.');
     }
 }

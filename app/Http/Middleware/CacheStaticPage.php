@@ -22,7 +22,11 @@ class CacheStaticPage
             return $next($request);
         }
 
-        $key = 'static-page:v1:'.md5($request->getHost().'|'.$request->getRequestUri().'|'.($request->ajax() ? 'ajax' : ''));
+        // 18 Ekim 2026: İyilik Hareketi "Yayına Al/Kaldır" ana sayfa bandını,
+        // menü ve alt bilgi bağlantısını değiştiriyor; önbellek bir saat eski
+        // halini gösteriyordu. Yayın durumu anahtara dahil - değişince 3 sitede
+        // de (Setting senkronu sayesinde) eski önbellek kendiliğinden devre dışı kalır.
+        $key = 'static-page:v1:'.(membership_live() ? 'm1:' : 'm0:').md5($request->getHost().'|'.$request->getRequestUri().'|'.($request->ajax() ? 'ajax' : ''));
         $staleOnly = $mode === 'stale';
 
         $fresh = $staleOnly ? null : Cache::get($key);

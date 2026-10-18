@@ -78,6 +78,7 @@ class MessageController extends Controller
             $user->facility->name.' size mesaj gönderdi.',
             ['offer_request_id' => $offerRequest->id]
         );
+        notify_admins_owner_activity($user->facility, 'Kurum aileye mesaj yazdı', \Illuminate\Support\Str::limit($data['body'], 120), ['offer_request_id' => $offerRequest->id]);
 
         if ($request->wantsJson()) {
             return response()->json(['message' => $this->serializeMessage($message)]);

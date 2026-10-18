@@ -494,6 +494,9 @@ if (! function_exists('notify_facility_or_broker_admins')) {
         \App\Models\FacilityUser::where('facility_id', $facility->id)->get()->each(
             fn ($user) => notify_user($user, $facilityType, $facilityTitle, $facilityBody, array_filter($extraData))
         );
+
+        // 18 Ekim 2026: kullanıcının talebi - sahipli kurumdaki hareketlerden admin de haberdar olsun.
+        notify_admins_owner_activity($facility, $facilityTitle, $facilityBody, $extraData);
     }
 }
 
@@ -553,6 +556,9 @@ if (! function_exists('notification_preference_groups')) {
                 ]],
                 // 18 Ekim 2026: kullanıcının talebi - yeni aile üyeliği bildirimi.
                 'families' => ['label' => 'Yeni aile üye olduğunda', 'types' => ['family_registered']],
+                // 18 Ekim 2026: kullanıcının talebi - sahipli kurum hareketleri.
+                'owner_activity' => ['label' => 'Sahipli kurumlardaki her harekette (anlık: talep, mesaj, teklif, ziyaret, soru)', 'types' => ['owner_activity']],
+                'owner_digest' => ['label' => 'Sahipli kurumlar günlük özeti (her sabah)', 'types' => ['owner_daily_digest']],
                 'messages' => ['label' => 'Canlı sohbet mesajı geldiğinde', 'types' => ['chat_message']],
                 'wallet' => ['label' => 'Bakiye yükleme talebi geldiğinde', 'types' => ['topup_requested']],
                 'broker' => ['label' => 'Anlaşmalı kurum (aracılık) hareketlerinde', 'types' => [
@@ -627,6 +633,10 @@ if (! function_exists('notification_action_url')) {
                 'job_application_submitted' => route('admin.job-applications.index'),
                 'review_submitted' => route('admin.reviews.index', ['status' => 'pending']),
                 'family_registered' => route('admin.users.families'),
+                'owner_activity' => isset($data['offer_request_id'])
+                    ? route('admin.offer-requests.messages', $data['offer_request_id'])
+                    : (isset($data['facility_id']) ? route('admin.facilities.edit', $data['facility_id']) : null),
+                'owner_daily_digest' => route('admin.offer-requests.index'),
                 'visit_service_request_submitted' => isset($data['visit_service_request_id'])
                     ? route('admin.visit-service.show', $data['visit_service_request_id']) : route('admin.visit-service.index'),
                 'visit_service_report_logged' => isset($data['visit_service_request_id']) && $isFamilyUser
@@ -1465,6 +1475,31 @@ if (! function_exists('notify_admins_new_family')) {
                 notify_user($admin, 'family_registered', 'Yeni aile üyesi: '.$family->name, $body, ['family_user_id' => $family->id]);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Yeni aile bildirimi gonderilemedi: '.$e->getMessage(), ['family_id' => $family->id]);
+            }
+        });
+    }
+}
+
+if (! function_exists('notify_admins_owner_activity')) {
+    /**
+     * 18 Ekim 2026: kullanıcının talebi - sahipli (anlaşmalı olmayan) kurumdaki
+     * her hareket (ücret talebi, mesaj, teklif, ziyaret, soru/cevap) eskiden
+     * yalnızca kuruma gidiyordu, admin hiç haberdar olmuyordu. Artık adminlere
+     * de "owner_activity" bildirimi gider (admin bildirim ayarlarından
+     * kapatılabilir). Her sabahki otomatik kontrolün QATEST kurumları hariç.
+     */
+    function notify_admins_owner_activity(\App\Models\Facility $facility, string $title, string $body, array $data = []): void
+    {
+        if (! $facility->is_claimed || $facility->is_broker_managed || stripos((string) $facility->name, 'QATEST') === 0) {
+            return;
+        }
+
+        $data = array_filter(['facility_id' => $facility->id] + $data);
+        \App\Models\Admin::all()->each(function ($admin) use ($facility, $title, $body, $data) {
+            try {
+                notify_user($admin, 'owner_activity', "Sahipli kurum · {$facility->name}: {$title}", $body, $data);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Sahipli kurum hareket bildirimi gonderilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
             }
         });
     }
