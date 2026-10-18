@@ -23,7 +23,7 @@
       ['👥', 'Ekip arkadaşlarınızı kurum panelinize davet etme'],
       ['🧑‍💼', 'Kurumunuza gelen iş başvurularını alma'],
       ['📊', 'Görüntülenme ve iletişim istatistiklerinizi takip etme'],
-      ['🧭', 'Fırsat Havuzu: bölgenizde bakım arayan ailelerin taleplerini görme'],
+      ['🧭', 'Fırsat Havuzu: yapılan anket çalışmalarında ve platforma gelen, bölgenizde bakım arayan ailelerin taleplerini görme'],
       ['📞', 'Kurum sayfanızda görünür telefon ve WhatsApp butonları, öne çıkan kurum kartı ve üyelik rozeti'],
   ];
 @endphp
@@ -95,6 +95,9 @@
     <div class="max-w-5xl mx-auto px-4 py-12">
       <h2 class="text-2xl md:text-3xl font-black text-gray-900 mb-2 text-center">Üyelik Seviyeleri</h2>
       <p class="text-gray-600 text-center mb-8">Kurumunuz seçtiği üyeliğe göre profil sayfasında ve kurum kartında aşağıdaki rozetlerden birini taşır.</p>
+      @if($launchNotice = membership_launch_notice())
+      <div class="rounded-xl px-4 py-3 mb-6 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
+    @endif
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         @foreach($tierPackages as $package)
           <div class="rounded-2xl p-5 border-2 {{ $package->is_premium ? 'border-amber-300' : 'border-gray-100' }} bg-white shadow-sm flex flex-col">
@@ -136,6 +139,9 @@
 <section class="bg-white">
   <div class="max-w-4xl mx-auto px-4 py-12">
     <h2 class="text-2xl md:text-3xl font-black text-gray-900 mb-6">Bizimle Yürüyen Kurumların Ayrıcalıkları</h2>
+    @if($launchNotice = membership_launch_notice())
+      <div class="rounded-xl px-4 py-3 mb-6 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
+    @endif
     <div class="space-y-4">
       {{-- 18 Ekim 2026: kullanıcının talebi - 3 site / tek panel avantajı. --}}
       <div class="rounded-2xl p-5" style="background:#ecfeff;">

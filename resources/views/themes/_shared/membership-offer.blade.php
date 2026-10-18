@@ -71,6 +71,9 @@
 <section class="bg-white">
   <div class="max-w-5xl mx-auto px-4 py-10">
     <h2 class="text-xl font-black text-gray-900 mb-2">Üyelik seçenekleri</h2>
+    @if($launchNotice = membership_launch_notice())
+      <div class="rounded-xl px-4 py-3 mb-6 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
+    @endif
     <p class="text-sm text-gray-600 mb-6">Her üyelikte, üyelik süresi boyunca <strong>ücretsiz ve sınırsız teklif</strong> verir, <strong>sınırsız fotoğraf</strong> yükler, sahipli kurumların tüm panel özelliklerini kullanırsınız; kurum kartınızda ve sayfanızda üyelik rozetiniz görünür. Kurum panelinden tanıtım videosu yükleme yalnızca Vizyoner İyilik Elçisi üyeliğinde.</p>
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
       @foreach($packages as $package)

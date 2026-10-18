@@ -11,6 +11,9 @@
     @endif
   </div>
 
+@if($launchNotice = membership_launch_notice())
+      <div class="rounded-xl px-4 py-3 mb-4 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
+    @endif
   <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
     @foreach($membershipPackages as $package)
       <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col border-2 {{ $package->is_premium ? 'border-amber-300' : '' }}" style="{{ $package->is_premium ? '' : 'border-color:transparent;' }}">

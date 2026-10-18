@@ -7090,4 +7090,22 @@ class PlatformFeatureTest extends TestCase
         $facility->update(['is_broker_managed' => true]);
         $this->assertTrue($facility->fresh()->canUploadVideo());
     }
+
+    public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
+    {
+        \App\Models\Setting::set('membership_live', '1');
+        $this->get('/site/bakimevleri/iyilik-hareketi')->assertOk()
+            ->assertSee('İlk yılımıza özel lansman fiyatları uygulanmaktadır.', false)
+            ->assertSee('yapılan anket çalışmalarında ve platforma gelen', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.membership.impact'), ['launch_notice' => 'Lansman dönemine özel fiyatlar'])->assertRedirect();
+        $this->flushSession();
+        $this->get('/site/bakimevleri/iyilik-hareketi')->assertSee('Lansman dönemine özel fiyatlar', false)->assertDontSee('İlk yılımıza özel', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.membership.impact'), ['launch_notice' => ''])->assertRedirect();
+        $this->flushSession();
+        $this->get('/site/bakimevleri/iyilik-hareketi')->assertDontSee('Lansman dönemine özel fiyatlar', false)->assertDontSee('İlk yılımıza özel', false);
+    }
 }

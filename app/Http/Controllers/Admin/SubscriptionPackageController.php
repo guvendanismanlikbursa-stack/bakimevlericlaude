@@ -52,6 +52,7 @@ class SubscriptionPackageController extends Controller
             'impact_patients' => \App\Models\Setting::get('membership_impact_patients'),
             'impact_period' => \App\Models\Setting::get('membership_impact_period'),
             'office_image' => \App\Models\Setting::get('membership_office_image'),
+            'launch_notice' => membership_launch_notice(),
             'active_members' => \App\Models\Facility::where('is_subscribed', true)->whereNotNull('subscription_package_id')
                 ->whereDate('subscription_paid_until', '>=', now()->toDateString())->count(),
         ];
@@ -154,7 +155,10 @@ class SubscriptionPackageController extends Controller
             'impact_period' => 'nullable|string|max:60',
             'office_image' => 'nullable|mimes:jpg,jpeg,png,webp|max:6144',
             'remove_office_image' => 'boolean',
+            'launch_notice' => 'nullable|string|max:200',
         ]);
+        // Boş bırakılırsa açık bir 'gizli' işareti saklanır (boş/NULL değer varsayılan yazıya düşerdi).
+        \App\Models\Setting::set('membership_launch_notice', filled($data['launch_notice'] ?? null) ? $data['launch_notice'] : '__gizli__');
 
         // 18 Ekim 2026: kullanıcının talebi - "bakım saati diye bir şeye ihtiyaç yok", yalnızca hasta sayısı.
         foreach (['impact_patients', 'impact_period'] as $key) {

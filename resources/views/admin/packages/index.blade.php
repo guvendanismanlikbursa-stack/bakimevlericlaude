@@ -180,10 +180,14 @@
 
 {{-- 4) ŞEFFAFLIK SAYACI VE OFİS FOTOĞRAFI --}}
 <details class="bg-white rounded-xl shadow-sm p-5" @if($errors->has('office_image')) open @endif>
-  <summary class="font-black cursor-pointer select-none">Şeffaflık sayacı ve hastane ofisi fotoğrafı <span class="font-normal text-sm text-gray-500">(tıklayıp açın)</span></summary>
+  <summary class="font-black cursor-pointer select-none">Lansman yazısı, şeffaflık sayacı ve hastane ofisi fotoğrafı <span class="font-normal text-sm text-gray-500">(tıklayıp açın)</span></summary>
   <form method="POST" action="{{ route('admin.membership.impact') }}" enctype="multipart/form-data" class="mt-4 grid md:grid-cols-2 gap-4">
     @csrf
     <p class="md:col-span-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">Buraya yazdığınız sayı, İyilik Hareketi sayfasında ve kurumlara özel teklif sayfalarında <strong>herkese aynı</strong> görünür: "Ekim 2026'da üyelerimiz sayesinde 14 hastamızın bakımı üstlenildi" gibi. Gerçekte bakımı yapılan hasta sayısını siz girersiniz; boş bırakırsanız hiç görünmez.</p>
+    <div class="md:col-span-2">
+      <label class="text-sm font-semibold block mb-1">Lansman yazısı <span class="font-normal text-gray-500">(fiyatların üstünde sarı kutuda görünür; boş bırakırsanız gösterilmez)</span></label>
+      <input type="text" name="launch_notice" maxlength="200" value="{{ $membership['launch_notice'] }}" class="border rounded-lg px-3 py-2 w-full">
+    </div>
     <div>
       <label class="text-sm font-semibold block mb-1">Dönem <span class="font-normal text-gray-500">(ör. "Ekim 2026")</span></label>
       <input type="text" name="impact_period" value="{{ $membership['impact_period'] }}" class="border rounded-lg px-3 py-2 w-full">

@@ -1505,3 +1505,17 @@ if (! function_exists('notify_admins_owner_activity')) {
     }
 }
 
+if (! function_exists('membership_launch_notice')) {
+    /**
+     * 18 Ekim 2026: kullanıcının talebi - fiyatların düşük görünüp platformu
+     * değersiz göstermemesi için lansman yazısı. Admin Paketler ekranından
+     * değiştirilebilir; boş bırakılırsa hiçbir yerde gösterilmez.
+     */
+    function membership_launch_notice(): ?string
+    {
+        $text = \App\Models\Setting::get('membership_launch_notice', 'İlk yılımıza özel lansman fiyatları uygulanmaktadır.');
+
+        return filled($text) && $text !== '__gizli__' ? $text : null;
+    }
+}
+
