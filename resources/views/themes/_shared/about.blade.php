@@ -46,8 +46,10 @@
       <div class="text-xs md:text-sm text-gray-500 mt-1">İl genelinde kapsam</div>
     </div>
     <div>
-      <div class="text-2xl md:text-3xl font-black text-gray-950">{{ number_format($claimedCount, 0, ',', '.') }}</div>
-      <div class="text-xs md:text-sm text-gray-500 mt-1">Doğrulanmış/sahiplenilmiş kurum</div>
+      {{-- 18 Ekim 2026: kullanıcının talebi - küçük bir sayı (ör. 13) ziyaretçiyi
+           soğutuyordu; sayı yerine büyüme vurgusu. --}}
+      <div class="text-2xl md:text-3xl font-black text-gray-950">Her gün artan</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-1">Doğrulanmış kurum</div>
     </div>
     <div>
       <div class="text-2xl md:text-3xl font-black text-gray-950">10dk-1sa</div>

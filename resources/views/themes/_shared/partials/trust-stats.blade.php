@@ -16,7 +16,8 @@
       <div class="text-[11px] md:text-xs text-gray-600 mt-0.5">İl kapsamı</div>
     </div>
     <div class="text-center">
-      <div class="text-xl md:text-2xl font-black text-gray-950">{{ number_format($claimedCount, 0, ',', '.') }}</div>
+      {{-- 18 Ekim 2026: kullanıcının talebi - küçük sayı yerine büyüme vurgusu. --}}
+      <div class="text-xl md:text-2xl font-black text-gray-950">Her gün artan</div>
       <div class="text-[11px] md:text-xs text-gray-600 mt-0.5">Doğrulanmış kurum</div>
     </div>
     {{-- 15 Ekim 2026: kullanicinin talebi - anlasmali (broker-managed)
