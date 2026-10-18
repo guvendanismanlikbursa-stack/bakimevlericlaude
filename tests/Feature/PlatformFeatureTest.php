@@ -1055,6 +1055,24 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('skipped', $duplicateRow->fresh()->status);
     }
 
+    // 18 Ekim 2026: mahalle önerileri artık ham sorguyla parça parça okunuyor
+    // (canlıda 13.877 kurumda sayfa 500 veriyordu); sonuç aynı kalmalı.
+    public function test_data_extractor_neighborhood_map_includes_trashed_and_parses_mahalle(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('vc:neighborhood_map:v1');
+        $active = $this->facility('Mahalle Test Aktif', $this->rehabCategory, true);
+        $active->update(['district' => 'Nilüfer', 'address' => 'Fethiye Mah. Ataturk Cad. No:1, Nilüfer']);
+        $trashed = $this->facility('Mahalle Test Silinmis', $this->rehabCategory, true);
+        $trashed->update(['district' => 'Nilüfer', 'address' => 'Görükle Mahallesi 5. Sok, Nilüfer']);
+        $trashed->delete();
+
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/veri-cekici')->assertOk();
+
+        $map = \Illuminate\Support\Facades\Cache::get('vc:neighborhood_map:v1');
+        $this->assertContains('Fethiye', $map['Nilüfer']);
+        $this->assertContains('Görükle', $map['Nilüfer']);
+    }
+
     public function test_admin_data_extractor_page_is_available(): void
     {
         $this->withSession(['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name])

@@ -39,9 +39,15 @@ class DataExtractorController extends Controller
         $districtMap = $cities->mapWithKeys(fn ($city) => [$city->id => districts_for_city($city->name)]);
         $neighborhoodMap = \Illuminate\Support\Facades\Cache::remember('vc:neighborhood_map:v1', now()->addHours(6), function () {
             $map = [];
-            \App\Models\Facility::withTrashed()
+            // 18 Ekim 2026: denetim bulgusu (canlıda adım adım ölçüldü) - bu
+            // sayfa log bırakmadan HTTP 500 veriyordu. 13.877 kurum Eloquent
+            // modeli olarak TEK SEFERDE ->get() ile belleğe alınınca
+            // paylaşımlı sunucu süreci öldürüyordu; aynı satırlar ham sorguyla
+            // 1000'erli parçalarda okununca bellek 12 MB'ta sabit kaldı.
+            // Sonuç birebir aynı (silinenler dahil, withTrashed ile eşdeğer).
+            \Illuminate\Support\Facades\DB::table('facilities')
                 ->whereNotNull('district')->whereNotNull('address')
-                ->select('district', 'address')->get()
+                ->select('id', 'district', 'address')->lazyById(1000)
                 ->each(function ($f) use (&$map) {
                     $first = trim(explode(',', $f->address)[0] ?? '');
                     if (preg_match('/^(.{2,40}?)\s+Mah(?:\.|allesi)?\b/ui', $first, $m)) {

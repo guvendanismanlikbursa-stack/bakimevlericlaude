@@ -207,7 +207,7 @@ class OpsController extends Controller
             'registration-revert-to-pending' => $this->registrationRevertToPending($request),
             'registration-detail' => $this->registrationDetail($request),
             'document-diagnostic' => $this->documentDiagnostic($request),
-            'admin-panel-smoke-test' => $this->adminPanelSmokeTest(),
+            'admin-panel-smoke-test' => $this->adminPanelSmokeTest($request),
             'qa-approve-registration' => $this->qaApproveRegistration($request),
             'queue-flush-failed' => $this->queueFlushFailed(),
             'gallery-health-scan' => $this->galleryHealthScan($request),
@@ -12079,115 +12079,141 @@ HTML;
         return "OK: sayfa kaydedildi/guncellendi -> id={$page->id}, brand=bakimeviara, slug=rehabilitasyon-bursa-fizik-tedavi-rehberi";
     }
 
-    // 3 Agustos 2026: "her rol panelindeki butun fonksiyonlar eksiksiz
-    // calisiyor mu" QA istegi icin - gercek admin sifresi/2FA gerekmeden
-    // (qa-approve-claim ile ayni desen: session'a admin_id koyup GERCEK
-    // controller kodunu dogrudan cagirir) admin panelindeki TUM GET
-    // sayfalarini sirayla render eder, Blade/DB hatasi varsa yakalar.
-    // Salt-okunur: hicbir POST/PUT/DELETE eylemi tetiklemez. Parametreler
-    // ReflectionMethod ile otomatik eslestirilir (Request -> bos Request,
-    // Model tipi -> ilgili fixture, aksi halde varsayilan/null).
-    private function adminPanelSmokeTest(): string
+    // 18 Ekim 2026: kullanıcının talebi ("eksik hata en ufak kalmasın") -
+    // eskiden ~35 sayfalık ELLE yazılmış bir liste tek istekte açılıyordu:
+    // (1) paylaşımlı sunucunun istek başına süre/bellek sınırına takılıp
+    // log bırakmadan HTTP 500 veriyordu, (2) sonradan eklenen ~40 admin
+    // sayfası (doktorlar, organizasyonlar, pazarlamacılar, Pusula, satış
+    // fırsatları, veri denetimi...) listede hiç yoktu. Artık sayfalar
+    // router'dan OTOMATİK bulunur (admin.* adlı tüm GET rotaları) ve
+    // offset/limit ile parça parça (varsayılan 5) açılır. Her sayfa geri
+    // alınan bir DB transaction'ı içinde ve Mail/Notification sahteyken
+    // çalışır - "görüntüleme" sırasında bir sayfa veri yazsa ya da e-posta
+    // göndermeye kalksa bile hiçbir şey kalıcı olmaz, kimseye gitmez.
+    private function adminPanelSmokeTest(Request $incoming): string
     {
         $admin = DB::table('admins')->first();
         if (! $admin) {
             return 'HATA: hic admin yok';
         }
-        session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
 
-        $facility = \App\Models\Facility::orderByDesc('id')->first();
-        $claim = \App\Models\FacilityClaim::orderByDesc('id')->first();
-        $registration = \App\Models\FacilityRegistration::orderByDesc('id')->first();
-        $offerRequest = \App\Models\OfferRequest::orderByDesc('id')->first();
-        $familyUser = \App\Models\FamilyUser::orderByDesc('id')->first();
-
-        $cases = [
-            'Dashboard' => [\App\Http\Controllers\Admin\DashboardController::class, 'index'],
-            'Kurumlar (liste)' => [\App\Http\Controllers\Admin\FacilityController::class, 'index'],
-            'Kurum davetleri' => [\App\Http\Controllers\Admin\FacilityInvitationController::class, 'index'],
-            'Kurum davetleri (hizli gonderim)' => [\App\Http\Controllers\Admin\FacilityInvitationController::class, 'quickSend'],
-            'Sahiplenme basvurulari (liste)' => [\App\Http\Controllers\Admin\FacilityClaimController::class, 'index'],
-            'Kurum kayit basvurulari (liste)' => [\App\Http\Controllers\Admin\FacilityRegistrationController::class, 'index'],
-            'Ayarlar' => [\App\Http\Controllers\Admin\SettingController::class, 'edit'],
-            'Bakiye yuklemeleri' => [\App\Http\Controllers\Admin\WalletTopupController::class, 'index'],
-            'Veri cekici' => [\App\Http\Controllers\Admin\DataExtractorController::class, 'index'],
-            'Teklif talepleri' => [\App\Http\Controllers\Admin\OfferRequestController::class, 'index'],
-            'Yorumlar' => [\App\Http\Controllers\Admin\FacilityReviewController::class, 'index'],
-            'Ziyaret talepleri' => [\App\Http\Controllers\Admin\VisitRequestController::class, 'index'],
-            'Mesajlar (iletisim)' => [\App\Http\Controllers\Admin\ContactMessageController::class, 'index'],
-            'Whatsapp tiklamalari' => [\App\Http\Controllers\Admin\WhatsappClickController::class, 'index'],
-            'Canli sohbet' => [\App\Http\Controllers\Admin\ChatController::class, 'index'],
-            'Canli sohbet istatistik' => [\App\Http\Controllers\Admin\ChatController::class, 'stats'],
-            'Canli sohbet ayarlari' => [\App\Http\Controllers\Admin\ChatSettingsController::class, 'edit'],
-            'Sehirler' => [\App\Http\Controllers\Admin\CityController::class, 'index'],
-            'Kullanicilar (aileler)' => [\App\Http\Controllers\Admin\UserController::class, 'families'],
-            'Kullanicilar (kurum yetkilileri)' => [\App\Http\Controllers\Admin\UserController::class, 'facilityUsers'],
-            'Kategoriler' => [\App\Http\Controllers\Admin\FacilityCategoryController::class, 'index'],
-            'Sayfalar (icerik)' => [\App\Http\Controllers\Admin\ContentPageController::class, 'index'],
-            'SSS' => [\App\Http\Controllers\Admin\FaqController::class, 'index'],
-            'Paketler' => [\App\Http\Controllers\Admin\SubscriptionPackageController::class, 'index'],
-            'Cop kutusu' => [\App\Http\Controllers\Admin\TrashController::class, 'index'],
-            'Islem gunlugu' => [\App\Http\Controllers\Admin\AuditLogController::class, 'index'],
-            'Hatalar' => [\App\Http\Controllers\Admin\PlatformErrorController::class, 'index'],
-            'Aile sorulari' => [\App\Http\Controllers\Admin\FacilityQuestionController::class, 'index'],
-            'Site istatistikleri' => [\App\Http\Controllers\Admin\SiteStatsController::class, 'index'],
-            'Yakin arama kayitlari' => [\App\Http\Controllers\Admin\NearbySearchController::class, 'index'],
+        // Oturum değiştiren, dışarı yönlendiren veya dosya sunan rotalar
+        // sayfa değildir; açılmaz, çıktıda ATLANDI olarak listelenir.
+        $skip = [
+            'admin.broker.facilities.quick-jump' => 'kurum paneline giris yapar (oturum degistirir)',
+            'admin.invitations.whatsapp' => 'WhatsApp yonlendirmesi, davet kaydi yazar',
+            'admin.family-need-surveys.whatsapp' => 'WhatsApp yonlendirmesi',
+            'admin.documents.show' => 'dosya sunar (her sabah check-admin-flows ayrica dener)',
+            'admin.login.verify' => 'giris kodu oturumu gerektirir',
         ];
 
-        if ($facility) {
-            $cases['Kurum duzenle (edit)'] = [\App\Http\Controllers\Admin\FacilityController::class, 'edit', [\App\Models\Facility::class => $facility]];
-        }
-        if ($claim) {
-            $cases['Sahiplenme basvurusu (detay)'] = [\App\Http\Controllers\Admin\FacilityClaimController::class, 'show', [\App\Models\FacilityClaim::class => $claim]];
-        }
-        if ($registration) {
-            $cases['Kurum kayit basvurusu (detay)'] = [\App\Http\Controllers\Admin\FacilityRegistrationController::class, 'show', [\App\Models\FacilityRegistration::class => $registration]];
-        }
-        if ($offerRequest) {
-            $cases['Teklif talebi mesajlari'] = [\App\Http\Controllers\Admin\OfferRequestController::class, 'showMessages', [\App\Models\OfferRequest::class => $offerRequest]];
-        }
-        if ($familyUser) {
-            $cases['Aile detay'] = [\App\Http\Controllers\Admin\SiteStatsController::class, 'showFamily', [\App\Models\FamilyUser::class => $familyUser]];
-        }
+        $routes = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->filter(fn ($r) => str_starts_with((string) $r->getName(), 'admin.') && in_array('GET', $r->methods(), true))
+            ->sortBy(fn ($r) => $r->uri())
+            ->values();
+
+        $total = $routes->count();
+        $offset = max(0, (int) $incoming->query('offset', 0));
+        $limit = min(10, max(1, (int) $incoming->query('limit', 5)));
+        $chunk = $routes->slice($offset, $limit);
+
+        session(['admin_id' => $admin->id, 'admin_name' => $admin->name]);
+        \Illuminate\Support\Facades\Mail::fake();
+        \Illuminate\Support\Facades\Notification::fake();
 
         $out = '';
         $ok = 0;
         $fail = 0;
-        foreach ($cases as $name => $spec) {
-            [$class, $method] = [$spec[0], $spec[1]];
-            $modelArgs = $spec[2] ?? [];
+        $skipped = 0;
+        foreach ($chunk as $route) {
+            $name = $route->getName();
+            $label = $name.' ['.$route->uri().']';
+            if (isset($skip[$name])) {
+                $out .= "ATLANDI | {$label}: {$skip[$name]}\n";
+                $skipped++;
+
+                continue;
+            }
+            $action = $route->getActionName();
+            if (! str_contains($action, '@')) {
+                $out .= "ATLANDI | {$label}: controller degil\n";
+                $skipped++;
+
+                continue;
+            }
+            [$class, $method] = explode('@', $action);
+
+            $started = microtime(true);
+            DB::beginTransaction();
             try {
                 $controller = app($class);
                 $ref = new \ReflectionMethod($controller, $method);
                 $args = [];
+                $missing = null;
                 foreach ($ref->getParameters() as $param) {
                     $type = $param->getType();
                     $typeName = $type instanceof \ReflectionNamedType ? $type->getName() : null;
-                    if ($typeName === Request::class) {
-                        $args[] = new Request();
-                    } elseif ($typeName && isset($modelArgs[$typeName])) {
-                        $args[] = $modelArgs[$typeName];
+                    if ($typeName && is_a($typeName, Request::class, true)) {
+                        $req = Request::create('/'.$route->uri(), 'GET');
+                        $req->setLaravelSession(session()->driver());
+                        $args[] = $req;
+                    } elseif ($typeName && is_subclass_of($typeName, \Illuminate\Database\Eloquent\Model::class)) {
+                        $model = $typeName::query()->orderByDesc((new $typeName)->getKeyName())->first();
+                        if (! $model) {
+                            $missing = "ornek {$typeName} kaydi yok";
+                            break;
+                        }
+                        $args[] = $model;
+                    } elseif ($typeName && class_exists($typeName)) {
+                        // Servis sınıfları (ör. DataQualityService) container'dan çözülür.
+                        $args[] = app($typeName);
                     } elseif ($param->isDefaultValueAvailable()) {
                         $args[] = $param->getDefaultValue();
                     } elseif ($param->allowsNull()) {
                         $args[] = null;
                     } else {
-                        throw new \RuntimeException('desteklenmeyen parametre tipi: ' . ($typeName ?? '?') . ' $' . $param->getName());
+                        $missing = 'desteklenmeyen parametre: '.($typeName ?? '?').' $'.$param->getName();
+                        break;
                     }
                 }
-                $response = $controller->{$method}(...$args);
-                $content = is_object($response) && method_exists($response, 'getContent') ? $response->getContent() : (string) $response;
-                $out .= "OK  | {$name} (" . strlen($content) . " bayt)\n";
-                $ok++;
+                if ($missing) {
+                    $out .= "ATLANDI | {$label}: {$missing}\n";
+                    $skipped++;
+                } else {
+                    $response = $controller->{$method}(...$args);
+                    if ($response instanceof \Illuminate\Contracts\View\View) {
+                        $content = $response->render();
+                    } elseif (is_object($response) && method_exists($response, 'getContent')) {
+                        $content = (string) $response->getContent();
+                    } else {
+                        $content = (string) $response;
+                    }
+                    $status = is_object($response) && method_exists($response, 'getStatusCode') ? $response->getStatusCode() : 200;
+                    $ms = (int) round((microtime(true) - $started) * 1000);
+                    if ($status >= 500) {
+                        $out .= "HATA    | {$label}: HTTP {$status}\n";
+                        $fail++;
+                    } else {
+                        $out .= "OK      | {$label}: HTTP {$status}, ".strlen($content)." bayt, {$ms} ms\n";
+                        $ok++;
+                    }
+                }
             } catch (\Throwable $e) {
-                $out .= "HATA| {$name}: " . get_class($e) . ': ' . $e->getMessage() . ' @ ' . basename($e->getFile()) . ':' . $e->getLine() . "\n";
+                $out .= "HATA    | {$label}: ".get_class($e).': '.$e->getMessage().' @ '.basename($e->getFile()).':'.$e->getLine()."\n";
                 $fail++;
+            } finally {
+                while (DB::transactionLevel() > 0) {
+                    DB::rollBack();
+                }
             }
         }
 
         session()->forget(['admin_id', 'admin_name']);
 
-        return "Admin panel smoke test: {$ok} basarili, {$fail} hatali\n\n" . $out;
+        $next = $offset + $limit < $total ? 'sonraki offset='.($offset + $limit) : 'SON PARCA';
+        $to = min($offset + $limit, $total);
+
+        return "Admin panel smoke test: toplam {$total} sayfa, bu parca ".($offset + 1)."-{$to} | {$ok} basarili, {$fail} hatali, {$skipped} atlandi | {$next}\n\n".$out;
     }
 
     // 19 Agustos 2026: kullanicinin talebi - "bursa'daki butun on kayitli
