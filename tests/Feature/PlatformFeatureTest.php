@@ -6727,6 +6727,7 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()
             ->assertDontSee('Önizleme — bu sayfa', false)
             ->assertSee('Bir Çocuğun Geleceğini Büyütürken', false)
+            ->assertSee('3 Sitede Yayın, Tek Kurum Paneli', false)
             ->assertSee('Vizyoner İyilik Elçisi', false);
     }
 

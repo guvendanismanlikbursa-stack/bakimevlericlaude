@@ -5,7 +5,7 @@
   <div class="rounded-2xl p-5 mb-5" style="background:linear-gradient(135deg,#fdf4ff,#fef3c7);">
     <div class="text-xs font-black uppercase tracking-wide" style="color:#a21caf;">İyilik Hareketi Üyeliği</div>
     <h2 class="text-xl font-black text-gray-900 mt-1">Kurumunuzu büyütürken bir yaşlımızın bakımına destek olun</h2>
-    <p class="text-sm text-gray-700 mt-2">Üyelik süresince <strong>teklifleriniz ücretsiz ve sınırsızdır</strong>, kurum sayfanızda üyelik rozetiniz görünür. Üyelik gelirinin bir bölümü Güven Bakım Hizmetleri iş birliğiyle Bursa Şehir Hastanesi'ndeki kimsesiz yaşlı hastaların bakımına, bir bölümü de kurumunuzun tanıtımına harcanır. <a href="{{ brand_route('pages.membership') }}" class="underline font-semibold">Ayrıntılı bilgi</a></p>
+    <p class="text-sm text-gray-700 mt-2">Üyelik süresince <strong>teklifleriniz ücretsiz ve sınırsızdır</strong>, kurum sayfanızda üyelik rozetiniz görünür. Kurumunuz 3 sitemizde (bakimevleri.com, bakimevibul.com, bakimeviara.com) birden yayınlanır; üç siteden gelen tüm talepler bu tek panele düşer. Üyelik gelirinin bir bölümü Güven Bakım Hizmetleri iş birliğiyle Bursa Şehir Hastanesi'ndeki kimsesiz yaşlı hastaların bakımına, bir bölümü de kurumunuzun tanıtımına harcanır. <a href="{{ brand_route('pages.membership') }}" class="underline font-semibold">Ayrıntılı bilgi</a></p>
     @if($currentMembership)
       <p class="mt-3 text-sm font-bold text-green-800">✓ Aktif üyeliğiniz: {{ $currentMembership->badge_emoji }} {{ $currentMembership->badge_label }} — bitiş {{ $user->facility->subscription_paid_until?->format('d.m.Y') }}. Aşağıdan erken yenileyebilirsiniz; kalan günleriniz kaybolmaz.</p>
     @endif

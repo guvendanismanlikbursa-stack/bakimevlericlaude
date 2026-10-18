@@ -88,6 +88,9 @@
         </div>
       @endforeach
     </div>
+    <div class="rounded-2xl p-4 mt-6 text-sm text-gray-700" style="background:#ecfeff;">
+      <strong>🌐 3 sitede yayın, tek panel:</strong> Kurumunuz bakimevleri.com, bakimevibul.com ve bakimeviara.com'da aynı anda yayınlanır; üç siteden gelen tüm aile talepleri, mesajlar, ziyaret istekleri ve sorular tek kurum panelinize düşer.
+    </div>
     <p class="text-xs text-gray-500 mt-4">Faturanız "Dijital Listeleme, Reklam ve Aracılık Hizmet Bedeli" olarak düzenlenir.</p>
   </div>
 </section>

@@ -137,6 +137,11 @@
   <div class="max-w-4xl mx-auto px-4 py-12">
     <h2 class="text-2xl md:text-3xl font-black text-gray-900 mb-6">Bizimle Yürüyen Kurumların Ayrıcalıkları</h2>
     <div class="space-y-4">
+      {{-- 18 Ekim 2026: kullanıcının talebi - 3 site / tek panel avantajı. --}}
+      <div class="rounded-2xl p-5" style="background:#ecfeff;">
+        <div class="font-black text-gray-900 mb-1">🌐 3 Sitede Yayın, Tek Kurum Paneli</div>
+        <p class="text-sm text-gray-700">Kurumunuz <strong>bakimevleri.com</strong>, <strong>bakimevibul.com</strong> ve <strong>bakimeviara.com</strong> sitelerinde aynı anda yayınlanır. Hangi siteden kayıt olduğunuzun önemi yoktur. Aileler bu üç siteden hangisinden gelirse gelsin; ücret/teklif talebi, mesaj, ziyaret talebi ve soruların tamamı <strong>tek kurum panelinize</strong> düşer, tek hesapla hepsine cevap verirsiniz.</p>
+      </div>
       <div class="rounded-2xl p-5" style="background:#fdf4ff;">
         <div class="font-black text-gray-900 mb-1">💜 Kurumsal İyilik Rozeti</div>
         <p class="text-sm text-gray-700">Profil sayfanıza ve kurum kartınıza eklenen özel dijital rozet sayesinde, kurumunuzu tercih eden veliler ve aileler, kurumunuzun bir sosyal sorumluluk projesine destek verdiğini görür; bu da kurumunuza duyulan güveni artırır. Rozetinizi kendi sosyal medya hesaplarınızda da gururla paylaşabilirsiniz.</p>
