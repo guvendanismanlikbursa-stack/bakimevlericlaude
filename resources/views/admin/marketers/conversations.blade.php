@@ -38,6 +38,7 @@
         </div>
         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">{{ $statusLabels[$note->status] ?? $note->status }}</span>
       </div>
+      @if($note->contactLabel())<div class="text-xs text-gray-700 font-semibold">👤 Görüşülen: {{ $note->contactLabel() }}</div>@endif
       <div class="text-xs text-gray-600 break-words">{{ $note->note ?: '—' }}</div>
       <div class="flex items-center gap-3 flex-wrap text-xs text-gray-500">
         <span>Broşür:

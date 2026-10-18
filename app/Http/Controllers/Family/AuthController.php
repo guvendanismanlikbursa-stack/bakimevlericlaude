@@ -73,6 +73,7 @@ class AuthController extends Controller
         session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
 
         EmailVerificationController::send($family, $brand);
+        notify_admins_new_family($family, 'form');
 
         try {
             Mail::to($family->email)->sendNow(new FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));

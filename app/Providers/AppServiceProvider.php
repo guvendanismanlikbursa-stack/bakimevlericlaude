@@ -83,7 +83,18 @@ class AppServiceProvider extends ServiceProvider
             $view->with('pendingJobApplicationsCount', JobApplication::where('status', 'yeni')->count());
             $view->with('pendingReviewsCount', \App\Models\FacilityReview::where('status', 'pending')->count());
             $view->with('unreadContactMessagesCount', ContactMessage::where('is_read', false)->count());
-            $view->with('newFeeInfoRequestsCount', FacilityInterestLead::where('status', 'yeni')->count() + OfferRequest::where('status', 'new')->count());
+            // 18 Ekim 2026: kullanıcının bildirdiği gerçek hata - sayaç yeni talep
+            // yokken "2" gösteriyordu. Eskiden durum "yeni" kalan TÜM kayıtları
+            // sayıyordu: kurumu silinmiş talepler (listede hiç görünmüyor) ve
+            // sahipli kurum talepleri (kurumun kendi paneline gider, buradan
+            // işlem yapılamaz, "yeni"den hiç çıkamaz) da dahildi. Artık sayfadaki
+            // "Bekleyen" sekmesiyle birebir aynı kural: kurumu duran, sahipli
+            // olmayan (ön kayıtlı/anlaşmalı) ve henüz işlem yapılmamış talepler.
+            $actionableFacility = fn ($q) => $q->where(fn ($w) => $w->where('is_broker_managed', true)->orWhere('is_claimed', false));
+            $view->with('newFeeInfoRequestsCount',
+                FacilityInterestLead::whereNull('sent_to_facility_at')->whereHas('facility', $actionableFacility)->count()
+                + OfferRequest::whereNotNull('facility_id')->whereNull('sent_to_facility_at')->whereHas('facility', $actionableFacility)->count()
+            );
 
             $unreadByType = $admin
                 ? $admin->notifications()->unread()->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type')

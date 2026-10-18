@@ -549,8 +549,10 @@ if (! function_exists('notification_preference_groups')) {
                 'leads' => ['label' => 'Yeni başvuru/talep geldiğinde (sahiplenme, kayıt, ziyaret, iletişim, iş, ilgi, Pusula)', 'types' => [
                     'claim_submitted', 'registration_submitted', 'visit_service_request_submitted',
                     'contact_message_submitted', 'job_application_submitted', 'facility_interest_lead',
-                    'care_advisor_lead',
+                    'care_advisor_lead', 'review_submitted',
                 ]],
+                // 18 Ekim 2026: kullanıcının talebi - yeni aile üyeliği bildirimi.
+                'families' => ['label' => 'Yeni aile üye olduğunda', 'types' => ['family_registered']],
                 'messages' => ['label' => 'Canlı sohbet mesajı geldiğinde', 'types' => ['chat_message']],
                 'wallet' => ['label' => 'Bakiye yükleme talebi geldiğinde', 'types' => ['topup_requested']],
                 'broker' => ['label' => 'Anlaşmalı kurum (aracılık) hareketlerinde', 'types' => [
@@ -624,6 +626,7 @@ if (! function_exists('notification_action_url')) {
                 'claim_submitted' => route('admin.claims.index'),
                 'job_application_submitted' => route('admin.job-applications.index'),
                 'review_submitted' => route('admin.reviews.index', ['status' => 'pending']),
+                'family_registered' => route('admin.users.families'),
                 'visit_service_request_submitted' => isset($data['visit_service_request_id'])
                     ? route('admin.visit-service.show', $data['visit_service_request_id']) : route('admin.visit-service.index'),
                 'visit_service_report_logged' => isset($data['visit_service_request_id']) && $isFamilyUser
@@ -1437,6 +1440,33 @@ if (! function_exists('membership_signed_preview_url')) {
         }
 
         return \Illuminate\Support\Facades\URL::temporarySignedRoute($routeName, now()->addDays(7), $params);
+    }
+}
+
+if (! function_exists('notify_admins_new_family')) {
+    /**
+     * 18 Ekim 2026: kullanıcının talebi - "bir aile üye olunca da admine
+     * bildirim gelsin". Her sabahki otomatik kontrolün (CheckUserFlows)
+     * açtığı deneme hesapları (qatest.daily.*@example.com) bildirilmez,
+     * yoksa her gün 3 sahte "yeni aile" bildirimi giderdi.
+     */
+    function notify_admins_new_family(\App\Models\FamilyUser $family, string $via = 'form'): void
+    {
+        if (str_starts_with((string) $family->email, 'qatest.')) {
+            return;
+        }
+
+        $brandName = config('brands.brands.'.$family->registered_brand.'.name', $family->registered_brand);
+        $body = "{$family->name} ({$family->phone}) {$brandName} üzerinden ".($via === 'google' ? 'Google ile ' : '').'üye oldu.'
+            .($family->signup_city_name ? " Konum: {$family->signup_city_name}." : '');
+
+        \App\Models\Admin::all()->each(function ($admin) use ($family, $body) {
+            try {
+                notify_user($admin, 'family_registered', 'Yeni aile üyesi: '.$family->name, $body, ['family_user_id' => $family->id]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Yeni aile bildirimi gonderilemedi: '.$e->getMessage(), ['family_id' => $family->id]);
+            }
+        });
     }
 }
 

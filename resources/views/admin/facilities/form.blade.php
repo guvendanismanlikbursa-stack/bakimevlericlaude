@@ -127,7 +127,7 @@
                 <p class="text-xs {{ $facility->marketing_callback_at->isFuture() ? 'text-amber-700' : 'text-gray-400' }} font-semibold mb-1">📅 Aranacak zaman: {{ $facility->marketing_callback_at->format('d.m.Y H:i') }}{{ $facility->marketing_callback_at->isPast() ? ' (geçti)' : '' }}</p>
               @endif
               @foreach($facility->marketingNotes as $note)
-                <p class="text-xs text-gray-500">{{ $note->created_at->format('d.m.Y H:i') }} — <span class="font-semibold">{{ $marketingStatusLabels[$note->status] ?? $note->status }}</span>@if($note->note) : {{ $note->note }}@endif</p>
+                <p class="text-xs text-gray-500">{{ $note->created_at->format('d.m.Y H:i') }} — <span class="font-semibold">{{ $marketingStatusLabels[$note->status] ?? $note->status }}</span>@if($note->contactLabel()) · 👤 {{ $note->contactLabel() }} @endif @if($note->note) : {{ $note->note }}@endif</p>
               @endforeach
               @if($facility->marketing_brochure_requested !== null)
                 <p class="text-xs text-gray-500 mt-1">Broşür dağıtımı: <span class="font-semibold">{{ $facility->marketing_brochure_requested ? 'İstiyor' : 'İstemiyor' }}</span></p>

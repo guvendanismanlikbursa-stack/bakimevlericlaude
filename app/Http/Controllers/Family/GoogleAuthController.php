@@ -141,6 +141,7 @@ class GoogleAuthController extends AuthController
         $request->session()->regenerateToken();
         $request->session()->forget(['admin_id', 'admin_name', 'facility_user_id', 'facility_user_name', 'impersonator_admin_id', 'impersonator_admin_name']);
         session(['family_user_id' => $family->id, 'family_user_name' => $family->name]);
+        notify_admins_new_family($family, 'google');
 
         try {
             \Illuminate\Support\Facades\Mail::to($family->email)->sendNow(new \App\Mail\FamilyWelcomeMail($family, $brand['name'], brand_route('family.dashboard')));

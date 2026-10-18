@@ -6934,4 +6934,73 @@ class PlatformFeatureTest extends TestCase
         $marketer->update(['assigned_city_ids' => [$otherCity->id]]);
         $this->withSession(['marketer_id' => $marketer->id])->get(route('marketer.crm.offer-page', $facility))->assertNotFound();
     }
+
+    public function test_fee_info_badge_ignores_deleted_and_claimed_facility_requests(): void
+    {
+        $deleted = $this->facility('Silinecek Kurum', $this->rehabCategory, false);
+        \App\Models\FacilityInterestLead::create(['facility_id' => $deleted->id, 'brand' => 'bakimevleri', 'full_name' => 'A', 'phone' => '05550000001', 'status' => 'yeni']);
+        $deleted->delete();
+        \App\Models\FacilityInterestLead::create(['facility_id' => $this->rehabFacilityClaimed->id, 'brand' => 'bakimevleri', 'full_name' => 'B', 'phone' => '05550000002', 'status' => 'yeni']);
+        \App\Models\FacilityInterestLead::create(['facility_id' => $this->rehabFacility->id, 'brand' => 'bakimevleri', 'full_name' => 'C', 'phone' => '05550000003', 'status' => 'yeni']);
+
+        $html = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/paketler')->assertOk()->getContent();
+        // Yalnızca ön kayıtlı kurumun işlem bekleyen talebi sayılır.
+        $this->assertMatchesRegularExpression('/<span>Ücret ve Bilgi Talepleri<\/span>\s*<span[^>]*>1<\/span>/u', $html);
+    }
+
+    public function test_marketer_note_records_contact_person_name_and_role(): void
+    {
+        $marketer = \App\Models\Marketer::create(['name' => 'Pazarlamaci', 'phone' => '05559998866', 'password' => Hash::make('x'), 'is_active' => true]);
+        $facility = $this->rehabFacility;
+        $facility->update(['phone' => '05321112244', 'phone_type' => 'mobile']);
+
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm')->assertOk()->assertSee('Görüşülen kişinin adı', false)->assertSee('Müdür', false);
+        $this->withSession(['marketer_id' => $marketer->id])
+            ->post(route('marketer.crm.store-note', $facility), ['status' => 'called', 'contact_name' => 'Ayşe Yılmaz', 'contact_role' => 'mudur'])
+            ->assertRedirect();
+
+        $note = \App\Models\FacilityMarketingNote::where('facility_id', $facility->id)->latest('id')->firstOrFail();
+        $this->assertSame('Ayşe Yılmaz (Müdür)', $note->contactLabel());
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm')->assertSee('Ayşe Yılmaz (Müdür)', false);
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/pazarlamaci-gorusmeleri')->assertOk()->assertSee('Ayşe Yılmaz (Müdür)', false);
+
+        $this->withSession(['marketer_id' => $marketer->id])
+            ->post(route('marketer.crm.store-note', $facility), ['status' => 'called', 'contact_role' => 'patron'])
+            ->assertSessionHasErrors('contact_role');
+    }
+
+    public function test_new_family_registration_notifies_admins_but_not_for_daily_qa_accounts(): void
+    {
+        Mail::fake();
+        $payload = fn ($email) => [
+            'name' => 'Yeni Aile', 'email' => $email, 'phone' => '05321234567',
+            'password' => 'Guclu12345!', 'password_confirmation' => 'Guclu12345!', 'consent' => '1',
+        ];
+
+        $this->post('/site/bakimevleri/aile/kayit', $payload('yeniaile@test.local'))->assertRedirect();
+        $this->assertSame(1, PlatformNotification::where('notifiable_type', Admin::class)->where('type', 'family_registered')->count());
+
+        $this->flushSession();
+        $this->post('/site/bakimevleri/aile/kayit', $payload('qatest.daily.bakimevleri.20261018@example.com'))->assertRedirect();
+        $this->assertSame(1, PlatformNotification::where('notifiable_type', Admin::class)->where('type', 'family_registered')->count());
+    }
+
+    // 18 Ekim 2026: görüşülen kişi satırındaki bitişik "@endif@if" Blade
+    // derleme hatası canlıda kurum düzenleme ekranını 2 dakika çökertti;
+    // notlu bir kurumla ekranın açıldığını doğrular.
+    public function test_admin_facility_edit_renders_marketing_notes_with_contact_person(): void
+    {
+        $facility = $this->rehabFacility;
+        \App\Models\FacilityMarketingNote::create([
+            'facility_id' => $facility->id, 'status' => 'called', 'note' => 'Salı tekrar ara',
+            'contact_name' => 'Mehmet Kaya', 'contact_role' => 'sahibi',
+        ]);
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get(route('admin.facilities.edit', $facility))
+            ->assertOk()
+            ->assertSee('Mehmet Kaya (Sahibi)', false)
+            ->assertSee('Salı tekrar ara', false);
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.facilities.create'))->assertOk();
+    }
 }

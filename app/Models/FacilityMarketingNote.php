@@ -8,7 +8,23 @@ use Illuminate\Database\Eloquent\Model;
 // notu gecmisi - bkz. Marketer\CrmController.
 class FacilityMarketingNote extends Model
 {
-    protected $fillable = ['facility_id', 'marketer_id', 'admin_id', 'status', 'note', 'brochure_requested', 'callback_at'];
+    protected $fillable = ['facility_id', 'marketer_id', 'admin_id', 'status', 'contact_name', 'contact_role', 'note', 'brochure_requested', 'callback_at'];
+
+    // 18 Ekim 2026: görüşülen kişinin kurumdaki konumu.
+    public const CONTACT_ROLES = ['calisan' => 'Çalışan', 'mudur' => 'Müdür', 'sahibi' => 'Sahibi'];
+
+    /**
+     * "Ayşe Yılmaz (Müdür)" gibi tek satırlık görüşülen kişi bilgisi; hiçbiri yoksa null.
+     */
+    public function contactLabel(): ?string
+    {
+        $role = self::CONTACT_ROLES[$this->contact_role] ?? null;
+        if (! $this->contact_name && ! $role) {
+            return null;
+        }
+
+        return trim(($this->contact_name ?: 'İsimsiz').($role ? " ({$role})" : ''));
+    }
 
     protected function casts(): array
     {

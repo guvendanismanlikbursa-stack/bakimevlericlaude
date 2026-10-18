@@ -207,12 +207,16 @@ class CrmController extends Controller
             'note' => 'nullable|string|max:2000',
             'brochure_requested' => 'nullable|in:0,1',
             'callback_at' => 'nullable|date',
+            'contact_name' => 'nullable|string|max:120',
+            'contact_role' => 'nullable|in:calisan,mudur,sahibi',
         ]);
 
         FacilityMarketingNote::create([
             'facility_id' => $facility->id,
             'marketer_id' => session('marketer_id'),
             'status' => $data['status'],
+            'contact_name' => $data['contact_name'] ?? null,
+            'contact_role' => $data['contact_role'] ?? null,
             'note' => $data['note'] ?? null,
             'brochure_requested' => $request->filled('brochure_requested') ? $request->boolean('brochure_requested') : null,
             'callback_at' => $data['callback_at'] ?? null,
@@ -265,6 +269,9 @@ class CrmController extends Controller
         $statusText = $lastNote ? ($statusLabels[$lastNote->status] ?? $lastNote->status) : 'Not yok';
 
         $body = "{$marketer?->name} tarafından \"{$facility->name}\" ({$facility->phone}) ile görüşüldü.\nDurum: {$statusText}";
+        if ($lastNote?->contactLabel()) {
+            $body .= "\nGörüşülen kişi: ".$lastNote->contactLabel();
+        }
         if ($lastNote?->note) {
             $body .= "\nNot: {$lastNote->note}";
         }

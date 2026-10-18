@@ -125,6 +125,7 @@
                 <div class="text-xs text-gray-500">
                   <span class="font-semibold text-gray-700">{{ $statusLabels[$note->status] ?? $note->status }}</span>
                   · {{ $note->created_at->format('d.m.Y H:i') }}
+                  @if($note->contactLabel()) · 👤 {{ $note->contactLabel() }} @endif
                   @if($note->note) — {{ $note->note }} @endif
                 </div>
               @endforeach
@@ -168,6 +169,21 @@
                 <input type="datetime-local" name="callback_at" class="border rounded-lg px-2 py-1.5 text-sm">
               </div>
               <button class="bg-gray-900 text-white text-sm font-semibold px-4 py-1.5 rounded-lg">Kaydet</button>
+            </div>
+            {{-- 18 Ekim 2026: kullanıcının talebi - görüşülen kişinin adı ve konumu. --}}
+            <div class="mt-2 flex flex-wrap items-end gap-2">
+              <div class="flex-1" style="min-width:12rem;">
+                <label class="block text-xs font-semibold text-gray-500 mb-1">Görüşülen kişinin adı</label>
+                <input type="text" name="contact_name" maxlength="120" class="border rounded-lg px-2 py-1.5 text-sm w-full" placeholder="ör. Ayşe Yılmaz">
+              </div>
+              <div>
+                <span class="block text-xs font-semibold text-gray-500 mb-1">Kurumdaki konumu</span>
+                <div class="flex gap-3 text-sm py-1.5">
+                  @foreach(\App\Models\FacilityMarketingNote::CONTACT_ROLES as $roleValue => $roleLabel)
+                    <label class="inline-flex items-center gap-1"><input type="radio" name="contact_role" value="{{ $roleValue }}"> {{ $roleLabel }}</label>
+                  @endforeach
+                </div>
+              </div>
             </div>
             <div class="mt-2">
               <label class="block text-xs font-semibold text-gray-500 mb-1">Not</label>
