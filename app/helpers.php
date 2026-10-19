@@ -1519,3 +1519,21 @@ if (! function_exists('membership_launch_notice')) {
     }
 }
 
+if (! function_exists('hidden_category_ids')) {
+    /**
+     * 19 Ekim 2026: kullanıcının talebi - admin bir kurum kategorisini
+     * (ör. Bireysel Fizyoterapist) sitede tamamen gizleyip tekrar açabilsin.
+     * Liste Setting'te tutulur: değişince 3 sitenin önbelleği zaten senkron
+     * temizlenir (bkz. Setting::set). Kayıtlar silinmez, admin'de görünür.
+     *
+     * @return array<int, int>
+     */
+    function hidden_category_ids(): array
+    {
+        $raw = \App\Models\Setting::get('hidden_category_ids', '[]');
+        $ids = json_decode((string) $raw, true);
+
+        return is_array($ids) ? array_values(array_map('intval', $ids)) : [];
+    }
+}
+

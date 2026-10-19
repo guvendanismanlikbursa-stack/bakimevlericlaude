@@ -469,7 +469,12 @@ class Facility extends Model
 
     public function scopePublished($query)
     {
-        return $query->where('is_published', true);
+        // 19 Ekim 2026: admin'in gizlediği kategorilerin kurumları sitede hiçbir
+        // yerde görünmez (listeler, detay, harita, sitemap - hepsi bu kapsamı kullanır).
+        $hidden = hidden_category_ids();
+
+        return $query->where('is_published', true)
+            ->when($hidden, fn ($q) => $q->whereNotIn('facility_category_id', $hidden));
     }
 
     // 17 Agustos 2026: kullanicinin bildirdigi hata - platform:check-user-flows

@@ -117,7 +117,7 @@ class HomeController extends Controller
                 ->get(['id', 'name', 'slug', 'lat', 'lng', 'city_id', 'is_claimed', 'is_broker_managed']);
         }
 
-        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $sectionScopes)->values();
+        $categories = FacilityCategory::cachedPublic()->whereIn('brand_scope', $sectionScopes)->values();
         $cities = City::cachedAll();
         $districtsByCity = turkey_provinces();
         $sectionServices = $activeSection['features'];

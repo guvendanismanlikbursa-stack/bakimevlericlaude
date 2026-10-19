@@ -25,10 +25,18 @@
     @php $section = service_section_for_scope($category->brand_scope); @endphp
     <div class="p-4 flex items-center justify-between gap-3 flex-wrap">
       <div class="min-w-0">
-        <div class="font-bold text-gray-900">{{ $category->name }}</div>
+        <div class="font-bold text-gray-900">{{ $category->name }} @if(in_array($category->id, $hiddenIds, true))<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#fee2e2;color:#991b1b;">Sitede gizli</span>@endif</div>
         <div class="text-xs text-gray-500 mt-0.5">{{ $section['title'] ?? '-' }} · {{ $category->brand_scope }} · {{ $category->facilities_count }} kurum</div>
       </div>
-      <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600 text-sm font-semibold whitespace-nowrap">Sil</button></form>
+      <div class="flex items-center gap-3">
+        {{-- 19 Ekim 2026: kategoriyi sitede tamamen gizle / aç (kayıtlar silinmez). --}}
+        @php $isHidden = in_array($category->id, $hiddenIds, true); @endphp
+        <form method="POST" action="{{ route('admin.categories.visibility', $category) }}" onsubmit="return confirm('{{ $isHidden ? $category->name.' tekrar sitede görünsün mü?' : $category->name.' ve tüm kurumları sitede gizlensin mi? (Kayıtlar silinmez, admin panelinde görünmeye devam eder.)' }}');">
+          @csrf
+          <button class="text-sm font-semibold whitespace-nowrap" style="color:{{ $isHidden ? '#15803d' : '#b45309' }};">{{ $isHidden ? 'Sitede Göster' : 'Sitede Gizle' }}</button>
+        </form>
+        <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" onsubmit="return confirm('Silinsin mi?');">@csrf @method('DELETE')<button class="text-red-600 text-sm font-semibold whitespace-nowrap">Sil</button></form>
+      </div>
     </div>
   @endforeach
 </div>

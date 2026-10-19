@@ -143,7 +143,7 @@ class PriceGuideController extends Controller
                 ->paginate(12)
                 ->withQueryString();
 
-            $sectionCategories = FacilityCategory::cachedAll()->whereIn('brand_scope', $section['scopes'])->values();
+            $sectionCategories = FacilityCategory::cachedPublic()->whereIn('brand_scope', $section['scopes'])->values();
             $nearDistricts = collect(districts_for_city($city->name))->take(18)->values();
             $categoryLabel = $category->name ?? ($section['title'].' kurumları');
             $guideContent = guide_page_content($brand, $city->name, $districtName, $categoryLabel, $stats['total']);

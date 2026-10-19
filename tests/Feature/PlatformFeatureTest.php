@@ -7052,7 +7052,8 @@ class PlatformFeatureTest extends TestCase
             $this->offerData('bakimeviara', $this->childCategory, 'Cevapsiz talep'),
             ['facility_id' => $this->childFacility->id]
         ));
-        $request->forceFill(['created_at' => now()->subDay()->setTime(12, 0)])->save();
+        // Dünün başı: hem 'dün' sayımına girer hem günün her saatinde 24 saati geçmiştir.
+        $request->forceFill(['created_at' => now()->subDay()->startOfDay()])->save();
 
         $this->artisan('owners:daily-digest')->assertSuccessful();
 
@@ -7140,5 +7141,28 @@ class PlatformFeatureTest extends TestCase
 
         $this->flushSession();
         $this->get($url)->assertOk()->assertSee('2.500₺', false)->assertSee('Lansman fiyatı', false)->assertSee('1.000₺', false);
+    }
+
+    public function test_admin_can_hide_and_show_a_category_on_the_site(): void
+    {
+        $facility = $this->rehabFacilityClaimed;
+        $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)->assertOk();
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.categories.visibility', $this->rehabCategory))->assertRedirect();
+        $this->assertContains($this->rehabCategory->id, hidden_category_ids());
+
+        $this->flushSession();
+        $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)->assertNotFound();
+        $this->assertFalse(\App\Models\Facility::published()->whereKey($facility->id)->exists());
+        $this->assertFalse(\App\Models\FacilityCategory::cachedPublic()->contains('id', $this->rehabCategory->id));
+        // Admin'de kurum görünmeye devam eder.
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kategoriler')->assertOk()->assertSee('Sitede gizli', false);
+        $this->assertTrue(\App\Models\Facility::whereKey($facility->id)->exists());
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->post(route('admin.categories.visibility', $this->rehabCategory))->assertRedirect();
+        $this->flushSession();
+        $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)->assertOk();
     }
 }

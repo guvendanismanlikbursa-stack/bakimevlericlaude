@@ -27,7 +27,7 @@ class FacilityController extends Controller
         $scope = $activeSection ? $activeSection['scopes'] : $brand['category_scope'];
 
         $cities = City::cachedAll();
-        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $scope)->values();
+        $categories = FacilityCategory::cachedPublic()->whereIn('brand_scope', $scope)->values();
         $districtsByCity = turkey_provinces();
         $sectionServices = $activeSection
             ? $activeSection['features']

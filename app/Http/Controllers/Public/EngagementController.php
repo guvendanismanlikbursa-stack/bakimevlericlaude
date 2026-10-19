@@ -18,7 +18,7 @@ class EngagementController extends Controller
         $activeSection = active_service_section($request->query('bolum'), $brand);
         $cities = City::orderBy('name')->get();
         $scope = $activeSection['scopes'] ?: $brand['category_scope'];
-        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $scope)->values();
+        $categories = FacilityCategory::cachedPublic()->whereIn('brand_scope', $scope)->values();
         $districtMap = $cities->mapWithKeys(fn ($city) => [$city->slug => districts_for_city($city->name)]);
         $sectionServices = $activeSection['features'] ?? [];
 

@@ -14,7 +14,25 @@ class FacilityCategoryController extends Controller
         $categories = FacilityCategory::withCount('facilities')->orderBy('name')->get();
         $brands = config('brands.brands');
 
-        return view('admin.categories.index', compact('categories', 'brands'));
+        $hiddenIds = hidden_category_ids();
+
+        return view('admin.categories.index', compact('categories', 'brands', 'hiddenIds'));
+    }
+
+    /**
+     * 19 Ekim 2026: kullanıcının talebi - kategoriyi sitede tamamen gizle / aç.
+     */
+    public function toggleVisibility(FacilityCategory $category)
+    {
+        $hidden = hidden_category_ids();
+        $nowHidden = ! in_array($category->id, $hidden, true);
+        $hidden = $nowHidden ? array_values(array_unique([...$hidden, $category->id])) : array_values(array_diff($hidden, [$category->id]));
+        \App\Models\Setting::set('hidden_category_ids', json_encode($hidden));
+        log_admin_event($nowHidden ? 'category_hidden' : 'category_shown', $category);
+
+        return back()->with('success', $nowHidden
+            ? "\"{$category->name}\" kategorisi ve kurumları sitede gizlendi (kayıtlar silinmedi)."
+            : "\"{$category->name}\" kategorisi tekrar sitede görünür.");
     }
 
     public function store(Request $request)

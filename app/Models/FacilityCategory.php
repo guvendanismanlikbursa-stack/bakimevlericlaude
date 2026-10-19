@@ -30,13 +30,24 @@ class FacilityCategory extends Model
         return Cache::remember('facility_categories:all:v1', now()->addHours(6), fn () => static::orderBy('name')->get());
     }
 
+    /**
+     * 19 Ekim 2026: sitede (herkese açık sayfalarda) kullanılacak kategoriler -
+     * admin'in gizlediği kategoriler hariç (bkz. hidden_category_ids()).
+     */
+    public static function cachedPublic()
+    {
+        $hidden = hidden_category_ids();
+
+        return $hidden ? static::cachedAll()->reject(fn (self $c) => in_array($c->id, $hidden, true))->values() : static::cachedAll();
+    }
+
     public static function findBySlugCached(?string $slug, ?array $brandScopes = null): ?self
     {
         if (! filled($slug)) {
             return null;
         }
 
-        return static::cachedAll()->first(
+        return static::cachedPublic()->first(
             fn (self $c) => $c->slug === $slug && ($brandScopes === null || in_array($c->brand_scope, $brandScopes, true))
         );
     }

@@ -80,7 +80,7 @@ trait FiltersFacilities
             // celisebiliyordu. Kategori bazinda dogru karsilastirma icin,
             // ilgili markanin TUM kategorilerinin esikleri once yuklenip
             // her kategori icin AYRI bir alt kosul kurulur.
-            $categoryThresholds = FacilityCategory::cachedAll()->whereIn('brand_scope', $scope)
+            $categoryThresholds = FacilityCategory::cachedPublic()->whereIn('brand_scope', $scope)
                 ->mapWithKeys(fn (FacilityCategory $c) => [$c->id => $c->priceTierThresholds()]);
 
             $query->whereNotNull('price_min')->where(function ($qq) use ($tierKey, $categoryThresholds) {

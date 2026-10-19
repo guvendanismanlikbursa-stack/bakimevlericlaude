@@ -47,7 +47,7 @@ class SitemapController extends Controller
         $ownSection = $sections[$brand['default_section']] ?? null;
         $sectionsForSitemap = $ownSection ? [$ownSection] : [];
         $ownScopes = $ownSection['scopes'] ?? $brand['category_scope'];
-        $categories = FacilityCategory::cachedAll()->whereIn('brand_scope', $ownScopes)->values();
+        $categories = FacilityCategory::cachedPublic()->whereIn('brand_scope', $ownScopes)->values();
         $bolumQuery = $ownSection ? '?bolum='.$ownSection['slug'] : '';
 
         $urls->push($this->url($prefix, 'daily', '1.0'));

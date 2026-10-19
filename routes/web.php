@@ -597,6 +597,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/kategoriler', [AdminFacilityCategoryController::class, 'store'])->name('categories.store');
         Route::put('/kategoriler/{category}/segment-esikleri', [AdminFacilityCategoryController::class, 'updatePriceTiers'])->name('categories.price-tiers.update');
         Route::delete('/kategoriler/{category}', [AdminFacilityCategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::post('/kategoriler/{category}/gorunurluk', [AdminFacilityCategoryController::class, 'toggleVisibility'])->name('categories.visibility');
 
         Route::get('/sayfalar', [AdminContentPageController::class, 'index'])->name('content-pages.index');
         Route::post('/sayfalar', [AdminContentPageController::class, 'store'])->name('content-pages.store');

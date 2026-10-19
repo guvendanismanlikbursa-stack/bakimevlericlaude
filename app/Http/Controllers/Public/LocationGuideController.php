@@ -83,7 +83,7 @@ class LocationGuideController extends Controller
 
         $nearDistricts = collect($districts)->take(18)->values();
         $content = site_section_content($brand['slug'], $section['slug']);
-        $sectionCategories = FacilityCategory::cachedAll()->whereIn('brand_scope', $section['scopes'])->values();
+        $sectionCategories = FacilityCategory::cachedPublic()->whereIn('brand_scope', $section['scopes'])->values();
         $category = null;
         $topicTitle = $section['seo_title'] ?? $section['title'];
         $guideContent = guide_page_content($brand, $city->name, $districtName, $section['title'].' kurumları', $facilityCount);
@@ -153,7 +153,7 @@ class LocationGuideController extends Controller
 
         $nearDistricts = collect($districts)->take(18)->values();
         $content = site_section_content($brand['slug'], $section['slug']);
-        $sectionCategories = FacilityCategory::cachedAll()->whereIn('brand_scope', $section['scopes'])->values();
+        $sectionCategories = FacilityCategory::cachedPublic()->whereIn('brand_scope', $section['scopes'])->values();
         $guideContent = guide_page_content($brand, $city->name, $districtName, $category->name, $facilityCount);
         $content['faq_preview'] = $this->withLocalFaq($content['faq_preview'] ?? [], $city->name, $districtName, $category->name, $priceRange, $facilityCount, $section['slug']);
 
