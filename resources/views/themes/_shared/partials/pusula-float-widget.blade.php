@@ -94,14 +94,19 @@
   @keyframes js-pusula-fade-in { to { opacity: 1; transform: translateY(0); } }
   @media (prefers-reduced-motion: reduce) { #js-pusula-toggle { animation: none; opacity: 1; transform: none; } }
 
+  /* 19 Ekim 2026: kullanıcının bildirdiği hata - Pusula paneli açıkken kurum
+     haritası (Leaflet, kendi katmanlarına 400-1000 z-index verir) panelin ve
+     karartmanın üstüne çıkıyordu. Harita kendi kutusuna hapsedilir (isolation),
+     Pusula üst menü (z-50) ve video penceresinin (60) de üstünde açılır. */
+  .leaflet-container { isolation: isolate; z-index: 0; }
   #js-pusula-backdrop {
-    position: fixed; inset: 0; z-index: 48; background: rgba(15, 23, 42, .4);
+    position: fixed; inset: 0; z-index: 70; background: rgba(15, 23, 42, .4);
     opacity: 0; pointer-events: none; transition: opacity .25s ease;
   }
   #js-pusula-backdrop.js-pusula-open { opacity: 1; pointer-events: auto; }
 
   #js-pusula-panel {
-    position: fixed; z-index: 49; right: 1.25rem;
+    position: fixed; z-index: 71; right: 1.25rem;
     bottom: calc(var(--chat-toggle-bottom, 1.25rem) + 4.25rem + 3.5rem);
     width: min(90vw, 368px); max-height: 80vh;
     background: #fff; border-radius: 20px; overflow: hidden;
