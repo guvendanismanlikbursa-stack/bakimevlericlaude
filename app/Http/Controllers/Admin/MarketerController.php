@@ -99,7 +99,21 @@ class MarketerController extends Controller
         $notes = $query->paginate(30)->withQueryString();
         $marketers = Marketer::orderBy('name')->get();
 
-        return view('admin.marketers.conversations', compact('notes', 'marketers'));
+        // 19 Ekim 2026: "kurum sitesi" fikri ölçümü - her kurumun EN SON cevabı sayılır.
+        $answers = FacilityMarketingNote::where(fn ($q) => $q->whereNotNull('website_status')->orWhereNotNull('site_offer_interest'))
+            ->orderByDesc('id')->get(['facility_id', 'website_status', 'site_offer_interest']);
+        $latestWebsite = $answers->whereNotNull('website_status')->unique('facility_id');
+        $latestInterest = $answers->whereNotNull('site_offer_interest')->unique('facility_id');
+        $siteSurvey = [
+            'asked' => $latestWebsite->count(),
+            'var' => $latestWebsite->where('website_status', 'var')->count(),
+            'yok' => $latestWebsite->where('website_status', 'yok')->count(),
+            'sosyal' => $latestWebsite->where('website_status', 'sosyal')->count(),
+            'offered' => $latestInterest->count(),
+            'ilgilendi' => $latestInterest->where('site_offer_interest', 'ilgilendi')->count(),
+        ];
+
+        return view('admin.marketers.conversations', compact('notes', 'marketers', 'siteSurvey'));
     }
 
     // 29 Eylul 2026: kullanicinin talebi - satis hunisi ayrintili sayfasi,

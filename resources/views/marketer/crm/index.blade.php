@@ -126,6 +126,8 @@
                   <span class="font-semibold text-gray-700">{{ $statusLabels[$note->status] ?? $note->status }}</span>
                   · {{ $note->created_at->format('d.m.Y H:i') }}
                   @if($note->contactLabel()) · 👤 {{ $note->contactLabel() }} @endif
+                  @if($note->website_status) · 🌐 {{ \App\Models\FacilityMarketingNote::WEBSITE_STATUSES[$note->website_status] ?? $note->website_status }} @endif
+                  @if($note->site_offer_interest) · {{ \App\Models\FacilityMarketingNote::SITE_OFFER_INTEREST[$note->site_offer_interest] ?? '' }} @endif
                   @if($note->note) — {{ $note->note }} @endif
                 </div>
               @endforeach
@@ -182,6 +184,24 @@
                   @foreach(\App\Models\FacilityMarketingNote::CONTACT_ROLES as $roleValue => $roleLabel)
                     <label class="inline-flex items-center gap-1"><input type="radio" name="contact_role" value="{{ $roleValue }}"> {{ $roleLabel }}</label>
                   @endforeach
+                </div>
+              </div>
+            </div>
+            {{-- 19 Ekim 2026: kurum sitesi fikri ölçümü (isteğe bağlı). --}}
+            <div class="mt-2 flex flex-wrap gap-x-6 gap-y-2">
+              <div>
+                <span class="block text-xs font-semibold text-gray-500 mb-1">Kurumun web sitesi var mı?</span>
+                <div class="flex flex-wrap gap-3 text-sm">
+                  @foreach(\App\Models\FacilityMarketingNote::WEBSITE_STATUSES as $wsValue => $wsLabel)
+                    <label class="inline-flex items-center gap-1"><input type="radio" name="website_status" value="{{ $wsValue }}"> {{ $wsLabel }}</label>
+                  @endforeach
+                </div>
+              </div>
+              <div>
+                <span class="block text-xs font-semibold text-gray-500 mb-1">"Size internet sitesi de yapıyoruz" teklifine</span>
+                <div class="flex flex-wrap gap-3 text-sm">
+                  <label class="inline-flex items-center gap-1"><input type="radio" name="site_offer_interest" value="ilgilendi"> İlgilendi</label>
+                  <label class="inline-flex items-center gap-1"><input type="radio" name="site_offer_interest" value="ilgilenmedi"> İlgilenmedi</label>
                 </div>
               </div>
             </div>

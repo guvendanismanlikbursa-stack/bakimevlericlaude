@@ -7165,4 +7165,23 @@ class PlatformFeatureTest extends TestCase
         $this->flushSession();
         $this->get('/site/bakimevleri/kurumlar/'.$facility->slug)->assertOk();
     }
+
+    public function test_marketer_records_website_survey_and_admin_sees_summary(): void
+    {
+        $marketer = \App\Models\Marketer::create(['name' => 'Pazarlamaci', 'phone' => '05559998855', 'password' => Hash::make('x'), 'is_active' => true]);
+        $facility = $this->rehabFacility;
+        $facility->update(['phone' => '05321112255', 'phone_type' => 'mobile']);
+
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm')->assertOk()->assertSee('Kurumun web sitesi var mı?', false);
+        $this->withSession(['marketer_id' => $marketer->id])
+            ->post(route('marketer.crm.store-note', $facility), ['status' => 'called', 'website_status' => 'yok', 'site_offer_interest' => 'ilgilendi'])
+            ->assertRedirect();
+        $this->withSession(['marketer_id' => $marketer->id])
+            ->post(route('marketer.crm.store-note', $facility), ['status' => 'called', 'website_status' => 'belki'])
+            ->assertSessionHasErrors('website_status');
+
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/pazarlamaci-gorusmeleri')
+            ->assertOk()->assertSee('Kurum sitesi araştırması', false)->assertSee('Sitesi yok: <strong>1</strong>', false)
+            ->assertSee('Site teklifiyle ilgilenen: <strong>1</strong>', false);
+    }
 }

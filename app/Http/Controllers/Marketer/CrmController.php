@@ -209,6 +209,8 @@ class CrmController extends Controller
             'callback_at' => 'nullable|date',
             'contact_name' => 'nullable|string|max:120',
             'contact_role' => 'nullable|in:calisan,mudur,sahibi',
+            'website_status' => 'nullable|in:var,yok,sosyal',
+            'site_offer_interest' => 'nullable|in:ilgilendi,ilgilenmedi',
         ]);
 
         FacilityMarketingNote::create([
@@ -217,6 +219,8 @@ class CrmController extends Controller
             'status' => $data['status'],
             'contact_name' => $data['contact_name'] ?? null,
             'contact_role' => $data['contact_role'] ?? null,
+            'website_status' => $data['website_status'] ?? null,
+            'site_offer_interest' => $data['site_offer_interest'] ?? null,
             'note' => $data['note'] ?? null,
             'brochure_requested' => $request->filled('brochure_requested') ? $request->boolean('brochure_requested') : null,
             'callback_at' => $data['callback_at'] ?? null,

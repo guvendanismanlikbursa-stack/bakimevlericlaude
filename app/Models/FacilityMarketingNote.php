@@ -8,10 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 // notu gecmisi - bkz. Marketer\CrmController.
 class FacilityMarketingNote extends Model
 {
-    protected $fillable = ['facility_id', 'marketer_id', 'admin_id', 'status', 'contact_name', 'contact_role', 'note', 'brochure_requested', 'callback_at'];
+    protected $fillable = ['facility_id', 'marketer_id', 'admin_id', 'status', 'contact_name', 'contact_role', 'website_status', 'site_offer_interest', 'note', 'brochure_requested', 'callback_at'];
 
     // 18 Ekim 2026: görüşülen kişinin kurumdaki konumu.
     public const CONTACT_ROLES = ['calisan' => 'Çalışan', 'mudur' => 'Müdür', 'sahibi' => 'Sahibi'];
+
+    // 19 Ekim 2026: "kurum sitesi" fikrinin ölçümü (bkz. migration).
+    public const WEBSITE_STATUSES = ['var' => 'Sitesi var', 'yok' => 'Sitesi yok', 'sosyal' => 'Sadece Instagram / Facebook'];
+    public const SITE_OFFER_INTEREST = ['ilgilendi' => 'Site teklifiyle ilgilendi', 'ilgilenmedi' => 'Site teklifiyle ilgilenmedi'];
 
     /**
      * "Ayşe Yılmaz (Müdür)" gibi tek satırlık görüşülen kişi bilgisi; hiçbiri yoksa null.

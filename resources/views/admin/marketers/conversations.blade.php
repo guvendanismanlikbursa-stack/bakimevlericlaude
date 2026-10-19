@@ -12,6 +12,22 @@
 </div>
 <p class="text-sm text-gray-500 mb-6">Tüm pazarlamacıların hangi kurumla ne zaman görüştüğü, sonucu ve notu — en yeniden eskiye.</p>
 
+{{-- 19 Ekim 2026: kurum sitesi fikri ölçümü özeti --}}
+<div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+  <div class="font-bold mb-2">🌐 Kurum sitesi araştırması <span class="font-normal text-sm text-gray-500">(her kurumun en son cevabı)</span></div>
+  @if($siteSurvey['asked'] || $siteSurvey['offered'])
+    <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+      <span>Sorulan kurum: <strong>{{ $siteSurvey['asked'] }}</strong></span>
+      <span>Sitesi yok: <strong>{{ $siteSurvey['yok'] }}</strong>@if($siteSurvey['asked']) (%{{ round($siteSurvey['yok'] * 100 / $siteSurvey['asked']) }})@endif</span>
+      <span>Sadece Instagram/Facebook: <strong>{{ $siteSurvey['sosyal'] }}</strong></span>
+      <span>Sitesi var: <strong>{{ $siteSurvey['var'] }}</strong></span>
+      <span>Site teklifiyle ilgilenen: <strong>{{ $siteSurvey['ilgilendi'] }}</strong> / {{ $siteSurvey['offered'] }}</span>
+    </div>
+  @else
+    <p class="text-sm text-gray-500">Henüz cevap yok. Pazarlamacılar görüşme notunda "Kurumun web sitesi var mı?" sorusunu işaretledikçe burada toplanır.</p>
+  @endif
+</div>
+
 <form method="GET" class="mb-4">
   <select name="marketer" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm pazarlamacılar</option>
@@ -39,6 +55,7 @@
         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">{{ $statusLabels[$note->status] ?? $note->status }}</span>
       </div>
       @if($note->contactLabel())<div class="text-xs text-gray-700 font-semibold">👤 Görüşülen: {{ $note->contactLabel() }}</div>@endif
+      @if($note->website_status || $note->site_offer_interest)<div class="text-xs text-gray-700">🌐 {{ \App\Models\FacilityMarketingNote::WEBSITE_STATUSES[$note->website_status] ?? '' }}@if($note->website_status && $note->site_offer_interest) · @endif{{ \App\Models\FacilityMarketingNote::SITE_OFFER_INTEREST[$note->site_offer_interest] ?? '' }}</div>@endif
       <div class="text-xs text-gray-600 break-words">{{ $note->note ?: '—' }}</div>
       <div class="flex items-center gap-3 flex-wrap text-xs text-gray-500">
         <span>Broşür:
