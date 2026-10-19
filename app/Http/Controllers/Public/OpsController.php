@@ -303,6 +303,7 @@ class OpsController extends Controller
             'veri-cekici-import-file' => $this->veriCekiciImportFile($request, app(\App\Services\DataExtractorImportService::class)),
             'expert-import-file' => $this->expertImportFile($request),
             'facility-category-move' => $this->facilityCategoryMove($request),
+            'facility-website-import' => $this->facilityWebsiteImport($request),
             'expert-clean-combining-marks' => $this->expertCleanCombiningMarks($request),
             'expert-duplicate-scan' => $this->expertDuplicateScan($request),
             'expert-name-check' => $this->expertNameCheck($request),
@@ -7838,6 +7839,61 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
      * (mükerrer kaydı GOOGLE HARİTALAR LİNKİNE göre engelleyerek) aktarabilen
      * kalıcı araç. apply=0 (varsayılan) ÖNİZLEME döner, hiçbir şey yazmaz.
      */
+    // 19 Ekim 2026: kullanıcının talebi - Google Haritalar kaydından toplu
+    // kontrol edilen "kurumun internet sitesi var mı" sonuçlarını kurumlara
+    // işler. Dosya: storage/app/veri_cekici_tmp/{file} içinde
+    // [{"id":123,"status":"yok|sosyal|rehber|var","url":"..."}]. Varsayılan
+    // ÖNİZLEME; apply=1 ile yazar. Pazarlamacının kurumla konuşarak işaretlediği
+    // durum (website_source=pazarlamaci) daha güvenilir olduğu için EZİLMEZ.
+    private function facilityWebsiteImport(Request $request): string
+    {
+        $file = basename((string) $request->input('file', ''));
+        $path = storage_path('app/veri_cekici_tmp/'.$file);
+        if ($file === '' || ! is_file($path)) {
+            return 'HATA: storage/app/veri_cekici_tmp altinda gecerli bir "file" gerekli.';
+        }
+        $rows = json_decode((string) file_get_contents($path), true);
+        if (! is_array($rows)) {
+            return 'HATA: dosya gecerli JSON degil.';
+        }
+        $apply = $request->boolean('apply');
+        $allowed = array_keys(Facility::WEBSITE_STATUSES);
+        $sayac = ['yazilacak' => 0, 'bulunamadi' => 0, 'pazarlamaci_korundu' => 0, 'gecersiz' => 0];
+        $durumlar = [];
+        foreach ($rows as $row) {
+            $status = (string) ($row['status'] ?? '');
+            if (! in_array($status, $allowed, true)) {
+                $sayac['gecersiz']++;
+                continue;
+            }
+            $facility = Facility::find((int) ($row['id'] ?? 0));
+            if (! $facility) {
+                $sayac['bulunamadi']++;
+                continue;
+            }
+            if ($facility->website_source === 'pazarlamaci') {
+                $sayac['pazarlamaci_korundu']++;
+                continue;
+            }
+            $sayac['yazilacak']++;
+            $durumlar[$status] = ($durumlar[$status] ?? 0) + 1;
+            if ($apply) {
+                $facility->forceFill([
+                    'website_status' => $status,
+                    'website_url' => $status === 'yok' ? null : (mb_substr((string) ($row['url'] ?? ''), 0, 500) ?: null),
+                    'website_source' => 'google',
+                    'website_checked_at' => now(),
+                ])->saveQuietly();
+            }
+        }
+        $out = ($apply ? 'YAZILDI' : 'ONIZLEME').': '.json_encode($sayac, JSON_UNESCAPED_UNICODE).PHP_EOL;
+        foreach ($durumlar as $k => $v) {
+            $out .= "  {$k}: {$v}".PHP_EOL;
+        }
+
+        return $out;
+    }
+
     private function expertImportFile(Request $request): string
     {
         set_time_limit(0);

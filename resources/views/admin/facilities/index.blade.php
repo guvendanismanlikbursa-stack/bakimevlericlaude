@@ -96,6 +96,15 @@
     @endforeach
     <option value="isaretsiz" @selected(request('ownership')==='isaretsiz')>İşaretlenmemiş</option>
   </select>
+  {{-- 19 Ekim 2026: kullanıcının talebi - internet sitesi durumu filtresi --}}
+  <select name="site" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="">İnternet Sitesi: Tümü</option>
+    <option value="eksik" @selected(request('site')==='eksik')>Kendi sitesi olmayanlar (hepsi)</option>
+    @foreach(\App\Models\Facility::WEBSITE_STATUSES as $wsKey => $wsLabel)
+      <option value="{{ $wsKey }}" @selected(request('site')===$wsKey)>{{ $wsLabel }}</option>
+    @endforeach
+    <option value="bilinmiyor" @selected(request('site')==='bilinmiyor')>Henüz kontrol edilmedi</option>
+  </select>
   {{-- 22 Eylul 2026: kullanicinin talebi - konumvericekici'nin Google'da
        net eslesme bulamadigi icin BILEREK atladigi kurumlari admin elle
        tamamlayabilsin diye. --}}

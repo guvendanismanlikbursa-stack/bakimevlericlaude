@@ -23,12 +23,26 @@ class Facility extends Model
         'is_subscribed', 'subscription_plan', 'subscription_started_at', 'subscription_paid_until', 'subscription_amount',
         'subscription_package_id', 'offer_token', 'offer_link_opened_at', 'offer_link_open_count',
         'marketing_status', 'marketing_status_at', 'marketing_brochure_requested', 'marketing_callback_at',
+        'website_status', 'website_url', 'website_source', 'website_checked_at',
     ];
+
+    // 19 Ekim 2026: kurumun kendi internet sitesi var mı (bkz. ilgili migration).
+    // null = henüz kontrol edilmedi.
+    public const WEBSITE_STATUSES = [
+        'yok' => 'İnternet sitesi yok',
+        'sosyal' => 'Sadece Instagram / Facebook',
+        'rehber' => 'Sadece rehber sitesinde sayfası var',
+        'var' => 'İnternet sitesi var',
+    ];
+
+    // Kendi sitesi OLMAYAN durumlar (site teklifi için hedef kitle).
+    public const WEBSITE_MISSING_STATUSES = ['yok', 'sosyal', 'rehber'];
 
     protected function casts(): array
     {
         return [
             'menu_image_updated_at' => 'datetime',
+            'website_checked_at' => 'datetime',
             // 28 Temmuz 2026: OfferRequest::city_id/facility_category_id
             // ZATEN integer'a cast'li (bkz. o model), Facility tarafinda
             // bu alanlar cast'siz olunca "yayin talebi" (broadcast) uygunluk
@@ -465,6 +479,20 @@ class Facility extends Model
     public function answeredQuestions()
     {
         return $this->hasMany(FacilityQuestion::class)->whereNotNull('answer')->latest('answered_at');
+    }
+
+    /**
+     * 19 Ekim 2026: CRM ve admin kurum listesindeki "İnternet sitesi" filtresi.
+     * 'eksik' = kendi sitesi olmayanların hepsi, 'bilinmiyor' = kontrol edilmemiş.
+     */
+    public function scopeWebsiteFilter($query, ?string $value)
+    {
+        return match ($value) {
+            'eksik' => $query->whereIn('website_status', self::WEBSITE_MISSING_STATUSES),
+            'bilinmiyor' => $query->whereNull('website_status'),
+            'yok', 'sosyal', 'rehber', 'var' => $query->where('website_status', $value),
+            default => $query,
+        };
     }
 
     public function scopePublished($query)

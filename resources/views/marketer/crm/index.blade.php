@@ -90,7 +90,16 @@
           <option value="{{ $category->slug }}" @selected(request('category') === $category->slug)>{{ $category->name }}</option>
         @endforeach
       </select>
-      @if(request('city') || request('district') || request('category'))
+      {{-- 19 Ekim 2026: internet sitesi durumu filtresi --}}
+      <select name="site" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
+        <option value="">İnternet Sitesi: Tümü</option>
+        <option value="eksik" @selected(request('site') === 'eksik')>Kendi sitesi olmayanlar (hepsi)</option>
+        @foreach(\App\Models\Facility::WEBSITE_STATUSES as $wsKey => $wsLabel)
+          <option value="{{ $wsKey }}" @selected(request('site') === $wsKey)>{{ $wsLabel }}</option>
+        @endforeach
+        <option value="bilinmiyor" @selected(request('site') === 'bilinmiyor')>Henüz kontrol edilmedi</option>
+      </select>
+      @if(request('city') || request('district') || request('category') || request('site'))
         <a href="{{ route('marketer.crm.index', array_filter(['group' => $group])) }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreyi temizle</a>
       @endif
     </form>
@@ -105,6 +114,7 @@
               <div class="font-bold">{{ $facility->name }}</div>
               <div class="text-sm text-gray-500">{{ $facility->category?->name }} · {{ $facility->district }} / {{ $facility->city?->name }}</div>
               <div class="text-sm mt-1">📞 <a href="tel:{{ $facility->phone }}" class="font-semibold text-blue-700">{{ $facility->phone }}</a></div>
+              @if($facility->website_status)<div class="mt-1">@include('partials.website-status-badge', ['facility' => $facility])</div>@endif
               @if($canViewOfferPage)
                 <a href="{{ route('marketer.crm.offer-page', $facility) }}" target="_blank" rel="noopener" class="inline-block mt-2 rounded-lg border px-3 py-1 text-xs font-bold" style="border-color:#e9d5ff;color:#a21caf;">💛 Teklif Sayfasını Gör</a>
               @endif

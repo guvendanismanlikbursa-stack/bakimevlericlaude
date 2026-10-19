@@ -203,6 +203,12 @@ class FacilityController extends Controller
             }
         }
 
+        // 19 Ekim 2026: kullanıcının talebi - internet sitesi olmayan kurumlar
+        // admin listesinde de ayrılabilsin (bkz. Facility::scopeWebsiteFilter).
+        if ($request->filled('site')) {
+            $query->websiteFilter($request->string('site')->toString());
+        }
+
         return $query;
     }
 

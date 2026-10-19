@@ -7184,4 +7184,33 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()->assertSee('Kurum sitesi araştırması', false)->assertSee('Sitesi yok: <strong>1</strong>', false)
             ->assertSee('Site teklifiyle ilgilenen: <strong>1</strong>', false);
     }
+
+    public function test_website_status_badge_and_filter_in_crm_and_admin(): void
+    {
+        $marketer = \App\Models\Marketer::create(['name' => 'Pazarlamaci', 'phone' => '05559998866', 'password' => Hash::make('x'), 'is_active' => true]);
+        $siteYok = $this->rehabFacility;
+        $siteYok->update(['phone' => '05321112266', 'phone_type' => 'mobile', 'website_status' => 'yok', 'website_source' => 'google', 'website_checked_at' => now()]);
+        $siteVar = Facility::create([
+            'name' => 'Siteli Test Kurumu', 'slug' => 'siteli-test-kurumu', 'city_id' => $siteYok->city_id,
+            'facility_category_id' => $siteYok->facility_category_id, 'phone' => '05321112277', 'phone_type' => 'mobile',
+            'is_published' => true, 'website_status' => 'var', 'website_url' => 'https://ornek-kurum.com', 'website_source' => 'google',
+        ]);
+
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm?group=all&site=eksik')
+            ->assertOk()->assertSee($siteYok->name)->assertDontSee('Siteli Test Kurumu')->assertSee('İnternet sitesi yok');
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm?group=all&site=var')
+            ->assertOk()->assertSee('Siteli Test Kurumu')->assertSee('https://ornek-kurum.com', false);
+
+        // Pazarlamacının görüşmede işaretlediği durum kurumun site durumunu günceller.
+        $this->withSession(['marketer_id' => $marketer->id])
+            ->post(route('marketer.crm.store-note', $siteYok), ['status' => 'called', 'website_status' => 'sosyal'])
+            ->assertRedirect();
+        $siteYok->refresh();
+        $this->assertSame('sosyal', $siteYok->website_status);
+        $this->assertSame('pazarlamaci', $siteYok->website_source);
+
+        $this->flushSession();
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurumlar?site=eksik')
+            ->assertOk()->assertSee($siteYok->name)->assertDontSee('Siteli Test Kurumu')->assertSee('Sadece Instagram / Facebook');
+    }
 }

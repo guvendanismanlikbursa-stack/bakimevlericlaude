@@ -82,6 +82,10 @@ class CrmController extends Controller
         if ($request->filled('category')) {
             $q->whereHas('category', fn ($c) => $c->where('slug', $request->category));
         }
+        // 19 Ekim 2026: internet sitesi olmayan kurumlara öncelik verilebilsin.
+        if ($request->filled('site')) {
+            $q->websiteFilter($request->string('site')->toString());
+        }
 
         // 15 Ekim 2026: kullanicinin talebi - pazarlamaciya il/ilce/kategori
         // bazinda bolge atanmissa, CRM listesi sadece o kapsamla sinirlanir
@@ -237,6 +241,14 @@ class CrmController extends Controller
         // mevcut randevu yanlislikla silinmez.
         if ($request->filled('callback_at')) {
             $update['marketing_callback_at'] = $data['callback_at'];
+        }
+        // 19 Ekim 2026: pazarlamacı kurumla konuşup "web sitesi var mı" sorusunu
+        // işaretlediyse kurumun site durumu da güncellenir - kurumun kendi
+        // cevabı Google kaydından daha güvenilir.
+        if ($data['website_status'] ?? null) {
+            $update['website_status'] = $data['website_status'];
+            $update['website_source'] = 'pazarlamaci';
+            $update['website_checked_at'] = now();
         }
         $facility->update($update);
 

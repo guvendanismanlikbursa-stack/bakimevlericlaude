@@ -20,6 +20,7 @@
                 · {{ $ownershipTypes[$f->ownership_type] ?? $f->ownership_type }}
               @endif
             </div>
+            @if($f->website_status)<div class="mt-1">@include('partials.website-status-badge', ['facility' => $f])</div>@endif
           </div>
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <a href="{{ route('admin.facilities.edit', $f) }}" class="text-blue-600 text-sm font-semibold whitespace-nowrap">Revize</a>
