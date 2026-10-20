@@ -12,7 +12,9 @@ use App\Http\Controllers\Controller;
  */
 class FacilityThumbController extends Controller
 {
-    private const WIDTHS = [640];
+    // 20 Ekim 2026: 640 genişlik ölçümde hâlâ ağırdı (190 KB -> 127 KB); kart
+    // en fazla ~315x426 gösteriliyor. Görsel 480x640 kutusuna sığdırılır.
+    private const WIDTHS = [480];
 
     public function show(int $width, string $path)
     {
@@ -46,12 +48,15 @@ class FacilityThumbController extends Controller
         }
         $w = imagesx($img);
         $h = imagesy($img);
-        if ($w > $width) {
-            $nh = (int) round($h * $width / $w);
-            $small = imagecreatetruecolor($width, $nh);
+        // En fazla $width genişlik ve $width*4/3 yükseklik (dikey görseller de küçülsün).
+        $oran = min($width / $w, ($width * 4 / 3) / $h);
+        if ($oran < 1) {
+            $nw = max(1, (int) round($w * $oran));
+            $nh = max(1, (int) round($h * $oran));
+            $small = imagecreatetruecolor($nw, $nh);
             imagealphablending($small, false);
             imagesavealpha($small, true);
-            imagecopyresampled($small, $img, 0, 0, 0, 0, $width, $nh, $w, $h);
+            imagecopyresampled($small, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
             imagedestroy($img);
             $img = $small;
         }
@@ -63,7 +68,7 @@ class FacilityThumbController extends Controller
             return false;
         }
         $tmp = $target.'.'.getmypid().'.tmp';
-        $ok = @imagewebp($img, $tmp, 78);
+        $ok = @imagewebp($img, $tmp, 70);
         imagedestroy($img);
         if (! $ok || ! @rename($tmp, $target)) {
             @unlink($tmp);
