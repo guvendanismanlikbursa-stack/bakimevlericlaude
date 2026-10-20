@@ -92,7 +92,25 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?{{ $fonts['google'] }}&display=swap"></noscript>
+{{-- 20 Ekim 2026: PageSpeed - ana sayfa (Google'ın ölçtüğü ve en çok giriş yapılan
+     sayfa) stil dosyasını ayrı indirmeyi beklemeden çizilsin diye site stili
+     sayfanın içine gömülür (~9 KB sıkıştırılmış). Diğer sayfalar ayrı dosyayı
+     kullanmaya devam eder (tarayıcı önbelleği). Dosya okunamazsa eski yol. --}}
+@php
+  $gomuluCss = null;
+  if (request()->routeIs('home', 'brand.home')) {
+      try {
+          $gomuluCss = \Illuminate\Support\Facades\Vite::content('resources/css/app.css');
+      } catch (\Throwable $e) {
+          $gomuluCss = null;
+      }
+  }
+@endphp
+@if($gomuluCss)
+<style>{!! $gomuluCss !!}</style>
+@else
 @vite('resources/css/app.css')
+@endif
 <style>
   :root{ --primary: {{ $brand['primary_color'] }}; --secondary: {{ $brand['secondary_color'] }}; }
   body{ font-family: {{ $fonts['body'] }}; }
