@@ -7242,4 +7242,27 @@ class PlatformFeatureTest extends TestCase
         $this->assertNull($uzak->fresh()->lat);
         $this->assertEquals(40.21, round((float) $iyi->fresh()->lat, 2));
     }
+
+    public function test_facility_card_thumbnail_is_generated_once_and_reused(): void
+    {
+        $ad = 'facilities/thumbtest'.uniqid().'.webp';
+        $kaynak = storage_path('app/public/'.$ad);
+        @mkdir(dirname($kaynak), 0755, true);
+        $img = imagecreatetruecolor(1000, 900);
+        imagewebp($img, $kaynak, 80);
+        imagedestroy($img);
+        $kucuk = storage_path('app/public/'.facility_thumb_path($ad));
+        try {
+            $this->assertStringContainsString('/kucuk-resim/640/'.$ad, facility_thumb($ad));
+            $this->get('/kucuk-resim/640/'.$ad)->assertStatus(301);
+            $this->assertFileExists($kucuk);
+            $this->assertSame(640, getimagesize($kucuk)[0]);
+            $this->assertStringContainsString('storage/facilities/k640/', facility_thumb($ad));
+            $this->get('/kucuk-resim/999/'.$ad)->assertNotFound();
+            $this->get('/kucuk-resim/640/facilities/../.env')->assertNotFound();
+        } finally {
+            @unlink($kaynak);
+            @unlink($kucuk);
+        }
+    }
 }

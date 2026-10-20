@@ -13,13 +13,31 @@
     yakinlastirilana kadar sayi baloncugunda toplanir). Durum'a gore renk:
     anlaşmalı=mavi (buyuk, dikkat cekici), sahipli=yesil, on kayit=gri.
 --}}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin="" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" crossorigin="" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+{{-- 20 Ekim 2026: PageSpeed raporu - Leaflet (harita) dosyaları sayfa açılırken
+     yükleniyor, ilk görüntüyü geciktiriyor ve harita karoları ilk ekranda
+     iniyordu. Artık harita ekrana yaklaşınca (IntersectionObserver) yüklenir. --}}
+<script>
+window.__leafletYukle = function () {
+  if (window.__leafletSoz) return window.__leafletSoz;
+  function css(href) {
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.crossOrigin = '';
+    document.head.appendChild(l);
+  }
+  function js(src, sri) {
+    return new Promise(function (ok, hata) {
+      var s = document.createElement('script'); s.src = src; s.crossOrigin = '';
+      if (sri) s.integrity = sri;
+      s.onload = ok; s.onerror = hata; document.head.appendChild(s);
+    });
+  }
+  css('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+  css('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css');
+  css('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css');
+  window.__leafletSoz = js('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=')
+    .then(function () { return js('https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js').catch(function () {}); });
+  return window.__leafletSoz;
+};
+</script>
 <style>
 .broker-map-label{font-weight:800;font-size:12px;padding:2px 6px;}
 /* 22 Eylul 2026: kullanicinin talebi - duz daire "topluigne" gibi
@@ -59,7 +77,18 @@
 <script>
 window.initBrokerMap = function () {
   var el = document.getElementById('broker-map');
-  if (!el || !window.L) return;
+  if (!el) return;
+  if (!window.L) {
+    // Harita kütüphanesi henüz yüklenmedi: harita ekrana yaklaşınca yükle.
+    var hazirla = function () { window.__leafletYukle().then(window.initBrokerMap); };
+    if (!('IntersectionObserver' in window)) { hazirla(); return; }
+    if (el.__haritaGozlemci) return;
+    el.__haritaGozlemci = new IntersectionObserver(function (girdiler, gozlemci) {
+      if (girdiler.some(function (g) { return g.isIntersecting; })) { gozlemci.disconnect(); hazirla(); }
+    }, { rootMargin: '400px' });
+    el.__haritaGozlemci.observe(el);
+    return;
+  }
 
   var data = [];
   try { data = JSON.parse(el.dataset.brokerFacilities || '[]'); } catch (e) { data = []; }

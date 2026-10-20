@@ -349,6 +349,9 @@ Route::get('/robots.txt', RobotsController::class)->name('robots');
 Route::get('/_internal/cron-runner', [CronRunnerController::class, 'run'])->name('internal.cron-runner');
 // Dis izleme (UptimeRobot vb.) ve deploy script'inin canliyi dogrulamasi icin - bkz. HealthController.
 Route::get('/_saglik', [HealthController::class, 'check'])->name('health-check');
+// 20 Ekim 2026: kurum kartı görsellerinin küçük kopyası (bkz. FacilityThumbController).
+Route::get('/kucuk-resim/{width}/{path}', [\App\Http\Controllers\Public\FacilityThumbController::class, 'show'])
+    ->where(['width' => '[0-9]+', 'path' => 'facilities/.+'])->name('facility.thumb');
 // Deploy script'inin migrate/cache-refresh tetiklemesi icin token korumali uc - bkz. OpsController.
 Route::post('/_ops/{action}', [OpsController::class, 'run'])->middleware('throttle:public-sensitive')->name('ops.run');
 // 19 Agustos 2026: kullanicinin talebi - 3 domain ayni veritabanini

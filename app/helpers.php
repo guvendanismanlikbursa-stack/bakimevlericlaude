@@ -342,13 +342,54 @@ if (! function_exists('sync_video_delete_from_canonical_domain')) {
     }
 }
 
+if (! function_exists('facility_thumb_path')) {
+    /**
+     * 20 Ekim 2026: kurum görselinin kart boyutundaki küçük kopyasının
+     * depodaki yolu (facilities/... -> facilities/k640/...webp). Küçük
+     * kopya aynı "facilities" klasöründe durur, böylece görseller hangi
+     * siteden yüklenirse yüklensin aynı yerden servis edilir.
+     */
+    function facility_thumb_path(string $path, int $width = 640): ?string
+    {
+        if (! str_starts_with($path, 'facilities/') || str_starts_with($path, 'facilities/k'.$width.'/')
+            || str_contains($path, '..') || ! preg_match('/\.(webp|jpe?g|png)$/i', $path)) {
+            return null;
+        }
+
+        return 'facilities/k'.$width.'/'.preg_replace('/\.(webp|jpe?g|png)$/i', '.webp', substr($path, strlen('facilities/')));
+    }
+}
+
+if (! function_exists('facility_thumb')) {
+    /**
+     * Küçük kopya hazırsa doğrudan onun adresi, değilse ilk istekte küçük
+     * kopyayı üretip ona yönlendiren adres döner (bkz. FacilityThumbController).
+     */
+    function facility_thumb(string $path, int $width = 640): string
+    {
+        $thumb = facility_thumb_path($path, $width);
+        if (! $thumb) {
+            return facility_asset($path);
+        }
+        if (is_file(storage_path('app/public/'.$thumb))) {
+            return facility_asset($thumb);
+        }
+        $rel = '/kucuk-resim/'.$width.'/'.$path;
+
+        return app()->environment('local', 'testing') ? url($rel) : 'https://bakimevleri.com'.$rel;
+    }
+}
+
 if (! function_exists('facility_card_image')) {
     function facility_card_image($facility, ?array $section = null): string
     {
         $image = $facility?->primaryImage();
 
         if ($image?->path) {
-            return facility_asset($image->path);
+            // 20 Ekim 2026: PageSpeed raporu - kartta ~315x420 gösterilen
+            // görsel 960x939 olarak iniyordu (her kartta ~100-160 KB fazla).
+            // Artık kart boyutuna uygun küçük kopya kullanılır.
+            return facility_thumb($image->path);
         }
 
         $section = service_section_for_scope($facility->category->brand_scope);

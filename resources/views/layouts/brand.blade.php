@@ -269,7 +269,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
 <header class="bg-gray-950 text-white sticky top-0 z-30 border-b border-white/10">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
     <a href="{{ brand_route('home') }}" class="flex items-center gap-2 text-xl font-black tracking-tight">
-      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-9 h-9 flex-shrink-0">
+      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.webp') }}" width="64" height="64" alt="{{ $brand['name'] }}" class="w-9 h-9 flex-shrink-0">
       <span>{{ $brand['logo_text'] }}</span>
     </a>
     <nav class="hidden lg:flex gap-5 text-sm font-semibold text-white/78">
@@ -335,7 +335,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
 <header class="bg-white/92 backdrop-blur sticky top-0 z-30 border-b border-gray-100">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
     <a href="{{ brand_route('home') }}" class="flex items-center gap-2 text-xl font-black rounded-full pl-1.5 pr-3 py-1" style="color: {{ $brand['primary_color'] }}; background: {{ $brand['secondary_color'] }}22;">
-      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-8 h-8 flex-shrink-0">
+      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.webp') }}" width="64" height="64" alt="{{ $brand['name'] }}" class="w-8 h-8 flex-shrink-0">
       <span>{{ $brand['logo_text'] }}</span>
     </a>
     <nav class="hidden lg:flex gap-1 text-sm font-bold bg-gray-50 rounded-full p-1">
@@ -388,7 +388,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
 <header class="bg-white shadow-sm sticky top-0 z-30">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
     <a href="{{ brand_route('home') }}" class="flex items-center gap-2 text-xl font-black text-primary">
-      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-9 h-9 flex-shrink-0">
+      <img src="{{ asset('images/logo-'.$brand['slug'].'-64.webp') }}" width="64" height="64" alt="{{ $brand['name'] }}" class="w-9 h-9 flex-shrink-0">
       <span>{{ $brand['logo_text'] }}</span>
     </a>
     <nav class="hidden lg:flex gap-5 text-sm font-semibold">
@@ -495,7 +495,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
   <div class="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
     <div>
       <div class="flex items-center gap-2 {{ $theme === 'bakimeviara' ? 'text-gray-950' : 'text-white' }} font-black text-lg mb-2">
-        <img src="{{ asset('images/logo-'.$brand['slug'].'-64.png') }}" alt="{{ $brand['name'] }}" class="w-7 h-7 flex-shrink-0">
+        <img src="{{ asset('images/logo-'.$brand['slug'].'-64.webp') }}" width="64" height="64" alt="{{ $brand['name'] }}" class="w-7 h-7 flex-shrink-0">
         <span>{{ $brand['logo_text'] }}</span>
       </div>
       <p>{{ $brand['tagline'] }}</p>
