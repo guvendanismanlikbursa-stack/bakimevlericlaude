@@ -7213,4 +7213,33 @@ class PlatformFeatureTest extends TestCase
         $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurumlar?site=eksik')
             ->assertOk()->assertSee($siteYok->name)->assertDontSee('Siteli Test Kurumu')->assertSee('Sadece Instagram / Facebook');
     }
+
+    public function test_location_fill_skips_addressless_and_far_away_google_points(): void
+    {
+        config(['platform.ops_secret' => 'dogru-sifre']);
+        $this->city->update(['name' => 'Bursa']);
+        $mk = fn (string $name, array $payload) => Facility::create([
+            'name' => $name, 'slug' => \Illuminate\Support\Str::slug($name), 'city_id' => $this->city->id,
+            'facility_category_id' => $this->rehabCategory->id, 'is_published' => true,
+            'source_payload' => $payload,
+        ]);
+        $iyi = $mk('Konum Iyi', ['address' => 'Nilüfer/Bursa', 'maps_url' => 'https://www.google.com/maps/place/x/data=!3d40.2100!4d28.9500']);
+        $adressiz = $mk('Konum Adressiz', ['address' => '', 'maps_url' => 'https://www.google.com/maps/place/y/data=!3d41.0053!4d29.0121']);
+        $uzak = $mk('Konum Uzak', ['address' => 'Bergama/İzmir', 'maps_url' => 'https://www.google.com/maps/place/z/data=!3d39.1200!4d27.1800']);
+
+        $this->postJson('/_ops/facility-fill-location-from-source-payload', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk()->assertSee("Google'da adres yok (atlandi): 1", false)->assertSee('ilinden cok uzak (atlandi): 1', false);
+
+        $this->assertEquals(40.21, round((float) $iyi->fresh()->lat, 2));
+        $this->assertNull($adressiz->fresh()->lat);
+        $this->assertNull($uzak->fresh()->lat);
+
+        // Rapor: elle uzak bir konum yazılmış kurum (a) grubunda çıkar, apply=1 ile boşaltılır.
+        $uzak->update(['lat' => 39.12, 'lng' => 27.18]);
+        $this->postJson('/_ops/facility-geo-wrong-audit', [], ['Authorization' => 'Bearer dogru-sifre'])
+            ->assertOk()->assertSee('ONIZLEME', false)->assertSee('#'.$uzak->id, false);
+        $this->postJson('/_ops/facility-geo-wrong-audit?apply=1', [], ['Authorization' => 'Bearer dogru-sifre'])->assertOk();
+        $this->assertNull($uzak->fresh()->lat);
+        $this->assertEquals(40.21, round((float) $iyi->fresh()->lat, 2));
+    }
 }

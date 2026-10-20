@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'facility-category-move', 'facility-website-import', 'expert-clean-combining-marks', 'expert-duplicate-scan', 'membership-preview-links', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-duplicate-name-scan', 'facility-duplicate-city-district-scan', 'facility-export-basic', 'government-name-fix', 'government-name-kamu-list', 'city-image-review-gap-check', 'city-review-gap-targets', 'fabricated-address-prefix-audit', 'fabricated-address-prefix-fix', 'facility-fill-location-from-source-payload', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist', 'guides-bulk-create', 'facility-address-city-mismatch-scan', 'facility-category-fix-ozel-egitim', 'phone-fix', 'fee-info-request-status-backfill', 'facility-undo-recent-centroid-fill', 'seed-demo-experts', 'import-nilufer-pediatric-doctors', 'expert-import-file', 'government-name-revert-to-ozel', 'organization-import-file', 'facility-neighborhood-fill', 'expert-name-check', 'expert-remove', 'expert-pediatri-mismatch-scan', 'expert-category-crosscheck', 'expert-phone-set', 'expert-phone-missing-report', 'expert-source-payload', 'expert-phone-missing-detail', 'expert-identity-fix', 'expert-branch-set', 'expert-export-basic', 'family-need-survey-render-test', 'tani-rehberi-render-test', 'care-advisor-lead-render-test', 'description-coverage-nationwide', 'description-fix-remaining-templates', 'knows-about-schema-check', 'care-advisor-lead-cleanup-test-data', 'admin-notification-system-render-test', 'expert-count-by-source', 'facility-import-scraped-multi-district', 'facility-count-by-source', 'facility-clean-combining-marks', 'nominatim-raw-debug', 'facility-geocode-by-neighborhood'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'facility-category-move', 'facility-website-import', 'facility-geo-wrong-audit', 'expert-clean-combining-marks', 'expert-duplicate-scan', 'membership-preview-links', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-duplicate-name-scan', 'facility-duplicate-city-district-scan', 'facility-export-basic', 'government-name-fix', 'government-name-kamu-list', 'city-image-review-gap-check', 'city-review-gap-targets', 'fabricated-address-prefix-audit', 'fabricated-address-prefix-fix', 'facility-fill-location-from-source-payload', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist', 'guides-bulk-create', 'facility-address-city-mismatch-scan', 'facility-category-fix-ozel-egitim', 'phone-fix', 'fee-info-request-status-backfill', 'facility-undo-recent-centroid-fill', 'seed-demo-experts', 'import-nilufer-pediatric-doctors', 'expert-import-file', 'government-name-revert-to-ozel', 'organization-import-file', 'facility-neighborhood-fill', 'expert-name-check', 'expert-remove', 'expert-pediatri-mismatch-scan', 'expert-category-crosscheck', 'expert-phone-set', 'expert-phone-missing-report', 'expert-source-payload', 'expert-phone-missing-detail', 'expert-identity-fix', 'expert-branch-set', 'expert-export-basic', 'family-need-survey-render-test', 'tani-rehberi-render-test', 'care-advisor-lead-render-test', 'description-coverage-nationwide', 'description-fix-remaining-templates', 'knows-about-schema-check', 'care-advisor-lead-cleanup-test-data', 'admin-notification-system-render-test', 'expert-count-by-source', 'facility-import-scraped-multi-district', 'facility-count-by-source', 'facility-clean-combining-marks', 'nominatim-raw-debug', 'facility-geocode-by-neighborhood'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -304,6 +304,7 @@ class OpsController extends Controller
             'expert-import-file' => $this->expertImportFile($request),
             'facility-category-move' => $this->facilityCategoryMove($request),
             'facility-website-import' => $this->facilityWebsiteImport($request),
+            'facility-geo-wrong-audit' => $this->facilityGeoWrongAudit($request),
             'expert-clean-combining-marks' => $this->expertCleanCombiningMarks($request),
             'expert-duplicate-scan' => $this->expertDuplicateScan($request),
             'expert-name-check' => $this->expertNameCheck($request),
@@ -6427,17 +6428,21 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
     {
         $limit = max(1, min(500, (int) $request->query('limit', 300)));
 
-        $rows = DB::table('facilities')
-            ->whereNull('deleted_at')
-            ->whereNull('lat')
-            ->whereNotNull('source_payload')
-            ->select('id', 'source_payload')
+        $rows = DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')
+            ->whereNull('facilities.lat')
+            ->whereNotNull('facilities.source_payload')
+            ->select('facilities.id', 'facilities.source_payload', 'cities.name as city')
             ->limit($limit)
             ->get();
 
         $filled = 0;
         $noUrl = 0;
         $noMatch = 0;
+        $noAddress = 0;
+        $farFromCity = 0;
+        $geo = app(\App\Services\GeoLookupService::class);
+        $centroids = config('turkiye_centroids', []);
 
         foreach ($rows as $r) {
             $payload = json_decode((string) $r->source_payload, true);
@@ -6452,6 +6457,22 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
 
                 continue;
             }
+            // 20 Ekim 2026: Google'da adresi olmayan ("hizmet bölgesi") kayıtlarda
+            // linkteki nokta işletmenin yeri değil - testte İzmir/Bergama'daki bir
+            // anaokulu için İstanbul'da bir nokta döndü. Bu kayıtlarda konum yazılmaz.
+            if (trim((string) ($payload['address'] ?? $payload['Adres'] ?? '')) === '') {
+                $noAddress++;
+
+                continue;
+            }
+            // Nokta kurumun kendi ilinin merkezinden çok uzaksa (başka ildeki aynı
+            // adlı işletme) yazılmaz.
+            $centroid = $centroids[$r->city] ?? null;
+            if ($centroid && $geo->haversine((float) $m[1], (float) $m[2], $centroid[0], $centroid[1]) > self::GEO_MAX_KM_FROM_CITY) {
+                $farFromCity++;
+
+                continue;
+            }
             DB::table('facilities')->where('id', $r->id)->update([
                 'lat' => $m[1],
                 'lng' => $m[2],
@@ -6460,7 +6481,77 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
             $filled++;
         }
 
-        return "Taranan: {$rows->count()} | Koordinat dolduruldu: {$filled} | maps_url yok: {$noUrl} | maps_url var ama koordinat eslesmedi: {$noMatch}";
+        return "Taranan: {$rows->count()} | Koordinat dolduruldu: {$filled} | maps_url yok: {$noUrl} | maps_url var ama koordinat eslesmedi: {$noMatch} | Google'da adres yok (atlandi): {$noAddress} | ilinden cok uzak (atlandi): {$farFromCity}";
+    }
+
+    // 20 Ekim 2026: bir kurumun konumu kendi il merkezine bundan uzaksa yanlış
+    // sayılır (en geniş illerde bile il merkezi-sınır mesafesi bunun altında).
+    private const GEO_MAX_KM_FROM_CITY = 200;
+
+    /**
+     * 20 Ekim 2026: kullanıcının talebi - geçmişte içe aktarılmış kurumlar
+     * arasında konumu YANLIŞ olabilecekleri bulur: (a) noktası kendi il
+     * merkezine 200 km'den uzak olanlar (kesin yanlış), (b) Google kaydında
+     * adresi olmayan ama konumu yazılmış olanlar (hizmet bölgesi kaydı,
+     * şüpheli). Varsayılan SADECE RAPOR; apply=1 yalnızca (a) grubundaki,
+     * sahiplenilmemiş/anlaşmalı olmayan kurumların konumunu boşaltır (kurum
+     * "konumu eksik" listesine düşer, yanlış yerde görünmez). (b) grubunda
+     * apply_b=1 verilirse onların da konumu boşaltılır.
+     */
+    private function facilityGeoWrongAudit(Request $request): string
+    {
+        $apply = $request->boolean('apply');
+        $applyB = $request->boolean('apply_b');
+        $geo = app(\App\Services\GeoLookupService::class);
+        $centroids = config('turkiye_centroids', []);
+        $far = [];
+        $noAddress = [];
+
+        DB::table('facilities')->join('cities', 'cities.id', '=', 'facilities.city_id')
+            ->whereNull('facilities.deleted_at')->whereNotNull('facilities.lat')->whereNotNull('facilities.lng')
+            ->select('facilities.id', 'facilities.name', 'facilities.lat', 'facilities.lng', 'facilities.source_payload',
+                'facilities.is_claimed', 'facilities.is_broker_managed', 'cities.name as city')
+            ->orderBy('facilities.id')
+            ->chunk(1000, function ($rows) use (&$far, &$noAddress, $geo, $centroids) {
+                foreach ($rows as $r) {
+                    $centroid = $centroids[$r->city] ?? null;
+                    if ($centroid) {
+                        $km = $geo->haversine((float) $r->lat, (float) $r->lng, $centroid[0], $centroid[1]);
+                        if ($km > self::GEO_MAX_KM_FROM_CITY) {
+                            $far[] = [$r, (int) round($km)];
+
+                            continue;
+                        }
+                    }
+                    $payload = json_decode((string) $r->source_payload, true);
+                    if (is_array($payload) && ! empty($payload['maps_url'])
+                        && trim((string) ($payload['address'] ?? $payload['Adres'] ?? '')) === '') {
+                        $noAddress[] = $r;
+                    }
+                }
+            });
+
+        $cleared = 0;
+        $out = "(a) Il merkezine ".self::GEO_MAX_KM_FROM_CITY." km'den uzak (kesin yanlis): ".count($far).PHP_EOL;
+        foreach ($far as [$r, $km]) {
+            $korumali = $r->is_claimed || $r->is_broker_managed;
+            $out .= "  #{$r->id} {$r->name} | il: {$r->city} | {$km} km".($korumali ? ' | KORUMALI (dokunulmadi)' : '').PHP_EOL;
+            if ($apply && ! $korumali) {
+                DB::table('facilities')->where('id', $r->id)->update(['lat' => null, 'lng' => null, 'updated_at' => now()]);
+                $cleared++;
+            }
+        }
+        $out .= PHP_EOL.'(b) Google kaydinda adres yok ama konumu var (supheli): '.count($noAddress).PHP_EOL;
+        foreach ($noAddress as $r) {
+            $korumali = $r->is_claimed || $r->is_broker_managed;
+            $out .= "  #{$r->id} {$r->name} | il: {$r->city}".($korumali ? ' | KORUMALI (dokunulmadi)' : '').PHP_EOL;
+            if ($applyB && ! $korumali) {
+                DB::table('facilities')->where('id', $r->id)->update(['lat' => null, 'lng' => null, 'updated_at' => now()]);
+                $cleared++;
+            }
+        }
+
+        return ($apply || $applyB ? "UYGULANDI - konumu bosaltilan: {$cleared}" : 'ONIZLEME').PHP_EOL.$out;
     }
 
     /**
