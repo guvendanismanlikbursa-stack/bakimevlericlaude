@@ -1,4 +1,10 @@
 @extends('layouts.brand')
+{{-- 20 Ekim 2026: PageSpeed - LCP öğesi seçili olmayan ilk bölüm kartının görseli;
+     tarayıcı onu HTML'i okurken bulana kadar 320 ms geçiyordu. --}}
+@push('head')
+  @php $lcpKart = collect($sections ?? [])->first(fn ($i) => ($i['slug'] ?? null) !== ($section['slug'] ?? null)); @endphp
+  @if($lcpKart)<link rel="preload" as="image" href="{{ $lcpKart['hero_image_card'] ?? $lcpKart['hero_image'] }}" fetchpriority="high">@endif
+@endpush
 @section('content')
 @php
   $section = $activeSection;

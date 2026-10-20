@@ -92,7 +92,7 @@
         @if($facility->hasFastResponseBadge())<span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ Hızlı Yanıt</span>
         @elseif($promiseBadge = $facility->responseTimePromiseBadge())<span class="bg-blue-50 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">⚡ {{ $promiseBadge }}</span>@endif
         @if($viewsBadge = $facility->viewsBoostBadge())<span class="bg-amber-50 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">👀 {{ $viewsBadge }}</span>@endif
-        @if($facility->hasFreeChildAccidentInsurance())<span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>@endif
+        @if($facility->hasFreeChildAccidentInsurance())<span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:#0f766e;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>@endif
         @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-0.5 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
         {{-- 30 Eylul 2026: kullanicinin talebi - "hepsi tek kart tipi"
              birlestirmesinde (bkz. ust taraftaki ayni tarihli yorum) bu
@@ -116,7 +116,7 @@
       @php($totalReviewCount = $facility->totalReviewCount())
       @php($cardDisplayViews = $facility->monthlyDisplayViewsCount())
       @if($cardDisplayViews > 0)
-        <p class="text-xs text-gray-400 mb-3 flex items-center gap-1">
+        <p class="text-xs text-gray-500 mb-3 flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path d="M10 3.5c-4.5 0-7.5 3.5-8.5 6.5 1 3 4 6.5 8.5 6.5s7.5-3.5 8.5-6.5c-1-3-4-6.5-8.5-6.5Zm0 10.5a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/><circle cx="10" cy="10" r="2"/></svg>
           {{ number_format($cardDisplayViews, 0, ',', '.') }} kez görüntülendi
         </p>
@@ -128,19 +128,19 @@
         <span class="flex items-center gap-1.5 flex-wrap">
           @if($facility->rating > 0)
             <span class="text-amber-700 font-black text-sm">★ {{ number_format($facility->rating, 1) }}</span>
-            @if($facility->source === 'google_maps_veri_cekici')<span class="text-[10px] text-gray-400 font-semibold -ml-1">(Google)</span>@endif
+            @if($facility->source === 'google_maps_veri_cekici')<span class="text-[10px] text-gray-500 font-semibold -ml-1">(Google)</span>@endif
           @endif
           {{-- 28 Eylul 2026: kullanicinin talebi - yorum sayisi artik il/ilce
                satirinda degil, puanin HEMEN yaninda gosterilir. --}}
           @if($totalReviewCount > 0)
-            <span class="text-gray-400 text-xs font-semibold">💬 {{ $totalReviewCount }}</span>
+            <span class="text-gray-500 text-xs font-semibold">💬 {{ $totalReviewCount }}</span>
           @endif
         </span>
         {{-- 7 Eylul 2026: kullanicinin talebi - bkz. price-locked.blade.php ayni tarihli yorum. --}}
         @if(session('family_user_id'))
-          @if($facility->price_min)<span class="text-gray-700 font-black text-sm">{{ number_format($facility->price_min,0,',','.') }} TL<span class="text-gray-400 font-normal">/ay</span></span>@else<span class="text-primary text-sm font-black">Fiyat iste</span>@endif
+          @if($facility->price_min)<span class="text-gray-700 font-black text-sm">{{ number_format($facility->price_min,0,',','.') }} TL<span class="text-gray-500 font-normal">/ay</span></span>@else<span class="text-primary text-sm font-black">Fiyat iste</span>@endif
         @else
-          @include('themes._shared.partials.price-locked')
+          @include('themes._shared.partials.price-locked', ['inLink' => true])
         @endif
       </div>
     </div>

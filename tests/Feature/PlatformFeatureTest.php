@@ -7253,13 +7253,13 @@ class PlatformFeatureTest extends TestCase
         imagedestroy($img);
         $kucuk = storage_path('app/public/'.facility_thumb_path($ad));
         try {
-            $this->assertStringContainsString('/kucuk-resim/480/'.$ad, facility_thumb($ad));
-            $this->get('/kucuk-resim/480/'.$ad)->assertStatus(301);
+            $this->assertStringContainsString('/kucuk-resim/360/'.$ad, facility_thumb($ad));
+            $this->get('/kucuk-resim/360/'.$ad)->assertStatus(301);
             $this->assertFileExists($kucuk);
-            $this->assertSame(480, getimagesize($kucuk)[0]);
-            $this->assertStringContainsString('storage/facilities/k480/', facility_thumb($ad));
+            $this->assertSame(360, getimagesize($kucuk)[0]);
+            $this->assertStringContainsString('storage/facilities/k360/', facility_thumb($ad));
             $this->get('/kucuk-resim/999/'.$ad)->assertNotFound();
-            $this->get('/kucuk-resim/480/facilities/../.env')->assertNotFound();
+            $this->get('/kucuk-resim/360/facilities/../.env')->assertNotFound();
         } finally {
             @unlink($kaynak);
             @unlink($kucuk);

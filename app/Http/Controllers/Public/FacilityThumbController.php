@@ -12,9 +12,9 @@ use App\Http\Controllers\Controller;
  */
 class FacilityThumbController extends Controller
 {
-    // 20 Ekim 2026: 640 genişlik ölçümde hâlâ ağırdı (190 KB -> 127 KB); kart
-    // en fazla ~315x426 gösteriliyor. Görsel 480x640 kutusuna sığdırılır.
-    private const WIDTHS = [480];
+    // 20 Ekim 2026: kart en fazla ~315x426 gösteriliyor; PageSpeed 480 genişliği
+    // de fazla buldu. Görsel 360x480 kutusuna sığdırılır, kalite 62.
+    private const WIDTHS = [360];
 
     public function show(int $width, string $path)
     {
@@ -68,7 +68,7 @@ class FacilityThumbController extends Controller
             return false;
         }
         $tmp = $target.'.'.getmypid().'.tmp';
-        $ok = @imagewebp($img, $tmp, 70);
+        $ok = @imagewebp($img, $tmp, 62);
         imagedestroy($img);
         if (! $ok || ! @rename($tmp, $target)) {
             @unlink($tmp);

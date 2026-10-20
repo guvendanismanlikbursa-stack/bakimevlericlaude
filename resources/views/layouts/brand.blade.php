@@ -105,7 +105,25 @@
   .badge-secondary{ background-color: var(--secondary); }
 </style>
 @if($ga4MeasurementId)
-<script async src="https://www.googletagmanager.com/gtag/js?id={{ $ga4MeasurementId }}"></script>
+{{-- 20 Ekim 2026: PageSpeed raporu - gtag.js (176 KB) sayfa açılırken yükleniyor,
+     uzun görevlerle ilk görüntüyü (LCP) geciktiriyordu. Artık sayfa yüklendikten
+     sonra (ilk etkileşimde ya da en geç 3 sn içinde) yüklenir. Komutlar
+     dataLayer'da bekletildiği için sayfa görüntüleme kaydı kaybolmaz. --}}
+<script>
+  (function () {
+    var yuklendi = false;
+    function gaYukle() {
+      if (yuklendi) return; yuklendi = true;
+      var s = document.createElement('script'); s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id={{ $ga4MeasurementId }}';
+      document.head.appendChild(s);
+    }
+    ['scroll', 'pointerdown', 'keydown', 'touchstart'].forEach(function (e) {
+      window.addEventListener(e, gaYukle, { once: true, passive: true });
+    });
+    window.addEventListener('load', function () { setTimeout(gaYukle, 3000); });
+  })();
+</script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -196,14 +214,18 @@
   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
   if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  n.queue=[];
+  // 20 Ekim 2026: pixel dosyası da sayfa yüklendikten sonra eklenir (bkz. GA notu).
+  var ekle=function(){if(f.__fbqYuklendi)return;f.__fbqYuklendi=1;t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)};
+  ['scroll','pointerdown','keydown','touchstart'].forEach(function(x){f.addEventListener(x,ekle,{once:true,passive:true})});
+  f.addEventListener('load',function(){setTimeout(ekle,3000)})}(window, document,'script',
   'https://connect.facebook.net/en_US/fbevents.js');
   fbq('init', @json(config('services.meta_pixel.id')));
   fbq('track', 'PageView');
 </script>
 @endif
+@stack('head')
 </head>
 @php
   $theme = $brand['theme'];

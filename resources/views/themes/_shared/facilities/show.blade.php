@@ -89,7 +89,7 @@
         <span class="bg-amber-500/90 text-white text-xs font-semibold px-2 py-1 rounded-full">👀 {{ $viewsBadge }}</span>
       @endif
       @if($facility->hasFreeChildAccidentInsurance())
-        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
+        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#0f766e;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
       @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full bg-white text-gray-950">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])
@@ -126,7 +126,7 @@
         <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">⚡ Hızlı Yanıt</span>
       @endif
       @if($facility->hasFreeChildAccidentInsurance())
-        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#0d9488;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
+        <span class="text-xs font-black px-2 py-1 rounded-full" style="background:#0f766e;color:#ffffff;">🛡️ Ücretsiz Ferdi Kaza Sigortası</span>
       @endif
       @if($section)<span class="text-xs font-semibold px-2 py-1 rounded-full" style="background: {{ $colors['soft'] }}; color: {{ $colors['primary'] }};">{{ $section['title'] }}</span>@endif
       @include('themes._shared.partials.price-tier-badge', ['facility' => $facility])

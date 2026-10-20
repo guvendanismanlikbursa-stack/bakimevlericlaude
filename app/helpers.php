@@ -345,11 +345,11 @@ if (! function_exists('sync_video_delete_from_canonical_domain')) {
 if (! function_exists('facility_thumb_path')) {
     /**
      * 20 Ekim 2026: kurum görselinin kart boyutundaki küçük kopyasının
-     * depodaki yolu (facilities/... -> facilities/k480/...webp). Küçük
+     * depodaki yolu (facilities/... -> facilities/k360/...webp). Küçük
      * kopya aynı "facilities" klasöründe durur, böylece görseller hangi
      * siteden yüklenirse yüklensin aynı yerden servis edilir.
      */
-    function facility_thumb_path(string $path, int $width = 480): ?string
+    function facility_thumb_path(string $path, int $width = 360): ?string
     {
         if (! str_starts_with($path, 'facilities/') || str_starts_with($path, 'facilities/k'.$width.'/')
             || str_contains($path, '..') || ! preg_match('/\.(webp|jpe?g|png)$/i', $path)) {
@@ -365,7 +365,7 @@ if (! function_exists('facility_thumb')) {
      * Küçük kopya hazırsa doğrudan onun adresi, değilse ilk istekte küçük
      * kopyayı üretip ona yönlendiren adres döner (bkz. FacilityThumbController).
      */
-    function facility_thumb(string $path, int $width = 480): string
+    function facility_thumb(string $path, int $width = 360): string
     {
         $thumb = facility_thumb_path($path, $width);
         if (! $thumb) {
