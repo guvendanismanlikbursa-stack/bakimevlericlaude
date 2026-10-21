@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'facility-category-move', 'facility-website-import', 'facility-geo-wrong-audit', 'expert-clean-combining-marks', 'expert-duplicate-scan', 'membership-preview-links', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-duplicate-name-scan', 'facility-duplicate-city-district-scan', 'facility-export-basic', 'government-name-fix', 'government-name-kamu-list', 'city-image-review-gap-check', 'city-review-gap-targets', 'fabricated-address-prefix-audit', 'fabricated-address-prefix-fix', 'facility-fill-location-from-source-payload', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist', 'guides-bulk-create', 'facility-address-city-mismatch-scan', 'facility-category-fix-ozel-egitim', 'phone-fix', 'fee-info-request-status-backfill', 'facility-undo-recent-centroid-fill', 'seed-demo-experts', 'import-nilufer-pediatric-doctors', 'expert-import-file', 'government-name-revert-to-ozel', 'organization-import-file', 'facility-neighborhood-fill', 'expert-name-check', 'expert-remove', 'expert-pediatri-mismatch-scan', 'expert-category-crosscheck', 'expert-phone-set', 'expert-phone-missing-report', 'expert-source-payload', 'expert-phone-missing-detail', 'expert-identity-fix', 'expert-branch-set', 'expert-export-basic', 'family-need-survey-render-test', 'tani-rehberi-render-test', 'care-advisor-lead-render-test', 'description-coverage-nationwide', 'description-fix-remaining-templates', 'knows-about-schema-check', 'care-advisor-lead-cleanup-test-data', 'admin-notification-system-render-test', 'expert-count-by-source', 'facility-import-scraped-multi-district', 'facility-count-by-source', 'facility-clean-combining-marks', 'nominatim-raw-debug', 'facility-geocode-by-neighborhood'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'facility-category-move', 'facility-website-import', 'facility-geo-wrong-audit', 'expert-clean-combining-marks', 'expert-duplicate-scan', 'membership-preview-links', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-duplicate-name-scan', 'facility-duplicate-city-district-scan', 'facility-export-basic', 'government-name-fix', 'government-name-kamu-list', 'city-image-review-gap-check', 'city-review-gap-targets', 'fabricated-address-prefix-audit', 'fabricated-address-prefix-fix', 'facility-fill-location-from-source-payload', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist', 'guides-bulk-create', 'facility-address-city-mismatch-scan', 'facility-category-fix-ozel-egitim', 'phone-fix', 'fee-info-request-status-backfill', 'facility-undo-recent-centroid-fill', 'seed-demo-experts', 'import-nilufer-pediatric-doctors', 'expert-import-file', 'government-name-revert-to-ozel', 'organization-import-file', 'organization-type-prune', 'organization-type-remap', 'facility-neighborhood-fill', 'expert-name-check', 'expert-remove', 'expert-pediatri-mismatch-scan', 'expert-category-crosscheck', 'expert-phone-set', 'expert-phone-missing-report', 'expert-source-payload', 'expert-phone-missing-detail', 'expert-identity-fix', 'expert-branch-set', 'expert-export-basic', 'family-need-survey-render-test', 'tani-rehberi-render-test', 'care-advisor-lead-render-test', 'description-coverage-nationwide', 'description-fix-remaining-templates', 'knows-about-schema-check', 'care-advisor-lead-cleanup-test-data', 'admin-notification-system-render-test', 'expert-count-by-source', 'facility-import-scraped-multi-district', 'facility-count-by-source', 'facility-clean-combining-marks', 'nominatim-raw-debug', 'facility-geocode-by-neighborhood'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -332,6 +332,8 @@ class OpsController extends Controller
             'knows-about-schema-check' => $this->knowsAboutSchemaCheck(),
             'care-advisor-lead-cleanup-test-data' => $this->careAdvisorLeadCleanupTestData(),
             'organization-import-file' => $this->organizationImportFile($request),
+            'organization-type-prune' => $this->organizationTypePrune($request),
+            'organization-type-remap' => $this->organizationTypeRemap($request),
             'veri-cekici-trim-images' => $this->veriCekiciTrimImages($request),
             'veri-cekici-batch-status' => $this->veriCekiciBatchStatus($request),
             'veri-cekici-review-rows' => $this->veriCekiciReviewRows($request),
@@ -8772,6 +8774,86 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
         }
 
         return "Taranan (source_payload'u olan) kayıt: {$rows->count()} | Şüpheli: ".count($suspicious).PHP_EOL.implode(PHP_EOL, $suspicious);
+    }
+
+    /**
+     * 21 Ekim 2026: kullanıcının kararı - bırakılan türlere çok yakın olan
+     * Google kategorileri silinmeden en yakın türün altına taşınır.
+     * apply olmadan sadece hangi firmaların taşınacağını listeler.
+     */
+    private function organizationTypeRemap(Request $request): string
+    {
+        $map = [
+            'Etkinlik Yönetim Şirketi' => ['Organizasyon Şirketi', 'Organizasyon Şirketi'],
+            'Eğlence Ajansı' => ['Organizasyon Şirketi', 'Organizasyon Şirketi'],
+            'Çocuklar İçin Eğlence Merkezi' => ['Organizasyon Şirketi', 'Organizasyon Şirketi'],
+            'Parti Ekipmanları Kiralama Hizmeti' => ['Parti Malzemeleri Mağazası', 'Parti Malzemeleri'],
+            'Fotoğraf Dükkanı' => ['Fotoğraf Stüdyosu', 'Fotoğraf Stüdyosu'],
+        ];
+        // list=<tür>: o türdeki firmaları listeler (ör. "Genel" isimlere bakmak için).
+        if ($request->filled('list')) {
+            return \App\Models\Organization::where('service_type', (string) $request->input('list'))
+                ->get(['id', 'name', 'district'])->map(fn ($o) => "#{$o->id} {$o->name} ({$o->district})")->implode(PHP_EOL);
+        }
+        // ids + to: tek tek seçilen firmaları bırakılan bir türe taşır.
+        if ($request->filled('ids') && $request->filled('to')) {
+            $labels = ['Organizasyon Şirketi' => 'Organizasyon Şirketi', 'Parti Malzemeleri Mağazası' => 'Parti Malzemeleri', 'Fotoğraf Stüdyosu' => 'Fotoğraf Stüdyosu', 'Fotoğrafçı' => 'Fotoğrafçı', 'Kostüm Kiralama Hizmeti' => 'Kostüm Kiralama', 'Açık Hava Etkinliği Organizatörü' => 'Açık Hava Etkinliği'];
+            $to = (string) $request->input('to');
+            if (! isset($labels[$to])) {
+                return 'HATA: geçersiz hedef tür.';
+            }
+            $ids = array_filter(array_map('intval', explode(',', (string) $request->input('ids'))));
+            $n = \App\Models\Organization::whereIn('id', $ids)->update(['service_type' => $to, 'service_type_label' => $labels[$to]]);
+
+            return "Taşınan: {$n} -> {$to}";
+        }
+        $apply = $request->boolean('apply');
+        $lines = [];
+        $total = 0;
+        foreach ($map as $from => [$to, $label]) {
+            $rows = \App\Models\Organization::where('service_type', $from)->get(['id', 'name']);
+            foreach ($rows as $o) {
+                $lines[] = "#{$o->id} {$o->name} | {$from} -> {$to}";
+            }
+            if ($apply && $rows->isNotEmpty()) {
+                \App\Models\Organization::whereIn('id', $rows->pluck('id'))->update(['service_type' => $to, 'service_type_label' => $label]);
+            }
+            $total += $rows->count();
+        }
+
+        return ($apply ? 'UYGULANDI' : 'ONIZLEME')." | taşınan: {$total}".PHP_EOL.implode(PHP_EOL, $lines);
+    }
+
+    /**
+     * 21 Ekim 2026: kullanıcının kararı - Organizasyon Şirketleri bölümünde
+     * yalnızca bakım/çocuk/rehabilitasyon bölümleriyle ilgili türler kalsın
+     * (Organizasyon Şirketi, Açık Hava Etkinliği, Parti Malzemeleri, Kostüm
+     * Kiralama, Fotoğrafçı, Fotoğraf Stüdyosu). Diğer türler (düğün odaklı,
+     * çiçekçi, etkinlik mekânı) çöp kutusuna taşınır (soft delete, geri
+     * alınabilir). Sahiplenilmiş (is_claimed) firmalara dokunulmaz.
+     * apply olmadan sadece sayım yapar.
+     */
+    private function organizationTypePrune(Request $request): string
+    {
+        $keep = ['Organizasyon Şirketi', 'Açık Hava Etkinliği Organizatörü', 'Parti Malzemeleri Mağazası', 'Kostüm Kiralama Hizmeti', 'Fotoğrafçı', 'Fotoğraf Stüdyosu'];
+        $lines = [];
+        $counts = \App\Models\Organization::query()->selectRaw('service_type, COUNT(*) as c')->groupBy('service_type')->orderByDesc('c')->get();
+        foreach ($counts as $row) {
+            $lines[] = (in_array($row->service_type, $keep, true) ? 'KALIR  ' : 'CIKAR  ').' | '.($row->service_type ?: '(boş)').': '.$row->c;
+        }
+        $target = \App\Models\Organization::query()->where(function ($q) use ($keep) {
+            $q->whereNotIn('service_type', $keep)->orWhereNull('service_type');
+        });
+        $claimed = (clone $target)->where('is_claimed', true)->count();
+        $removable = (clone $target)->where(function ($q) { $q->where('is_claimed', false)->orWhereNull('is_claimed'); });
+        $n = (clone $removable)->count();
+
+        if (! $request->boolean('apply')) {
+            return "ONIZLEME | çöp kutusuna taşınacak: {$n} | sahiplenilmiş (dokunulmaz): {$claimed}".PHP_EOL.implode(PHP_EOL, $lines);
+        }
+        $deleted = $removable->delete();
+
+        return "UYGULANDI | çöp kutusuna taşınan: {$deleted} | sahiplenilmiş (dokunulmadı): {$claimed}".PHP_EOL.implode(PHP_EOL, $lines);
     }
 
     /**

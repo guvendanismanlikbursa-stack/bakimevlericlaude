@@ -23,17 +23,15 @@ class OrganizationController extends Controller
     // taraninca bunlarin hicbiri Google'in kendi kategorileriyle eslesmedi -
     // gercek kategoriler (Google Haritalar'in "Kategori" alani) yerine
     // kondu. "olmayan kategori varsa olustur" talebiyle TUMU gercek veriden.
+    // 21 Ekim 2026: kullanıcının kararı - sadece bakım/çocuk/rehabilitasyon
+    // bölümleriyle ilgili türler kaldı; düğün odaklı türler, çiçekçi ve
+    // etkinlik mekânı çıkarıldı (bkz. OpsController organizationTypePrune).
     private const SERVICE_TYPES = [
         'organizasyon-sirketi' => ['title' => 'Organizasyon Şirketi', 'label' => 'Organizasyon Şirketi'],
-        'dugun-salonu' => ['title' => 'Düğün Salonu', 'label' => 'Düğün Salonu'],
-        'etkinlik-mekani' => ['title' => 'Etkinlik Mekânı', 'label' => 'Etkinlik Mekânı'],
         'parti-malzemeleri-magazasi' => ['title' => 'Parti Malzemeleri Mağazası', 'label' => 'Parti Malzemeleri'],
-        'cicekci' => ['title' => 'Çiçekçi', 'label' => 'Çiçekçi'],
         'fotograf-studyosu' => ['title' => 'Fotoğraf Stüdyosu', 'label' => 'Fotoğraf Stüdyosu'],
-        'dugun-hizmeti' => ['title' => 'Düğün Hizmeti', 'label' => 'Düğün Hizmeti'],
         'acik-hava-etkinlik-organizatoru' => ['title' => 'Açık Hava Etkinliği Organizatörü', 'label' => 'Açık Hava Etkinliği'],
         'kostum-kiralama' => ['title' => 'Kostüm Kiralama Hizmeti', 'label' => 'Kostüm Kiralama'],
-        'dugun-planlamacisi' => ['title' => 'Düğün Planlamacısı', 'label' => 'Düğün Planlamacısı'],
         'fotografci' => ['title' => 'Fotoğrafçı', 'label' => 'Fotoğrafçı'],
     ];
 

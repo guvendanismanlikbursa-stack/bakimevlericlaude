@@ -14,17 +14,15 @@ class OrganizationController extends Controller
 {
     // 11 Ekim 2026: Public\OrganizationController ile AYNI (gercek Bursa
     // verisinden gelen Google kategorileri) - bkz. o dosyadaki ayni tarihli yorum.
+    // 21 Ekim 2026: kullanıcının kararı - sadece bakım/çocuk/rehabilitasyon
+    // bölümleriyle ilgili türler kaldı; düğün odaklı türler, çiçekçi ve
+    // etkinlik mekânı çıkarıldı (bkz. OpsController organizationTypePrune).
     private const SERVICE_TYPES = [
         'Organizasyon Şirketi' => 'Organizasyon Şirketi',
-        'Düğün Salonu' => 'Düğün Salonu',
-        'Etkinlik Mekânı' => 'Etkinlik Mekânı',
         'Parti Malzemeleri Mağazası' => 'Parti Malzemeleri',
-        'Çiçekçi' => 'Çiçekçi',
         'Fotoğraf Stüdyosu' => 'Fotoğraf Stüdyosu',
-        'Düğün Hizmeti' => 'Düğün Hizmeti',
         'Açık Hava Etkinliği Organizatörü' => 'Açık Hava Etkinliği',
         'Kostüm Kiralama Hizmeti' => 'Kostüm Kiralama',
-        'Düğün Planlamacısı' => 'Düğün Planlamacısı',
         'Fotoğrafçı' => 'Fotoğrafçı',
     ];
 
