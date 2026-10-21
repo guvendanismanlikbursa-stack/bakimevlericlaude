@@ -20,7 +20,6 @@ class OrganizationController extends Controller
     private const SERVICE_TYPES = [
         'Organizasyon Şirketi' => 'Organizasyon Şirketi',
         'Parti Malzemeleri Mağazası' => 'Parti Malzemeleri',
-        'Fotoğraf Stüdyosu' => 'Fotoğraf Stüdyosu',
         'Açık Hava Etkinliği Organizatörü' => 'Açık Hava Etkinliği',
         'Kostüm Kiralama Hizmeti' => 'Kostüm Kiralama',
         'Fotoğrafçı' => 'Fotoğrafçı',

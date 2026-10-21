@@ -8788,7 +8788,9 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
             'Eğlence Ajansı' => ['Organizasyon Şirketi', 'Organizasyon Şirketi'],
             'Çocuklar İçin Eğlence Merkezi' => ['Organizasyon Şirketi', 'Organizasyon Şirketi'],
             'Parti Ekipmanları Kiralama Hizmeti' => ['Parti Malzemeleri Mağazası', 'Parti Malzemeleri'],
-            'Fotoğraf Dükkanı' => ['Fotoğraf Stüdyosu', 'Fotoğraf Stüdyosu'],
+            'Fotoğraf Dükkanı' => ['Fotoğrafçı', 'Fotoğrafçı'],
+            // 21 Ekim 2026: kullanıcının kararı - Fotoğraf Stüdyosu türü kaldırıldı, Fotoğrafçı yeterli.
+            'Fotoğraf Stüdyosu' => ['Fotoğrafçı', 'Fotoğrafçı'],
         ];
         // list=<tür>: o türdeki firmaları listeler (ör. "Genel" isimlere bakmak için).
         if ($request->filled('list')) {
@@ -8797,7 +8799,7 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
         }
         // ids + to: tek tek seçilen firmaları bırakılan bir türe taşır.
         if ($request->filled('ids') && $request->filled('to')) {
-            $labels = ['Organizasyon Şirketi' => 'Organizasyon Şirketi', 'Parti Malzemeleri Mağazası' => 'Parti Malzemeleri', 'Fotoğraf Stüdyosu' => 'Fotoğraf Stüdyosu', 'Fotoğrafçı' => 'Fotoğrafçı', 'Kostüm Kiralama Hizmeti' => 'Kostüm Kiralama', 'Açık Hava Etkinliği Organizatörü' => 'Açık Hava Etkinliği'];
+            $labels = ['Organizasyon Şirketi' => 'Organizasyon Şirketi', 'Parti Malzemeleri Mağazası' => 'Parti Malzemeleri', 'Fotoğrafçı' => 'Fotoğrafçı', 'Kostüm Kiralama Hizmeti' => 'Kostüm Kiralama', 'Açık Hava Etkinliği Organizatörü' => 'Açık Hava Etkinliği'];
             $to = (string) $request->input('to');
             if (! isset($labels[$to])) {
                 return 'HATA: geçersiz hedef tür.';
@@ -8835,7 +8837,7 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
      */
     private function organizationTypePrune(Request $request): string
     {
-        $keep = ['Organizasyon Şirketi', 'Açık Hava Etkinliği Organizatörü', 'Parti Malzemeleri Mağazası', 'Kostüm Kiralama Hizmeti', 'Fotoğrafçı', 'Fotoğraf Stüdyosu'];
+        $keep = ['Organizasyon Şirketi', 'Açık Hava Etkinliği Organizatörü', 'Parti Malzemeleri Mağazası', 'Kostüm Kiralama Hizmeti', 'Fotoğrafçı'];
         $lines = [];
         $counts = \App\Models\Organization::query()->selectRaw('service_type, COUNT(*) as c')->groupBy('service_type')->orderByDesc('c')->get();
         foreach ($counts as $row) {
