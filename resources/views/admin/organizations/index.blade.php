@@ -8,7 +8,7 @@
       <h1 class="text-2xl font-bold">Organizasyon Şirketleri</h1>
       {{-- 11 Ekim 2026: Doktorlar sayfasindaki ayni tarihli yorum/duzeltme
            ile AYNI sebep - filtre uygulaninca sonuc sayisi gorunmuyordu. --}}
-      <span class="inline-flex items-center rounded-full bg-gray-900 text-white text-sm font-semibold px-3 py-1">{{ number_format($organizations->total(), 0, ',', '.') }} firma bulundu</span>
+      <span data-live-count class="inline-flex items-center rounded-full bg-gray-900 text-white text-sm font-semibold px-3 py-1">{{ number_format($organizations->total(), 0, ',', '.') }} firma bulundu</span>
     </div>
     <p class="text-sm text-gray-500 mt-1">"Organizasyon Şirketleri" bölümünde listelenen firma kayıtları. Toplam: {{ $totalCount }} · Yayında: {{ $publishedCount }}</p>
   </div>
@@ -16,7 +16,7 @@
 </div>
 
 <form method="GET" class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3 mb-5 border border-gray-100">
-  <input type="text" name="q" value="{{ request('q') }}" placeholder="İsimle ara..." class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]" oninput="this.form.submit()">
+  <input type="text" name="q" value="{{ request('q') }}" placeholder="İsimle ara..." class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]" data-live-search autocomplete="off">
   <select name="city" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm İller</option>
     @foreach($cities as $city)
@@ -55,6 +55,7 @@
 {{-- 11 Ekim 2026: kullanicinin talebi - "hangi olcude olursa olsun butun
      islemleri gorebilmeliyim, kaydirmak istemiyorum" - genis <table> yerine
      flex-wrap kart (bkz. admin/facilities/_results.blade.php ayni desen). --}}
+<div data-live-results>
 <div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
   @forelse($organizations as $org)
     <div class="p-4 flex flex-col gap-2 {{ $org->trashed() ? 'opacity-50' : '' }}">
@@ -101,4 +102,6 @@
   @endforelse
 </div>
 <div class="mt-6">{{ $organizations->links() }}</div>
+</div>
+@include('admin.partials.live-search-script')
 @endsection

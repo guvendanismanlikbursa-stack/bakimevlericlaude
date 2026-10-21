@@ -12,7 +12,7 @@
            bu YOKTU - filtre (ornegin "Telefonu Eksik") uygulandiginda
            kac kayit oldugu hic anlasilmiyordu, sadece statik toplam/yayinda
            sayisi goruniyordu (filtreden bagimsiz, hep aynı). --}}
-      <span class="inline-flex items-center rounded-full bg-gray-900 text-white text-sm font-semibold px-3 py-1">{{ number_format($experts->total(), 0, ',', '.') }} doktor bulundu</span>
+      <span data-live-count class="inline-flex items-center rounded-full bg-gray-900 text-white text-sm font-semibold px-3 py-1">{{ number_format($experts->total(), 0, ',', '.') }} doktor bulundu</span>
     </div>
     <p class="text-sm text-gray-500 mt-1">"Özel Doktorlar" bölümünde listelenen doktor kayıtları. Toplam: {{ $totalCount }} · Yayında: {{ $publishedCount }}</p>
   </div>
@@ -20,7 +20,7 @@
 </div>
 
 <form method="GET" class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3 mb-5 border border-gray-100">
-  <input type="text" name="q" value="{{ request('q') }}" placeholder="İsimle ara..." class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]" oninput="this.form.submit()">
+  <input type="text" name="q" value="{{ request('q') }}" placeholder="İsimle ara..." class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]" data-live-search autocomplete="off">
   <select name="city" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm İller</option>
     @foreach($cities as $city)
@@ -53,6 +53,7 @@
      islemleri gorebilmeliyim, kaydirmak istemiyorum" (bkz. admin/facilities/
      _results.blade.php 1 Ekim 2026 yorumuyla AYNI sebep/desen) - genis
      <table> yerine flex-wrap kart. --}}
+<div data-live-results>
 <div class="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
   @forelse($experts as $expert)
     <div class="p-4 flex flex-col gap-2 {{ $expert->trashed() ? 'opacity-50' : '' }}">
@@ -99,4 +100,6 @@
   @endforelse
 </div>
 <div class="mt-6">{{ $experts->links() }}</div>
+</div>
+@include('admin.partials.live-search-script')
 @endsection

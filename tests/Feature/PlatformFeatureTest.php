@@ -785,6 +785,29 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Karsilastirma')
             ->assertSee('Favori listeniz');
     }
+    // 21 Ekim 2026: Doktorlar/Organizasyonlar arama kutusu her tuşta sayfayı
+    // yeniliyordu; artık liste arka planda yenileniyor. Sayfa açılmalı,
+    // arama doğru süzmeli ve tam sayfa yenileme (oninput submit) kalmamalı.
+    public function test_admin_expert_and_organization_live_search(): void
+    {
+        \App\Models\Expert::create(['name' => 'Ayşe Aramaca', 'slug' => 'ayse-aramaca', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'is_published' => true]);
+        \App\Models\Expert::create(['name' => 'Mehmet Gorunmez', 'slug' => 'mehmet-gorunmez', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'is_published' => true]);
+        \App\Models\Organization::create(['name' => 'Neşe Organizasyon', 'slug' => 'nese-org', 'service_type' => 'Düğün', 'service_type_label' => 'Düğün', 'city_id' => $this->city->id, 'is_published' => true]);
+        \App\Models\Organization::create(['name' => 'Baska Firma', 'slug' => 'baska-firma', 'service_type' => 'Düğün', 'service_type_label' => 'Düğün', 'city_id' => $this->city->id, 'is_published' => true]);
+
+        $r = $this->withSession(['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name])
+            ->get(route('admin.experts.index', ['q' => 'Aramaca']));
+        $r->assertOk()->assertSee('Ayşe Aramaca')->assertDontSee('Mehmet Gorunmez')
+          ->assertSee('data-live-results', false)->assertSee('data-live-search', false)
+          ->assertDontSee('oninput="this.form.submit()"', false);
+
+        $r = $this->withSession(['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name])
+            ->get(route('admin.organizations.index', ['q' => 'Neşe']));
+        $r->assertOk()->assertSee('Neşe Organizasyon')->assertDontSee('Baska Firma')
+          ->assertSee('data-live-results', false)->assertSee('data-live-count', false)
+          ->assertDontSee('oninput="this.form.submit()"', false);
+    }
+
     public function test_admin_can_create_update_and_delete_facility(): void
     {
         $payload = [
