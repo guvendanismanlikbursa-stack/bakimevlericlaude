@@ -78,7 +78,7 @@
           <input type="text" name="free_months_label" value="{{ old('free_months_label', $editingPackage?->free_months_label) }}" class="border rounded-lg px-3 py-2 w-full">
         </div>
         <div>
-          <label class="text-sm font-semibold block mb-1">Rozet adı</label>
+          <label class="text-sm font-semibold block mb-1">Rozet adı <span class="font-normal text-gray-500">(kartta büyük başlık olarak görünür, ör. "Farkındalık Destekçisi")</span></label>
           <input type="text" name="badge_label" value="{{ old('badge_label', $editingPackage?->badge_label) }}" required class="border rounded-lg px-3 py-2 w-full">
         </div>
         <div>
@@ -86,13 +86,27 @@
           <input type="text" name="badge_emoji" value="{{ old('badge_emoji', $editingPackage?->badge_emoji) }}" placeholder="💛" class="border rounded-lg px-3 py-2 w-full">
         </div>
         <div class="md:col-span-2">
-          <label class="text-sm font-semibold block mb-1">Kısa açıklama <span class="font-normal text-gray-500">(kartın altında görünür)</span></label>
+          <label class="text-sm font-semibold block mb-1">Slogan <span class="font-normal text-gray-500">(kartın altında görünür, ör. "Görünür olun, aileler sizi bulsun.")</span></label>
           <input type="text" name="tagline" value="{{ old('tagline', $editingPackage?->tagline) }}" class="border rounded-lg px-3 py-2 w-full">
         </div>
+        {{-- 22 Ekim 2026: kullanıcının talebi - Ekonomik/Standart/Premium üyelik ayrıntıları. --}}
         <div class="md:col-span-2">
-          <label class="text-sm font-semibold block mb-1">Bu pakete özel ek haklar <span class="font-normal text-gray-500">(her satıra bir madde, boş bırakılabilir)</span></label>
-          <textarea name="features" rows="3" class="border rounded-lg px-3 py-2 w-full">{{ old('features', $editingPackage?->features) }}</textarea>
+          <label class="text-sm font-semibold block mb-1">Kimler için? <span class="font-normal text-gray-500">(paket ayrıntısının başında görünür)</span></label>
+          <textarea name="audience" rows="2" class="border rounded-lg px-3 py-2 w-full">{{ old('audience', $editingPackage?->audience) }}</textarea>
         </div>
+        <div class="md:col-span-2">
+          <label class="text-sm font-semibold block mb-1">Paket ayrıntıları <span class="font-normal text-gray-500">— her satıra bir madde, "Madde adı: açıklama" biçiminde. "## " ile başlayan satır yeni bir bölüm başlığıdır (ör. "## Profil ve görünürlük").</span></label>
+          <textarea name="features" rows="14" class="border rounded-lg px-3 py-2 w-full text-sm font-mono">{{ old('features', $editingPackage?->features) }}</textarea>
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-sm font-semibold block mb-1">Kapanış cümlesi <span class="font-normal text-gray-500">(paket ayrıntısının sonunda görünür)</span></label>
+          <textarea name="closing_text" rows="2" class="border rounded-lg px-3 py-2 w-full">{{ old('closing_text', $editingPackage?->closing_text) }}</textarea>
+        </div>
+        <div>
+          <label class="text-sm font-semibold block mb-1">Fotoğraf sınırı <span class="font-normal text-gray-500">(boş = sınırsız)</span></label>
+          <input type="number" min="1" max="1000" name="photo_limit" value="{{ old('photo_limit', $editingPackage?->photo_limit) }}" class="border rounded-lg px-3 py-2 w-full">
+        </div>
+        <label class="flex items-center gap-2 text-sm pb-2" style="align-self:end;"><input type="checkbox" name="can_upload_video" value="1" @checked(old('can_upload_video', $editingPackage?->can_upload_video))> Kurum panelinden tanıtım videosu yükleyebilir</label>
         <div>
           <label class="text-sm font-semibold block mb-1">Hangi ilde satılsın?</label>
           <select name="only_city_slug" class="border rounded-lg px-3 py-2 w-full">
@@ -139,9 +153,11 @@
       <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col {{ $package->is_active ? '' : 'opacity-60' }}">
         <div class="text-xs font-black px-2 py-1 rounded-full self-start" style="background:#fae8ff;color:#a21caf;">{{ $package->badge_emoji }} {{ $package->badge_label }}</div>
         <div class="font-bold mt-3">{{ $package->name }}</div>
+        @if($package->tagline)<div class="text-xs text-gray-500 mt-1">{{ $package->tagline }}</div>@endif
         @if($package->hasLaunchDiscount())<div class="text-sm text-gray-400 mt-1" style="text-decoration:line-through;">{{ number_format($package->list_price, 0, ',', '.') }} TL</div>@endif
         <div class="text-2xl font-black my-1">{{ number_format($package->price, 0, ',', '.') }} TL</div>
-        <div class="text-sm text-gray-600">{{ $package->months }} ay{{ $package->free_months_label ? ' · '.$package->free_months_label : '' }}</div>
+        <div class="text-sm text-gray-600">{{ $package->months == 12 ? 'Yıllık' : $package->months.' ay' }}{{ $package->free_months_label ? ' · '.$package->free_months_label : '' }}</div>
+        <div class="text-xs text-gray-500 mt-1">📷 {{ $package->photo_limit ? $package->photo_limit.' fotoğraf' : 'Sınırsız fotoğraf' }} · 🎬 {{ $package->can_upload_video ? 'Video var' : 'Video yok' }}</div>
         @if($package->only_city_slug)<div class="text-xs font-bold text-amber-700 mt-1">Sadece {{ mb_convert_case($package->only_city_slug, MB_CASE_TITLE, 'UTF-8') }}</div>@endif
         @unless($package->is_active)<div class="text-xs font-bold text-gray-500 mt-1">Pasif</div>@endunless
         <div class="mt-auto pt-3 flex items-center justify-between">

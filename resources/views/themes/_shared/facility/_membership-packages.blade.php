@@ -14,11 +14,14 @@
 @if($launchNotice = membership_launch_notice())
       <div class="rounded-xl px-4 py-3 mb-4 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
     @endif
-  <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+  {{-- 22 Ekim 2026: kullanıcının talebi - Ekonomik / Standart / Premium (yıllık);
+       kartın büyük başlığı rozet adı, altında paket adı. --}}
+  <div class="grid md:grid-cols-3 gap-4">
     @foreach($membershipPackages as $package)
       <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col border-2 {{ $package->is_premium ? 'border-amber-300' : '' }}" style="{{ $package->is_premium ? '' : 'border-color:transparent;' }}">
-        <div class="text-xs font-black px-2 py-1 rounded-full self-start" style="background:#fae8ff;color:#a21caf;">{{ $package->badge_emoji }} {{ $package->badge_label }}</div>
-        <div class="font-bold text-lg mt-3">{{ $package->name }}</div>
+        <div style="font-size:30px;line-height:1;">{{ $package->badge_emoji }}</div>
+        <div class="font-black text-lg mt-3">{{ $package->badge_label }}</div>
+        <div class="text-xs font-black uppercase" style="letter-spacing:.06em;color:{{ $package->is_premium ? '#b45309' : '#a21caf' }};">{{ $package->name }} · {{ $package->months == 12 ? 'Yıllık' : $package->months.' aylık' }}</div>
         @if($package->hasLaunchDiscount())
           <div class="text-sm text-gray-400 mt-1"><span style="text-decoration:line-through;">{{ number_format($package->list_price, 0, ',', '.') }}₺</span> <span class="text-xs">liste fiyatı</span></div>
           <div class="text-xs font-black mt-1" style="color:#92400e;">Lansman fiyatı</div>
@@ -26,13 +29,24 @@
         <div class="text-2xl font-black text-primary my-1">{{ number_format($package->price, 0, ',', '.') }}₺</div>
         @if($package->free_months_label)<div class="text-xs font-bold text-green-700 mb-2">🎁 {{ $package->free_months_label }}</div>@endif
         @if($package->tagline)<p class="text-sm text-gray-600 mb-3">{{ $package->tagline }}</p>@endif
-        <ul class="text-sm text-gray-600 space-y-1 mb-4">
-          <li>✓ {{ $package->months }} ay boyunca ücretsiz ve sınırsız teklif</li>
+        <ul class="text-sm text-gray-600 space-y-1 mb-3">
+          <li>✓ {{ $package->months == 12 ? '1 yıl' : $package->months.' ay' }} boyunca ücretsiz ve sınırsız teklif</li>
           <li>✓ Sahipli kurumların tüm panel özellikleri</li>
-          <li>✓ Sınırsız fotoğraf yükleme</li>
-          @if($package->is_premium)<li>✓ Kurum panelinden tanıtım videosu yükleme</li>@endif
-          @foreach($package->featureList() as $feature)<li>✓ {{ $feature }}</li>@endforeach
+          <li>✓ {{ $package->photo_limit ? $package->photo_limit.' fotoğraf' : 'Sınırsız fotoğraf' }}</li>
+          @if($package->can_upload_video)<li>✓ Kurum panelinden tanıtım videosu yükleme</li>@endif
         </ul>
+        @if($package->featureGroups())
+          <details class="text-sm mb-4">
+            <summary class="font-bold" style="cursor:pointer;color:#701a75;">Paketin tüm ayrıntıları</summary>
+            @foreach($package->featureGroups() as $group)
+              @if($group['title'])<div class="font-black text-gray-900 mt-3 mb-1">{{ $group['title'] }}</div>@endif
+              <ul class="space-y-1 text-gray-600">
+                @foreach($group['items'] as $item)<li>• @if($item['text'])<strong class="text-gray-800">{{ $item['name'] }}:</strong> {{ $item['text'] }}@else {{ $item['name'] }}@endif</li>@endforeach
+              </ul>
+            @endforeach
+            @if($package->closing_text)<p class="font-bold text-gray-800 mt-3">{{ $package->closing_text }}</p>@endif
+          </details>
+        @endif
         <form method="POST" action="{{ brand_route('facility.packages.store', $package) }}" enctype="multipart/form-data" class="mt-auto space-y-2" onsubmit="this.querySelector('button[type=submit]').disabled=true; this.querySelector('button[type=submit]').textContent='Gönderiliyor...';">
           @csrf
           <label for="membership-receipt-{{ $package->id }}" class="text-xs text-gray-500 block">Havale/EFT dekontu</label>

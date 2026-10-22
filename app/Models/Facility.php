@@ -207,13 +207,30 @@ class Facility extends Model
 
     /**
      * 18 Ekim 2026: kullanıcının talebi - kurum panelinden tanıtım videosu:
-     * anlaşmalı kurumlar (27 Ağustos kararı) + aktif Vizyoner İyilik Elçisi
-     * (premium) üyeleri. Diğer üyeler yükleyemez.
+     * anlaşmalı kurumlar (27 Ağustos kararı) + videolu paketin aktif üyeleri.
+     * 22 Ekim 2026: video hakkı artık paketteki "can_upload_video" alanından
+     * gelir (Standart ve Premium üyelikte açık, Ekonomik'te kapalı).
      */
     public function canUploadVideo(): bool
     {
         return $this->is_broker_managed
-            || ($this->isMember() && (bool) $this->subscriptionPackage?->is_premium);
+            || ($this->isMember() && (bool) $this->subscriptionPackage?->can_upload_video);
+    }
+
+    /**
+     * 22 Ekim 2026: kullanıcının talebi - galeri fotoğraf sınırı. Abone
+     * olmayan kurumlar 10 fotoğraf; üyeler paketteki sınır (Ekonomik 10);
+     * sınırı boş paketler ve paketi olmayan eski aboneler sınırsız.
+     * null = sınırsız.
+     */
+    public function galleryImageLimit(): ?int
+    {
+        if (! $this->isActiveSubscriber()) {
+            return 10;
+        }
+        $limit = $this->subscriptionPackage?->photo_limit;
+
+        return $limit ? (int) $limit : null;
     }
 
     public function grantOwnerFeaturesForMembership(): void

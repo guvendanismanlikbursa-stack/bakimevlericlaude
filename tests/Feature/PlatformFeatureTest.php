@@ -6569,7 +6569,7 @@ class PlatformFeatureTest extends TestCase
 
         $this->assertNull($this->childFacility->fresh()->video_path);
         $this->assertSame(
-            'Video yalnızca anlaşmalı kurumlar ve Vizyoner İyilik Elçisi üyeleri tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.',
+            'Video yalnızca anlaşmalı kurumlar ve Standart / Premium üyeler tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.',
             session('errors')->first('video')
         );
     }
@@ -6743,15 +6743,20 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Önizleme', false)
             ->assertSee('noindex,nofollow', false)
             ->assertSee('Altın Kalpli Kurum', false)
-            ->assertDontSee('9.000', false);
+            ->assertSee('Farkındalık Destekçisi', false)
+            ->assertSee('Paketler bir bakışta', false)
+            ->assertDontSee('49.000', false)
+            ->assertDontSee('12.000', false);
 
         \App\Models\Setting::set('membership_live', '1');
         $this->get('/site/bakimevleri/iyilik-hareketi')
             ->assertOk()
             ->assertDontSee('Önizleme — bu sayfa', false)
-            ->assertSee('Bir Çocuğun Geleceğini Büyütürken', false)
+            ->assertSee('Kurumunuz her gün ailelerin aradığı yerde olsun.', false)
             ->assertSee('3 Sitede Yayın, Tek Kurum Paneli', false)
-            ->assertSee('Vizyoner İyilik Elçisi', false);
+            ->assertSee('Ekonomik Üyelik', false)->assertSee('Standart Üyelik', false)->assertSee('Premium Üyelik', false)
+            ->assertSee('360° sanal tur', false)
+            ->assertDontSee('Vizyoner İyilik Elçisi', false);
     }
 
     public function test_membership_offer_page_shows_prices_only_via_token_and_tracks_real_opens(): void
@@ -6766,9 +6771,9 @@ class PlatformFeatureTest extends TestCase
             ->get('/site/bakimevleri/kurum-teklifi/'.$token)
             ->assertOk()
             ->assertSee($facility->name, false)
-            ->assertSee('9.000₺', false)
+            ->assertSee('12.000₺', false)->assertSee('34.000₺', false)->assertSee('49.000₺', false)
             ->assertSee('noindex,nofollow', false)
-            // İstanbul'daki kurum - premium yalnızca Bursa'da satılır.
+            // 22 Ekim 2026: eski Bursa'ya özel Vizyoner paketi pasif.
             ->assertDontSee('50.000₺', false)
             ->assertSee('şehrinizdeki', false);
         $this->assertSame(0, (int) $facility->fresh()->offer_link_open_count);
@@ -6799,7 +6804,8 @@ class PlatformFeatureTest extends TestCase
             ->get('/site/bakimeviara/kurum-panel/paketler')
             ->assertOk()
             ->assertSee('Kurumsal İyilik Ortağı', false)
-            ->assertSee('9.000₺', false)
+            ->assertSee('Standart Üyelik', false)
+            ->assertSee('49.000₺', false)
             ->assertDontSee('Vizyoner İyilik Elçisi', false);
     }
 
@@ -6816,7 +6822,7 @@ class PlatformFeatureTest extends TestCase
             ->post('/site/bakimeviara/kurum-panel/paketler/'.$package->id, ['receipt' => \Illuminate\Http\UploadedFile::fake()->image('dekont.jpg')])
             ->assertRedirect();
         $topup = WalletTopup::where('facility_id', $facility->id)->latest('id')->firstOrFail();
-        $this->assertSame(5000.0, (float) $topup->amount);
+        $this->assertSame(34000.0, (float) $topup->amount);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->post(route('admin.topups.approve', $topup))
@@ -6826,8 +6832,8 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(0.0, (float) $facility->balance);
         $this->assertTrue($facility->is_subscribed);
         $this->assertSame($package->id, $facility->subscription_package_id);
-        $this->assertSame('semiannual', $facility->subscription_plan);
-        $this->assertEqualsWithDelta(now()->addMonths(6)->timestamp, $facility->subscription_paid_until->timestamp, 86400 * 2);
+        $this->assertSame('yearly', $facility->subscription_plan);
+        $this->assertEqualsWithDelta(now()->addMonths(12)->timestamp, $facility->subscription_paid_until->timestamp, 86400 * 2);
         $this->assertTrue($facility->is_claimed);
         $this->assertTrue($facility->isMember());
         $this->assertSame(['label' => 'Kurumsal İyilik Ortağı', 'emoji' => '💚'], $facility->membershipBadge());
@@ -7111,7 +7117,7 @@ class PlatformFeatureTest extends TestCase
         \App\Models\Setting::set('membership_live', '1');
         $facility = $this->childFacility;
         $facility->update(['is_broker_managed' => false, 'is_subscribed' => true,
-            'subscription_package_id' => $this->membershipPackage('Altın Kalpli Kurum')->id,
+            'subscription_package_id' => $this->membershipPackage('Farkındalık Destekçisi')->id,
             'subscription_paid_until' => now()->addMonth()->toDateString()]);
         $this->assertFalse($facility->fresh()->canUploadVideo());
 
@@ -7119,7 +7125,10 @@ class PlatformFeatureTest extends TestCase
             ->post(route('brand.facility.profile.video.store', ['brand' => 'bakimeviara']), ['video' => \Illuminate\Http\UploadedFile::fake()->create('v.mp4', 100, 'video/mp4')])
             ->assertSessionHasErrors('video');
 
-        $facility->update(['subscription_package_id' => $this->membershipPackage('Vizyoner İyilik Elçisi')->id]);
+        // 22 Ekim 2026: video Standart (Kurumsal İyilik Ortağı) ve Premium (Altın Kalpli Kurum) üyelikte açık.
+        $facility->update(['subscription_package_id' => $this->membershipPackage('Kurumsal İyilik Ortağı')->id]);
+        $this->assertTrue($facility->fresh()->canUploadVideo());
+        $facility->update(['subscription_package_id' => $this->membershipPackage('Altın Kalpli Kurum')->id]);
         $this->assertTrue($facility->fresh()->canUploadVideo());
 
         $facility->update(['subscription_paid_until' => now()->subDays(2)->toDateString()]);
@@ -7127,6 +7136,44 @@ class PlatformFeatureTest extends TestCase
 
         $facility->update(['is_broker_managed' => true]);
         $this->assertTrue($facility->fresh()->canUploadVideo());
+    }
+
+    // 22 Ekim 2026: Ekonomik / Standart / Premium - hepsi yıllık; fotoğraf
+    // sınırı ve paket ayrıntıları pakete göre, admin yeni alanları düzenleyebilir.
+    public function test_membership_tiers_are_yearly_with_photo_limits_and_editable_details(): void
+    {
+        $eko = $this->membershipPackage('Farkındalık Destekçisi');
+        $std = $this->membershipPackage('Kurumsal İyilik Ortağı');
+        $pre = $this->membershipPackage('Altın Kalpli Kurum');
+        $this->assertSame(['Ekonomik Üyelik', 'Standart Üyelik', 'Premium Üyelik'], [$eko->name, $std->name, $pre->name]);
+        $this->assertSame([12000.0, 34000.0, 49000.0], [$eko->price, $std->price, $pre->price]);
+        $this->assertSame([12, 12, 12], [$eko->months, $std->months, $pre->months]);
+        $this->assertSame(3, \App\Models\SubscriptionPackage::active()->membership()->count());
+        $this->assertSame('Profil ve görünürlük', $pre->featureGroups()[0]['title']);
+        $this->assertContains('360° sanal tur', array_column($pre->featureGroups(), 'title'));
+        $this->assertNotContains('360° sanal tur', array_column($std->featureGroups(), 'title'));
+
+        $facility = $this->childFacility;
+        $this->assertSame(10, $facility->galleryImageLimit());
+        $facility->update(['is_subscribed' => true, 'subscription_package_id' => $eko->id, 'subscription_paid_until' => now()->addYear()->toDateString()]);
+        $this->assertSame(10, $facility->fresh()->galleryImageLimit());
+        $facility->update(['subscription_package_id' => $std->id]);
+        $this->assertNull($facility->fresh()->galleryImageLimit());
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put(route('admin.packages.update', $eko), [
+                'kind' => 'membership', 'name' => 'Ekonomik Üyelik', 'price' => 12000, 'months' => 12,
+                'badge_label' => 'Farkındalık Destekçisi', 'badge_emoji' => '💜', 'is_active' => 1,
+                'audience' => 'Yeni hedef kitle', 'closing_text' => 'Yeni kapanış', 'photo_limit' => 15, 'can_upload_video' => 1,
+                'features' => "## Bölüm A\nMadde: açıklama",
+            ])->assertRedirect();
+        $eko->refresh();
+        $this->assertSame('Yeni hedef kitle', $eko->audience);
+        $this->assertSame(15, $eko->photo_limit);
+        $this->assertTrue($eko->can_upload_video);
+        $this->assertSame([['title' => 'Bölüm A', 'items' => [['name' => 'Madde', 'text' => 'açıklama']]]], $eko->featureGroups());
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/paketler?edit='.$eko->id)
+            ->assertOk()->assertSee('Kimler için?', false)->assertSee('Fotoğraf sınırı', false)->assertSee('Kapanış cümlesi', false);
     }
 
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void

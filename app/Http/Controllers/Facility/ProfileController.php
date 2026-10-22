@@ -228,9 +228,11 @@ class ProfileController extends Controller
         // Facility::isActiveSubscriber() - odeme suresi canli kontrol edilir,
         // ayri bir "premium" bayragi YOK). Abone olmayanlarda eski 10 gorsel
         // sinirlamasi AYNEN devam eder.
-        if (! $user->facility->isActiveSubscriber() && $currentCount + $files->count() > self::MAX_GALLERY_IMAGES) {
-            $remaining = max(0, self::MAX_GALLERY_IMAGES - $currentCount);
-            throw ValidationException::withMessages(['images' => "En fazla 10 görsel eklenebilir. Kalan yükleme hakkı: {$remaining}. Sınırsız görsel yüklemek için abone olabilirsiniz."]);
+        // 22 Ekim 2026: sınır artık pakete göre (bkz. Facility::galleryImageLimit()).
+        $galleryLimit = $user->facility->galleryImageLimit();
+        if ($galleryLimit !== null && $currentCount + $files->count() > $galleryLimit) {
+            $remaining = max(0, $galleryLimit - $currentCount);
+            throw ValidationException::withMessages(['images' => "En fazla {$galleryLimit} görsel eklenebilir. Kalan yükleme hakkı: {$remaining}. Sınırsız görsel yüklemek için Standart veya Premium üyeliğe geçebilirsiniz."]);
         }
 
         // 3 Agustos 2026: bkz. FacilityClaimController ayni yorum - disk
@@ -440,8 +442,8 @@ class ProfileController extends Controller
             // 27 Agustos 2026: kullanicinin talebi - alan anlasmasiz kurumlara
             // da GORUNSUN (komisyonlu calismaya tesvik) ama pasif kalsin,
             // yuklemeye calisinca bu tesvik mesaji cikssin.
-            // 18 Ekim 2026: Vizyoner İyilik Elçisi üyeleri de yükleyebilir.
-            return back()->withErrors(['video' => 'Video yalnızca anlaşmalı kurumlar ve Vizyoner İyilik Elçisi üyeleri tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.']);
+            // 22 Ekim 2026: videolu paketin (Standart / Premium) üyeleri de yükleyebilir.
+            return back()->withErrors(['video' => 'Video yalnızca anlaşmalı kurumlar ve Standart / Premium üyeler tarafından eklenebilir. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.']);
         }
 
         $request->validate(['video' => 'required|file']);

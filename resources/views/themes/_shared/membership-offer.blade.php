@@ -67,32 +67,22 @@
   </div>
 </section>
 
-{{-- PAKETLER (FİYATLI) --}}
+{{-- PAKETLER (FİYATLI) - 22 Ekim 2026: Ekonomik / Standart / Premium, hepsi yıllık. --}}
 <section class="bg-white">
   <div class="max-w-5xl mx-auto px-4 py-10">
     <h2 class="text-xl font-black text-gray-900 mb-2">Üyelik seçenekleri</h2>
     @if($launchNotice = membership_launch_notice())
       <div class="rounded-xl px-4 py-3 mb-6 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
     @endif
-    <p class="text-sm text-gray-600 mb-6">Her üyelikte, üyelik süresi boyunca <strong>ücretsiz ve sınırsız teklif</strong> verir, <strong>sınırsız fotoğraf</strong> yükler, sahipli kurumların tüm panel özelliklerini kullanırsınız; kurum kartınızda ve sayfanızda üyelik rozetiniz görünür. Kurum panelinden tanıtım videosu yükleme yalnızca Vizyoner İyilik Elçisi üyeliğinde.</p>
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <p class="text-sm text-gray-600 mb-6">Tüm paketlerde ortak: 3 sitede yayın, tek kurum paneli, doğrulanmış üye rozeti, <strong>sınırsız ücretsiz teklif</strong> ve bölgenizde kurumunuz dışındaki taleplerin size yönlendirilmesi. Bütün üyelikler yıllıktır.</p>
+    @include('themes._shared.membership._tier-cards', ['packages' => $packages, 'showPrice' => true])
+    @if($packages->count() === 3)
+      <h3 class="text-lg font-black text-gray-900 mt-10 mb-3">Paketler bir bakışta</h3>
+      @include('themes._shared.membership._compare-table', ['packages' => $packages, 'showPrice' => true])
+    @endif
+    <div class="space-y-6 mt-10">
       @foreach($packages as $package)
-        <div class="rounded-2xl p-5 border-2 {{ $package->is_premium ? 'border-amber-300' : 'border-gray-100' }} bg-white shadow-sm flex flex-col">
-          <div class="text-xs font-black px-2 py-1 rounded-full self-start" style="background:#fae8ff;color:#a21caf;">{{ $package->badge_emoji }} {{ $package->badge_label }}</div>
-          <div class="font-bold text-gray-900 mt-3">{{ $package->name }}</div>
-          @if($package->hasLaunchDiscount())
-            <div class="text-sm text-gray-400 mt-1"><span style="text-decoration:line-through;">{{ number_format($package->list_price, 0, ',', '.') }}₺</span> <span class="text-xs">liste fiyatı</span></div>
-            <div class="text-xs font-black mt-1" style="color:#92400e;">Lansman fiyatı</div>
-          @endif
-          <div class="text-3xl font-black my-1" style="color:#701a75;">{{ number_format($package->price, 0, ',', '.') }}₺</div>
-          @if($package->free_months_label)<div class="text-xs font-bold text-green-700">🎁 {{ $package->free_months_label }}</div>@endif
-          @if($package->tagline)<p class="text-sm text-gray-600 mt-3">{{ $package->tagline }}</p>@endif
-          @if($package->featureList())
-            <ul class="text-sm text-gray-600 mt-3 space-y-1">
-              @foreach($package->featureList() as $feature)<li>✓ {{ $feature }}</li>@endforeach
-            </ul>
-          @endif
-        </div>
+        @include('themes._shared.membership._package-detail', ['package' => $package, 'showPrice' => true])
       @endforeach
     </div>
     <div class="rounded-2xl p-4 mt-6 text-sm text-gray-700" style="background:#ecfeff;">

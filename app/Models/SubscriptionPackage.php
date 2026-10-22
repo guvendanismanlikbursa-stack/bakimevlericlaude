@@ -10,6 +10,7 @@ class SubscriptionPackage extends Model
         'kind', 'name', 'description', 'price', 'list_price', 'bonus_quote_credits',
         'duration_days', 'months', 'badge_label', 'badge_emoji', 'free_months_label',
         'tagline', 'features', 'only_city_slug', 'is_premium', 'is_active', 'sort_order',
+        'audience', 'closing_text', 'photo_limit', 'can_upload_video',
     ];
 
     protected function casts(): array
@@ -20,6 +21,8 @@ class SubscriptionPackage extends Model
             'is_active' => 'boolean',
             'is_premium' => 'boolean',
             'months' => 'integer',
+            'photo_limit' => 'integer',
+            'can_upload_video' => 'boolean',
         ];
     }
 
@@ -75,7 +78,42 @@ class SubscriptionPackage extends Model
      */
     public function featureList(): array
     {
-        return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $this->features))));
+        $lines = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $this->features)));
+
+        return array_values(array_filter($lines, fn ($l) => ! str_starts_with($l, '## ')));
+    }
+
+    /**
+     * 22 Ekim 2026: kullanıcının talebi - paket ayrıntıları bölümler halinde.
+     * features alanında "## Başlık" satırı yeni bölüm başlatır; diğer
+     * satırlar "Madde adı: açıklama" biçimindedir (iki nokta yoksa tamamı
+     * madde adıdır).
+     *
+     * @return array<int, array{title: string, items: array<int, array{name: string, text: string}>}>
+     */
+    public function featureGroups(): array
+    {
+        $groups = [];
+        $current = null;
+        foreach (preg_split('/\r\n|\r|\n/', (string) $this->features) as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            if (str_starts_with($line, '## ')) {
+                $groups[] = ['title' => trim(substr($line, 3)), 'items' => []];
+                $current = array_key_last($groups);
+                continue;
+            }
+            if ($current === null) {
+                $groups[] = ['title' => '', 'items' => []];
+                $current = array_key_last($groups);
+            }
+            [$name, $text] = array_pad(array_map('trim', explode(':', $line, 2)), 2, '');
+            $groups[$current]['items'][] = ['name' => $name, 'text' => $text];
+        }
+
+        return $groups;
     }
 
     /**

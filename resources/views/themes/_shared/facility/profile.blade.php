@@ -294,9 +294,9 @@
       <h2 class="font-bold">
         Tanıtım Videosu
         @if(! $facility->canUploadVideo())
-          <span class="text-xs font-normal text-amber-600">🔒 anlaşmalı kurumlara ve Vizyoner üyelere özel</span>
+          <span class="text-xs font-normal text-amber-600">🔒 anlaşmalı kurumlara ve Standart / Premium üyelere özel</span>
         @else
-          <span class="text-xs font-normal text-gray-400">(anlaşmalı kurumlara ve Vizyoner üyelere özel)</span>
+          <span class="text-xs font-normal text-gray-400">(anlaşmalı kurumlara ve Standart / Premium üyelere özel)</span>
         @endif
       </h2>
       <p class="text-sm text-gray-500">En fazla 60 saniyelik bir video yükleyin, ziyaretçiler kurum sayfanızda görüntüleyebilir. Yüklenince otomatik sıkıştırılır, biraz zaman alabilir.</p>
@@ -304,7 +304,7 @@
 
     @if(! $facility->canUploadVideo())
       <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 mb-4">
-        🔒 Bu alan şu anda <strong>pasif</strong>. Kurumunuz <strong>anlaşmalı (komisyon usulü)</strong> statüye geçtiğinde{{ membership_live() ? ' veya Vizyoner İyilik Elçisi üyesi olduğunda' : '' }} otomatik olarak aktif hale gelecek ve video yükleyebileceksiniz. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.
+        🔒 Bu alan şu anda <strong>pasif</strong>. Kurumunuz <strong>anlaşmalı (komisyon usulü)</strong> statüye geçtiğinde{{ membership_live() ? ' veya Standart ya da Premium üyeliğe geçtiğinde' : '' }} otomatik olarak aktif hale gelecek ve video yükleyebileceksiniz. Detaylı bilgi için yöneticinizle (admin) iletişime geçin.
       </div>
     @endif
 

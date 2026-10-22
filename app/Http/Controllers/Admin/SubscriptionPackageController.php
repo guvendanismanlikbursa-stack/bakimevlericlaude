@@ -20,7 +20,12 @@ class SubscriptionPackageController extends Controller
         'badge_emoji' => 'nullable|string|max:16',
         'free_months_label' => 'nullable|string|max:80',
         'tagline' => 'nullable|string|max:255',
-        'features' => 'nullable|string|max:3000',
+        'features' => 'nullable|string|max:12000',
+        // 22 Ekim 2026: kullanıcının talebi - Ekonomik/Standart/Premium üyelik ayrıntıları.
+        'audience' => 'nullable|string|max:1000',
+        'closing_text' => 'nullable|string|max:1000',
+        'photo_limit' => 'nullable|integer|min:1|max:1000',
+        'can_upload_video' => 'boolean',
         'only_city_slug' => 'nullable|string|max:80|exists:cities,slug',
         'is_premium' => 'boolean',
     ];
@@ -29,6 +34,7 @@ class SubscriptionPackageController extends Controller
     {
         $data['kind'] = $data['kind'] ?? 'credit';
         $data['is_premium'] = $request->boolean('is_premium');
+        $data['can_upload_video'] = $request->boolean('can_upload_video');
         if ($data['kind'] === 'membership') {
             $data['months'] = $data['months'] ?? 1;
         }

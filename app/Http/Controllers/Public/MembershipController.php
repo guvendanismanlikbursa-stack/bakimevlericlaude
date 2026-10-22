@@ -34,6 +34,8 @@ class MembershipController extends Controller
             'packages' => $packages,
             'impact' => $this->impact(),
             'isPreview' => ! membership_live(),
+            // 22 Ekim 2026: "Doktorlarımız, size aile getirir" bölümündeki gerçek doktor sayısı.
+            'doctorCount' => \App\Models\Expert::where('is_published', true)->count(),
             'memberCount' => Facility::where('is_subscribed', true)->whereNotNull('subscription_package_id')
                 ->whereDate('subscription_paid_until', '>=', now()->toDateString())->count(),
         ]);
