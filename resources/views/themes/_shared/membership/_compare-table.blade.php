@@ -10,7 +10,8 @@
   $no = '<span style="color:#cbd5e1;">—</span>';
   $groups = [
       'Profil ve görünürlük' => [
-          ['3 sitede kurum profili (bakimevleri.com, bakimevibul.com, bakimeviara.com)', [$ok, $ok, $ok]],
+          // 22 Ekim 2026: Standart/Premium'da kurumun kendi internet sitesi de olduğu için 4 site.
+          ['Yayınlandığı siteler (bakimevleri.com, bakimevibul.com, bakimeviara.com + kendi internet siteniz)', $cols->map(fn ($p) => $p->includesWebsite() ? '4 site' : '3 site')->all()],
           ['Tek kurum paneli, telefondan yönetim', [$ok, $ok, $ok]],
           ['"Doğrulanmış Üye Kurum" rozeti', [$ok, $ok, $ok]],
           ['Profil fotoğrafı', $cols->map(fn ($p) => $p->photo_limit ? e($p->photo_limit).' görsel' : 'Sınırsız')->all()],

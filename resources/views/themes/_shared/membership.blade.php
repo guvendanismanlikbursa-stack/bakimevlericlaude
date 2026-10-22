@@ -34,22 +34,6 @@
   </div>
 </section>
 
-{{-- ÜYELİK KARTLARI --}}
-@if($tierPackages->isNotEmpty())
-  <section class="bg-gray-50">
-    <div class="max-w-5xl mx-auto px-4 py-12">
-      @if($launchNotice = membership_launch_notice())
-        <div class="rounded-xl px-4 py-3 mb-6 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
-      @endif
-      @include('themes._shared.membership._tier-cards', ['packages' => $tierPackages, 'showPrice' => false])
-      <div class="rounded-2xl p-5 mt-6 text-sm text-gray-700" style="background:#ecfeff;">
-        <strong class="text-gray-900">Tüm paketlerde ortak:</strong> 3 sitede yayın (bakimevleri.com, bakimevibul.com, bakimeviara.com), tek kurum paneli, doğrulanmış üye rozeti, sınırsız ücretsiz teklif ve bölgenizde kurumunuz dışındaki taleplerin size yönlendirilmesi. Bütün üyelikler yıllıktır.
-      </div>
-      <p class="text-sm text-gray-500 text-center mt-4">Üyelik ücretleri kurumlara özel olarak iletilir. Kurum panelinizden veya bizimle iletişime geçerek öğrenebilirsiniz.</p>
-    </div>
-  </section>
-@endif
-
 {{-- BİZ KİMİZ --}}
 <section class="bg-white">
   <div class="max-w-4xl mx-auto px-4 py-12 grid md:grid-cols-5 gap-8 items-center">
@@ -92,6 +76,22 @@
     @endif
   </div>
 </section>
+
+{{-- ÜYELİK KARTLARI --}}
+@if($tierPackages->isNotEmpty())
+  <section class="bg-gray-50">
+    <div class="max-w-5xl mx-auto px-4 py-12">
+      @if($launchNotice = membership_launch_notice())
+        <div class="rounded-xl px-4 py-3 mb-6 text-center font-black" style="background:#fef3c7;color:#92400e;">🎉 {{ $launchNotice }}</div>
+      @endif
+      @include('themes._shared.membership._tier-cards', ['packages' => $tierPackages, 'showPrice' => false])
+      <div class="rounded-2xl p-5 mt-6 text-sm text-gray-700" style="background:#ecfeff;">
+        <strong class="text-gray-900">Tüm paketlerde ortak:</strong> 3 sitede yayın (bakimevleri.com, bakimevibul.com, bakimeviara.com), tek kurum paneli, doğrulanmış üye rozeti, sınırsız ücretsiz teklif ve bölgenizde kurumunuz dışındaki taleplerin size yönlendirilmesi. Bütün üyelikler yıllıktır.
+      </div>
+      <p class="text-sm text-gray-500 text-center mt-4">Üyelik ücretleri kurumlara özel olarak iletilir. Kurum panelinizden veya bizimle iletişime geçerek öğrenebilirsiniz.</p>
+    </div>
+  </section>
+@endif
 
 {{-- PAKETLER BİR BAKIŞTA --}}
 @if($tierPackages->count() === 3)

@@ -84,6 +84,16 @@ class SubscriptionPackage extends Model
     }
 
     /**
+     * 22 Ekim 2026: kurum adına internet sitesi içeren paket mi (paket
+     * ayrıntılarında "internet sitesi" bölümü varsa). Bu paketlerde kurum
+     * 4 sitede (3 platform + kendi sitesi) yayınlanır.
+     */
+    public function includesWebsite(): bool
+    {
+        return (bool) preg_match('/^##\s.*internet sitesi/miu', (string) $this->features);
+    }
+
+    /**
      * 22 Ekim 2026: kullanıcının talebi - paket ayrıntıları bölümler halinde.
      * features alanında "## Başlık" satırı yeni bölüm başlatır; diğer
      * satırlar "Madde adı: açıklama" biçimindedir (iki nokta yoksa tamamı

@@ -7152,6 +7152,11 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('Profil ve görünürlük', $pre->featureGroups()[0]['title']);
         $this->assertContains('360° sanal tur', array_column($pre->featureGroups(), 'title'));
         $this->assertNotContains('360° sanal tur', array_column($std->featureGroups(), 'title'));
+        // Kendi internet sitesi olan paketlerde 4 sitede yayın.
+        $this->assertStringContainsString('4 sitede aynı anda yayın', $std->features);
+        $this->assertStringContainsString('4 sitede aynı anda yayın', $pre->features);
+        $this->assertStringContainsString('3 sitede aynı anda yayın', $eko->features);
+        $this->assertSame([false, true, true], [$eko->includesWebsite(), $std->includesWebsite(), $pre->includesWebsite()]);
 
         $facility = $this->childFacility;
         $this->assertSame(10, $facility->galleryImageLimit());
