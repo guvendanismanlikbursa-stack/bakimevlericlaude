@@ -44,7 +44,16 @@
     <option value="">Telefon: Tümü</option>
     <option value="eksik" @selected(request('phone_status')==='eksik')>📞 Telefonu Eksik</option>
   </select>
-  @if(request('q') || request('city') || request('branch') || request('status') || request('phone_status'))
+  {{-- 22 Ekim 2026: internet sitesi durumu filtresi (kurumlardakiyle aynı). --}}
+  <select name="site" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="">Site: Tümü</option>
+    <option value="eksik" @selected(request('site')==='eksik')>🌐 Kendi sitesi yok (hepsi)</option>
+    @foreach(\App\Models\Facility::WEBSITE_STATUSES as $key => $label)
+      <option value="{{ $key }}" @selected(request('site')===$key)>{{ $label }}</option>
+    @endforeach
+    <option value="bilinmiyor" @selected(request('site')==='bilinmiyor')>Bilinmiyor</option>
+  </select>
+  @if(request('q') || request('city') || request('branch') || request('status') || request('phone_status') || request('site'))
     <a href="{{ route('admin.experts.index') }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreyi temizle</a>
   @endif
 </form>
@@ -86,6 +95,7 @@
       </div>
       <div class="flex items-center gap-2 flex-wrap text-xs">
         <span class="text-gray-600">📞 {{ $expert->phone ?: '—' }}</span>
+        @if($expert->website_status)@include('partials.website-status-badge', ['facility' => $expert])@endif
         @if($expert->trashed())
           <span class="inline-block rounded-full px-2.5 py-0.5 font-semibold bg-red-100 text-red-700">Silinmiş</span>
         @elseif($expert->is_published)

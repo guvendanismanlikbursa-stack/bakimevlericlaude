@@ -7210,6 +7210,33 @@ class PlatformFeatureTest extends TestCase
         $this->assertFalse($expert->fresh()->isSupporter());
     }
 
+    // 22 Ekim 2026: doktorların internet sitesi durumu (kurumlardakiyle aynı).
+    public function test_expert_website_status_classification_and_admin_filter(): void
+    {
+        $this->assertSame(['var', 'https://drahmet.com'], \App\Models\Expert::classifyWebsite('https://drahmet.com'));
+        $this->assertSame('rehber', \App\Models\Expert::classifyWebsite('https://www.doktortakvimi.com/x')[0]);
+        $this->assertSame('rehber', \App\Models\Expert::classifyWebsite('https://www.ozelhayathastanesi.com.tr/doktorlar/x')[0]);
+        $this->assertSame('sosyal', \App\Models\Expert::classifyWebsite('https://instagram.com/dr')[0]);
+        $this->assertSame(['yok', null], \App\Models\Expert::classifyWebsite(''));
+        $this->assertSame([null, null], \App\Models\Expert::classifyWebsite(null, false));
+
+        $base = ['branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'is_published' => true];
+        $a = \App\Models\Expert::create($base + ['name' => 'Siteli Doktor', 'slug' => 'siteli', 'source_payload' => ['row' => ['Web Sitesi' => 'https://siteli.com']]]);
+        $b = \App\Models\Expert::create($base + ['name' => 'Sitesiz Doktor', 'slug' => 'sitesiz', 'source_payload' => ['row' => ['Web Sitesi' => '']]]);
+        $this->app->make(\App\Http\Controllers\Public\OpsController::class);
+        $m = new \ReflectionMethod(\App\Http\Controllers\Public\OpsController::class, 'expertWebsiteBackfill');
+        $m->setAccessible(true);
+        $out = $m->invoke($this->app->make(\App\Http\Controllers\Public\OpsController::class), \Illuminate\Http\Request::create('/', 'POST', ['apply' => 1]));
+        $this->assertStringContainsString('UYGULANDI', $out);
+        $this->assertSame('var', $a->fresh()->website_status);
+        $this->assertSame('yok', $b->fresh()->website_status);
+
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.experts.index', ['site' => 'eksik']))
+            ->assertOk()->assertSee('Sitesiz Doktor')->assertDontSee('Siteli Doktor')->assertSee('İnternet sitesi yok', false);
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.experts.index', ['site' => 'var']))
+            ->assertOk()->assertSee('Siteli Doktor')->assertDontSee('Sitesiz Doktor');
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

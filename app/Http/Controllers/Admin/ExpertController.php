@@ -45,6 +45,10 @@ class ExpertController extends Controller
                 $q->whereNull('phone')->orWhere('phone', '')->orWhereRaw("phone REGEXP '[0-9]' = 0");
             });
         }
+        // 22 Ekim 2026: internet sitesi durumu filtresi (kurumlardakiyle aynı).
+        if ($request->filled('site')) {
+            $query->websiteFilter($request->site);
+        }
         if ($request->filled('status')) {
             if ($request->status === 'published') {
                 $query->where('is_published', true)->whereNull('deleted_at');
@@ -150,7 +154,12 @@ class ExpertController extends Controller
             'review_count' => 'nullable|integer|min:0',
             // 22 Ekim 2026: İyilik Hareketi Destekçisi bitiş tarihi (boş = destekçi değil).
             'supporter_until' => 'nullable|date',
+            'website_status' => 'nullable|in:yok,sosyal,rehber,var',
+            'website_url' => 'nullable|string|max:500',
         ]);
+        if (array_key_exists('website_status', $data)) {
+            $data['website_checked_at'] = now();
+        }
 
         $data['is_published'] = $request->boolean('is_published');
         $data['phone_type'] = classify_phone_type($data['phone'] ?? null);

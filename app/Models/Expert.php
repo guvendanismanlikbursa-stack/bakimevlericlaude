@@ -16,6 +16,7 @@ class Expert extends Model
         'name', 'slug', 'title', 'branch', 'branch_label', 'city_id', 'district',
         'address', 'lat', 'lng', 'phone', 'phone_type', 'clinic_name', 'description',
         'google_maps_url', 'rating', 'review_count', 'reviews', 'supporter_until',
+        'website_status', 'website_url', 'website_checked_at',
         'source', 'source_payload', 'is_published', 'is_claimed',
     ];
 
@@ -23,6 +24,7 @@ class Expert extends Model
     {
         return [
             'supporter_until' => 'date',
+            'website_checked_at' => 'datetime',
             'lat' => 'float',
             'lng' => 'float',
             'rating' => 'float',
@@ -38,6 +40,48 @@ class Expert extends Model
      * 22 Ekim 2026: İyilik Hareketi Destekçisi doktor mu (bitiş tarihi bugün
      * veya sonrası). Yalnızca etiket gösterir, sıralamayı etkilemez.
      */
+    /**
+     * 22 Ekim 2026: doktorun Google Haritalar kaydındaki web adresinden site
+     * durumunu çıkarır (Facility::WEBSITE_STATUSES ile aynı değerler).
+     * Rehber siteleri (Doktortakvimi, Doktorsitesi vb.) ve çalıştığı
+     * hastanenin doktor sayfası "rehber", Instagram/WhatsApp vb. "sosyal"
+     * sayılır; boş adres "yok". Bilgi hiç tutulmamışsa null döner.
+     *
+     * @return array{0: ?string, 1: ?string} [durum, adres]
+     */
+    public static function classifyWebsite(?string $url, bool $fieldKnown = true): array
+    {
+        if (! $fieldKnown) {
+            return [null, null];
+        }
+        // Alan 500 karakter; çok uzun (ör. kodlanmış Türkçe karakterli) adresler kesilir.
+        $url = mb_substr(trim((string) $url), 0, 500);
+        if ($url === '') {
+            return ['yok', null];
+        }
+        $host = strtolower((string) parse_url(str_contains($url, '://') ? $url : 'http://'.$url, PHP_URL_HOST));
+        $has = fn (array $keys) => (bool) array_filter($keys, fn ($k) => str_contains($host, $k));
+        if ($has(['instagram.com', 'facebook.com', 'wa.me', 'whatsapp', 'linktr.ee', 'youtube.com', 'tiktok.com', 'twitter.com', 'linkedin.com']) || $host === 'x.com') {
+            return ['sosyal', $url];
+        }
+        if ($has(['doktorsitesi.com', 'doktortakvimi.com', 'docplanner', 'sporlife.net', 'dishek.org', 'tikla.com.tr', 'tavsiyeediyorum', 'cybo.com', 'firmasec.com', 'hekimbul', 'eniyidoktor',
+            'hastane', 'hospital', 'medicana', 'acibadem', 'medicalpark', 'memorial', 'livhospital', 'florence', 'anadolusaglik'])) {
+            return ['rehber', $url];
+        }
+
+        return ['var', $url];
+    }
+
+    public function scopeWebsiteFilter($query, ?string $value)
+    {
+        return match ($value) {
+            'eksik' => $query->whereIn('website_status', Facility::WEBSITE_MISSING_STATUSES),
+            'bilinmiyor' => $query->whereNull('website_status'),
+            'yok', 'sosyal', 'rehber', 'var' => $query->where('website_status', $value),
+            default => $query,
+        };
+    }
+
     public function isSupporter(): bool
     {
         return $this->supporter_until !== null && ! $this->supporter_until->copy()->endOfDay()->isPast();

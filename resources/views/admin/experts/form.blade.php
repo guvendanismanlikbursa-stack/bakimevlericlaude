@@ -94,6 +94,23 @@
     </div>
   @endif
 
+  {{-- 22 Ekim 2026: doktorun internet sitesi durumu (kurumlardakiyle aynı seçenekler). --}}
+  <div class="mb-5 grid md:grid-cols-2 gap-3">
+    <div>
+      <label class="text-sm font-semibold block mb-1">🌐 İnternet sitesi durumu</label>
+      <select name="website_status" class="border rounded-lg px-3 py-2 w-full text-sm">
+        <option value="">Bilinmiyor</option>
+        @foreach(\App\Models\Facility::WEBSITE_STATUSES as $key => $label)
+          <option value="{{ $key }}" @selected(old('website_status', $expert->website_status) === $key)>{{ $label }}</option>
+        @endforeach
+      </select>
+    </div>
+    <div>
+      <label class="text-sm font-semibold block mb-1">Web adresi</label>
+      <input type="text" name="website_url" value="{{ old('website_url', $expert->website_url) }}" placeholder="https://..." class="border rounded-lg px-3 py-2 w-full text-sm">
+    </div>
+  </div>
+
   {{-- 22 Ekim 2026: doktorlara sembolik yıllık İyilik Hareketi üyeliği; yalnızca etiket, ayrıcalık yok. --}}
   <div class="mb-5 rounded-lg p-4" style="background:#fdf2f8;border:1px solid #fbcfe8;">
     <label class="text-sm font-semibold block mb-1">💗 İyilik Hareketi Destekçisi — bitiş tarihi</label>
