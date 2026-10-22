@@ -1,16 +1,16 @@
-{{-- 22 Ekim 2026: kullanıcının talebi - "Paketler bir bakışta" karşılaştırma
-     tablosu (Ekonomik / Standart / Premium). Sütunlar paket sırasına göredir;
-     fotoğraf ve video satırları paketteki gerçek ayarlardan gelir. Fiyat
-     satırı yalnızca $showPrice true iken görünür.
+{{-- 22 Ekim 2026: kullanıcının talebi - "Paketler bir bakışta". Masaüstünde
+     tablo; mobilde (yana kaydırma olmasın diye) her özellik bir satır kartı,
+     altında üç paketin değeri yan yana. Fotoğraf, video ve site sayısı
+     paketin gerçek ayarlarından gelir. Fiyat satırı yalnızca $showPrice iken.
      Parametreler: $packages (3 paket), $showPrice (bool) --}}
+@include('themes._shared.membership._styles')
 @php
   $showPrice = $showPrice ?? false;
   $cols = $packages->values();
-  $ok = '<span style="color:#15803d;font-weight:900;">✓</span>';
-  $no = '<span style="color:#cbd5e1;">—</span>';
+  $ok = '<span class="ih-ok">✓</span>';
+  $no = '<span class="ih-no">—</span>';
   $groups = [
       'Profil ve görünürlük' => [
-          // 22 Ekim 2026: Standart/Premium'da kurumun kendi internet sitesi de olduğu için 4 site.
           ['Yayınlandığı siteler (bakimevleri.com, bakimevibul.com, bakimeviara.com + kendi internet siteniz)', $cols->map(fn ($p) => $p->includesWebsite() ? '4 site' : '3 site')->all()],
           ['Tek kurum paneli, telefondan yönetim', [$ok, $ok, $ok]],
           ['"Doğrulanmış Üye Kurum" rozeti', [$ok, $ok, $ok]],
@@ -38,41 +38,61 @@
           ['Destek', ['Panel içi destek', 'Öncelikli destek', 'Kişisel kurum temsilcisi']],
       ],
   ];
+  if ($showPrice) {
+      $groups['Ücret'] = [['Yıllık üyelik ücreti', $cols->map(fn ($p) => '<b style="color:#701a75;">'.number_format($p->price, 0, ',', '.').'₺</b>')->all()]];
+  }
 @endphp
-<div class="overflow-x-auto bg-white" style="border-radius:16px;border:1px solid #e5e7eb;">
-  <table class="w-full text-sm" style="border-collapse:collapse;min-width:640px;">
+
+{{-- Masaüstü --}}
+<div class="ih-cmp-table ih-card" style="padding:0;overflow:hidden;">
+  <table>
     <thead>
       <tr style="background:#faf5ff;">
-        <th class="text-left" style="padding:14px 16px;width:46%;"></th>
+        <th style="text-align:left;border-top:0;"></th>
         @foreach($cols as $package)
-          <th style="padding:14px 10px;text-align:center;vertical-align:bottom;">
-            <div style="font-size:22px;">{{ $package->badge_emoji }}</div>
-            <div class="font-black text-gray-900">{{ $package->badge_label }}</div>
-            <div class="text-xs font-bold" style="color:{{ $package->is_premium ? '#b45309' : '#a21caf' }};">{{ $package->name }}</div>
+          <th style="border-top:0;text-align:center;vertical-align:bottom;padding:18px 10px;">
+            <div style="font-size:24px;line-height:1;">{{ $package->badge_emoji }}</div>
+            <div style="font-weight:900;color:#111827;margin-top:6px;">{{ $package->badge_label }}</div>
+            <div style="font-size:12px;font-weight:800;color:{{ $package->is_premium ? '#b45309' : '#a21caf' }};">{{ $package->name }}</div>
           </th>
         @endforeach
       </tr>
     </thead>
     <tbody>
       @foreach($groups as $groupTitle => $rows)
-        <tr><td colspan="{{ $cols->count() + 1 }}" class="font-black text-gray-900" style="padding:14px 16px 6px;background:#f9fafb;">{{ $groupTitle }}</td></tr>
+        <tr class="ih-cmp-group"><td colspan="{{ $cols->count() + 1 }}">{{ $groupTitle }}</td></tr>
         @foreach($rows as [$label, $values])
-          <tr style="border-top:1px solid #f1f5f9;">
-            <td class="text-gray-700" style="padding:10px 16px;">{{ $label }}</td>
+          <tr>
+            <td style="color:#374151;">{{ $label }}</td>
             @foreach($cols as $i => $package)
-              <td class="text-gray-800 font-semibold" style="padding:10px;text-align:center;">{!! $values[$i] ?? $no !!}</td>
+              <td class="v">{!! $values[$i] ?? $no !!}</td>
             @endforeach
           </tr>
         @endforeach
       @endforeach
-      @if($showPrice)
-        <tr style="border-top:2px solid #e5e7eb;background:#fdf4ff;">
-          <td class="font-black text-gray-900" style="padding:14px 16px;">Yıllık üyelik ücreti</td>
-          @foreach($cols as $package)
-            <td class="font-black" style="padding:14px 10px;text-align:center;color:#701a75;font-size:16px;">{{ number_format($package->price, 0, ',', '.') }}₺</td>
-          @endforeach
-        </tr>
-      @endif
     </tbody>
   </table>
+</div>
+
+{{-- Mobil --}}
+<div class="ih-cmp-list">
+  <p style="font-size:12px;color:#6b7280;text-align:center;margin:0 0 12px;">
+    @foreach($cols as $package){{ $package->badge_emoji }} {{ $package->name }}@if(! $loop->last) &nbsp;·&nbsp; @endif @endforeach
+  </p>
+
+  @foreach($groups as $groupTitle => $rows)
+    <div class="ih-card" style="margin-bottom:14px;padding:18px;">
+      <div style="font-weight:900;color:#111827;margin-bottom:6px;">{{ $groupTitle }}</div>
+      @foreach($rows as [$label, $values])
+        <div class="ih-cmp-row">
+          <div class="ih-cmp-label">{{ $label }}</div>
+          <div class="ih-cmp-vals">
+            @foreach($cols as $i => $package)
+              <div class="ih-cmp-val"><i>{{ $package->badge_emoji }}</i>{!! $values[$i] ?? $no !!}</div>
+            @endforeach
+          </div>
+        </div>
+      @endforeach
+    </div>
+  @endforeach
 </div>
