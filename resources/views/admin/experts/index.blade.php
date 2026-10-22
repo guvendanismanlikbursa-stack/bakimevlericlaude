@@ -59,7 +59,7 @@
     <div class="p-4 flex flex-col gap-2 {{ $expert->trashed() ? 'opacity-50' : '' }}">
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">
-          <div class="font-bold text-gray-900 break-words">{{ $expert->title }} {{ $expert->name }}</div>
+          <div class="font-bold text-gray-900 break-words">{{ $expert->title }} {{ $expert->name }}@if($expert->isSupporter()) <span class="text-xs font-bold" style="color:#be185d;">💗 Destekçi · bitiş {{ $expert->supporter_until->format('d.m.Y') }}</span>@endif</div>
           <div class="text-xs text-gray-500 mt-0.5">
             {{ $expert->branch_label ?: $expert->branch }} · {{ $expert->city?->name }}@if($expert->district) / {{ $expert->district }}@endif
             @if($expert->clinic_name) · {{ $expert->clinic_name }}@endif

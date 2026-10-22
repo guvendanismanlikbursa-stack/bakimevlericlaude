@@ -15,13 +15,14 @@ class Expert extends Model
     protected $fillable = [
         'name', 'slug', 'title', 'branch', 'branch_label', 'city_id', 'district',
         'address', 'lat', 'lng', 'phone', 'phone_type', 'clinic_name', 'description',
-        'google_maps_url', 'rating', 'review_count', 'reviews',
+        'google_maps_url', 'rating', 'review_count', 'reviews', 'supporter_until',
         'source', 'source_payload', 'is_published', 'is_claimed',
     ];
 
     protected function casts(): array
     {
         return [
+            'supporter_until' => 'date',
             'lat' => 'float',
             'lng' => 'float',
             'rating' => 'float',
@@ -31,6 +32,15 @@ class Expert extends Model
             'is_published' => 'boolean',
             'is_claimed' => 'boolean',
         ];
+    }
+
+    /**
+     * 22 Ekim 2026: İyilik Hareketi Destekçisi doktor mu (bitiş tarihi bugün
+     * veya sonrası). Yalnızca etiket gösterir, sıralamayı etkilemez.
+     */
+    public function isSupporter(): bool
+    {
+        return $this->supporter_until !== null && ! $this->supporter_until->copy()->endOfDay()->isPast();
     }
 
     public function city()

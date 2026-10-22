@@ -148,6 +148,8 @@ class ExpertController extends Controller
             'google_maps_url' => 'nullable|url|max:2000',
             'rating' => 'nullable|numeric|min:0|max:5',
             'review_count' => 'nullable|integer|min:0',
+            // 22 Ekim 2026: İyilik Hareketi Destekçisi bitiş tarihi (boş = destekçi değil).
+            'supporter_until' => 'nullable|date',
         ]);
 
         $data['is_published'] = $request->boolean('is_published');

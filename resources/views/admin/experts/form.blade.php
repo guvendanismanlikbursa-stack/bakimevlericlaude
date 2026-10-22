@@ -94,6 +94,13 @@
     </div>
   @endif
 
+  {{-- 22 Ekim 2026: doktorlara sembolik yıllık İyilik Hareketi üyeliği; yalnızca etiket, ayrıcalık yok. --}}
+  <div class="mb-5 rounded-lg p-4" style="background:#fdf2f8;border:1px solid #fbcfe8;">
+    <label class="text-sm font-semibold block mb-1">💗 İyilik Hareketi Destekçisi — bitiş tarihi</label>
+    <input type="date" name="supporter_until" value="{{ old('supporter_until', $expert->supporter_until?->format('Y-m-d')) }}" class="border rounded-lg px-3 py-2 text-sm">
+    <p class="text-xs text-gray-500 mt-1">Doktor yıllık destekçi ücretini ödediyse bitiş tarihini girin (ör. bugünden 1 yıl sonrası). Bu tarihe kadar doktorun kartında "İyilik Hareketi Destekçisi" etiketi görünür; sıralamayı veya başka hiçbir şeyi etkilemez. Boş bırakılırsa etiket görünmez.</p>
+  </div>
+
   <label class="flex items-center gap-2 mb-6">
     <input type="checkbox" name="is_published" value="1" @checked(old('is_published', $expert->is_published)) class="rounded">
     <span class="text-sm font-semibold text-gray-700">Yayında (sitede görünür)</span>

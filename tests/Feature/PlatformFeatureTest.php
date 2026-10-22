@@ -7181,6 +7181,35 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()->assertSee('Kimler için?', false)->assertSee('Fotoğraf sınırı', false)->assertSee('Kapanış cümlesi', false);
     }
 
+    // 22 Ekim 2026: doktorlar için sembolik "İyilik Hareketi Destekçisi" etiketi;
+    // admin bitiş tarihi girer, tarih geçince etiket kalkar, sıralamaya etkisi yok.
+    public function test_expert_supporter_badge_shows_until_expiry(): void
+    {
+        $expert = \App\Models\Expert::create(['name' => 'Destek Doktor', 'slug' => 'destek-doktor', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'is_published' => true]);
+        $this->assertFalse($expert->isSupporter());
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->put(route('admin.experts.update', $expert), [
+                'name' => 'Destek Doktor', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id,
+                'is_published' => 1, 'supporter_until' => now()->addYear()->toDateString(),
+            ])->assertRedirect();
+        $this->assertTrue($expert->fresh()->isSupporter());
+
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.experts.index', ['q' => 'Destek Doktor']))
+            ->assertOk()->assertSee('💗 Destekçi', false);
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.experts.edit', $expert))
+            ->assertOk()->assertSee('İyilik Hareketi Destekçisi — bitiş tarihi', false);
+
+        $html = view('themes._shared.experts._results', [
+            'experts' => new \Illuminate\Pagination\LengthAwarePaginator([$expert->fresh()], 1, 20),
+            'activeExpertSlug' => null, 'hasFilter' => true, 'publiclyVisible' => true,
+        ])->render();
+        $this->assertStringContainsString('İyilik Hareketi Destekçisi', $html);
+
+        $expert->update(['supporter_until' => now()->subDays(2)->toDateString()]);
+        $this->assertFalse($expert->fresh()->isSupporter());
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

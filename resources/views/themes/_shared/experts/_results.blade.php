@@ -24,6 +24,10 @@
             </div>
             <div class="min-w-0">
               <div class="font-black text-gray-950 truncate">{{ $expert->title }} {{ $expert->name }}</div>
+              {{-- 22 Ekim 2026: İyilik Hareketi Destekçisi etiketi - yalnızca bilgi, sıralamayı etkilemez. --}}
+              @if($expert->isSupporter())
+                <span title="Bu doktor, üyeliğiyle kimsesiz yaşlıların bakımına destek oluyor." style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;font-size:11px;font-weight:800;color:#be185d;background:#fdf2f8;border:1px solid #fbcfe8;border-radius:999px;padding:2px 8px;">💗 İyilik Hareketi Destekçisi</span>
+              @endif
               <div class="text-sm text-gray-500 mt-0.5 truncate">{{ $expert->branch }} <span class="text-gray-400">({{ $expert->branch_label }})</span> · {{ $expert->city?->name }}@if($expert->district) / {{ $expert->district }}@endif</div>
             </div>
           </div>
@@ -35,6 +39,9 @@
           </div>
         </button>
         <div class="js-expert-detail {{ $isOpen ? '' : 'hidden' }} p-5 bg-teal-50/40" style="border-top: 2px solid #0d9488;">
+          @if($expert->isSupporter())
+            <p style="font-size:13px;color:#9d174d;background:#fdf2f8;border-radius:12px;padding:8px 12px;margin-bottom:12px;">💗 Bu doktor, İyilik Hareketi üyeliğiyle kimsesiz ve ihtiyaç sahibi yaşlıların bakımına destek oluyor.</p>
+          @endif
           @if($expert->description)
             <p class="text-sm text-gray-700 mb-4">{{ $expert->description }}</p>
           @endif
