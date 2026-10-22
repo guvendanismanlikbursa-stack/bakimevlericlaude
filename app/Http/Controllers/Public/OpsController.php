@@ -8028,6 +8028,10 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
             if (preg_match('/\d{4,5}\s+([^,\/\d]+)\/[^\/,]+\s*$/u', $address, $m)) {
                 return trim($m[1]);
             }
+            // 22 Ekim 2026: "34194 Bahçelievler" gibi "/İl" olmadan biten adreslerde ilçe, posta kodundan sonraki kelime(ler)dir.
+            if (preg_match('/\d{5}\s+(\p{L}[\p{L} ]{2,30})\s*$/u', $address, $m)) {
+                return trim($m[1]);
+            }
             return '';
         };
         $titleUnvan = function (string $name): array {
@@ -8156,6 +8160,19 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
                     }
                 }
             }
+            if (! $cityId && $address && preg_match_all('/(?<!\d)(\d{5})(?!\d)/', $address, $pk)) {
+                // 22 Ekim 2026: kullanıcının fark ettiği kayıp - adresi "34194
+                // Bahçelievler" gibi il adı olmadan biten doktorlar "il tespit
+                // edilemedi" diye atılıyordu. Türkiye'de posta kodunun ilk iki
+                // hanesi il plakasıdır (cities.id de plaka); adresteki SON 5
+                // haneli sayı posta kodu kabul edilip il oradan bulunur.
+                $plaka = (int) substr(end($pk[1]), 0, 2);
+                $ilKaydi = ($plaka >= 1 && $plaka <= 81) ? DB::table('cities')->where('id', $plaka)->first(['id', 'name']) : null;
+                if ($ilKaydi) {
+                    $cityId = $ilKaydi->id;
+                    $ilAdi = $ilKaydi->name;
+                }
+            }
             if (! $cityId) {
                 $skippedNoCity++;
                 $errors[] = "#{$i}: il tespit edilemedi (adres: {$address}) - {$name}";
@@ -8279,6 +8296,10 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
             if (preg_match('/\d{4,5}\s+([^,\/\d]+)\/[^\/,]+\s*$/u', $address, $m)) {
                 return trim($m[1]);
             }
+            // 22 Ekim 2026: "34194 Bahçelievler" gibi "/İl" olmadan biten adreslerde ilçe, posta kodundan sonraki kelime(ler)dir.
+            if (preg_match('/\d{5}\s+(\p{L}[\p{L} ]{2,30})\s*$/u', $address, $m)) {
+                return trim($m[1]);
+            }
 
             return '';
         };
@@ -8359,6 +8380,19 @@ Ailemizin gönülden teşekkürlerini iletiyoruz. İyi ki kendisini tercih etmi�
                         $ilAdi = $normIl;
                         break;
                     }
+                }
+            }
+            if (! $cityId && $address && preg_match_all('/(?<!\d)(\d{5})(?!\d)/', $address, $pk)) {
+                // 22 Ekim 2026: kullanıcının fark ettiği kayıp - adresi "34194
+                // Bahçelievler" gibi il adı olmadan biten doktorlar "il tespit
+                // edilemedi" diye atılıyordu. Türkiye'de posta kodunun ilk iki
+                // hanesi il plakasıdır (cities.id de plaka); adresteki SON 5
+                // haneli sayı posta kodu kabul edilip il oradan bulunur.
+                $plaka = (int) substr(end($pk[1]), 0, 2);
+                $ilKaydi = ($plaka >= 1 && $plaka <= 81) ? DB::table('cities')->where('id', $plaka)->first(['id', 'name']) : null;
+                if ($ilKaydi) {
+                    $cityId = $ilKaydi->id;
+                    $ilAdi = $ilKaydi->name;
                 }
             }
             if (! $cityId) {
