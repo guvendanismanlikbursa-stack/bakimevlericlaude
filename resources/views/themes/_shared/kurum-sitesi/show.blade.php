@@ -51,16 +51,18 @@
   .ust-etiket{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--ana)}
   h1,h2,h3{line-height:1.2;margin:0;text-wrap:balance}
   h2{font-size:clamp(26px,4vw,36px);font-weight:900;margin:8px 0 16px}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:800;border-radius:14px;padding:14px 20px;text-decoration:none;border:0;cursor:pointer;font-size:15px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:800;border-radius:14px;padding:14px 20px;text-decoration:none;border:0;cursor:pointer;font-size:15px;white-space:nowrap}
   .btn-ana{background:var(--ana);color:#fff}
   .btn-ana:hover{background:var(--koyu)}
   .btn-wa{background:#1fa855;color:#fff}
   .btn-cerceve{background:#fff;color:var(--koyu);border:2px solid var(--cizgi)}
   /* Üst menü */
   .menu{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--cizgi)}
-  .menu .kap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px}
-  .logo{font-weight:900;font-size:18px;color:var(--koyu);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
-  .menu nav{display:none;gap:22px;font-weight:700;font-size:15px}
+  /* 23 Ekim 2026: uzun kurum adında "Hemen Ara" düğmesi iki satıra bölünüp şeritten taşıyordu: ad kısalır (…), menü ve düğme sabit kalır. */
+  .menu .kap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px}
+  .logo{flex:1 1 auto;min-width:0;font-weight:900;font-size:18px;color:var(--koyu);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .menu nav{display:none;flex:none;gap:22px;font-weight:700;font-size:15px;white-space:nowrap}
+  .menu .btn{flex:none}
   .menu nav a{text-decoration:none;color:var(--soluk)}
   .menu nav a:hover{color:var(--ana)}
   @media(min-width:900px){.menu nav{display:flex}}
@@ -113,7 +115,7 @@
   .alt .kap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:28px;padding-bottom:28px}
   .yuzen{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;flex-direction:column;gap:10px}
   .yuzen a{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;text-decoration:none;box-shadow:0 10px 24px rgba(0,0,0,.25)}
-  .temsili{position:absolute;right:12px;bottom:10px;z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px}
+  .temsili{position:absolute;left:12px;bottom:10px;z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px}
   .onizleme{background:#fde047;color:#422006;text-align:center;font-weight:800;font-size:14px;padding:8px 16px}
   :focus-visible{outline:3px solid var(--ana);outline-offset:2px}
 </style>
