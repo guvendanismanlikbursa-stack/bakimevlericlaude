@@ -228,6 +228,15 @@ ScheduledJobMonitor::attach(
     60
 );
 
+// 23 Ekim 2026: kullanıcının talebi - arama botlarının taradığı sayfaların
+// önbellek dosyaları üç sitede de birikip dosya (inode) sayısını
+// artırıyordu. Her gece yalnızca süresi dolmuş önbellek dosyaları silinir.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:prune-expired-cache')->dailyAt('04:45'),
+    'platform:prune-expired-cache',
+    24 * 60
+);
+
 // Bakim: paylasimli (cPanel) hosting'de kalici bir "queue:work" daemon'i
 // (supervisor/systemd) kurulamadigindan, kuyruk mevcut "* * * * * schedule:run"
 // cron'una binerek her dakika en fazla ~50 saniye boyunca tuketilir. Kuyruk
