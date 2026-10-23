@@ -3,6 +3,10 @@
 
 @section('content')
 <h1 class="text-2xl font-bold mb-6">{{ $expert->exists ? 'Doktor Düzenle' : 'Yeni Doktor Ekle' }}</h1>
+{{-- 23 Ekim 2026: kullanıcının talebi - doktorun internet sitesini düzenleme. --}}
+@if($expert->exists)
+  <div style="margin:-12px 0 18px;"><a href="{{ route('admin.experts.website.edit', $expert) }}" style="display:inline-block;border:2px solid #0d6e6a;color:#0d6e6a;font-weight:800;border-radius:10px;padding:7px 14px;text-decoration:none;font-size:14px;">🌐 Doktor sitesini düzenle</a></div>
+@endif
 
 <form method="POST" action="{{ $expert->exists ? route('admin.experts.update', $expert) : route('admin.experts.store') }}" class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 max-w-3xl">
   @csrf

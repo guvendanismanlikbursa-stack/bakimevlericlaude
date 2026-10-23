@@ -15,6 +15,55 @@ use Illuminate\Validation\Rule;
 // geçmişinden eski hale döner.
 class FacilityWebsiteController extends Controller
 {
+    /**
+     * 23 Ekim 2026: kullanıcının talebi - bütün kurumların siteleri tek listede:
+     * yayında / taslak / hiç açılmamış, kendi sitesi olan / olmayan.
+     */
+    public function index(Request $request)
+    {
+        $q = Facility::query()->with(['city', 'category'])
+            ->leftJoin('facility_websites as fw', 'fw.facility_id', '=', 'facilities.id')
+            ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme');
+        if ($request->filled('q')) {
+            $q->where('facilities.name', 'like', '%'.$request->q.'%');
+        }
+        if ($request->filled('city')) {
+            $q->where('facilities.city_id', $request->city);
+        }
+        match ($request->input('durum')) {
+            'yayinda' => $q->where('fw.status', 'yayinda'),
+            'taslak' => $q->where('fw.status', 'taslak'),
+            'hic' => $q->whereNull('fw.id'),
+            default => null,
+        };
+        match ($request->input('kendi_sitesi')) {
+            'yok' => $q->whereIn('facilities.website_status', Facility::WEBSITE_MISSING_STATUSES),
+            'var' => $q->where('facilities.website_status', 'var'),
+            'bilinmiyor' => $q->whereNull('facilities.website_status'),
+            default => null,
+        };
+        $facilities = $q->orderByRaw("CASE fw.status WHEN 'yayinda' THEN 0 WHEN 'taslak' THEN 1 ELSE 2 END")
+            ->orderByDesc('facilities.is_claimed')->orderBy('facilities.name')
+            ->paginate(30)->withQueryString();
+        $sayilar = [
+            'yayinda' => FacilityWebsite::where('status', 'yayinda')->count(),
+            'taslak' => FacilityWebsite::where('status', 'taslak')->count(),
+        ];
+        $cities = \App\Models\City::orderBy('name')->get(['id', 'name']);
+
+        return view('admin.facility-websites.index', compact('facilities', 'sayilar', 'cities'));
+    }
+
+    /**
+     * Listeden tek tıkla önizleme: kayıt yoksa taslak olarak oluşturulur.
+     */
+    public function preview(Facility $facility)
+    {
+        $site = FacilityWebsite::forFacility($facility);
+
+        return redirect('/siteler/'.$site->slug.'?onizleme=1');
+    }
+
     public function edit(Facility $facility)
     {
         $site = FacilityWebsite::forFacility($facility);
@@ -43,8 +92,8 @@ class FacilityWebsiteController extends Controller
                     $fail('Platformun kendi alan adları kurum sitesine verilemez.');
                 } elseif (! preg_match('/^(?:[a-z0-9-]+\.)+[a-z]{2,}$/', $domain)) {
                     $fail('Alan adı geçersiz (ör. gunesbakimevi.com).');
-                } elseif (FacilityWebsite::where('custom_domain', $domain)->whereKeyNot($site->id)->exists()) {
-                    $fail('Bu alan adı başka bir kurumun sitesinde kullanılıyor.');
+                } elseif (\App\Models\ExpertWebsite::domainTaken($domain, 'facility', $site->id)) {
+                    $fail('Bu alan adı başka bir kurum ya da doktor sitesinde kullanılıyor.');
                 }
             }]]);
         }

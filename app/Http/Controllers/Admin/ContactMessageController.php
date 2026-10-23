@@ -71,6 +71,10 @@ class ContactMessageController extends Controller
     public function reply(Request $request, ContactMessage $contactMessage)
     {
         $data = $request->validate(['body' => 'required|string|min:2']);
+        // 23 Ekim 2026: doktor sitesi formundan gelen mesajlarda e-posta yok (telefon mesajın içinde).
+        if (! $contactMessage->email) {
+            return back()->with('error', 'Bu mesajda e-posta adresi yok; mesajdaki telefon numarasından dönüş yapın.');
+        }
 
         $contactMessage->update([
             'admin_reply' => $data['body'],

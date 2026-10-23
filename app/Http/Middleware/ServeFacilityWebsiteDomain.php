@@ -2,17 +2,19 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Public\DoktorSitesiController;
 use App\Http\Controllers\Public\KurumSitesiController;
+use App\Models\ExpertWebsite;
 use App\Models\FacilityWebsite;
 use Closure;
 use Illuminate\Http\Request;
 
-// 23 Ekim 2026: kullanıcının talebi - kurum alan adı alınca site oraya
-// taşınır. Alan adı cPanel'de ana sitenin klasörüne yönlendirildiğinde
+// 23 Ekim 2026: kullanıcının talebi - kurum (ve doktor) alan adı alınca site
+// oraya taşınır. Alan adı cPanel'de ana sitenin klasörüne yönlendirildiğinde
 // istekler bu uygulamaya gelir; platformun kendi alan adlarından biri
-// değilse ve yayındaki bir kurum sitesine tanımlıysa, ana sayfada kurum
-// sitesi gösterilir, iletişim formu işlenir, diğer adresler ana sayfaya
-// döner (küçük resim uçları gibi gereken adresler hariç).
+// değilse ve yayındaki bir kurum ya da doktor sitesine tanımlıysa, ana
+// sayfada o site gösterilir, iletişim formu işlenir, diğer adresler ana
+// sayfaya döner (küçük resim uçları gibi gereken adresler hariç).
 class ServeFacilityWebsiteDomain
 {
     private const GECIS = ['kucuk-resim/*', 'storage/*', 'build/*', 'up', '_ops/*', '_internal/*'];
@@ -24,8 +26,9 @@ class ServeFacilityWebsiteDomain
             return $next($request);
         }
 
-        $siteId = FacilityWebsite::liveDomainMap()[$host] ?? null;
-        if (! $siteId) {
+        $kurumId = FacilityWebsite::liveDomainMap()[$host] ?? null;
+        $doktorId = $kurumId ? null : (ExpertWebsite::liveDomainMap()[$host] ?? null);
+        if (! $kurumId && ! $doktorId) {
             return $next($request);
         }
         foreach (self::GECIS as $desen) {
@@ -34,11 +37,19 @@ class ServeFacilityWebsiteDomain
             }
         }
 
-        $site = FacilityWebsite::with('facility')->find($siteId);
-        if (! $site || ! $site->facility || ! $site->isLive()) {
+        if ($kurumId) {
+            $site = FacilityWebsite::with('facility')->find($kurumId);
+            $hazir = $site && $site->facility && $site->isLive();
+            $controller = KurumSitesiController::class;
+        } else {
+            $site = ExpertWebsite::with('expert')->find($doktorId);
+            $hazir = $site && $site->expert && $site->isLive();
+            $controller = DoktorSitesiController::class;
+        }
+        if (! $hazir) {
             return $next($request);
         }
-        $controller = app(KurumSitesiController::class);
+        $controller = app($controller);
 
         if ($request->isMethod('GET') && $request->path() === '/') {
             return app()->call([$controller, 'showForDomain'], ['site' => $site]);

@@ -7338,6 +7338,120 @@ class PlatformFeatureTest extends TestCase
         $this->assertNull($site->fresh()->hero_title);
     }
 
+    public function test_admin_facility_websites_list_filters_and_preview(): void
+    {
+        $yayinda = $this->facilityUser->facility;
+        \App\Models\FacilityWebsite::forFacility($yayinda)->update(['status' => 'yayinda']);
+        $taslak = $this->rehabFacility;
+        \App\Models\FacilityWebsite::forFacility($taslak);
+        $hic = $this->elderlyFacility;
+        \App\Models\FacilityWebsite::where('facility_id', $hic->id)->delete();
+        $hic->update(['website_status' => 'yok']);
+        $admin = ['admin_id' => $this->admin->id];
+
+        $this->withSession($admin)->get(route('admin.facility-websites.index'))
+            ->assertOk()->assertSee('Kurum Siteleri', false)->assertSee($yayinda->name, false)->assertSee($hic->name, false);
+        $this->withSession($admin)->get(route('admin.facility-websites.index', ['durum' => 'yayinda']))
+            ->assertOk()->assertSee($yayinda->name, false)->assertDontSee($taslak->name, false)->assertDontSee($hic->name, false);
+        $this->withSession($admin)->get(route('admin.facility-websites.index', ['durum' => 'taslak']))
+            ->assertOk()->assertSee($taslak->name, false)->assertDontSee($yayinda->name, false);
+        $this->withSession($admin)->get(route('admin.facility-websites.index', ['durum' => 'hic', 'kendi_sitesi' => 'yok']))
+            ->assertOk()->assertSee($hic->name, false)->assertDontSee($yayinda->name, false);
+
+        // Önizle: site yoksa taslak açılır ve önizlemeye gider.
+        $this->withSession($admin)->get(route('admin.facility-websites.preview', $hic))->assertRedirect();
+        $site = \App\Models\FacilityWebsite::where('facility_id', $hic->id)->first();
+        $this->assertNotNull($site);
+        $this->assertSame('taslak', $site->status);
+
+        // Admin dışı erişemez.
+        $this->flushSession();
+        $this->get(route('admin.facility-websites.index'))->assertRedirect();
+    }
+
+    // 23 Ekim 2026: doktor sitesi - yalnızca adminden düzenlenir, yorum gösterilmez.
+    public function test_admin_builds_expert_website_with_photo_contact_domain_and_revert(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Http::fake();
+        $expert = \App\Models\Expert::create([
+            'name' => 'Ayşe Yılmaz', 'slug' => 'ayse-yilmaz', 'title' => 'Uzm. Dr.', 'branch' => 'Dahiliye', 'branch_label' => 'İç Hastalıkları',
+            'city_id' => $this->city->id, 'district' => 'Nilüfer', 'phone' => '0532 111 22 33', 'is_published' => true,
+            'description' => 'Hastalar çok memnun kaldı', 'reviews' => [['author' => 'Hasta', 'text' => 'Harika doktor yorumu']],
+        ]);
+        $admin = ['admin_id' => $this->admin->id];
+
+        $this->withSession($admin)->get(route('admin.experts.edit', $expert))->assertOk()->assertSee('Doktor sitesini düzenle', false);
+        $this->withSession($admin)->get(route('admin.experts.website.edit', $expert))->assertOk()->assertSee('Doktor Sitesi', false);
+        $site = \App\Models\ExpertWebsite::where('expert_id', $expert->id)->firstOrFail();
+        $this->assertSame('taslak', $site->status);
+
+        // Taslak: herkese kapalı, admin önizler; yorum ve yorumdan türetilmiş açıklama görünmez.
+        $this->flushSession();
+        $this->get('/dr/'.$site->slug)->assertNotFound();
+        $this->withSession($admin)->get('/dr/'.$site->slug)->assertOk()
+            ->assertSee('Uzm. Dr. Ayşe Yılmaz', false)->assertSee('Önizleme — bu site henüz yayında değil', false)
+            ->assertDontSee('Harika doktor yorumu', false)->assertDontSee('Hastalar çok memnun kaldı', false);
+        $this->withSession($admin)->get(route('admin.experts.website.preview', $expert))->assertRedirect('/dr/'.$site->slug.'?onizleme=1');
+
+        $icerik = [
+            'theme' => 'mor', 'hero_title' => 'Dr. Ayşe Yılmaz Muayenehanesi', 'ilgi_alanlari' => "Diyabet takibi\nTansiyon, Tiroid",
+            'calisma_saatleri' => 'Hafta içi 09:00-18:00', 'sections' => ['hakkimda' => '1', 'ilgi_alanlari' => '1', 'calisma_saatleri' => '1'],
+        ];
+        $this->withSession($admin)->put(route('admin.experts.website.update', $expert), $icerik + [
+            'status' => 'yayinda', 'slug' => 'dr-ayse-yilmaz', 'custom_domain' => '',
+            'photo' => \Illuminate\Http\UploadedFile::fake()->image('dr.jpg', 400, 500),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $site->refresh();
+        $this->assertTrue($site->isLive());
+        $this->assertNotNull($site->published_at);
+        $this->assertStringStartsWith('facilities/', (string) $site->photo_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($site->photo_path);
+        $this->assertSame(['Diyabet takibi', 'Tansiyon', 'Tiroid'], $site->ilgiAlanlariListesi());
+        $this->assertFalse($site->sectionEnabled('konum'));
+
+        $this->flushSession();
+        $this->get('/dr/dr-ayse-yilmaz')->assertOk()->assertSee('Dr. Ayşe Yılmaz Muayenehanesi', false)
+            ->assertSee('Tiroid', false)->assertSee('Hafta içi 09:00-18:00', false)->assertDontSee('Önizleme — bu site', false);
+
+        // İletişim formu admin mesajlarına düşer; e-postasız mesaja cevap e-postası denenmez.
+        $this->post('/dr/dr-ayse-yilmaz/iletisim', ['full_name' => 'Ali Hasta', 'phone' => '05550009988', 'message' => 'Randevu'])->assertRedirect();
+        $mesaj = \App\Models\ContactMessage::where('name', 'Ali Hasta')->firstOrFail();
+        $this->assertStringContainsString('05550009988', $mesaj->message);
+        $this->assertStringContainsString('Ayşe Yılmaz', (string) $mesaj->subject);
+        $this->withSession($admin)->post(route('admin.contact-messages.reply', $mesaj), ['body' => 'Merhaba'])->assertSessionHas('error');
+        $this->withSession($admin)->get(route('admin.contact-messages.index'))->assertOk()->assertSee('Ali Hasta', false);
+        $this->flushSession();
+        $this->post('/dr/dr-ayse-yilmaz/iletisim', ['full_name' => 'Bot', 'phone' => '1', 'website' => 'spam'])->assertSessionHasErrors('website');
+
+        // Alan adı: kurum sitesinde kullanılan alan adı doktora verilemez; geçerli alan adıyla açılır.
+        $kurumSitesi = \App\Models\FacilityWebsite::forFacility($this->rehabFacility);
+        $kurumSitesi->update(['custom_domain' => 'kurumalani.com']);
+        $this->withSession($admin)->put(route('admin.experts.website.update', $expert), $icerik + [
+            'status' => 'yayinda', 'slug' => 'dr-ayse-yilmaz', 'custom_domain' => 'kurumalani.com',
+        ])->assertSessionHasErrors('custom_domain');
+        $this->withSession($admin)->put(route('admin.experts.website.update', $expert), $icerik + [
+            'status' => 'yayinda', 'slug' => 'dr-ayse-yilmaz', 'custom_domain' => 'https://www.DrAyse.com/',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('drayse.com', $site->fresh()->custom_domain);
+        $this->flushSession();
+        $this->get('/dr/dr-ayse-yilmaz')->assertRedirect('https://drayse.com');
+        $this->get('http://drayse.com/')->assertOk()->assertSee('Dr. Ayşe Yılmaz Muayenehanesi', false);
+        $this->get('http://drayse.com/uzmanlar')->assertRedirect('/');
+        $this->post('http://drayse.com/iletisim', ['full_name' => 'Veli Alan', 'phone' => '05554443322'])->assertRedirect();
+        $this->assertTrue(\App\Models\ContactMessage::where('name', 'Veli Alan')->exists());
+
+        // Geri alma: başlık önceki haline döner.
+        $rev = $site->fresh()->revisions()->get()->first(fn ($r) => array_key_exists('hero_title', $r->before));
+        $this->withSession($admin)->post('http://localhost'.route('admin.experts.website.revert', [$expert, $rev], false))->assertRedirect();
+        $this->assertNull($site->fresh()->hero_title);
+
+        // Kurum sitesine doktorun alan adı verilemez.
+        $this->withSession($admin)->put('http://localhost'.route('admin.facility-websites.update', $this->rehabFacility, false), [
+            'status' => 'taslak', 'slug' => $kurumSitesi->slug, 'custom_domain' => 'drayse.com', 'theme' => 'yesil',
+        ])->assertSessionHasErrors('custom_domain');
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

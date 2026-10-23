@@ -137,6 +137,9 @@ $siteRoutes = function () {
     Route::get('/toplu-fiyat-al', [EngagementController::class, 'bulkQuote'])->name('engagement.bulk-quote');
     Route::post('/toplu-teklif-talebi', [OfferRequestController::class, 'storeBulk'])->middleware('throttle:public-form')->name('offer-requests.store-bulk');
     // 23 Ekim 2026: kullanıcının talebi - kurumun internet sitesi (bkz. KurumSitesiController).
+    // 23 Ekim 2026: kullanıcının talebi - doktorun internet sitesi (bkz. DoktorSitesiController).
+    Route::get('/dr/{slug}', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'show'])->middleware('throttle:public-browse')->name('doktor-sitesi.show');
+    Route::post('/dr/{slug}/iletisim', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('doktor-sitesi.iletisim');
     Route::get('/siteler/{slug}', [\App\Http\Controllers\Public\KurumSitesiController::class, 'show'])->middleware('throttle:public-browse')->name('kurum-sitesi.show');
     Route::post('/siteler/{slug}/iletisim', [\App\Http\Controllers\Public\KurumSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('kurum-sitesi.iletisim');
     Route::get('/iletisim', [ContactController::class, 'create'])->middleware('static.cache')->name('contact.create');
@@ -438,6 +441,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->names('facilities')
             ->except(['show']);
         // 23 Ekim 2026: kullanıcının talebi - her kurumun internet sitesini admin düzenler/yayına alır.
+        Route::get('/kurum-siteleri', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'index'])->name('facility-websites.index');
+        Route::get('/kurumlar/{facility}/web-sitesi/onizle', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'preview'])->name('facility-websites.preview');
         Route::get('/kurumlar/{facility}/web-sitesi', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'edit'])->name('facility-websites.edit');
         Route::put('/kurumlar/{facility}/web-sitesi', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'update'])->name('facility-websites.update');
         Route::post('/kurumlar/{facility}/web-sitesi/geri-al/{revision}', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'revert'])->name('facility-websites.revert');
@@ -450,6 +455,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->except(['show']);
         Route::post('/doktorlar/{id}/geri-yukle', [\App\Http\Controllers\Admin\ExpertController::class, 'restore'])->name('experts.restore');
         Route::post('/doktorlar/{expert}/yayin-durumu', [\App\Http\Controllers\Admin\ExpertController::class, 'togglePublish'])->name('experts.toggle-publish');
+        // 23 Ekim 2026: kullanıcının talebi - doktor siteleri yalnızca adminden düzenlenir.
+        Route::get('/doktorlar/{expert}/web-sitesi', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'edit'])->name('experts.website.edit');
+        Route::put('/doktorlar/{expert}/web-sitesi', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'update'])->name('experts.website.update');
+        Route::get('/doktorlar/{expert}/web-sitesi/onizle', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'preview'])->name('experts.website.preview');
+        Route::post('/doktorlar/{expert}/web-sitesi/geri-al/{revision}', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'revert'])->name('experts.website.revert');
         // 7 Ekim 2026: "Organizasyon Şirketleri" admin bolumu - Doktorlar ile
         // BIREBIR AYNI desen, Organization modeli icin.
         Route::resource('organizasyonlar', \App\Http\Controllers\Admin\OrganizationController::class)

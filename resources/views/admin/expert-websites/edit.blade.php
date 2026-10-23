@@ -1,0 +1,152 @@
+@extends('admin.layout')
+@section('title', 'Doktor Sitesi')
+
+@section('content')
+{{-- 23 Ekim 2026: kullanıcının talebi - doktor siteleri yalnızca admin
+     panelinden düzenlenir. Hukuki nedenle sitede hasta yorumu gösterilmez.
+     Sınıflar yerine inline stil: yeni Tailwind sınıfları FTP deploy'da derlenmiyor. --}}
+@php
+  $alan = 'display:block;width:100%;border:1.5px solid #d6dde0;border-radius:10px;padding:10px 12px;font:inherit;background:#fff;color:#111827;';
+  $etiket = 'display:block;font-weight:800;font-size:14px;color:#111827;margin-bottom:4px;';
+  $ipucu = 'font-size:12px;color:#6b7280;margin-top:4px;';
+  $hataStil = 'color:#b91c1c;font-size:13px;margin-top:4px;';
+  $alanAdlari = ['hero_title' => 'Başlık', 'hero_subtitle' => 'Alt yazı', 'about_text' => 'Hakkımda', 'ilgi_alanlari' => 'İlgi alanları', 'calisma_saatleri' => 'Çalışma saatleri', 'photo_path' => 'Fotoğraf', 'theme' => 'Renk', 'sections' => 'Bölümler'];
+@endphp
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+  <div>
+    <h1 class="text-2xl font-bold">Doktor Sitesi</h1>
+    <div style="color:#6b7280;font-size:14px;">{{ $site->fullName() }} · <a href="{{ route('admin.experts.edit', $expert) }}" style="text-decoration:underline;">Doktor kaydına dön</a></div>
+  </div>
+  <a href="{{ url('/dr/'.$site->slug) }}?onizleme=1" target="_blank" rel="noopener" style="border:2px solid #0d6e6a;color:#0d6e6a;font-weight:800;border-radius:12px;padding:9px 16px;text-decoration:none;">👁 Siteyi önizle</a>
+</div>
+
+@if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:16px;">{{ session('success') }}</div>@endif
+@if($errors->any())<div style="background:#fef2f2;color:#991b1b;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:16px;">Kaydedilemedi, işaretli alanları kontrol edin.</div>@endif
+
+<form method="POST" action="{{ route('admin.experts.website.update', $expert) }}" enctype="multipart/form-data" style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:grid;gap:18px;">
+  @csrf
+  @method('PUT')
+
+  <div style="background:#f8fafc;border-radius:12px;padding:16px;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
+    <div>
+      <label for="ds-durum" style="{{ $etiket }}">Yayın durumu</label>
+      <select id="ds-durum" name="status" style="{{ $alan }}">
+        @foreach(\App\Models\ExpertWebsite::STATUSES as $key => $label)
+          <option value="{{ $key }}" @selected(old('status', $site->status) === $key)>{{ $label }}</option>
+        @endforeach
+      </select>
+      @if($site->published_at)<div style="{{ $ipucu }}">İlk yayın: {{ $site->published_at->format('d.m.Y H:i') }}</div>@endif
+    </div>
+    <div>
+      <label for="ds-slug" style="{{ $etiket }}">Adres (bakimevleri.com/dr/…)</label>
+      <input id="ds-slug" name="slug" value="{{ old('slug', $site->slug) }}" required maxlength="120" style="{{ $alan }}">
+      @error('slug')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+    </div>
+    <div>
+      <label for="ds-domain" style="{{ $etiket }}">Doktorun alan adı (varsa)</label>
+      <input id="ds-domain" name="custom_domain" value="{{ old('custom_domain', $site->custom_domain) }}" maxlength="190" placeholder="drayseyilmaz.com" style="{{ $alan }}">
+      <div style="{{ $ipucu }}">Alan adı hostinge (cPanel'de ana sitenin klasörüne) yönlendirildikten sonra girin. Site yayındaysa eski adres bu alan adına yönlenir.</div>
+      @error('custom_domain')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+    </div>
+  </div>
+  <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;">
+    <div style="font-weight:900;margin-bottom:6px;">Şu anki adres</div>
+    <a href="{{ $site->publicUrl() }}" target="_blank" rel="noopener" style="color:#0d6e6a;font-weight:700;word-break:break-all;">{{ $site->publicUrl() }}</a>
+  </div>
+
+  <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));">
+    <div>
+      <label for="ds-baslik" style="{{ $etiket }}">Başlık</label>
+      <input id="ds-baslik" name="hero_title" value="{{ old('hero_title', $site->hero_title) }}" maxlength="150" placeholder="{{ $site->fullName() }}" style="{{ $alan }}">
+      <div style="{{ $ipucu }}">Boş bırakılırsa unvan ve ad gösterilir.</div>
+      @error('hero_title')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+    </div>
+    <div>
+      <label for="ds-alt" style="{{ $etiket }}">Alt yazı</label>
+      <input id="ds-alt" name="hero_subtitle" value="{{ old('hero_subtitle', $site->hero_subtitle) }}" maxlength="255" placeholder="{{ $site->heroSubtitle() }}" style="{{ $alan }}">
+      <div style="{{ $ipucu }}">Boş bırakılırsa branş ve konum gösterilir.</div>
+      @error('hero_subtitle')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+    </div>
+  </div>
+
+  <div>
+    <label for="ds-hakkimda" style="{{ $etiket }}">Hakkımda</label>
+    <textarea id="ds-hakkimda" name="about_text" rows="7" maxlength="5000" style="{{ $alan }}" placeholder="{{ $site->aboutText() }}">{{ old('about_text', $site->about_text) }}</textarea>
+    <div style="{{ $ipucu }}">Boş bırakılırsa branş, klinik ve konumdan kısa, tarafsız bir tanıtım yazılır. Tedavi garantisi, "en iyi" gibi iddialar ve hasta yorumu yazmayın.</div>
+    @error('about_text')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+  </div>
+
+  <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));">
+    <div>
+      <label for="ds-ilgi" style="{{ $etiket }}">İlgi alanları</label>
+      <textarea id="ds-ilgi" name="ilgi_alanlari" rows="6" maxlength="3000" style="{{ $alan }}" placeholder="Her satıra bir konu yazın&#10;Örn: Diyabet takibi">{{ old('ilgi_alanlari', $site->ilgi_alanlari) }}</textarea>
+      <div style="{{ $ipucu }}">Her satıra (veya virgülle ayırarak) bir konu.</div>
+      @error('ilgi_alanlari')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+    </div>
+    <div>
+      <label for="ds-saat" style="{{ $etiket }}">Çalışma saatleri</label>
+      <textarea id="ds-saat" name="calisma_saatleri" rows="6" maxlength="1000" style="{{ $alan }}" placeholder="Hafta içi: 09:00 – 18:00&#10;Cumartesi: 09:00 – 13:00">{{ old('calisma_saatleri', $site->calisma_saatleri) }}</textarea>
+      @error('calisma_saatleri')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+    </div>
+  </div>
+
+  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+    @if($site->photo_path)
+      <img src="{{ facility_asset($site->photo_path) }}" alt="" style="width:96px;height:120px;object-fit:cover;border-radius:14px;border:1px solid #e5e7eb;">
+    @endif
+    <div style="flex:1;min-width:240px;">
+      <label for="ds-foto" style="{{ $etiket }}">Fotoğraf {{ $site->photo_path ? '(değiştirmek için yeni dosya seçin)' : '' }}</label>
+      <input id="ds-foto" type="file" name="photo" accept="image/jpeg,image/png,image/webp" style="{{ $alan }}">
+      <div style="{{ $ipucu }}">Dikey vesikalık tarzı fotoğraf en iyi görünür. Fotoğraf yoksa adın baş harfi gösterilir.</div>
+      @error('photo')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+      @if($site->photo_path)
+        <label style="display:inline-flex;gap:8px;align-items:center;margin-top:8px;font-size:14px;"><input type="checkbox" name="remove_photo" value="1"> Fotoğrafı kaldır</label>
+      @endif
+    </div>
+  </div>
+
+  <div>
+    <div style="{{ $etiket }}">Renk</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      @foreach(\App\Models\ExpertWebsite::THEMES as $key => $t)
+        <label style="display:inline-flex;gap:8px;align-items:center;border:1.5px solid #d6dde0;border-radius:12px;padding:8px 12px;cursor:pointer;">
+          <input type="radio" name="theme" value="{{ $key }}" @checked(old('theme', $site->theme) === $key)>
+          <span style="width:18px;height:18px;border-radius:50%;background:{{ $t['ana'] }};display:inline-block;"></span>{{ $t['ad'] }}
+        </label>
+      @endforeach
+    </div>
+  </div>
+
+  <div>
+    <div style="{{ $etiket }}">Sitede görünen bölümler</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      @foreach(\App\Models\ExpertWebsite::SECTIONS as $key => $label)
+        <label style="display:inline-flex;gap:8px;align-items:center;border:1.5px solid #d6dde0;border-radius:12px;padding:8px 12px;cursor:pointer;">
+          <input type="checkbox" name="sections[{{ $key }}]" value="1" @checked(old('sections') ? ! empty(old('sections')[$key]) : $site->sectionEnabled($key))> {{ $label }}
+        </label>
+      @endforeach
+    </div>
+    <div style="{{ $ipucu }}">Telefon, adres, klinik ve branş doktor kaydından gelir; değiştirmek için doktor kaydını düzenleyin. Hasta yorumları hukuki nedenle sitede yer almaz.</div>
+  </div>
+
+  <div><button type="submit" style="background:#0d6e6a;color:#fff;border:0;border-radius:12px;padding:12px 22px;font-weight:800;font-size:15px;cursor:pointer;">Kaydet</button></div>
+</form>
+
+<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-top:18px;">
+  <h2 style="font-size:18px;font-weight:900;margin:0 0 10px;">Değişiklik geçmişi</h2>
+  @forelse($revisions as $rev)
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;padding:10px 0;border-top:1px solid #f1f5f9;">
+      <div style="font-size:14px;">
+        <b>{{ $rev->created_at->format('d.m.Y H:i') }}</b> · {{ $rev->editor_name ?: 'Admin' }}
+        <div style="font-size:12px;color:#6b7280;">Değişen: {{ collect($rev->before)->keys()->map(fn ($k) => $alanAdlari[$k] ?? $k)->implode(', ') }}</div>
+      </div>
+      <form method="POST" action="{{ route('admin.experts.website.revert', [$expert, $rev]) }}">
+        @csrf
+        <button type="submit" style="border:1.5px solid #d6dde0;background:#fff;border-radius:10px;padding:6px 12px;font-weight:700;font-size:13px;cursor:pointer;">Bu değişiklikten önceki hale dön</button>
+      </form>
+    </div>
+  @empty
+    <div style="color:#6b7280;font-size:14px;">Henüz değişiklik yok.</div>
+  @endforelse
+</div>
+@endsection
