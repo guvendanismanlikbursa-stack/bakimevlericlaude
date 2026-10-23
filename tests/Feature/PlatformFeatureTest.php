@@ -7681,6 +7681,15 @@ class PlatformFeatureTest extends TestCase
         $this->withSession($admin)->get(route('admin.facility-websites.edit', $facility))->assertOk()
             ->assertSee('Gelişmiş ayarları göster', false)->assertDontSee('<details open', false);
 
+        // Site düğmeyle yayına alınmıştı: kapatınca taslağa döner.
+        $this->withSession($admin)->post(route('admin.facility-websites.toggle-pro', $facility))->assertRedirect();
+        $site->refresh();
+        $this->assertFalse($site->isPro());
+        $this->assertFalse($site->isLive());
+
+        // Zaten yayındaki site: kapatınca yayında kalır.
+        $site->update(['status' => 'yayinda']);
+        $this->withSession($admin)->post(route('admin.facility-websites.toggle-pro', $facility))->assertRedirect();
         $this->withSession($admin)->post(route('admin.facility-websites.toggle-pro', $facility))->assertRedirect();
         $site->refresh();
         $this->assertFalse($site->isPro());

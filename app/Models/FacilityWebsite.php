@@ -56,7 +56,7 @@ class FacilityWebsite extends Model
     protected $fillable = [
         'facility_id', 'slug', 'status', 'custom_domain', 'hero_title', 'hero_subtitle', 'about_text',
         'hero_image_id', 'theme', 'sections', 'published_at',
-        'plan', 'pro_until', 'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements',
+        'plan', 'pro_until', 'pro_yayina_aldi', 'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements',
     ];
 
     protected function casts(): array
@@ -67,6 +67,7 @@ class FacilityWebsite extends Model
             'sections' => 'array',
             'published_at' => 'datetime',
             'pro_until' => 'date',
+            'pro_yayina_aldi' => 'boolean',
             'stats' => 'array',
             'values_list' => 'array',
             'team' => 'array',

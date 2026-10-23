@@ -68,10 +68,12 @@ class FacilityWebsiteController extends Controller
     {
         $site = FacilityWebsite::forFacility($facility);
         if ($site->isPro()) {
-            $site->update(['plan' => 'standart', 'pro_until' => null]);
-            $mesaj = $facility->name.': Profesyonel Site kapatıldı, site hazır tasarıma döndü.';
+            // Site bu düğmeyle yayına alındıysa kapatınca taslağa döner.
+            $taslagaDon = (bool) $site->pro_yayina_aldi;
+            $site->update(['plan' => 'standart', 'pro_until' => null, 'pro_yayina_aldi' => false] + ($taslagaDon ? ['status' => 'taslak'] : []));
+            $mesaj = $facility->name.': Profesyonel Site kapatıldı'.($taslagaDon ? ', site yayından kaldırıldı (taslak).' : ', site hazır tasarımla yayında.');
         } else {
-            $site->fill(['plan' => 'profesyonel', 'pro_until' => now()->addYear()->toDateString(), 'status' => 'yayinda']);
+            $site->fill(['plan' => 'profesyonel', 'pro_until' => now()->addYear()->toDateString(), 'pro_yayina_aldi' => ! $site->isLive(), 'status' => 'yayinda']);
             if (! $site->published_at) {
                 $site->published_at = now();
             }
