@@ -74,6 +74,16 @@ class DoktorSitesiController extends Controller
             $message->name.' — '.$site->fullName().' sitesinden yazdı.',
         ));
 
+        // 23 Ekim 2026: kullanıcının talebi - form, doktorun WhatsApp (cep)
+        // hattına yönlendirir; mesaj hazır yazılı gelir. Kayıt yine tutulur.
+        $wa = classify_phone_type($expert->phone) === 'mobile' ? normalize_whatsapp_number($expert->phone) : '';
+        if ($wa) {
+            $metin = 'Merhaba, internet sitenizden yazıyorum.'."\nAdım: ".$data['full_name']."\nTelefonum: ".$data['phone']
+                .(trim((string) ($data['message'] ?? '')) !== '' ? "\n".trim($data['message']) : '');
+
+            return redirect()->away('https://wa.me/'.$wa.'?text='.rawurlencode($metin));
+        }
+
         return redirect($back.'#iletisim')->with('doktor_sitesi_basarili', 'Mesajınız iletildi, en kısa sürede sizi arayacağız.');
     }
 

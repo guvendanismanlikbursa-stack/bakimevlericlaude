@@ -7452,6 +7452,69 @@ class PlatformFeatureTest extends TestCase
         ])->assertSessionHasErrors('custom_domain');
     }
 
+    // 23 Ekim 2026: gerçek fotoğrafı olmayan kurumda örnek görseller "temsili" notuyla gösterilir; form bölüm durumunu yazar.
+    public function test_facility_website_uses_demo_images_as_representative_and_form_explains_sections(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->images()->delete();
+        $facility->update(['services' => [], 'lat' => null, 'lng' => null, 'menu_image_path' => null]);
+        \App\Models\FacilityImage::create(['facility_id' => $facility->id, 'path' => 'facilities/demo/6/10.webp', 'sort_order' => 0]);
+        \App\Models\FacilityImage::create(['facility_id' => $facility->id, 'path' => 'facilities/demo/6/11.webp', 'sort_order' => 1]);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $site->update(['status' => 'yayinda']);
+
+        $this->get('/siteler/'.$site->slug)->assertOk()
+            ->assertSee('facilities/demo/6/10.webp', false)
+            ->assertSee('Temsili görseldir', false)
+            ->assertSee('Görseller temsilidir', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.facility-websites.edit', $facility))->assertOk()
+            ->assertSee('2 örnek görsel', false)
+            ->assertSee('Profilde hizmet seçilmemiş, görünmez', false)
+            ->assertSee('Harita konumu yok, görünmez', false)
+            ->assertSee('Menü görseli yok, görünmez', false);
+
+        // Gerçek fotoğraf eklenince yalnızca o gösterilir, temsili notu kalkar.
+        $this->flushSession();
+        \App\Models\FacilityImage::create(['facility_id' => $facility->id, 'path' => 'facilities/gercekfoto123.webp', 'sort_order' => 2]);
+        $this->get('/siteler/'.$site->slug)->assertOk()
+            ->assertSee('facilities/gercekfoto123.webp', false)
+            ->assertDontSee('facilities/demo/6/10.webp', false)
+            ->assertDontSee('Temsili görseldir', false);
+    }
+
+    // 23 Ekim 2026: site formları kurumun / doktorun WhatsApp cep hattına yönlendirir, talep yine kaydedilir.
+    public function test_site_contact_forms_redirect_to_whatsapp_mobile_line(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->update(['is_claimed' => false, 'is_broker_managed' => false, 'phone' => '0532 444 55 66']);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $site->update(['status' => 'yayinda']);
+        $this->get('/siteler/'.$site->slug)->assertOk()->assertSee('WhatsApp ile Gönder', false);
+        $r = $this->post('/siteler/'.$site->slug.'/iletisim', ['full_name' => 'Deniz Aile', 'phone' => '05551234567', 'message' => 'Fiyat bilgisi']);
+        $r->assertRedirect();
+        $hedef = $r->headers->get('Location');
+        $this->assertStringStartsWith('https://wa.me/905324445566?text=', $hedef);
+        $this->assertStringContainsString('Deniz Aile', rawurldecode($hedef));
+        $this->assertStringContainsString('Fiyat bilgisi', rawurldecode($hedef));
+        $this->assertTrue(\App\Models\FacilityInterestLead::where('full_name', 'Deniz Aile')->exists());
+
+        // Sabit hatlı kurumda eski davranış: teşekkür mesajı, WhatsApp yok.
+        $facility->update(['phone' => '0224 444 55 66']);
+        $this->get('/siteler/'.$site->slug)->assertOk()->assertDontSee('WhatsApp ile Gönder', false);
+        $this->post('/siteler/'.$site->slug.'/iletisim', ['full_name' => 'Sabit Aile', 'phone' => '05551234568'])
+            ->assertRedirect('/siteler/'.$site->slug.'#iletisim');
+
+        // Doktor sitesi.
+        $expert = \App\Models\Expert::create(['name' => 'Can Demir', 'slug' => 'can-demir', 'title' => 'Dr.', 'branch' => 'Dahiliye', 'branch_label' => 'Dahiliye',
+            'city_id' => $this->city->id, 'phone' => '0533 222 33 44', 'is_published' => true]);
+        $ds = \App\Models\ExpertWebsite::forExpert($expert);
+        $ds->update(['status' => 'yayinda']);
+        $r = $this->post('/dr/'.$ds->slug.'/iletisim', ['full_name' => 'Hasta Yakını', 'phone' => '05559998877']);
+        $this->assertStringStartsWith('https://wa.me/905332223344?text=', $r->headers->get('Location'));
+        $this->assertTrue(\App\Models\ContactMessage::where('name', 'Hasta Yakını')->exists());
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

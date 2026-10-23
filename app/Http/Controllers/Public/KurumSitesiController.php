@@ -88,6 +88,17 @@ class KurumSitesiController extends Controller
             ]);
         }
 
+        // 23 Ekim 2026: kullanıcının talebi - form, kurumun WhatsApp (cep)
+        // hattına yönlendirir; mesaj hazır yazılı gelir. Talep yukarıda yine
+        // kaydedilir. Cep hattı yoksa eskisi gibi teşekkür mesajı gösterilir.
+        $wa = classify_phone_type($facility->phone) === 'mobile' ? normalize_whatsapp_number($facility->phone) : '';
+        if ($wa) {
+            $metin = 'Merhaba, internet sitenizden yazıyorum.'."\nAdım: ".$data['full_name']."\nTelefonum: ".$data['phone']
+                .(trim((string) ($data['message'] ?? '')) !== '' ? "\n".trim($data['message']) : '');
+
+            return redirect()->away('https://wa.me/'.$wa.'?text='.rawurlencode($metin));
+        }
+
         return redirect($back.'#iletisim')->with('kurum_sitesi_basarili', 'Mesajınız kuruma iletildi, en kısa sürede sizi arayacaklar.');
     }
 
@@ -112,22 +123,19 @@ class KurumSitesiController extends Controller
     private function render(FacilityWebsite $site, bool $isPreview, string $formAction)
     {
         $facility = $site->facility->load(['city', 'category', 'images', 'googleReviews', 'approvedReviews']);
-        $gallery = $facility->images->reject(fn ($img) => str_starts_with((string) $img->path, 'facilities/demo/'))->values();
+        // Gerçek fotoğraf yoksa örnek görseller "temsili" notuyla gösterilir.
+        [$gallery, $temsili] = FacilityWebsite::siteGallery($facility);
         $hero = $gallery->firstWhere('id', $site->hero_image_id)
             ?? $gallery->firstWhere('is_primary', true)
             ?? $gallery->first();
-        $reviews = $facility->googleReviews
-            ->filter(fn ($r) => (int) $r->rating >= 4 && mb_strlen(trim((string) $r->body)) >= 20)
-            ->map(fn ($r) => ['ad' => $r->author_name, 'puan' => (int) $r->rating, 'metin' => $r->body])
-            ->concat($facility->approvedReviews->map(fn ($r) => ['ad' => $r->reviewer_name ?: 'Aile', 'puan' => (int) ($r->rating ?: 5), 'metin' => (string) $r->body]))
-            ->filter(fn ($r) => trim((string) $r['metin']) !== '')
-            ->take(6)->values();
+        $reviews = FacilityWebsite::siteReviews($facility);
 
         return response()->view('themes._shared.kurum-sitesi.show', [
             'site' => $site,
             'facility' => $facility,
             'gallery' => $gallery,
             'hero' => $hero,
+            'temsili' => $temsili,
             'reviews' => $reviews,
             'renk' => $site->themeColors(),
             'isPreview' => $isPreview,

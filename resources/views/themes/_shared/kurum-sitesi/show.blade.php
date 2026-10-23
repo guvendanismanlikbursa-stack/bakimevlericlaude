@@ -14,15 +14,8 @@
   $adres = trim(($f->address ?: '').($f->district && ! str_contains((string) $f->address, (string) $f->district) ? ', '.$f->district : '').($f->city ? ' / '.$f->city->name : ''), ' ,/');
   $haritaLink = $f->google_maps_url ?: ($f->lat && $f->lng ? 'https://www.google.com/maps?q='.$f->lat.','.$f->lng : null);
   $hizmetler = collect($f->services ?? [])->filter()->values();
-  $bosYer = null;
-  if ($f->usesGenderSplitVacancy()) {
-      $parca = [];
-      if ($f->vacancy_male !== null) { $parca[] = 'Erkek: '.($f->vacancy_male ? 'Yer var' : 'Dolu'); }
-      if ($f->vacancy_female !== null) { $parca[] = 'Kadın: '.($f->vacancy_female ? 'Yer var' : 'Dolu'); }
-      $bosYer = $parca ? implode(' · ', $parca) : null;
-  } elseif ($f->vacancy_general !== null) {
-      $bosYer = $f->vacancy_general ? 'Şu an yer var' : 'Şu an dolu';
-  }
+  $bosYer = \App\Models\FacilityWebsite::vacancyText($f);
+  $temsili = $temsili ?? false;
   $metaAciklama = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $hakkimizda ?: $altBaslik)), 155);
 @endphp
 <!doctype html>
@@ -36,12 +29,12 @@
 <link rel="canonical" href="{{ $site->publicUrl() }}">
 <meta property="og:title" content="{{ $baslik }}">
 <meta property="og:description" content="{{ $metaAciklama }}">
-@if($hero)<meta property="og:image" content="{{ facility_asset($hero->path) }}">@endif
+@if($hero && ! $temsili)<meta property="og:image" content="{{ facility_asset($hero->path) }}">@endif
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap">
 <script type="application/ld+json">{!! json_encode(array_filter([
     '@context' => 'https://schema.org', '@type' => 'LocalBusiness', 'name' => $f->name, 'url' => $site->publicUrl(),
-    'telephone' => $telefon ?: null, 'image' => $hero ? facility_asset($hero->path) : null, 'description' => $metaAciklama ?: null,
+    'telephone' => $telefon ?: null, 'image' => ($hero && ! $temsili) ? facility_asset($hero->path) : null, 'description' => $metaAciklama ?: null,
     'address' => $adres ? ['@type' => 'PostalAddress', 'streetAddress' => $f->address, 'addressLocality' => $f->district, 'addressRegion' => $f->city->name ?? null, 'addressCountry' => 'TR'] : null,
     'geo' => ($f->lat && $f->lng) ? ['@type' => 'GeoCoordinates', 'latitude' => $f->lat, 'longitude' => $f->lng] : null,
 ]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
@@ -120,6 +113,7 @@
   .alt .kap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:28px;padding-bottom:28px}
   .yuzen{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;flex-direction:column;gap:10px}
   .yuzen a{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;text-decoration:none;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+  .temsili{position:absolute;right:12px;bottom:10px;z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px}
   .onizleme{background:#fde047;color:#422006;text-align:center;font-weight:800;font-size:14px;padding:8px 16px}
   :focus-visible{outline:3px solid var(--ana);outline-offset:2px}
 </style>
@@ -146,6 +140,7 @@
 
 <section class="giris">
   @if($hero)<div class="giris-foto" style="background-image:url('{{ facility_asset($hero->path) }}');"></div>@endif
+  @if($hero && $temsili)<span class="temsili">Temsili görseldir</span>@endif
   <div class="kap">
     @if($f->category)<div class="rozet">{{ $f->category->name }}@if($f->city) · {{ $f->city->name }}@endif</div>@endif
     <h1>{{ $baslik }}</h1>
@@ -176,7 +171,7 @@
         <div class="yazi">{{ $hakkimizda }}</div>
       </div>
       @php $ikinci = $gallery->first(fn ($g) => ! $hero || $g->id !== $hero->id) ?? $hero; @endphp
-      @if($ikinci)<img src="{{ facility_asset($ikinci->path) }}" alt="{{ $f->name }}" class="kart-foto" loading="lazy">@endif
+      @if($ikinci)<div style="position:relative;"><img src="{{ facility_asset($ikinci->path) }}" alt="{{ $temsili ? 'Temsili görsel' : $f->name }}" class="kart-foto" loading="lazy">@if($temsili)<span class="temsili">Temsili görseldir</span>@endif</div>@endif
     </div>
   </section>
 @endif
@@ -197,10 +192,11 @@
   <section id="galeri" class="bolum">
     <div class="kap">
       <div class="ust-etiket">Fotoğraflar</div>
-      <h2>Kurumumuzdan kareler</h2>
+      <h2>{{ $temsili ? 'Görseller' : 'Kurumumuzdan kareler' }}</h2>
+      @if($temsili)<p style="margin:-6px 0 16px;color:var(--soluk);font-size:14px;">Görseller temsilidir; kurumun kendi fotoğraflarını göstermez.</p>@endif
       <div class="galeri">
         @foreach($gallery->take(12) as $g)
-          <a href="{{ facility_asset($g->path) }}" target="_blank" rel="noopener"><img src="{{ facility_thumb($g->path) }}" alt="{{ $f->name }} fotoğraf {{ $loop->iteration }}" loading="lazy"></a>
+          <a href="{{ facility_asset($g->path) }}" target="_blank" rel="noopener"><img src="{{ facility_thumb($g->path) }}" alt="{{ $temsili ? 'Temsili görsel' : $f->name.' fotoğraf' }} {{ $loop->iteration }}" loading="lazy"></a>
         @endforeach
       </div>
     </div>
@@ -276,7 +272,12 @@
         <label for="ks-mesaj">Mesajınız (isteğe bağlı)</label>
         <textarea id="ks-mesaj" name="message" rows="4" maxlength="2000">{{ old('message') }}</textarea>
       </div>
-      <button type="submit" class="btn btn-ana" style="width:100%;">Gönder</button>
+      @if($whatsapp)
+        <button type="submit" class="btn btn-wa" style="width:100%;">WhatsApp ile Gönder</button>
+        <p style="margin:0;font-size:12px;color:var(--soluk);">Gönder'e basınca WhatsApp açılır, mesajınız hazır yazılı gelir; göndermeniz yeterli.</p>
+      @else
+        <button type="submit" class="btn btn-ana" style="width:100%;">Gönder</button>
+      @endif
       <p style="margin:0;font-size:12px;color:var(--soluk);">Bilgileriniz yalnızca kurumun size dönüş yapması için kullanılır.</p>
     </form>
   </div>

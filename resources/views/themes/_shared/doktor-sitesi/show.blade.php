@@ -233,7 +233,12 @@
         <label for="ds-mesaj">Mesajınız (isteğe bağlı)</label>
         <textarea id="ds-mesaj" name="message" rows="4" maxlength="2000">{{ old('message') }}</textarea>
       </div>
-      <button type="submit" class="btn btn-ana" style="width:100%;">Gönder</button>
+      @if($whatsapp)
+        <button type="submit" class="btn btn-wa" style="width:100%;">WhatsApp ile Gönder</button>
+        <p style="margin:0;font-size:12px;color:var(--soluk);">Gönder'e basınca WhatsApp açılır, mesajınız hazır yazılı gelir; göndermeniz yeterli.</p>
+      @else
+        <button type="submit" class="btn btn-ana" style="width:100%;">Gönder</button>
+      @endif
       <p style="margin:0;font-size:12px;color:var(--soluk);">Bilgileriniz yalnızca size dönüş yapılması için kullanılır. Lütfen sağlık bilgilerinizi bu forma yazmayın.</p>
     </form>
   </div>

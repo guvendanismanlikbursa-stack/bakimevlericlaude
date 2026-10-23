@@ -146,6 +146,89 @@ class FacilityWebsite extends Model
         return (string) ($this->about_text ?: $this->facility->description);
     }
 
+    public static function isDemoPath(?string $path): bool
+    {
+        return str_starts_with((string) $path, 'facilities/demo/');
+    }
+
+    /**
+     * 23 Ekim 2026: kullanıcının talebi - sitede gösterilecek fotoğraflar.
+     * Önce kurumun gerçek fotoğrafları; hiç yoksa örnek (demo) görseller
+     * "temsili" işaretiyle kullanılır.
+     *
+     * @return array{0: \Illuminate\Support\Collection, 1: bool} [fotoğraflar, temsili mi]
+     */
+    public static function siteGallery(Facility $facility): array
+    {
+        $facility->loadMissing('images');
+        $gercek = $facility->images->reject(fn ($img) => static::isDemoPath($img->path))->values();
+        if ($gercek->isNotEmpty()) {
+            return [$gercek, false];
+        }
+
+        return [$facility->images->values(), $facility->images->isNotEmpty()];
+    }
+
+    /** Sitede gösterilecek yorumlar (Google ≥4★ ve onaylı platform yorumları). */
+    public static function siteReviews(Facility $facility): \Illuminate\Support\Collection
+    {
+        $facility->loadMissing(['googleReviews', 'approvedReviews']);
+
+        return $facility->googleReviews
+            ->filter(fn ($r) => (int) $r->rating >= 4 && mb_strlen(trim((string) $r->body)) >= 20)
+            ->map(fn ($r) => ['ad' => $r->author_name, 'puan' => (int) $r->rating, 'metin' => $r->body])
+            ->concat($facility->approvedReviews->map(fn ($r) => ['ad' => $r->reviewer_name ?: 'Aile', 'puan' => (int) ($r->rating ?: 5), 'metin' => (string) $r->body]))
+            ->filter(fn ($r) => trim((string) $r['metin']) !== '')
+            ->take(6)->values();
+    }
+
+    /** Boş yer / kontenjan metni; bilgi girilmemişse null. */
+    public static function vacancyText(Facility $f): ?string
+    {
+        if ($f->usesGenderSplitVacancy()) {
+            $parca = [];
+            if ($f->vacancy_male !== null) {
+                $parca[] = 'Erkek: '.($f->vacancy_male ? 'Yer var' : 'Dolu');
+            }
+            if ($f->vacancy_female !== null) {
+                $parca[] = 'Kadın: '.($f->vacancy_female ? 'Yer var' : 'Dolu');
+            }
+
+            return $parca ? implode(' · ', $parca) : null;
+        }
+        if ($f->vacancy_general !== null) {
+            return $f->vacancy_general ? 'Şu an yer var' : 'Şu an dolu';
+        }
+
+        return null;
+    }
+
+    /**
+     * 23 Ekim 2026: kullanıcının talebi - formda her bölümün yanında, sitede
+     * görünüp görünmeyeceği ve nedeni yazar (işaretli olup verisi olmayan
+     * bölüm sitede çıkmaz).
+     *
+     * @return array<string, array{0: bool, 1: string}>
+     */
+    public function sectionStatus(): array
+    {
+        $f = $this->facility;
+        [$galeri, $temsili] = static::siteGallery($f);
+        $hizmet = collect($f->services ?? [])->filter()->count();
+        $yorum = static::siteReviews($f)->count();
+
+        return [
+            'hakkimizda' => trim($this->aboutText()) !== '' ? [true, 'Tanıtım yazısı var'] : [false, 'Tanıtım yazısı yok, görünmez'],
+            'hizmetler' => $hizmet ? [true, $hizmet.' hizmet'] : [false, 'Profilde hizmet seçilmemiş, görünmez'],
+            'bos_yer' => static::vacancyText($f) ? [true, 'Kontenjan bilgisi var'] : [false, 'Kontenjan bilgisi girilmemiş, görünmez'],
+            'galeri' => $galeri->isEmpty() ? [false, 'Fotoğraf yok, görünmez']
+                : ($temsili ? [true, 'Gerçek fotoğraf yok: '.$galeri->count().' örnek görsel "Temsili görseldir" notuyla gösterilir'] : [true, $galeri->count().' fotoğraf']),
+            'menu' => $f->menu_image_path ? [true, 'Menü görseli var'] : [false, 'Menü görseli yok, görünmez'],
+            'yorumlar' => $yorum ? [true, $yorum.' yorum'] : [false, 'Uygun yorum yok, görünmez'],
+            'konum' => ($f->lat && $f->lng) ? [true, 'Harita konumu var'] : [false, 'Harita konumu yok, görünmez'],
+        ];
+    }
+
     /**
      * Değişikliği kaydeder; önceki hali değişiklik geçmişine yazılır.
      */

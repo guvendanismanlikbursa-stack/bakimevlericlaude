@@ -31,7 +31,7 @@
   <div>
     <span style="{{ $etiket }}">Öne çıkan fotoğraf</span>
     @if($images->isEmpty())
-      <div style="{{ $ipucu }}">Henüz fotoğraf yok. Fotoğraf eklediğinizde buradan seçebilirsiniz.</div>
+      <div style="{{ $ipucu }}">Henüz gerçek fotoğraf yok; sitede kategoriye uygun örnek görseller "Temsili görseldir" notuyla gösterilir. Gerçek fotoğraf eklendiğinde buradan seçilebilir.</div>
     @else
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;">
         <label style="display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid #e5e7eb;border-radius:12px;padding:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:90px;">
@@ -61,14 +61,17 @@
 
   <div>
     <span style="{{ $etiket }}">Sitede görünecek bölümler</span>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;">
+    @php $bolumDurumu = $site->sectionStatus(); @endphp
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">
       @foreach(\App\Models\FacilityWebsite::SECTIONS as $key => $label)
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px;">
-          <input type="checkbox" name="sections[{{ $key }}]" value="1" @checked($site->sectionEnabled($key))> {{ $label }}
+        @php [$veriVar, $not] = $bolumDurumu[$key] ?? [true, '']; @endphp
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:14px;border:1.5px solid {{ $veriVar ? '#e5e7eb' : '#fde68a' }};background:{{ $veriVar ? '#fff' : '#fffbeb' }};border-radius:10px;padding:8px 10px;">
+          <input type="checkbox" name="sections[{{ $key }}]" value="1" @checked($site->sectionEnabled($key)) style="margin-top:3px;">
+          <span><b style="font-weight:700;">{{ $label }}</b><span style="display:block;font-size:12px;color:{{ $veriVar ? '#047857' : '#92400e' }};">{{ $veriVar ? '✓ ' : '⚠ ' }}{{ $not }}</span></span>
         </label>
       @endforeach
     </div>
-    <div style="{{ $ipucu }}">Fotoğraflar, hizmetler, yemek menüsü, telefon ve adres kurum profilinizden otomatik gelir; onları profil sayfasından güncellersiniz.</div>
+    <div style="{{ $ipucu }}">İşaretli olsa da bilgisi olmayan bölüm sitede görünmez. Fotoğraflar, hizmetler, yemek menüsü, kontenjan, telefon ve adres kurum profilinden otomatik gelir; onları profil sayfasından güncellersiniz.</div>
   </div>
 
   @if($errors->any())
