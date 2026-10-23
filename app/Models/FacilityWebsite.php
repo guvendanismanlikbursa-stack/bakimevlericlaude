@@ -100,8 +100,19 @@ class FacilityWebsite extends Model
     public function sectionEnabled(string $key): bool
     {
         $sections = $this->sections;
+        if (is_array($sections) && array_key_exists($key, $sections)) {
+            return (bool) $sections[$key];
+        }
+        // 23 Ekim 2026: kullanıcının talebi - sahiplenilmemiş kurumlarda menü
+        // görseli bizim koyduğumuz örnek menü olabilir; bölüm kapalı başlar,
+        // admin veya kurum açıkça işaretlerse görünür.
+        if ($key === 'menu') {
+            $f = $this->facility;
 
-        return ! is_array($sections) || ! array_key_exists($key, $sections) || (bool) $sections[$key];
+            return $f && ($f->is_claimed || $f->is_broker_managed);
+        }
+
+        return true;
     }
 
     public function themeColors(): array
@@ -223,7 +234,8 @@ class FacilityWebsite extends Model
             'bos_yer' => static::vacancyText($f) ? [true, 'Kontenjan bilgisi var'] : [false, 'Kontenjan bilgisi girilmemiş, görünmez'],
             'galeri' => $galeri->isEmpty() ? [false, 'Fotoğraf yok, görünmez']
                 : ($temsili ? [true, 'Gerçek fotoğraf yok: '.$galeri->count().' örnek görsel "Temsili görseldir" notuyla gösterilir'] : [true, $galeri->count().' fotoğraf']),
-            'menu' => $f->menu_image_path ? [true, 'Menü görseli var'] : [false, 'Menü görseli yok, görünmez'],
+            'menu' => ! $f->menu_image_path ? [false, 'Menü görseli yok, görünmez']
+                : (($f->is_claimed || $f->is_broker_managed) ? [true, 'Menü görseli var'] : [true, 'Menü görseli var (örnek menü olabilir; kontrol edip işaretleyin)']),
             'yorumlar' => $yorum ? [true, $yorum.' yorum'] : [false, 'Uygun yorum yok, görünmez'],
             'konum' => ($f->lat && $f->lng) ? [true, 'Harita konumu var'] : [false, 'Harita konumu yok, görünmez'],
         ];

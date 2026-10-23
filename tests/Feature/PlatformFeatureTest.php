@@ -7515,6 +7515,26 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue(\App\Models\ContactMessage::where('name', 'Hasta Yakını')->exists());
     }
 
+    // 23 Ekim 2026: sahiplenilmemiş kurumda menü bölümü kapalı başlar (örnek menü olabilir).
+    public function test_facility_website_menu_section_starts_off_for_unclaimed(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->update(['is_claimed' => false, 'is_broker_managed' => false, 'menu_image_path' => 'facilities/menuornek12345.webp']);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $site->update(['status' => 'yayinda']);
+        $this->assertFalse($site->fresh()->sectionEnabled('menu'));
+        $this->get('/siteler/'.$site->slug)->assertOk()->assertDontSee('menuornek12345', false);
+
+        // Admin açıkça işaretlerse görünür.
+        $site->update(['sections' => ['menu' => true]]);
+        $this->get('/siteler/'.$site->slug)->assertOk()->assertSee('menuornek12345', false);
+
+        // Sahipli kurumda varsayılan açık.
+        $site->update(['sections' => null]);
+        $facility->update(['is_claimed' => true]);
+        $this->assertTrue($site->fresh()->sectionEnabled('menu'));
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');
