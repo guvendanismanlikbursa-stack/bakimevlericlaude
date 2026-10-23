@@ -6,7 +6,7 @@
   $etiket = 'display:block;font-weight:800;font-size:14px;color:#111827;margin-bottom:4px;';
   $ipucu = 'font-size:12px;color:#6b7280;margin-top:4px;';
 @endphp
-<form method="POST" action="{{ $action }}" style="display:grid;gap:18px;">
+<form method="POST" action="{{ $action }}" enctype="multipart/form-data" style="display:grid;gap:18px;">
   @csrf
   @method('PUT')
   @isset($ustAlanlar)
@@ -73,6 +73,16 @@
     </div>
     <div style="{{ $ipucu }}">İşaretli olsa da bilgisi olmayan bölüm sitede görünmez. Fotoğraflar, hizmetler, yemek menüsü, kontenjan, telefon ve adres kurum profilinden otomatik gelir; onları profil sayfasından güncellersiniz.</div>
   </div>
+
+  @if($proAlanlar ?? false)
+    @php $proHata = collect($errors->keys())->contains(fn ($k) => \Illuminate\Support\Str::startsWith($k, ['logo', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements'])); @endphp
+    <details @if($proHata || ($proAcikBaslasin ?? false)) open @endif style="border:1.5px solid #e9d3ab;border-radius:14px;background:#fffdf8;">
+      <summary style="cursor:pointer;padding:14px 16px;font-weight:800;color:#8a6a35;">★ Gelişmiş ayarları göster <span style="font-weight:600;color:#6b7280;font-size:13px;">(isteğe bağlı: logo, renk, ekip, S.S.S., duyurular, video)</span></summary>
+      <div style="padding:0 12px 12px;">
+        @include('themes._shared.kurum-sitesi.pro._pro_form')
+      </div>
+    </details>
+  @endif
 
   @if($errors->any())
     <div style="background:#fef2f2;color:#991b1b;border-radius:10px;padding:10px 12px;font-size:14px;">{{ $errors->first() }}</div>

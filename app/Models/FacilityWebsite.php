@@ -14,7 +14,27 @@ class FacilityWebsite extends Model
     public const STATUSES = ['taslak' => 'Taslak (yayında değil)', 'yayinda' => 'Yayında'];
 
     // Kurumun ve adminin değiştirebildiği alanlar (değişiklik geçmişine yazılır).
-    public const EDITABLE = ['hero_title', 'hero_subtitle', 'about_text', 'hero_image_id', 'theme', 'sections'];
+    public const EDITABLE = ['hero_title', 'hero_subtitle', 'about_text', 'hero_image_id', 'theme', 'sections',
+        'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements'];
+
+    // 23 Ekim 2026: "Profesyonel Site" paketi (bkz. 2026_10_23_200000 migration).
+    public const PLANS = ['standart' => 'Hazır site', 'profesyonel' => 'Profesyonel Site'];
+
+    public const FONT_STYLES = ['zarif' => 'Zarif (klasik, tırnaklı başlıklar)', 'modern' => 'Modern (sade, güçlü başlıklar)'];
+
+    // Profesyonel sitenin iç sayfaları (adres => menü adı). İçeriği olmayan sayfa menüde çıkmaz.
+    public const PRO_PAGES = [
+        'hakkimizda' => 'Hakkımızda',
+        'hizmetler' => 'Hizmetler',
+        'galeri' => 'Galeri',
+        'ekibimiz' => 'Ekibimiz',
+        'duyurular' => 'Duyurular',
+        'sss' => 'S.S.S.',
+        'iletisim' => 'İletişim',
+    ];
+
+    // Tekrarlanan içerik gruplarının en fazla satır sayısı.
+    public const LIMITS = ['stats' => 4, 'values_list' => 6, 'team' => 12, 'faqs' => 12, 'announcements' => 10];
 
     public const THEMES = [
         'yesil' => ['ad' => 'Yeşil', 'ana' => '#0d6e6a', 'koyu' => '#0a4f4c', 'acik' => '#e3f2f0'],
@@ -36,6 +56,7 @@ class FacilityWebsite extends Model
     protected $fillable = [
         'facility_id', 'slug', 'status', 'custom_domain', 'hero_title', 'hero_subtitle', 'about_text',
         'hero_image_id', 'theme', 'sections', 'published_at',
+        'plan', 'pro_until', 'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements',
     ];
 
     protected function casts(): array
@@ -45,6 +66,12 @@ class FacilityWebsite extends Model
             'hero_image_id' => 'integer',
             'sections' => 'array',
             'published_at' => 'datetime',
+            'pro_until' => 'date',
+            'stats' => 'array',
+            'values_list' => 'array',
+            'team' => 'array',
+            'faqs' => 'array',
+            'announcements' => 'array',
         ];
     }
 
@@ -95,6 +122,110 @@ class FacilityWebsite extends Model
     public function isLive(): bool
     {
         return $this->status === 'yayinda';
+    }
+
+    /** Profesyonel Site paketi etkin mi (bitiş tarihi boşsa süresiz). */
+    public function isPro(): bool
+    {
+        return $this->plan === 'profesyonel'
+            && ($this->pro_until === null || ! $this->pro_until->copy()->endOfDay()->isPast());
+    }
+
+    /**
+     * Profesyonel şablonun renkleri: kurumun kendi rengi varsa ondan koyu ve
+     * açık tonlar türetilir; yoksa seçili hazır tema kullanılır.
+     *
+     * @return array{ana: string, koyu: string, acik: string}
+     */
+    public function proColors(): array
+    {
+        $hex = $this->brand_color && preg_match('/^#[0-9a-f]{6}$/i', $this->brand_color) ? strtolower($this->brand_color) : null;
+        if (! $hex) {
+            $t = $this->themeColors();
+
+            return ['ana' => $t['ana'], 'koyu' => $t['koyu'], 'acik' => $t['acik']];
+        }
+
+        return ['ana' => $hex, 'koyu' => static::mixHex($hex, '#000000', 0.32), 'acik' => static::mixHex($hex, '#ffffff', 0.9)];
+    }
+
+    public static function mixHex(string $a, string $b, float $oran): string
+    {
+        $pa = sscanf(ltrim($a, '#'), '%02x%02x%02x');
+        $pb = sscanf(ltrim($b, '#'), '%02x%02x%02x');
+        $c = [];
+        for ($i = 0; $i < 3; $i++) {
+            $c[] = (int) round($pa[$i] + ($pb[$i] - $pa[$i]) * $oran);
+        }
+
+        return sprintf('#%02x%02x%02x', ...$c);
+    }
+
+    /** YouTube adresinden gömülebilir (çerezsiz) adres; değilse null. */
+    public function videoEmbedUrl(): ?string
+    {
+        $url = trim((string) $this->video_url);
+        if ($url === '') {
+            return null;
+        }
+        if (preg_match('~(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})~', $url, $m)) {
+            return 'https://www.youtube-nocookie.com/embed/'.$m[1].'?rel=0';
+        }
+
+        return null;
+    }
+
+    /** Dolu satırlar (boş satırlar atılır). */
+    public function listOf(string $alan): array
+    {
+        return array_values(array_filter((array) ($this->{$alan} ?? []), fn ($r) => is_array($r) && array_filter($r, fn ($v) => trim((string) $v) !== '')));
+    }
+
+    /**
+     * Ziyaret / WhatsApp / arama / form sayacını bugün için bir artırır.
+     */
+    public function recordStat(string $alan): void
+    {
+        if (! in_array($alan, ['ziyaret', 'whatsapp', 'arama', 'form'], true)) {
+            return;
+        }
+        try {
+            $gun = now()->toDateString();
+            \Illuminate\Support\Facades\DB::table('facility_website_stats')->insertOrIgnore([
+                'facility_website_id' => $this->id, 'gun' => $gun,
+            ]);
+            \Illuminate\Support\Facades\DB::table('facility_website_stats')
+                ->where('facility_website_id', $this->id)->where('gun', $gun)->increment($alan);
+        } catch (\Throwable $e) {
+            // Sayaç hatası sitenin açılmasını engellemez.
+            report($e);
+        }
+    }
+
+    /**
+     * Rapor: son 30 gün toplamı ve son 6 ayın aylık toplamları.
+     *
+     * @return array{son30: array<string,int>, aylar: array<int, array<string,mixed>>}
+     */
+    public function statsReport(): array
+    {
+        $tablo = \Illuminate\Support\Facades\DB::table('facility_website_stats')->where('facility_website_id', $this->id);
+        $alanlar = ['ziyaret', 'whatsapp', 'arama', 'form'];
+        $son30 = (clone $tablo)->where('gun', '>=', now()->subDays(29)->toDateString())
+            ->selectRaw('COALESCE(SUM(ziyaret),0) ziyaret, COALESCE(SUM(whatsapp),0) whatsapp, COALESCE(SUM(arama),0) arama, COALESCE(SUM(form),0) form')->first();
+        $satirlar = (clone $tablo)->where('gun', '>=', now()->startOfMonth()->subMonths(5)->toDateString())->get();
+        $aylar = [];
+        for ($i = 0; $i < 6; $i++) {
+            $ay = now()->startOfMonth()->subMonths($i);
+            $buAy = $satirlar->filter(fn ($s) => substr((string) $s->gun, 0, 7) === $ay->format('Y-m'));
+            $kayit = ['ay' => $ay->locale('tr')->translatedFormat('F Y')];
+            foreach ($alanlar as $a) {
+                $kayit[$a] = (int) $buAy->sum($a);
+            }
+            $aylar[] = $kayit;
+        }
+
+        return ['son30' => collect($alanlar)->mapWithKeys(fn ($a) => [$a => (int) ($son30->{$a} ?? 0)])->all(), 'aylar' => $aylar];
     }
 
     public function sectionEnabled(string $key): bool

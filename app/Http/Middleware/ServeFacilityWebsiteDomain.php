@@ -58,6 +58,13 @@ class ServeFacilityWebsiteDomain
         if ($request->isMethod('POST') && $request->is('iletisim')) {
             return app()->call([$controller, 'contactForDomain'], ['request' => $request, 'site' => $site]);
         }
+        // Kurum sitesi: Profesyonel Site iç sayfaları ve tıklama sayacı.
+        if ($kurumId && $request->isMethod('GET') && array_key_exists($request->path(), FacilityWebsite::PRO_PAGES)) {
+            return app()->call([$controller, 'showForDomain'], ['request' => $request, 'site' => $site, 'sayfa' => $request->path()]);
+        }
+        if ($kurumId && $request->isMethod('POST') && $request->is('olay')) {
+            return app()->call([$controller, 'eventForDomain'], ['request' => $request, 'site' => $site]);
+        }
 
         return redirect('/', 301);
     }

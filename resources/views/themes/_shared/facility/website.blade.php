@@ -37,9 +37,29 @@
     </div>
   </div>
 
+  {{-- 23 Ekim 2026: kullanıcının talebi - Profesyonel Site paketi. --}}
+  @if($site->isPro())
+    <div style="background:linear-gradient(135deg,#1b2422,#2c3a37);color:#fff;border-radius:18px;padding:22px;">
+      <div style="font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#e9d3ab;">★ Profesyonel Site etkin</div>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,.85);">Logonuz, renginiz, ekibiniz, sık sorulan sorularınız ve duyurularınızla çok sayfalı sitenizi aşağıdan yönetebilirsiniz.@if($site->pro_until) Paket bitişi: <b>{{ $site->pro_until->format('d.m.Y') }}</b>.@endif</p>
+    </div>
+    @include('themes._shared.kurum-sitesi.pro._rapor', ['site' => $site])
+  @else
+    <div style="background:linear-gradient(135deg,#1b2422,#2c3a37);color:#fff;border-radius:18px;padding:24px;display:grid;gap:12px;">
+      <div style="font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#e9d3ab;">★ Profesyonel Site</div>
+      <div style="font-size:22px;font-weight:900;line-height:1.25;">Kurumunuza yakışan premium bir site</div>
+      <p style="margin:0;color:rgba(255,255,255,.85);">Kendi logonuz ve renginizle, çok sayfalı (Hakkımızda, Hizmetler, Galeri, Ekibimiz, Duyurular, S.S.S., İletişim), telefonda kusursuz görünen bir site. Kendi alan adınız, güvenlik sertifikası, bakım ve her ay ziyaret / WhatsApp raporu dahil.</p>
+      <div style="font-size:20px;font-weight:900;color:#e9d3ab;">{{ $proFiyat }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        <a href="{{ url('/siteler/'.$site->slug) }}?onizleme=1&tasarim=pro" target="_blank" rel="noopener" style="background:#e9d3ab;color:#1b2422;font-weight:800;border-radius:12px;padding:10px 18px;text-decoration:none;">👁 Sitemi bu tasarımla önizle</a>
+        <a href="{{ brand_route('contact.create') }}" style="border:1.5px solid rgba(255,255,255,.5);color:#fff;font-weight:800;border-radius:12px;padding:10px 18px;text-decoration:none;">Bilgi almak istiyorum</a>
+      </div>
+    </div>
+  @endif
+
   <div style="background:#fff;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
     <h2 style="font-size:18px;font-weight:900;color:#111827;margin:0 0 14px;">Sitemi düzenle</h2>
-    @include('themes._shared.kurum-sitesi._form', ['site' => $site, 'facility' => $facility, 'images' => $images, 'action' => brand_route('facility.website.update')])
+    @include('themes._shared.kurum-sitesi._form', ['site' => $site, 'facility' => $facility, 'images' => $images, 'action' => brand_route('facility.website.update'), 'proAlanlar' => $site->isPro(), 'proAcikBaslasin' => true])
   </div>
 </div>
 @endsection

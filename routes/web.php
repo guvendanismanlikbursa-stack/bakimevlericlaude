@@ -142,6 +142,14 @@ $siteRoutes = function () {
     Route::post('/dr/{slug}/iletisim', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('doktor-sitesi.iletisim');
     Route::get('/siteler/{slug}', [\App\Http\Controllers\Public\KurumSitesiController::class, 'show'])->middleware('throttle:public-browse')->name('kurum-sitesi.show');
     Route::post('/siteler/{slug}/iletisim', [\App\Http\Controllers\Public\KurumSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('kurum-sitesi.iletisim');
+    // 23 Ekim 2026: Profesyonel Site iç sayfaları ve WhatsApp/telefon tıklama sayacı.
+    Route::get('/siteler/{slug}/{sayfa}', [\App\Http\Controllers\Public\KurumSitesiController::class, 'show'])->where('sayfa', 'hakkimizda|hizmetler|galeri|ekibimiz|duyurular|sss|iletisim')->middleware('throttle:public-browse')->name('kurum-sitesi.sayfa');
+    Route::post('/siteler/{slug}/olay', [\App\Http\Controllers\Public\KurumSitesiController::class, 'event'])->middleware('throttle:public-browse')->name('kurum-sitesi.olay');
+    // Kurumun kendi alan adındaki iç sayfalar (/hakkimizda vb.) ve sayaç (/olay) için yer tutucu adresler:
+    // tanımsız adres ara katmanlara hiç uğramadan 404 olurdu. Alan adı isteğini
+    // ServeFacilityWebsiteDomain karşılar; platform sitelerinde bu adresler 404 verir.
+    Route::get('/{kurumSayfasi}', fn () => abort(404))->where('kurumSayfasi', 'hakkimizda|hizmetler|galeri|ekibimiz|duyurular')->name('kurum-alan-adi.sayfa');
+    Route::post('/olay', fn () => abort(404))->middleware('throttle:public-browse')->name('kurum-alan-adi.olay');
     Route::get('/iletisim', [ContactController::class, 'create'])->middleware('static.cache')->name('contact.create');
     Route::post('/iletisim', [ContactController::class, 'store'])->middleware('throttle:public-form')->name('contact.store');
     // 12 Agustos 2026: kullanicinin talebi - "Hakkımızda" ozel, zengin
@@ -442,6 +450,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->except(['show']);
         // 23 Ekim 2026: kullanıcının talebi - her kurumun internet sitesini admin düzenler/yayına alır.
         Route::get('/kurum-siteleri', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'index'])->name('facility-websites.index');
+        Route::post('/kurum-siteleri/fiyat', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'savePrice'])->name('facility-websites.price');
+        Route::post('/kurum-siteleri/{facility}/profesyonel', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'togglePro'])->name('facility-websites.toggle-pro');
         Route::get('/kurumlar/{facility}/web-sitesi/onizle', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'preview'])->name('facility-websites.preview');
         Route::get('/kurumlar/{facility}/web-sitesi', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'edit'])->name('facility-websites.edit');
         Route::put('/kurumlar/{facility}/web-sitesi', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'update'])->name('facility-websites.update');

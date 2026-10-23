@@ -23,7 +23,7 @@ class FacilityWebsiteController extends Controller
     {
         $q = Facility::query()->with(['city', 'category'])
             ->leftJoin('facility_websites as fw', 'fw.facility_id', '=', 'facilities.id')
-            ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme');
+            ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme', 'fw.plan as site_plan', 'fw.pro_until as site_pro_bitis');
         if ($request->filled('q')) {
             $q->where('facilities.name', 'like', '%'.$request->q.'%');
         }
@@ -36,6 +36,9 @@ class FacilityWebsiteController extends Controller
             'hic' => $q->whereNull('fw.id'),
             default => null,
         };
+        if ($request->input('paket') === 'profesyonel') {
+            $q->where('fw.plan', 'profesyonel');
+        }
         match ($request->input('kendi_sitesi')) {
             'yok' => $q->whereIn('facilities.website_status', Facility::WEBSITE_MISSING_STATUSES),
             'var' => $q->where('facilities.website_status', 'var'),
@@ -48,10 +51,47 @@ class FacilityWebsiteController extends Controller
         $sayilar = [
             'yayinda' => FacilityWebsite::where('status', 'yayinda')->count(),
             'taslak' => FacilityWebsite::where('status', 'taslak')->count(),
+            'profesyonel' => FacilityWebsite::where('plan', 'profesyonel')->count(),
         ];
+        $proFiyat = \App\Models\Setting::get('kurum_sitesi_pro_fiyat', '14.900 ₺ / yıl');
         $cities = \App\Models\City::orderBy('name')->get(['id', 'name']);
 
-        return view('admin.facility-websites.index', compact('facilities', 'sayilar', 'cities'));
+        return view('admin.facility-websites.index', compact('facilities', 'sayilar', 'cities', 'proFiyat'));
+    }
+
+    /**
+     * 23 Ekim 2026: kullanıcının talebi - tek tıkla Profesyonel Site:
+     * paket 1 yıllığına açılır ve site yayına alınır; açıksa kapatılır
+     * (site hazır tasarıma döner, yayında kalır).
+     */
+    public function togglePro(Facility $facility)
+    {
+        $site = FacilityWebsite::forFacility($facility);
+        if ($site->isPro()) {
+            $site->update(['plan' => 'standart', 'pro_until' => null]);
+            $mesaj = $facility->name.': Profesyonel Site kapatıldı, site hazır tasarıma döndü.';
+        } else {
+            $site->fill(['plan' => 'profesyonel', 'pro_until' => now()->addYear()->toDateString(), 'status' => 'yayinda']);
+            if (! $site->published_at) {
+                $site->published_at = now();
+            }
+            $site->save();
+            $mesaj = $facility->name.': Profesyonel Site açıldı ('.$site->pro_until->format('d.m.Y').' tarihine kadar) ve site yayında.';
+        }
+        log_admin_event('facility_website_pro_toggled', $facility, ['plan' => $site->plan, 'pro_until' => optional($site->pro_until)->toDateString()]);
+
+        return back()->with('success', $mesaj);
+    }
+
+    /**
+     * Kurum panelindeki Profesyonel Site tanıtımında görünen fiyat yazısı.
+     */
+    public function savePrice(Request $request)
+    {
+        $data = $request->validate(['fiyat' => 'required|string|max:80']);
+        \App\Models\Setting::set('kurum_sitesi_pro_fiyat', trim($data['fiyat']));
+
+        return back()->with('success', 'Profesyonel Site fiyatı kaydedildi.');
     }
 
     /**
@@ -82,6 +122,8 @@ class FacilityWebsiteController extends Controller
             'status' => ['required', Rule::in(array_keys(FacilityWebsite::STATUSES))],
             'slug' => ['required', 'string', 'max:120', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', Rule::unique('facility_websites', 'slug')->ignore($site->id)],
             'custom_domain' => ['nullable', 'string', 'max:190'],
+            'plan' => ['nullable', Rule::in(array_keys(FacilityWebsite::PLANS))],
+            'pro_until' => ['nullable', 'date'],
         ], ['slug.regex' => 'Adres yalnızca küçük harf, rakam ve tire içerebilir (ör. gunes-bakimevi).']);
 
         $domain = FacilityWebsite::normalizeDomain($admin['custom_domain'] ?? null);
@@ -98,17 +140,22 @@ class FacilityWebsiteController extends Controller
             }]]);
         }
 
+        if (\App\Services\KurumSitesiProForm::submitted($request)) {
+            $content = array_merge($content, app(\App\Services\KurumSitesiProForm::class)->validated($request, $site));
+        }
         $site->applyChanges($content, 'admin', session('admin_id'), session('admin_name'));
         $site->fill([
             'status' => $admin['status'],
             'slug' => $admin['slug'],
             'custom_domain' => $domain,
+            'plan' => $admin['plan'] ?? ($site->plan ?: 'standart'),
+            'pro_until' => $admin['pro_until'] ?? null,
         ]);
         if ($site->status === 'yayinda' && ! $site->published_at) {
             $site->published_at = now();
         }
         $site->save();
-        log_admin_event('facility_website_updated', $facility, ['status' => $site->status, 'slug' => $site->slug, 'custom_domain' => $site->custom_domain]);
+        log_admin_event('facility_website_updated', $facility, ['status' => $site->status, 'slug' => $site->slug, 'custom_domain' => $site->custom_domain, 'plan' => $site->plan]);
 
         return redirect()->route('admin.facility-websites.edit', $facility)->with('success', 'Kurum sitesi kaydedildi.');
     }

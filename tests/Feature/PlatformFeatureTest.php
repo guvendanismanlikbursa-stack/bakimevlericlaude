@@ -7535,6 +7535,158 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue($site->fresh()->sectionEnabled('menu'));
     }
 
+    // 23 Ekim 2026: Profesyonel Site - admin paketi açar, içerik girer; çok sayfalı premium şablon, sayaçlar, rapor.
+    public function test_professional_site_plan_pages_counters_and_panel(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Http::fake();
+        $facility = $this->facilityUser->facility;
+        $facility->update(['is_claimed' => true, 'phone' => '0532 777 88 99', 'services' => ['Hemşire desteği', 'Fizyoterapi']]);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $admin = ['admin_id' => $this->admin->id];
+        $temel = ['status' => 'yayinda', 'slug' => 'altin-yuva', 'custom_domain' => '', 'theme' => 'yesil', 'about_text' => 'Otuz yıldır aile sıcaklığında hizmet veriyoruz.',
+            'sections' => ['hakkimizda' => '1', 'hizmetler' => '1', 'galeri' => '1', 'yorumlar' => '1', 'konum' => '1']];
+
+        // Paket yokken: hazır şablon; iç sayfa ana sayfaya döner; admin profesyonel tasarımı önizleyebilir, ziyaretçi göremez.
+        $this->withSession($admin)->put(route('admin.facility-websites.update', $facility), $temel + ['plan' => 'standart'])->assertRedirect()->assertSessionHasNoErrors();
+        $this->flushSession();
+        $this->get('/siteler/altin-yuva')->assertOk()->assertDontSee('id="cekmece"', false);
+        $this->get('/siteler/altin-yuva/sss')->assertRedirect('/siteler/altin-yuva');
+        $this->get('/siteler/altin-yuva?tasarim=pro')->assertOk()->assertDontSee('id="cekmece"', false);
+        $this->withSession($admin)->get('/siteler/altin-yuva?onizleme=1&tasarim=pro')->assertOk()
+            ->assertSee('id="cekmece"', false)->assertSee('Profesyonel Site tasarım önizlemesi', false);
+        $this->flushSession();
+
+        // Kurum paneli: paket yokken tanıtım kartı, profesyonel alanlar yok; gönderse de kabul edilmez.
+        $panel = ['facility_user_id' => $this->facilityUser->id];
+        $this->withSession($panel)->get('/site/bakimeviara/kurum-panel/web-sitem')->assertOk()
+            ->assertSee('Kurumunuza yakışan premium bir site', false)->assertSee('14.900', false)->assertDontSee('name="pro_form"', false);
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem', ['theme' => 'yesil', 'pro_form' => '1', 'font_style' => 'modern',
+            'faqs' => [['soru' => 'Gizli soru?', 'cevap' => 'Cevap']]])->assertRedirect();
+        $this->assertNull($site->fresh()->faqs);
+        $this->flushSession();
+
+        // Admin profesyonel paketi açar ve içerik girer.
+        $this->withSession($admin)->put(route('admin.facility-websites.update', $facility), $temel + [
+            'plan' => 'profesyonel', 'pro_until' => now()->addYear()->toDateString(), 'pro_form' => '1',
+            'brand_color' => '#7A1F3D', 'font_style' => 'zarif', 'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'logo' => \Illuminate\Http\UploadedFile::fake()->image('logo.png', 300, 120),
+            'stats' => [['deger' => '30+', 'etiket' => 'Yıllık tecrübe'], ['deger' => '', 'etiket' => '']],
+            'values_list' => [['baslik' => 'Aile sıcaklığı', 'metin' => 'Her sakinimizi ailemizden biri gibi görürüz.']],
+            'team' => [['ad' => 'Zehra Kaya', 'unvan' => 'Sorumlu Hemşire', 'aciklama' => '', 'foto_dosya' => \Illuminate\Http\UploadedFile::fake()->image('z.jpg', 300, 400)], ['ad' => '', 'unvan' => 'boş satır']],
+            'faqs' => [['soru' => 'Ziyaret saatleriniz nedir?', 'cevap' => 'Her gün 10:00-18:00 arası.']],
+            'announcements' => [['baslik' => 'Bahar şenliği yapıldı', 'tarih' => '2026-04-20', 'metin' => 'Sakinlerimizle bahçede buluştuk.']],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $site->refresh();
+        $this->assertTrue($site->isPro());
+        $this->assertSame('#7a1f3d', $site->brand_color);
+        $this->assertCount(1, $site->team);
+        $this->assertNotNull($site->team[0]['foto']);
+        $this->assertStringStartsWith('facilities/', (string) $site->logo_path);
+        $this->assertCount(1, $site->stats);
+
+        // Geçersiz video adresi reddedilir.
+        $this->withSession($admin)->put(route('admin.facility-websites.update', $facility), $temel + ['plan' => 'profesyonel', 'pro_form' => '1', 'font_style' => 'zarif', 'video_url' => 'https://ornek.com/video'])
+            ->assertSessionHasErrors('video_url');
+        $this->flushSession();
+
+        // Ziyaretçi: ana sayfa ve iç sayfalar.
+        $this->get('/siteler/altin-yuva')->assertOk()->assertSee('id="cekmece"', false)->assertSee('#7a1f3d', false)
+            ->assertSee('30+', false)->assertSee('Aile sıcaklığı', false)->assertSee('Zehra Kaya', false)->assertSee('youtube-nocookie.com/embed/dQw4w9WgXcQ', false)
+            ->assertSee('Ziyaret saatleriniz nedir?', false)->assertSee('Bahar şenliği yapıldı', false)->assertSee('/siteler/altin-yuva/sss', false);
+        $this->get('/siteler/altin-yuva/hakkimizda')->assertOk()->assertSee('Otuz yıldır aile sıcaklığında', false);
+        $this->get('/siteler/altin-yuva/hizmetler')->assertOk()->assertSee('Fizyoterapi', false);
+        $this->get('/siteler/altin-yuva/ekibimiz')->assertOk()->assertSee('Sorumlu Hemşire', false);
+        $this->get('/siteler/altin-yuva/duyurular')->assertOk()->assertSee('Sakinlerimizle bahçede buluştuk.', false);
+        $this->get('/siteler/altin-yuva/sss')->assertOk()->assertSee('Her gün 10:00-18:00 arası.', false)->assertSee('FAQPage', false);
+        $this->get('/siteler/altin-yuva/iletisim')->assertOk()->assertSee('name="kaynak" value="iletisim"', false)->assertSee('WhatsApp ile Gönder', false);
+        $this->get('/siteler/altin-yuva/olmayan')->assertNotFound();
+
+        // Sayaçlar: ziyaret (3 iç sayfa + ana sayfa vb.), WhatsApp tıklaması, form.
+        $this->post('/siteler/altin-yuva/olay', ['tur' => 'whatsapp'])->assertNoContent();
+        $this->post('/siteler/altin-yuva/olay', ['tur' => 'arama'])->assertNoContent();
+        $this->post('/siteler/altin-yuva/olay', ['tur' => 'kotu'])->assertNoContent();
+        $r = $this->post('/siteler/altin-yuva/iletisim', ['full_name' => 'Pro Aile', 'phone' => '05551110000', 'kaynak' => 'iletisim']);
+        $this->assertStringStartsWith('https://wa.me/905327778899', $r->headers->get('Location'));
+        $rapor = $site->fresh()->statsReport();
+        $this->assertGreaterThanOrEqual(7, $rapor['son30']['ziyaret']);
+        $this->assertSame(1, $rapor['son30']['whatsapp']);
+        $this->assertSame(1, $rapor['son30']['arama']);
+        $this->assertSame(1, $rapor['son30']['form']);
+        // Bot ve admin bakışları sayılmaz.
+        $this->withHeaders(['User-Agent' => 'Googlebot/2.1'])->get('/siteler/altin-yuva')->assertOk();
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->withSession($admin)->get('/siteler/altin-yuva')->assertOk();
+        $this->assertSame($rapor['son30']['ziyaret'], $site->fresh()->statsReport()['son30']['ziyaret']);
+
+        // Admin sayfası: rapor ve geçmiş; liste: paket filtresi ve fiyat.
+        $this->withSession($admin)->get(route('admin.facility-websites.edit', $facility))->assertOk()->assertSee('Site raporu', false)->assertSee('Zehra Kaya', false);
+        $this->withSession($admin)->get(route('admin.facility-websites.index', ['paket' => 'profesyonel']))->assertOk()->assertSee('★ Profesyonel', false)->assertSee($facility->name, false);
+        $this->withSession($admin)->post(route('admin.facility-websites.price'), ['fiyat' => '12.500 ₺ / yıl'])->assertRedirect();
+        $this->flushSession();
+
+        // Kurum paneli: paket etkin -> profesyonel alanlar ve rapor; kurum SSS ekleyebilir.
+        $this->withSession($panel)->get('/site/bakimeviara/kurum-panel/web-sitem')->assertOk()
+            ->assertSee('Profesyonel Site etkin', false)->assertSee('name="pro_form"', false)->assertSee('Site raporu', false);
+        $mevcutEkip = $site->fresh()->team;
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem', ['theme' => 'yesil', 'about_text' => 'Otuz yıldır aile sıcaklığında hizmet veriyoruz.', 'sections' => $temel['sections'], 'pro_form' => '1', 'font_style' => 'modern', 'brand_color' => '#7a1f3d',
+            'team' => [['ad' => 'Zehra Kaya', 'unvan' => 'Başhemşire', 'foto' => $mevcutEkip[0]['foto']]],
+            'faqs' => [['soru' => 'Ziyaret saatleriniz nedir?', 'cevap' => 'Her gün 10:00-18:00 arası.'], ['soru' => 'Deneme süresi var mı?', 'cevap' => 'Evet, bir hafta.']]])->assertRedirect()->assertSessionHasNoErrors();
+        $site->refresh();
+        $this->assertCount(2, $site->faqs);
+        $this->assertSame('modern', $site->font_style);
+        $this->assertSame($mevcutEkip[0]['foto'], $site->team[0]['foto']);
+        // Başka bir dosya yolu ekip fotoğrafı olarak verilemez.
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem', ['theme' => 'yesil', 'about_text' => 'Otuz yıldır aile sıcaklığında hizmet veriyoruz.', 'sections' => $temel['sections'], 'pro_form' => '1', 'font_style' => 'modern',
+            'team' => [['ad' => 'Zehra Kaya', 'foto' => 'facilities/baskasinin-fotografi.webp']]])->assertRedirect();
+        $this->assertNull($site->fresh()->team[0]['foto']);
+        $this->assertSame('12.500 ₺ / yıl', \App\Models\Setting::get('kurum_sitesi_pro_fiyat'));
+        $this->flushSession();
+
+        // Alan adında iç sayfalar ve sayaç.
+        $site->update(['custom_domain' => 'altinyuva.com']);
+        $this->get('/siteler/altin-yuva/ekibimiz')->assertRedirect('https://altinyuva.com/ekibimiz');
+        $this->get('http://altinyuva.com/ekibimiz')->assertOk()->assertSee('Zehra Kaya', false)->assertSee('href="/hakkimizda"', false);
+        $this->get('http://altinyuva.com/hakkimizda')->assertOk()->assertSee('Otuz yıldır aile sıcaklığında', false);
+        $this->get('http://altinyuva.com/sss')->assertNotFound();
+        $this->get('http://localhost/hakkimizda')->assertNotFound();
+        $this->post('http://altinyuva.com/olay', ['tur' => 'whatsapp'])->assertNoContent();
+        $this->assertSame(2, $site->fresh()->statsReport()['son30']['whatsapp']);
+
+        // Paket süresi dolunca hazır şablona döner.
+        $site->update(['pro_until' => now()->subDay()->toDateString(), 'custom_domain' => null]);
+        $this->get('http://localhost/siteler/altin-yuva')->assertOk()->assertDontSee('id="cekmece"', false);
+        $this->get('http://localhost/siteler/altin-yuva/sss')->assertRedirect('/siteler/altin-yuva');
+    }
+
+    // 23 Ekim 2026: tek tıkla Profesyonel Site; liste kart görünümünde, gelişmiş ayarlar kapalı.
+    public function test_admin_one_click_professional_site_toggle(): void
+    {
+        $facility = $this->rehabFacility;
+        \App\Models\FacilityWebsite::where('facility_id', $facility->id)->delete();
+        $admin = ['admin_id' => $this->admin->id];
+
+        $this->withSession($admin)->get(route('admin.facility-websites.index'))->assertOk()
+            ->assertSee("★ Profesyonel'e geçir", false)->assertDontSee('<table', false);
+
+        $this->withSession($admin)->post(route('admin.facility-websites.toggle-pro', $facility))->assertRedirect()->assertSessionHas('success');
+        $site = \App\Models\FacilityWebsite::where('facility_id', $facility->id)->firstOrFail();
+        $this->assertTrue($site->isPro());
+        $this->assertTrue($site->isLive());
+        $this->assertNotNull($site->published_at);
+        $this->assertSame(now()->addYear()->toDateString(), $site->pro_until->toDateString());
+
+        $this->withSession($admin)->get(route('admin.facility-websites.index', ['paket' => 'profesyonel']))->assertOk()
+            ->assertSee('Profesyoneli kapat', false)->assertSee($facility->name, false);
+        // Düzenleme sayfasında profesyonel alanlar kapalı bölmede.
+        $this->withSession($admin)->get(route('admin.facility-websites.edit', $facility))->assertOk()
+            ->assertSee('Gelişmiş ayarları göster', false)->assertDontSee('<details open', false);
+
+        $this->withSession($admin)->post(route('admin.facility-websites.toggle-pro', $facility))->assertRedirect();
+        $site->refresh();
+        $this->assertFalse($site->isPro());
+        $this->assertTrue($site->isLive());
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

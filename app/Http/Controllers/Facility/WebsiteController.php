@@ -23,7 +23,9 @@ class WebsiteController extends Controller
         $images = $facility->images->reject(fn ($img) => str_starts_with((string) $img->path, 'facilities/demo/'))->values();
         $hasSitePackage = $facility->isMember() && (bool) $facility->subscriptionPackage?->includesWebsite();
 
-        return view('themes._shared.facility.website', compact('user', 'facility', 'site', 'images', 'hasSitePackage'));
+        $proFiyat = \App\Models\Setting::get('kurum_sitesi_pro_fiyat', '14.900 ₺ / yıl');
+
+        return view('themes._shared.facility.website', compact('user', 'facility', 'site', 'images', 'hasSitePackage', 'proFiyat'));
     }
 
     public function update(Request $request)
@@ -33,6 +35,10 @@ class WebsiteController extends Controller
         $site = FacilityWebsite::forFacility($facility);
 
         $data = self::validateContent($request, $facility->id);
+        // Profesyonel Site içeriği yalnızca paketi etkin kurumdan kabul edilir.
+        if ($site->isPro() && \App\Services\KurumSitesiProForm::submitted($request)) {
+            $data = array_merge($data, app(\App\Services\KurumSitesiProForm::class)->validated($request, $site));
+        }
         $changed = $site->applyChanges($data, 'kurum', $user->id, $user->name ?: $user->phone);
 
         return redirect(brand_route('facility.website.index'))

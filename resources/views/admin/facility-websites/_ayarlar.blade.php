@@ -24,6 +24,21 @@
       <div style="font-size:12px;color:#6b7280;margin-top:4px;">Alan adı hostinge (cPanel'de ana sitenin klasörüne) yönlendirildikten sonra girin. Site yayındaysa eski adres bu alan adına yönlenir.</div>
       @error('custom_domain')<div style="color:#b91c1c;font-size:13px;margin-top:4px;">{{ $message }}</div>@enderror
     </div>
+    <div>
+      <label for="ks-plan" style="{{ $etiket }}">Site paketi</label>
+      <select id="ks-plan" name="plan" style="{{ $alan }}">
+        @foreach(\App\Models\FacilityWebsite::PLANS as $key => $label)
+          <option value="{{ $key }}" @selected(old('plan', $site->plan ?: 'standart') === $key)>{{ $label }}</option>
+        @endforeach
+      </select>
+      <div style="font-size:12px;color:#6b7280;margin-top:4px;">Profesyonel Site: logolu, çok sayfalı premium tasarım + aylık rapor.</div>
+    </div>
+    <div>
+      <label for="ks-pro-bitis" style="{{ $etiket }}">Profesyonel Site bitiş tarihi</label>
+      <input id="ks-pro-bitis" type="date" name="pro_until" value="{{ old('pro_until', optional($site->pro_until)->format('Y-m-d')) }}" style="{{ $alan }}">
+      <div style="font-size:12px;color:#6b7280;margin-top:4px;">Ödeme dönemi bitince site kendiliğinden hazır tasarıma döner. Boş: süresiz.</div>
+      @error('pro_until')<div style="color:#b91c1c;font-size:13px;margin-top:4px;">{{ $message }}</div>@enderror
+    </div>
   </div>
   <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;">
     <div style="font-weight:900;margin-bottom:6px;">Şu anki adres</div>
