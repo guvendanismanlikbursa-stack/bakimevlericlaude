@@ -187,6 +187,8 @@
     </div>
     <a href="{{ brand_route('facility.wallet.index') }}" class="bg-primary text-white rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Bakiye Yükle →</a>
     <a href="{{ brand_route('facility.packages.index') }}" class="border border-primary text-primary rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Paketler →</a>
+    {{-- 23 Ekim 2026: kullanıcının talebi - kurum sitesi (önizleme / düzenleme). --}}
+    <a href="{{ brand_route('facility.website.index') }}" class="border border-primary text-primary rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">🌐 Web Sitem →</a>
     <a href="{{ brand_route('facility.questions.index') }}" class="border border-gray-200 text-gray-700 rounded-lg shadow-sm p-4 flex items-center justify-center font-semibold text-center">Aile Soruları →</a>
     {{-- 13 Ekim 2026: kullanicinin talebi - "ucretli uyeligin en buyuk
          satici gucu". Ucretsiz kurumlar da bu linki GORUR (sayfaya girince

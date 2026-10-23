@@ -136,6 +136,9 @@ $siteRoutes = function () {
     Route::post('/kurum-ilgi-talebi', [\App\Http\Controllers\Public\FacilityInterestLeadController::class, 'store'])->middleware('throttle:public-form')->name('facility-interest-leads.store');
     Route::get('/toplu-fiyat-al', [EngagementController::class, 'bulkQuote'])->name('engagement.bulk-quote');
     Route::post('/toplu-teklif-talebi', [OfferRequestController::class, 'storeBulk'])->middleware('throttle:public-form')->name('offer-requests.store-bulk');
+    // 23 Ekim 2026: kullanıcının talebi - kurumun internet sitesi (bkz. KurumSitesiController).
+    Route::get('/siteler/{slug}', [\App\Http\Controllers\Public\KurumSitesiController::class, 'show'])->middleware('throttle:public-browse')->name('kurum-sitesi.show');
+    Route::post('/siteler/{slug}/iletisim', [\App\Http\Controllers\Public\KurumSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('kurum-sitesi.iletisim');
     Route::get('/iletisim', [ContactController::class, 'create'])->middleware('static.cache')->name('contact.create');
     Route::post('/iletisim', [ContactController::class, 'store'])->middleware('throttle:public-form')->name('contact.store');
     // 12 Agustos 2026: kullanicinin talebi - "Hakkımızda" ozel, zengin
@@ -321,6 +324,9 @@ $siteRoutes = function () {
             Route::post('/bildirimler/{notification}/okundu', [FacilityNotificationController::class, 'markRead'])->name('notifications.read');
             Route::get('/bildirimler/sayi', [FacilityNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 
+            // 23 Ekim 2026: kullanıcının talebi - "Web Sitem" (kurum sitesi düzenleme).
+            Route::get('/web-sitem', [\App\Http\Controllers\Facility\WebsiteController::class, 'index'])->name('website.index');
+            Route::put('/web-sitem', [\App\Http\Controllers\Facility\WebsiteController::class, 'update'])->middleware('throttle:public-sensitive')->name('website.update');
             Route::get('/paketler', [FacilitySubscriptionController::class, 'index'])->name('packages.index');
             Route::post('/paketler/{package}', [FacilitySubscriptionController::class, 'store'])->middleware('throttle:public-sensitive')->name('packages.store');
 
@@ -431,6 +437,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->parameters(['kurumlar' => 'facility'])
             ->names('facilities')
             ->except(['show']);
+        // 23 Ekim 2026: kullanıcının talebi - her kurumun internet sitesini admin düzenler/yayına alır.
+        Route::get('/kurumlar/{facility}/web-sitesi', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'edit'])->name('facility-websites.edit');
+        Route::put('/kurumlar/{facility}/web-sitesi', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'update'])->name('facility-websites.update');
+        Route::post('/kurumlar/{facility}/web-sitesi/geri-al/{revision}', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'revert'])->name('facility-websites.revert');
         // 7 Ekim 2026: kullanicinin talebi - "Doktorlar" admin bolumu,
         // Kurumlar'daki temel islemlerin (listele/filtrele/ekle/duzenle/
         // sil) aynisi, Expert modeli icin.

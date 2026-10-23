@@ -7237,6 +7237,107 @@ class PlatformFeatureTest extends TestCase
             ->assertOk()->assertSee('Siteli Doktor')->assertDontSee('Sitesiz Doktor');
     }
 
+    // 23 Ekim 2026: kurum internet sitesi - taslak önizleme, kurum paneli, admin yayına alma.
+    public function test_facility_website_draft_preview_panel_edit_and_revision(): void
+    {
+        $facility = $this->facilityUser->facility;
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $this->assertSame('taslak', $site->status);
+        $this->assertNotEmpty($site->slug);
+
+        // Taslak: herkese kapalı, kurum yetkilisi ve admin önizler.
+        $this->get('/siteler/'.$site->slug)->assertNotFound();
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])->get('/siteler/'.$site->slug)
+            ->assertOk()->assertSee('Önizleme — bu site henüz yayında değil', false)->assertSee($facility->name, false);
+        $this->flushSession();
+        $this->withSession(['admin_id' => $this->admin->id])->get('/siteler/'.$site->slug)->assertOk();
+        $this->flushSession();
+
+        // Kurum paneli: Web Sitem sayfası ve düzenleme.
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])->get('/site/bakimeviara/kurum-panel/web-sitem')
+            ->assertOk()->assertSee('Sitemi düzenle', false);
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])->put('/site/bakimeviara/kurum-panel/web-sitem', [
+            'hero_title' => 'Sevgiyle Büyüyen Yuva', 'hero_subtitle' => 'Alt yazı denemesi', 'about_text' => 'Hakkımızda metni',
+            'theme' => 'mavi', 'sections' => ['hakkimizda' => '1', 'galeri' => '1'],
+        ])->assertRedirect();
+        $site->refresh();
+        $this->assertSame('Sevgiyle Büyüyen Yuva', $site->hero_title);
+        $this->assertSame('mavi', $site->theme);
+        $this->assertFalse($site->sectionEnabled('yorumlar'));
+        $this->assertTrue($site->sectionEnabled('galeri'));
+        $this->assertSame(1, $site->revisions()->count());
+        $this->assertArrayHasKey('hero_title', $site->revisions()->first()->before);
+
+        // Başka kurumun fotoğrafı seçilemez.
+        $baskaFoto = \App\Models\FacilityImage::create(['facility_id' => $this->elderlyFacility->id, 'path' => 'facilities/x/1.webp', 'sort_order' => 1]);
+        $this->withSession(['facility_user_id' => $this->facilityUser->id])->put('/site/bakimeviara/kurum-panel/web-sitem', [
+            'theme' => 'mavi', 'hero_image_id' => $baskaFoto->id,
+        ])->assertSessionHasErrors('hero_image_id');
+    }
+
+    public function test_facility_website_contact_for_unclaimed_facility_goes_to_admin_leads(): void
+    {
+        $facility = $this->rehabFacility;
+        $facility->update(['is_claimed' => false, 'is_broker_managed' => false]);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $site->update(['status' => 'yayinda']);
+        $this->post('/siteler/'.$site->slug.'/iletisim', ['full_name' => 'Zeynep Aile', 'phone' => '05550001122'])->assertRedirect();
+        $this->assertTrue(\App\Models\FacilityInterestLead::where('facility_id', $facility->id)->where('full_name', 'Zeynep Aile')->exists());
+        $this->assertFalse(\App\Models\OfferRequest::where('full_name', 'Zeynep Aile')->exists());
+        // Honeypot dolu ise talep oluşmaz.
+        $this->post('/siteler/'.$site->slug.'/iletisim', ['full_name' => 'Bot', 'phone' => '1', 'website' => 'spam'])->assertSessionHasErrors('website');
+    }
+
+    public function test_admin_publishes_facility_website_with_domain_contact_and_revert(): void
+    {
+        $facility = $this->facilityUser->facility;
+        $facility->update(['is_claimed' => true]);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.facility-websites.edit', $facility))
+            ->assertOk()->assertSee('Kurum Sitesi', false)->assertSee('Değişiklik geçmişi', false);
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.facilities.edit', $facility))
+            ->assertOk()->assertSee('Kurum sitesini düzenle', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])->put(route('admin.facility-websites.update', $facility), [
+            'status' => 'yayinda', 'slug' => 'gunes-yuvasi', 'custom_domain' => '', 'theme' => 'yesil',
+            'hero_title' => 'Güneş Yuvası', 'sections' => ['hakkimizda' => '1'],
+        ])->assertRedirect();
+        $site->refresh();
+        $this->assertTrue($site->isLive());
+        $this->assertNotNull($site->published_at);
+        $this->flushSession();
+        $this->get('/siteler/gunes-yuvasi')->assertOk()->assertSee('Güneş Yuvası', false)->assertDontSee('Önizleme — bu site', false);
+
+        // İletişim formu: sahipli kurumda doğrudan talep olarak kurum paneline düşer.
+        $this->post('/siteler/gunes-yuvasi/iletisim', ['full_name' => 'Ayşe Aile', 'phone' => '05551112233', 'message' => 'Bilgi'])
+            ->assertRedirect();
+        $this->assertTrue(\App\Models\OfferRequest::where('facility_id', $facility->id)->where('full_name', 'Ayşe Aile')->exists());
+
+        // Platform alan adı kurum sitesine verilemez; geçerli alan adı kaydedilir ve eski adres yönlenir.
+        $this->withSession(['admin_id' => $this->admin->id])->put(route('admin.facility-websites.update', $facility), [
+            'status' => 'yayinda', 'slug' => 'gunes-yuvasi', 'custom_domain' => 'bakimevleri.com', 'theme' => 'yesil',
+        ])->assertSessionHasErrors('custom_domain');
+        $this->withSession(['admin_id' => $this->admin->id])->put(route('admin.facility-websites.update', $facility), [
+            'status' => 'yayinda', 'slug' => 'gunes-yuvasi', 'custom_domain' => 'https://www.GunesYuvasi.com/', 'theme' => 'yesil', 'hero_title' => 'Güneş Yuvası',
+        ])->assertRedirect();
+        $this->assertSame('gunesyuvasi.com', $site->fresh()->custom_domain);
+        $this->flushSession();
+        $this->get('/siteler/gunes-yuvasi')->assertRedirect('https://gunesyuvasi.com');
+
+        // Alan adından açılış ve oradaki iletişim formu.
+        $this->get('http://gunesyuvasi.com/')->assertOk()->assertSee('Güneş Yuvası', false);
+        $this->get('http://gunesyuvasi.com/kurumlar')->assertRedirect('/');
+        $this->post('http://gunesyuvasi.com/iletisim', ['full_name' => 'Mehmet Alan', 'phone' => '05554445566'])->assertRedirect();
+        $this->assertTrue(\App\Models\OfferRequest::where('facility_id', $facility->id)->where('full_name', 'Mehmet Alan')->exists());
+
+        // Geri alma: başlık değişikliği önceki haline döner.
+        $rev = $site->fresh()->revisions()->get()->first(fn ($r) => array_key_exists('hero_title', $r->before));
+        // Önceki istekler alan adına gittiği için admin isteği platform adresine açıkça yapılır.
+        $this->withSession(['admin_id' => $this->admin->id])->post('http://localhost'.route('admin.facility-websites.revert', [$facility, $rev], false))->assertRedirect();
+        $this->assertNull($site->fresh()->hero_title);
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

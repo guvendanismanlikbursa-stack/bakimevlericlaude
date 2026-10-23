@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             ResolveBrand::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            // 23 Ekim 2026: kurumun kendi alan adından gelen istekte kurum sitesini gösterir.
+            \App\Http\Middleware\ServeFacilityWebsiteDomain::class,
         ]);
 
         $middleware->alias([
