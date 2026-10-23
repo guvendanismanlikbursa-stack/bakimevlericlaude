@@ -60,6 +60,9 @@
 </div>
 @endif
 
+{{-- 23 Ekim 2026: kullanıcının talebi - kurum siteleri özeti (standart/profesyonel, bitişler, son 30 gün). --}}
+@include('admin.facility-websites._ozet')
+
 {{-- 14 Agustos 2026: kullanicinin talebi - "isletme sagligi ozeti", her
      seferinde ayri sayfalara girmeden gunluk trendi (ziyaret, yeni
      basvuru, yeni talep, yeni hata) tek ekranda gormek icin (bkz.

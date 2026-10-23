@@ -298,6 +298,12 @@ class Facility extends Model
         return $this->hasMany(Quote::class);
     }
 
+    // 23 Ekim 2026: kurumun bizdeki internet sitesi (bkz. FacilityWebsite).
+    public function website()
+    {
+        return $this->hasOne(FacilityWebsite::class);
+    }
+
     public function images()
     {
         return $this->hasMany(FacilityImage::class)->orderBy('sort_order');

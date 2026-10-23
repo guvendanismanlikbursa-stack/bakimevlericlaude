@@ -23,7 +23,7 @@ class FacilityWebsiteController extends Controller
     {
         $q = Facility::query()->with(['city', 'category'])
             ->leftJoin('facility_websites as fw', 'fw.facility_id', '=', 'facilities.id')
-            ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme', 'fw.plan as site_plan', 'fw.pro_until as site_pro_bitis');
+            ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme', 'fw.plan as site_plan', 'fw.pro_until as site_pro_bitis', 'fw.id as site_id');
         if ($request->filled('q')) {
             $q->where('facilities.name', 'like', '%'.$request->q.'%');
         }
@@ -36,8 +36,23 @@ class FacilityWebsiteController extends Controller
             'hic' => $q->whereNull('fw.id'),
             default => null,
         };
-        if ($request->input('paket') === 'profesyonel') {
-            $q->where('fw.plan', 'profesyonel');
+        // 23 Ekim 2026: paket ve bitiş tarihi filtreleri.
+        $bugun = now()->toDateString();
+        match ($request->input('paket')) {
+            'profesyonel' => $q->where('fw.plan', 'profesyonel')->where(fn ($w) => $w->whereNull('fw.pro_until')->orWhere('fw.pro_until', '>=', $bugun)),
+            'standart' => $q->where('fw.status', 'yayinda')->where(fn ($w) => $w->where('fw.plan', '!=', 'profesyonel')->orWhereNull('fw.plan')->orWhere('fw.pro_until', '<', $bugun)),
+            'bitiyor' => $q->where('fw.plan', 'profesyonel')->whereBetween('fw.pro_until', [$bugun, now()->addDays(30)->toDateString()]),
+            'dolmus' => $q->where('fw.plan', 'profesyonel')->where('fw.pro_until', '<', $bugun),
+            default => null,
+        };
+        if ($request->filled('bitis_bas')) {
+            $q->whereDate('fw.pro_until', '>=', $request->date('bitis_bas'));
+        }
+        if ($request->filled('bitis_son')) {
+            $q->whereDate('fw.pro_until', '<=', $request->date('bitis_son'));
+        }
+        if ($request->filled('bitis_bas') || $request->filled('bitis_son') || in_array($request->input('paket'), ['bitiyor', 'dolmus', 'profesyonel'], true)) {
+            $q->orderBy('fw.pro_until');
         }
         match ($request->input('kendi_sitesi')) {
             'yok' => $q->whereIn('facilities.website_status', Facility::WEBSITE_MISSING_STATUSES),
@@ -48,15 +63,17 @@ class FacilityWebsiteController extends Controller
         $facilities = $q->orderByRaw("CASE fw.status WHEN 'yayinda' THEN 0 WHEN 'taslak' THEN 1 ELSE 2 END")
             ->orderByDesc('facilities.is_claimed')->orderBy('facilities.name')
             ->paginate(30)->withQueryString();
-        $sayilar = [
-            'yayinda' => FacilityWebsite::where('status', 'yayinda')->count(),
-            'taslak' => FacilityWebsite::where('status', 'taslak')->count(),
-            'profesyonel' => FacilityWebsite::where('plan', 'profesyonel')->count(),
-        ];
+        // Listelenen sitelerin son 30 gün sayıları (tek sorgu).
+        $siteStat = \Illuminate\Support\Facades\DB::table('facility_website_stats')
+            ->whereIn('facility_website_id', $facilities->pluck('site_id')->filter()->all())
+            ->where('gun', '>=', now()->subDays(29)->toDateString())
+            ->groupBy('facility_website_id')
+            ->selectRaw('facility_website_id, SUM(ziyaret) ziyaret, SUM(whatsapp) whatsapp, SUM(arama) arama, SUM(form) form')
+            ->get()->keyBy('facility_website_id');
         $proFiyat = \App\Models\Setting::get('kurum_sitesi_pro_fiyat', '14.900 ₺ / yıl');
         $cities = \App\Models\City::orderBy('name')->get(['id', 'name']);
 
-        return view('admin.facility-websites.index', compact('facilities', 'sayilar', 'cities', 'proFiyat'));
+        return view('admin.facility-websites.index', compact('facilities', 'siteStat', 'cities', 'proFiyat'));
     }
 
     /**

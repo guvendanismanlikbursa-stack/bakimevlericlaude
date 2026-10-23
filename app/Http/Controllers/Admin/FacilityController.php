@@ -29,7 +29,7 @@ class FacilityController extends Controller
     private const MAX_GALLERY_IMAGES = 10;
     public function index(Request $request)
     {
-        $query = $this->filteredQuery($request, includeCategory: true)->with(['city', 'category', 'images', 'facilityUsers']);
+        $query = $this->filteredQuery($request, includeCategory: true)->with(['city', 'category', 'images', 'facilityUsers', 'website']);
 
         // 30 Eylul 2026: kullanicinin talebi - "hangi kurum ne kadar
         // GERCEKTEN goruntulenme almis" sorusuna cevap: siralama HER ZAMAN

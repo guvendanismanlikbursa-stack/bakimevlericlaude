@@ -7696,6 +7696,41 @@ class PlatformFeatureTest extends TestCase
         $this->assertTrue($site->isLive());
     }
 
+    // 23 Ekim 2026: kurum siteleri özeti (ana sayfa), Kurumlar listesinde site rozeti, bitiş tarihi filtreleri.
+    public function test_facility_website_summary_badges_and_expiry_filters(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $pro = \App\Models\FacilityWebsite::forFacility($this->rehabFacility);
+        $pro->update(['status' => 'yayinda', 'plan' => 'profesyonel', 'pro_until' => now()->addDays(10)->toDateString()]);
+        $dolmus = \App\Models\FacilityWebsite::forFacility($this->elderlyFacility);
+        $dolmus->update(['status' => 'yayinda', 'plan' => 'profesyonel', 'pro_until' => now()->subDays(3)->toDateString()]);
+        $std = \App\Models\FacilityWebsite::forFacility($this->facilityUser->facility);
+        $std->update(['status' => 'yayinda', 'plan' => 'standart']);
+        \Illuminate\Support\Facades\DB::table('facility_website_stats')->insert(['facility_website_id' => $pro->id, 'gun' => now()->toDateString(), 'ziyaret' => 42, 'whatsapp' => 5, 'arama' => 2, 'form' => 1]);
+
+        $oz = \App\Models\FacilityWebsite::summary();
+        $this->assertSame(1, $oz['pro_aktif']);
+        $this->assertSame(2, $oz['standart_yayinda']);
+        $this->assertSame(1, $oz['pro_bitiyor']);
+        $this->assertSame(1, $oz['pro_dolmus']);
+        $this->assertSame(42, $oz['son30']['ziyaret']);
+
+        $this->withSession($admin)->get(route('admin.dashboard'))->assertOk()
+            ->assertSee('🌐 Kurum Siteleri', false)->assertSee('★ Profesyonel (aktif)', false)->assertSee('30 gün içinde bitiyor', false)
+            ->assertSee($this->rehabFacility->name, false);
+
+        $this->withSession($admin)->get(route('admin.facilities.index'))->assertOk()
+            ->assertSee('Bizim site: ★ Profesyonel', false)->assertSee('Bizim site: Standart (yayında)', false);
+
+        $kart = fn ($f) => 'overflow-wrap:anywhere;">'.e($f->name).'</div>';
+        $liste = fn (array $p) => $this->withSession($admin)->get(route('admin.facility-websites.index', $p))->assertOk();
+        $liste(['paket' => 'bitiyor'])->assertSee($kart($this->rehabFacility), false)->assertDontSee($kart($this->elderlyFacility), false);
+        $liste(['paket' => 'dolmus'])->assertSee($kart($this->elderlyFacility), false)->assertDontSee($kart($this->rehabFacility), false);
+        $liste(['paket' => 'standart'])->assertSee($kart($this->elderlyFacility), false)->assertDontSee($kart($this->rehabFacility), false);
+        $liste(['bitis_bas' => now()->toDateString(), 'bitis_son' => now()->addDays(20)->toDateString()])
+            ->assertSee($kart($this->rehabFacility), false)->assertDontSee($kart($this->elderlyFacility), false)->assertSee('👀 42 ziyaret', false);
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

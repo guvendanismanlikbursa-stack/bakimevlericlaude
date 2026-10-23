@@ -204,6 +204,34 @@ class FacilityWebsite extends Model
     }
 
     /**
+     * 23 Ekim 2026: kullanıcının talebi - admin ana sayfası ve Kurum Siteleri
+     * sayfası için ayrıntılı özet: paket/durum sayıları, son 30 gün toplamı,
+     * en çok ziyaret alan siteler.
+     */
+    public static function summary(): array
+    {
+        $bugun = now()->toDateString();
+        $proAktif = fn ($q) => $q->where('plan', 'profesyonel')->where(fn ($w) => $w->whereNull('pro_until')->orWhere('pro_until', '>=', $bugun));
+        $stat = \Illuminate\Support\Facades\DB::table('facility_website_stats')->where('gun', '>=', now()->subDays(29)->toDateString());
+        $toplam = (clone $stat)->selectRaw('COALESCE(SUM(ziyaret),0) ziyaret, COALESCE(SUM(whatsapp),0) whatsapp, COALESCE(SUM(arama),0) arama, COALESCE(SUM(form),0) form')->first();
+        $enCok = (clone $stat)->join('facility_websites as fw', 'fw.id', '=', 'facility_website_stats.facility_website_id')
+            ->join('facilities as f', 'f.id', '=', 'fw.facility_id')
+            ->groupBy('fw.facility_id', 'f.name')
+            ->selectRaw('fw.facility_id, f.name as ad, SUM(ziyaret) ziyaret, SUM(whatsapp) whatsapp, SUM(arama) arama, SUM(form) form')
+            ->orderByDesc('ziyaret')->limit(5)->get();
+
+        return [
+            'pro_aktif' => $proAktif(static::query())->count(),
+            'standart_yayinda' => static::where('status', 'yayinda')->where(fn ($q) => $q->where('plan', '!=', 'profesyonel')->orWhereNull('plan')->orWhere('pro_until', '<', $bugun))->count(),
+            'taslak' => static::where('status', 'taslak')->count(),
+            'pro_bitiyor' => static::where('plan', 'profesyonel')->whereBetween('pro_until', [$bugun, now()->addDays(30)->toDateString()])->count(),
+            'pro_dolmus' => static::where('plan', 'profesyonel')->where('pro_until', '<', $bugun)->count(),
+            'son30' => ['ziyaret' => (int) $toplam->ziyaret, 'whatsapp' => (int) $toplam->whatsapp, 'arama' => (int) $toplam->arama, 'form' => (int) $toplam->form],
+            'en_cok' => $enCok->filter(fn ($s) => (int) $s->ziyaret > 0)->values(),
+        ];
+    }
+
+    /**
      * Rapor: son 30 gün toplamı ve son 6 ayın aylık toplamları.
      *
      * @return array{son30: array<string,int>, aylar: array<int, array<string,mixed>>}

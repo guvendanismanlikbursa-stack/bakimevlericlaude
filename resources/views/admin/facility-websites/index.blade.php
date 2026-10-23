@@ -19,7 +19,7 @@
       <h1 class="text-2xl font-bold">🌐 Kurum Siteleri</h1>
       <span data-live-count style="display:inline-block;background:#111827;color:#fff;border-radius:9999px;font-size:13px;font-weight:700;padding:3px 12px;">{{ number_format($facilities->total(), 0, ',', '.') }} kurum bulundu</span>
     </div>
-    <p style="color:#6b7280;font-size:14px;margin-top:4px;">Yayında: <b>{{ $sayilar['yayinda'] }}</b> · Taslak: <b>{{ $sayilar['taslak'] }}</b> · ★ Profesyonel: <b>{{ $sayilar['profesyonel'] }}</b> · Henüz açılmamış siteler "Önizle"ye basınca taslak olarak oluşturulur.</p>
+    <p style="color:#6b7280;font-size:14px;margin-top:4px;">Henüz açılmamış siteler "Önizle"ye basınca taslak olarak oluşturulur.</p>
   </div>
   <form method="POST" action="{{ route('admin.facility-websites.price') }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fffdf8;border:1.5px solid #e9d3ab;border-radius:12px;padding:8px 10px;">
     @csrf
@@ -29,6 +29,7 @@
   </form>
 </div>
 @if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:10px 14px;font-weight:700;margin-bottom:12px;">{{ session('success') }}</div>@endif
+@include('admin.facility-websites._ozet', ['baglanti' => false])
 
 <form method="GET" style="background:#fff;border-radius:14px;padding:14px;display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;border:1px solid #f1f5f9;">
   <input type="text" name="q" value="{{ request('q') }}" placeholder="Kurum adıyla ara..." data-live-search autocomplete="off" style="border:1px solid #d1d5db;border-radius:10px;padding:8px 12px;font-size:14px;flex:1;min-width:160px;">
@@ -40,8 +41,16 @@
   </select>
   <select name="paket" onchange="this.form.submit()" style="border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:14px;">
     <option value="">Paket: tümü</option>
-    <option value="profesyonel" @selected(request('paket') === 'profesyonel')>★ Profesyonel Site</option>
+    <option value="profesyonel" @selected(request('paket') === 'profesyonel')>★ Profesyonel (aktif)</option>
+    <option value="standart" @selected(request('paket') === 'standart')>Standart (yayında)</option>
+    <option value="bitiyor" @selected(request('paket') === 'bitiyor')>Profesyonel · 30 gün içinde bitiyor</option>
+    <option value="dolmus" @selected(request('paket') === 'dolmus')>Profesyonel · süresi dolmuş</option>
   </select>
+  <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;flex-wrap:wrap;">Bitiş tarihi
+    <input type="date" name="bitis_bas" value="{{ request('bitis_bas') }}" onchange="this.form.submit()" style="border:1px solid #d1d5db;border-radius:10px;padding:7px 8px;font-size:14px;max-width:150px;">
+    –
+    <input type="date" name="bitis_son" value="{{ request('bitis_son') }}" onchange="this.form.submit()" style="border:1px solid #d1d5db;border-radius:10px;padding:7px 8px;font-size:14px;max-width:150px;">
+  </label>
   <select name="kendi_sitesi" onchange="this.form.submit()" style="border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:14px;">
     <option value="">Kendi sitesi: tümü</option>
     <option value="yok" @selected(request('kendi_sitesi') === 'yok')>Kendi sitesi yok</option>
@@ -54,7 +63,7 @@
       <option value="{{ $city->id }}" @selected((string) request('city') === (string) $city->id)>{{ $city->name }}</option>
     @endforeach
   </select>
-  @if(request()->hasAny(['q', 'durum', 'kendi_sitesi', 'city', 'paket']))
+  @if(request()->hasAny(['q', 'durum', 'kendi_sitesi', 'city', 'paket', 'bitis_bas', 'bitis_son']))
     <a href="{{ route('admin.facility-websites.index') }}" style="{{ $btn }}align-self:center;">Temizle</a>
   @endif
 </form>
@@ -81,6 +90,10 @@
           @if($f->website_status)@include('partials.website-status-badge', ['facility' => $f])@else<span style="font-size:11px;color:#9ca3af;">Kendi sitesi: kontrol edilmemiş</span>@endif
         </div>
         @if($f->site_durum)<div style="font-size:12px;color:#6b7280;margin-top:6px;overflow-wrap:anywhere;">{{ $f->site_domain ?: 'bakimevleri.com/siteler/'.$f->site_slug }}</div>@endif
+        @if($f->site_id)
+          @php $st = $siteStat[$f->site_id] ?? null; @endphp
+          <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:#374151;margin-top:6px;"><span style="color:#6b7280;">Son 30 gün:</span><span>👀 {{ (int) ($st->ziyaret ?? 0) }} ziyaret</span><span>💬 {{ (int) ($st->whatsapp ?? 0) }}</span><span>📞 {{ (int) ($st->arama ?? 0) }}</span><span>✉️ {{ (int) ($st->form ?? 0) }} form</span></div>
+        @endif
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
         <a href="{{ route('admin.facility-websites.preview', $f->id) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Önizle</a>
