@@ -37,6 +37,14 @@ ScheduledJobMonitor::attach(
 // 03:30'da veritabani gecici erisilemezse yedek atlaniyordu; bugun icin yedek yoksa 04:10'da tekrar dener.
 Schedule::command('backup:database --if-missing')->dailyAt('04:10');
 
+// 23 Ekim 2026: kullanıcının talebi - her akşam o gün eklenen/değişen dosyalar
+// (görseller, videolar, belgeler) + .env yedeklenir (bkz. App\Console\Commands\BackupFilesDaily).
+ScheduledJobMonitor::attach(
+    Schedule::command('backup:files-daily')->dailyAt('23:30'),
+    'backup:files-daily',
+    60 * 24
+);
+
 // Bakim: 48 saattir cevaplanmamis aile sorulari icin kuruma tek seferlik
 // hatirlatma gonderir (bkz. App\Console\Commands\RemindUnansweredQuestions).
 ScheduledJobMonitor::attach(

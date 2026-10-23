@@ -107,7 +107,10 @@ class BackupDatabase extends Command
         // AYNI 3,6+ GB'lık klasörü AYNI ANDA zipliyordu; paylaşımlı sunucu
         // süreçleri log bırakmadan öldürüyor, hiçbir sitede zip oluşmuyordu.
         // Dosya zip'i artık yalnızca ana sitede alınır (SQL yedeği her sitede aynen sürer).
-        if ($this->option('with-files') || (now()->isSunday() && is_primary_site())) {
+        // 23 Ekim 2026: kullanıcının talebi - pazar gecesi tek parça 3,6 GB'lık zip web isteği içinde
+        // hiç tamamlanamıyordu; tam yedek bilgisayara indirildi, sunucuda artık her gece yalnızca o gün
+        // eklenenler alınır (bkz. BackupFilesDaily). Tam zip yalnızca elle --with-files ile istenirse.
+        if ($this->option('with-files')) {
             try {
                 [$filesZipPath, $filesZipSize] = $this->buildFilesZip($dir);
                 if (! $filesZipPath) {
@@ -309,6 +312,10 @@ class BackupDatabase extends Command
         // ortasında hiç dosya yedeği kalmazdı.
         $zips = [];
         foreach (File::files($dir) as $file) {
+            // Günlük dosya yedekleri ve durum dosyası BackupFilesDaily tarafından yönetilir.
+            if (str_starts_with($file->getFilename(), 'files-backup-gunluk-') || $file->getFilename() === 'files-backup-state.json') {
+                continue;
+            }
             if (str_starts_with($file->getFilename(), 'files-backup-')) {
                 $zips[] = $file;
 

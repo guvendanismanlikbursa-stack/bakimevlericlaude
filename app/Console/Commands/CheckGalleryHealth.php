@@ -103,15 +103,13 @@ class CheckGalleryHealth extends Command
             $problems[] = "Bugunku veritabani yedegi ({$sqlBackup->getFilename()}) suphesiz kucuk (".$sqlBackup->getSize()." bayt) - yarim kalmis/bozuk olabilir.";
         }
 
-        // 26 Eylul 2026: dosya (gorsel) zip yedegi artik gunluk degil HAFTALIK (Pazar) alinir (bkz. BackupDatabase);
-        // bu yuzden pazar disinda son 8 gun icinde herhangi bir dosya yedegi olmasi yeterlidir.
+        // 23 Ekim 2026: dosya yedeği artık her akşam 23:30'da yalnızca o gün eklenenlerle alınıyor
+        // (bkz. BackupFilesDaily); sabah kontrolünde son 2 gün içinde bir günlük dosya yedeği olmalı.
         if (! $filesBackup) {
-            $cutoff = now()->subDays(8)->getTimestamp();
+            $cutoff = now()->subDays(2)->getTimestamp();
             $recentFilesBackup = $files->first(fn ($f) => str_starts_with($f->getFilename(), 'files-backup-') && str_ends_with($f->getFilename(), '.zip') && $f->getMTime() >= $cutoff);
-            if (now()->isSunday() && ! $recentFilesBackup) {
-                $problems[] = "Bugun (Pazar) icin dosya yedegi (files-backup-{$today}_*.zip - kurum gorselleri, sahiplenme belgeleri ve .env) bulunamadi.";
-            } elseif (! $recentFilesBackup) {
-                $problems[] = 'Son 8 gunde hic dosya yedegi (files-backup-*.zip - kurum gorselleri, sahiplenme belgeleri ve .env) bulunamadi.';
+            if (! $recentFilesBackup) {
+                $problems[] = 'Son 2 günde günlük dosya yedeği (files-backup-gunluk-*.zip - o gün eklenen kurum görselleri, belgeler ve .env) bulunamadı; her akşam 23:30\'daki backup:files-daily çalışmamış olabilir.';
             }
         }
 
