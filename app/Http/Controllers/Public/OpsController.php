@@ -86,7 +86,7 @@ class OpsController extends Controller
             'disk-usage' => $this->diskUsage(),
             'inode-count' => $this->inodeCount($request),
             'db-size' => $this->dbSize(),
-            'prune-expired-cache' => (function () use ($request) { Artisan::call('platform:prune-expired-cache', $request->boolean('apply') ? [] : ['--dry-run' => true]); return Artisan::output(); })(),
+            'prune-expired-cache' => (function () use ($request) { Artisan::call('platform:prune-expired-cache', ['--kok' => dirname(base_path())] + ($request->boolean('apply') ? [] : ['--dry-run' => true])); return Artisan::output(); })(),
             'storage-cleanup' => $this->storageCleanup($request),
             'qa-facility-panel-video-test' => $this->qaFacilityPanelVideoTest(),
             'category-audit' => $this->categoryAudit(),

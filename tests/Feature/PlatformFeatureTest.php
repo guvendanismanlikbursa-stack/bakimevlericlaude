@@ -1589,6 +1589,22 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame($this->facilityUser->id, session('facility_user_id'));
     }
 
+    // 24 Ekim 2026: hata #255 - Google profil fotoğrafı adresi 255 karakterden uzunsa giriş patlıyordu.
+    public function test_facility_google_login_accepts_very_long_avatar_url(): void
+    {
+        $uzun = 'https://lh3.googleusercontent.com/a-/'.str_repeat('A', 1400).'=s96-c';
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'g-uzun-avatar',
+            'name' => 'Demo Kurum',
+            'email' => $this->facilityUser->email,
+            'avatar' => $uzun,
+        ]));
+
+        $this->get('/site/bakimevibul/kurum-panel/google-callback')->assertRedirect();
+        $this->assertSame($this->facilityUser->id, session('facility_user_id'));
+        $this->assertSame($uzun, $this->facilityUser->fresh()->avatar_url);
+    }
+
     public function test_price_tier_filter_uses_facilitys_own_category_thresholds(): void
     {
         // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - Facility::
