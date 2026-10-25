@@ -8296,7 +8296,8 @@ class PlatformFeatureTest extends TestCase
         $this->get('/dr/'.$site->slug)->assertOk()
             ->assertSeeInOrder(['Hangi durumlarda başvurabilirsiniz?', 'İlaç düzenlemesi', 'Randevudan takibe adım adım', 'Muayeneye gelirken yanınızda bulunsun', 'Kullanılan tüm ilaçlar'], false)
             ->assertSee('Randevu nasıl alabilirim?', false)->assertDontSee('"FAQPage"', false)
-            ->assertSee('muayene, tanı ve tedavinin yerine geçmez', false)->assertSee('href="#surec"', false);
+            ->assertSee('muayene, tanı ve tedavinin yerine geçmez', false)->assertSee('href="#surec"', false)
+            ->assertSee('class="alt-izgara"', false)->assertSee('Tüm hakları saklıdır', false)->assertSee('class="btn btn-ara"', false);
 
         // Doktor kendi SSS'sini girerse o gösterilir ve arama motoru özeti basılır.
         $site->update(['faqs' => [['soru' => 'Evde muayene var mı?', 'cevap' => 'Hayır.']]]);

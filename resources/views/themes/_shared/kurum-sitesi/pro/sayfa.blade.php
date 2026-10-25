@@ -322,6 +322,9 @@
   /* Mobil sabit çubuk */
   .mobil-cubuk{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px max(14px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.97);backdrop-filter:blur(10px);box-shadow:0 -10px 30px -18px rgba(0,0,0,.35)}
   .mobil-cubuk .btn{padding:13px 10px;font-size:15px}
+  /* 25 Ekim 2026: kullanıcının talebi - mobil alttaki "Ara" düğmesi beyazdı, fark edilmiyordu: yeşil. */
+  .btn-ara{background:#16a34a;color:#fff;border:0;box-shadow:0 8px 20px -10px rgba(22,163,74,.9)}
+  .btn-ara:hover{background:#15803d;color:#fff}
   .mobil-cubuk.tek{grid-template-columns:1fr}
   @media(min-width:900px){.mobil-cubuk{display:none}}
   @media(max-width:899px){body{padding-bottom:78px}}
@@ -763,7 +766,7 @@
 
 @if($waLink || $telLink)
   <div class="mobil-cubuk {{ $waLink && $telLink ? '' : 'tek' }}">
-    @if($telLink)<a href="{{ $telLink }}" class="btn btn-cizgi" data-olay="arama">{!! $ikonTel !!} Ara</a>@endif
+    @if($telLink)<a href="{{ $telLink }}" class="btn btn-ara" data-olay="arama">{!! $ikonTel !!} Ara</a>@endif
     @if($waLink)<a href="{{ $waLink }}" class="btn btn-wa" data-olay="whatsapp" target="_blank" rel="noopener">{!! $ikonWa !!} WhatsApp</a>@endif
   </div>
 @endif

@@ -313,6 +313,9 @@
   /* Mobil sabit çubuk */
   .mobil-cubuk{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px max(14px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.97);backdrop-filter:blur(10px);box-shadow:0 -10px 30px -18px rgba(0,0,0,.35)}
   .mobil-cubuk .btn{padding:13px 10px;font-size:15px}
+  /* 25 Ekim 2026: kullanıcının talebi - mobil alttaki "Ara" düğmesi beyazdı, fark edilmiyordu: yeşil. */
+  .btn-ara{background:#16a34a;color:#fff;border:0;box-shadow:0 8px 20px -10px rgba(22,163,74,.9)}
+  .btn-ara:hover{background:#15803d;color:#fff}
   .mobil-cubuk.tek{grid-template-columns:1fr}
   @media(min-width:900px){.mobil-cubuk{display:none}}
   @media(max-width:899px){body{padding-bottom:78px}}
@@ -553,10 +556,37 @@
 
 <div class="kap" style="padding-bottom:32px;"><p class="tibbi-not">ℹ️ Bu sitedeki bilgiler genel bilgilendirme amaçlıdır; muayene, tanı ve tedavinin yerine geçmez. Acil durumlarda 112’yi arayın.</p></div>
 
+{{-- 25 Ekim 2026: kullanıcının talebi - sitenin en altına tam alt bilgi bölümü. --}}
 <footer class="altbilgi">
   <div class="kap">
-    <div class="alt-alt" style="margin-top:0;border-top:0;padding-top:0;">
-      <span>© {{ now()->year }} {{ $ad }}</span>
+    <div class="alt-izgara">
+      <div>
+        <a href="#" class="marka" aria-label="{{ $ad }}">
+          @if($logo)<img src="{{ $logo }}" alt="{{ $ad }}" style="max-height:56px;background:#fff;border-radius:12px;padding:6px 10px;">@else<span class="monogram" aria-hidden="true">{{ $harf }}</span><span class="marka-ad"><b style="color:#fff;">{{ $ad }}</b>@if($brans)<small>{{ $brans }}</small>@endif</span>@endif
+        </a>
+        @if($hakkimda !== '')<p style="max-width:420px;">{{ \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $hakkimda), 180, '…', preserveWords: true) }}</p>@endif
+        @if($e->clinic_name)<p style="margin-top:12px;">🏥 {{ $e->clinic_name }}</p>@endif
+      </div>
+      <div>
+        <h4>Sayfa</h4>
+        <ul>
+          @foreach($menu as $k => $etiket)<li><a href="#{{ $k }}">{{ $etiket }}</a></li>@endforeach
+          <li><a href="#durumlar">Başvuru konuları</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>İletişim</h4>
+        <ul>
+          @if($telLink)<li><a href="{{ $telLink }}">📞 {{ $telefon }}</a></li>@endif
+          @if($waLink)<li><a href="{{ $waLink }}" target="_blank" rel="noopener">💬 WhatsApp'tan yazın</a></li>@endif
+          @if($adres)<li>📍 {{ $adres }}</li>@endif
+          @if($haritaLink)<li><a href="{{ $haritaLink }}" target="_blank" rel="noopener" style="color:#e9d3ab;font-weight:700;">Yol tarifi al →</a></li>@endif
+          @if($bolum('calisma_saatleri') && $saatler !== '')<li style="white-space:pre-line;">🕘 {{ $saatler }}</li>@endif
+        </ul>
+      </div>
+    </div>
+    <div class="alt-alt">
+      <span>© {{ now()->year }} {{ $ad }}. Tüm hakları saklıdır.</span>
       <span>Altyapı: <a href="https://bakimevleri.com" target="_blank" rel="noopener" style="color:#fff;">bakimevleri.com</a></span>
     </div>
   </div>
@@ -564,7 +594,7 @@
 
 @if($waLink || $telLink)
   <div class="mobil-cubuk {{ $waLink && $telLink ? '' : 'tek' }}">
-    @if($telLink)<a href="{{ $telLink }}" class="btn btn-cizgi">{!! $ikonTel !!} Ara</a>@endif
+    @if($telLink)<a href="{{ $telLink }}" class="btn btn-ara">{!! $ikonTel !!} Ara</a>@endif
     @if($waLink)<a href="{{ $waLink }}" class="btn btn-wa" target="_blank" rel="noopener">{!! $ikonWa !!} WhatsApp</a>@endif
   </div>
 @endif
