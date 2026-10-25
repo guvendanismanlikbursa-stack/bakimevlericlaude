@@ -12,7 +12,8 @@
     'cocuk' => [
       'icon' => '🛡️',
       'title' => 'Anlaşmalı Kreş/Anaokullarından Birini Seçin, 1 Yıl Ferdi Kaza Sigortası Bizden!',
-      'body' => 'Sitemiz üzerinden bize ulaşıp anlaşmalı kurumlardan birine kaydını yaptırdığınız çocuğunuza, 1 yıl boyunca geçerli ferdi kaza sigortasını tamamen ücretsiz olarak biz hediye ediyoruz — okul saatleri içinde ve dışında geçerli bu güvence, olası bir kaza durumunda ailenizin yanında olması için platformumuzun hediyesidir.',
+      // 25 Ekim 2026: kullanıcının talebi - açıklama metni çok yer kaplıyordu, kaldırıldı.
+      'body' => '',
       'cta' => 'Bu hediyeden yalnızca kurumla doğrudan değil, önce sitemiz üzerinden bize ulaşan aileler faydalanabilir — sigorta sürecinizi sizin için biz başlatalım.',
     ],
     'yasli-bakim' => [
@@ -30,7 +31,7 @@
       <span class="text-2xl leading-none" aria-hidden="true">{{ $brokerBanner['icon'] }}</span>
       <div>
         <div class="font-black text-base sm:text-lg leading-snug" style="color:#134e4a;">{{ $brokerBanner['title'] }}</div>
-        <p class="text-sm mt-1" style="color:#115e59;">{{ $brokerBanner['body'] }}</p>
+        @if($brokerBanner['body'] !== '')<p class="text-sm mt-1" style="color:#115e59;">{{ $brokerBanner['body'] }}</p>@endif
         <p class="text-xs font-bold mt-2" style="color:#0f766e;">📩 {{ $brokerBanner['cta'] }}</p>
       </div>
     </div>

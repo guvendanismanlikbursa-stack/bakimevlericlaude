@@ -8185,4 +8185,14 @@ class PlatformFeatureTest extends TestCase
         // Unvan alanı doluysa eskisi gibi o kullanılır.
         $this->assertSame('UZM', $e('Abdurrezak KAYA', 'Uzm. Dr.')->titleAbbreviation());
     }
+
+    // 25 Ekim 2026: çocuk bölümündeki sigorta kutusunda uzun açıklama yok; yaşlı bakım kutusu aynen.
+    public function test_child_broker_banner_has_no_long_body(): void
+    {
+        $this->get('/site/bakimevleri/?bolum=cocuk')->assertOk()
+            ->assertSee('1 Yıl Ferdi Kaza Sigortası Bizden!', false)
+            ->assertDontSee('okul saatleri içinde ve dışında', false)
+            ->assertSee('sigorta sürecinizi sizin için biz başlatalım', false);
+        $this->get('/site/bakimevleri/?bolum=yasli-bakim')->assertOk()->assertSee('ayda 2 kez sizin adınıza', false);
+    }
 }
