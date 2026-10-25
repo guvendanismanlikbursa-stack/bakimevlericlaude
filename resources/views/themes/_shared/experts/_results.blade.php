@@ -1,7 +1,7 @@
 @if(! $experts)
   {{-- 7 Ekim 2026: kullanicinin talebi - hicbir filtre/arama yokken
        rastgele doktor listesi yerine bolumu tanitan bilgilendirme. --}}
-  <div class="rounded-2xl border-2 border-dashed border-teal-200 bg-teal-50/40 p-8 text-center">
+  <div class="rounded-2xl border-2 border-dashed border-teal-200 bg-teal-50/40 p-8 text-center" style="background:rgba(255,255,255,.88);">
     <div class="text-4xl mb-3">🩺</div>
     <h2 class="text-lg font-black text-gray-950 mb-2">Özel Doktorlar Bölümüne Hoş Geldiniz</h2>
     <p class="text-gray-600 max-w-xl mx-auto mb-4">

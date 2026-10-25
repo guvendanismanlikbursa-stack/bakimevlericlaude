@@ -17,6 +17,9 @@
 @section('robots_meta', $publiclyVisible ? 'index,follow' : 'noindex,nofollow')
 
 @section('content')
+{{-- 25 Ekim 2026: kullanıcının talebi - sade arka plan yerine doktorlar bölümüne uygun, hafif
+     sağlık temalı zemin (yumuşak turkuaz geçiş + çok soluk artı / nabız deseni). Inline stil. --}}
+<div style="background-color:#f4faf9;background-image:radial-gradient(ellipse 60% 45% at 8% 0%, rgba(13,148,136,.16), transparent 70%),radial-gradient(ellipse 50% 40% at 100% 18%, rgba(37,99,235,.10), transparent 70%),radial-gradient(ellipse 55% 40% at 50% 100%, rgba(13,148,136,.10), transparent 70%),url(&quot;data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='120'%20viewBox='0%200%20120%20120'%3E%3Cpath%20d='M18%2012h4v6h6v4h-6v6h-4v-6h-6v-4h6z'%20fill='%230d9488'%20fill-opacity='0.07'/%3E%3Cpath%20d='M80%2070h3v5h5v3h-5v5h-3v-5h-5v-3h5z'%20fill='%232563eb'%20fill-opacity='0.06'/%3E%3Cpath%20d='M0%20100h34l6-12%208%2022%207-16%204%206h61'%20fill='none'%20stroke='%230d9488'%20stroke-opacity='0.06'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E&quot;),linear-gradient(180deg,#e9f6f4 0%,#f4faf9 35%,#ffffff 100%);background-repeat:no-repeat,no-repeat,no-repeat,repeat,no-repeat;min-height:70vh;margin-bottom:-4rem;padding-bottom:4rem;">
 <div class="max-w-5xl mx-auto px-4 py-8">
 
   @unless($publiclyVisible)
@@ -28,7 +31,7 @@
   <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
   <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
 
-  <form method="GET" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-expert-results" data-count-target="js-expert-count" class="js-location-filter flex flex-wrap gap-3 mb-6">
+  <form method="GET" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-expert-results" data-count-target="js-expert-count" class="js-location-filter flex flex-wrap gap-3 mb-6" style="background:rgba(255,255,255,.92);border:1px solid #d5ebe8;border-radius:16px;padding:12px;box-shadow:0 6px 20px -12px rgba(13,110,106,.35);">
     <input type="search" name="search" value="{{ request('search') }}" placeholder="Doktor adı veya branş ile ara..." autocomplete="off" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[180px]">
     <select name="city" class="js-city border rounded-lg px-3 py-2 text-sm">
       <option value="">Tüm İller</option>
@@ -97,6 +100,7 @@
   kaliyor, runFilter() sessizce hicbir sey yapmadan donuyordu (hata da
   vermiyordu). Script artik sonuc div'inden SONRA calisir. --}}
   @include('themes._shared.partials.location-filter-script')
+</div>
 </div>
 
 @if($activeExpert)
