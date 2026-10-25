@@ -137,7 +137,7 @@ class DoktorSitesiController extends Controller
         $onizlemePro = in_array($tasarim, ['pro', 'klasik', 'hareketli'], true);
         $demoPro = $onizlemePro && ! $site->isPro();
         $pro = ($site->isPro() && $tasarim !== 'standart') || $onizlemePro;
-        // 25 Ekim 2026: admin'in seçtiği Profesyonel tasarım (Klasik / Hareketli - doktorlarda sade sürüm).
+        // 25 Ekim 2026: admin'in seçtiği Profesyonel tasarım (Klasik / Hareketli).
         $hareketli = $pro && ($tasarim === 'hareketli' || ($site->pro_tasarim === 'hareketli' && $tasarim !== 'klasik'));
         if ($pro) {
             return response()->view('themes._shared.doktor-sitesi.pro', [

@@ -81,12 +81,34 @@
   /* Üst menü dolunca alt çizgi akar */
   .hrk .ust.dolu::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--ana),var(--altin),transparent);background-size:200% auto;animation:hrk-akis 5s linear infinite;opacity:.7}
 
-  /* Doktorlar için sade sürüm (reklam yasağı: dikkat çekici parıltılar yok, sakin ve bilgilendirici) */
-  .hrk-sade .btn-dolu::after,.hrk-sade .btn-wa::after,.hrk-sade .btn-beyaz::after,
-  .hrk-sade .giris .btnler .btn:first-child::before,.hrk-sade .cagri .btnler .btn:first-child::before{display:none}
-  .hrk-sade .aurora{opacity:.32}
-  .hrk-sade .guven > span{animation:none}
-  .hrk-sade .bolum:not(.koyu-bolum) .etiket{animation:none}
+  /* 25 Ekim 2026: doktor sitesine özel hareketler (kullanıcı: "aşırı sade olmuş") -
+     süzülen tıbbi simgeler, akan nabız çizgisi, portrede dönen ışık, uzmanlık şeridi.
+     Görsel zenginlik; hasta yorumu/puan/iddia yok (reklam yasağı). */
+  @keyframes hrk-suzul{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(14px,-22px) rotate(8deg)}100%{transform:translate(-10px,10px) rotate(-6deg)}}
+  @keyframes hrk-nabiz{from{stroke-dashoffset:1.3}to{stroke-dashoffset:0}}
+  @keyframes hrk-nefes{0%,100%{transform:scale(.92);opacity:.45}50%{transform:scale(1.06);opacity:.85}}
+  @keyframes hrk-halka{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.7);opacity:0}}
+  .hrk-dr .tibbi{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+  .hrk-dr .tibbi svg{position:absolute;width:var(--b,46px);height:var(--b,46px);color:#fff;opacity:var(--o,.13);animation:hrk-suzul var(--s,16s) ease-in-out infinite alternate;animation-delay:var(--g,0s)}
+  .hrk-dr .ekg{position:absolute;left:0;right:0;bottom:0;width:100%;height:90px;z-index:1;pointer-events:none}
+  .hrk-dr .ekg path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .hrk-dr .ekg .zemin{stroke:rgba(255,255,255,.14);stroke-width:2}
+  .hrk-dr .ekg .isik{stroke:#fff;stroke-width:2.6;stroke-dasharray:.22 1.08;animation:hrk-nabiz 3.6s linear infinite;filter:drop-shadow(0 0 6px rgba(255,255,255,.9))}
+  .hrk-dr .portre-kart{isolation:isolate}
+  .hrk-dr .portre-kart::after{content:"";position:absolute;z-index:-1;left:6%;right:6%;top:6%;aspect-ratio:4/5;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ana) 70%,#fff),transparent 65%);filter:blur(40px);animation:hrk-nefes 5s ease-in-out infinite}
+  .hrk-dr .portre-kart::before{content:"";position:absolute;z-index:2;left:-3px;top:-3px;width:calc(100% + 6px);aspect-ratio:4/5;border-radius:31px;padding:3px;pointer-events:none;background:conic-gradient(from var(--aci),transparent 0 60%,rgba(255,255,255,.95) 78%,color-mix(in srgb,var(--altin) 80%,#fff) 84%,transparent 94%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;animation:hrk-donus 4.5s linear infinite}
+  .hrk-dr .portre-kart .unvan-rozet{z-index:3;animation:hrk-yuz 6s ease-in-out infinite}
+  @media(max-width:959px){.hrk-dr .portre-kart .unvan-rozet{animation:none}}
+  .hrk-dr .ilgi-serit{padding:26px 0;background:var(--krem);border-bottom:1px solid var(--cizgi)}
+  .hrk-dr .ilgi-serit .serit-ic span{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--cizgi);border-radius:999px;padding:11px 18px;font-weight:700;color:var(--ink);font-size:15px;white-space:nowrap}
+  .hrk-dr .ilgi-serit .serit-ic span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ana);box-shadow:0 0 0 4px color-mix(in srgb,var(--ana) 18%,transparent)}
+  .js .hrk-dr .etiket-bulut span{opacity:0;transform:translateY(14px) scale(.9);transition:opacity .6s ease,transform .6s cubic-bezier(.3,1.5,.5,1),box-shadow .3s ease,border-color .3s ease;transition-delay:calc(var(--n,0) * 70ms + .2s)}
+  .js .hrk-dr .etiket-bulut.acik span{opacity:1;transform:none}
+  .hrk-dr .etiket-bulut span:hover{border-color:var(--ana);box-shadow:0 10px 24px -14px var(--ana);transform:translateY(-3px)}
+  .hrk-dr .kanal .yuvar{position:relative}
+  .hrk-dr .kanal .yuvar::after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid currentColor;animation:hrk-halka 2.4s ease-out infinite}
+  .hrk-dr .saat-kart{position:relative;overflow:hidden}
+  .hrk-dr .saat-kart::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--ana),var(--altin),#7dd3fc,var(--ana));background-size:200% auto;animation:hrk-akis 4s linear infinite}
 
   @media(prefers-reduced-motion:reduce){
     .hrk *,.hrk *::before,.hrk *::after{animation:none !important}
@@ -118,7 +140,7 @@
     h1.textContent = '';
     kelimeler.forEach(function (k, i) {
       var s = document.createElement('span');
-      s.className = (i === kelimeler.length - 1 && kelimeler.length > 2 && !b.classList.contains('hrk-sade')) ? 'vurgu' : 'kelime';
+      s.className = (i === kelimeler.length - 1 && kelimeler.length > 2) ? 'vurgu' : 'kelime';
       if (s.className === 'vurgu') s.style.display = 'inline-block';
       s.style.setProperty('--i', i);
       s.setAttribute('aria-hidden', 'true');
@@ -163,7 +185,7 @@
   }
 
   // Kartlarda fareyle gezinen ışık
-  document.querySelectorAll('.deger, .hizmet, .yorum, .duyuru').forEach(function (k) {
+  document.querySelectorAll('.deger, .hizmet, .yorum, .duyuru, .saat-kart, .form-kart').forEach(function (k) {
     k.addEventListener('pointermove', function (e) {
       var r = k.getBoundingClientRect();
       k.style.setProperty('--mx', (e.clientX - r.left) + 'px');

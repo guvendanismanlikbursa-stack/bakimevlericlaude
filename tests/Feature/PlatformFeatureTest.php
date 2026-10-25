@@ -8226,7 +8226,7 @@ class PlatformFeatureTest extends TestCase
         }
     }
 
-    // 25 Ekim 2026: Profesyonel tasarımı admin seçer (Klasik / Hareketli); doktorda sade sürüm.
+    // 25 Ekim 2026: Profesyonel tasarımı admin seçer (Klasik / Hareketli); doktorda zengin hareketli sürüm.
     public function test_admin_chooses_professional_design_for_facility_and_doctor(): void
     {
         $admin = ['admin_id' => $this->admin->id];
@@ -8270,12 +8270,12 @@ class PlatformFeatureTest extends TestCase
         $this->withSession($admin)->get(route('admin.experts.website.preview', ['expert' => $expert, 'tasarim' => 'hareketli']))
             ->assertRedirect('/dr/'.$ds->slug.'?onizleme=1&tasarim=hareketli');
         $this->withSession($admin)->get('/dr/'.$ds->slug.'?onizleme=1&tasarim=hareketli')->assertOk()
-            ->assertSee('class="hrk hrk-sade"', false)->assertSee('doktorlar için sade sürüm', false);
+            ->assertSee('class="hrk hrk-dr"', false)->assertSee('Hareketli Profesyonel tasarım önizlemesi', false)->assertSee('class="ekg"', false);
         $this->flushSession();
-        $this->get('/dr/'.$ds->slug)->assertOk()->assertDontSee('hrk-sade', false);
+        $this->get('/dr/'.$ds->slug)->assertOk()->assertDontSee('hrk-dr', false);
         $this->withSession($admin)->post(route('admin.expert-websites.design', $expert), ['tasarim' => 'hareketli'])->assertRedirect()->assertSessionHas('success');
         $this->withSession($admin)->get(route('admin.expert-websites.index'))->assertOk()->assertSee('✓ ✨ Hareketli', false);
         $this->flushSession();
-        $this->get('/dr/'.$ds->slug)->assertOk()->assertSee('class="hrk hrk-sade"', false)->assertDontSee('doktorlar için sade sürüm', false);
+        $this->get('/dr/'.$ds->slug)->assertOk()->assertSee('class="hrk hrk-dr"', false)->assertDontSee('Hareketli Profesyonel tasarım önizlemesi', false);
     }
 }

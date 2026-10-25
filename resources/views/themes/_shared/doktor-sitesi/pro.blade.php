@@ -333,7 +333,7 @@
 @if(! empty($hareketli))@include('themes._shared.kurum-sitesi.pro._hareketli', ['parca' => 'css'])@endif
 <script>document.documentElement.classList.add('js')</script>
 </head>
-<body class="{{ ! empty($hareketli) ? 'hrk hrk-sade' : '' }}">
+<body class="{{ ! empty($hareketli) ? 'hrk hrk-dr' : '' }}">
 @if(! empty($hareketli))<div class="ilerleme" id="ilerleme" aria-hidden="true"></div>@endif
 @php
   $ikonTel = '<svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2z"/></svg>';
@@ -364,7 +364,11 @@
 </div>
 
 <section class="giris desensiz dr-giris">
-  @if(! empty($hareketli))<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>@endif
+  @if(! empty($hareketli))
+    <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="tibbi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:8%;top:18%;--b:54px;--o:.14;--s:17s;--g:0s;"><path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M11 14v2a5 5 0 0 0 10 0v-1"/><circle cx="21" cy="13" r="2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:44%;top:12%;--b:40px;--o:.12;--s:21s;--g:-5s;"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l2-3 3 6 2-3h6"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:88%;top:22%;--b:34px;--o:.16;--s:15s;--g:-3s;"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:70%;top:70%;--b:44px;--o:.1;--s:19s;--g:-8s;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:20%;top:76%;--b:28px;--o:.14;--s:13s;--g:-6s;"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:92%;top:62%;--b:30px;--o:.1;--s:18s;--g:-11s;"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l2-3 3 6 2-3h6"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:56%;top:44%;--b:36px;--o:.08;--s:23s;--g:-2s;"><path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M11 14v2a5 5 0 0 0 10 0v-1"/><circle cx="21" cy="13" r="2"/></svg></div>
+    <svg class="ekg" viewBox="0 0 1440 90" preserveAspectRatio="none" aria-hidden="true"><path class="zemin" d="M0 60 H430 l16 -4 l10 8 l14 -46 l16 74 l12 -44 l10 12 H860 l12 -3 l9 6 l12 -30 l14 48 l10 -28 l9 7 H1440"/><path class="isik" pathLength="1" d="M0 60 H430 l16 -4 l10 8 l14 -46 l16 74 l12 -44 l10 12 H860 l12 -3 l9 6 l12 -30 l14 48 l10 -28 l9 7 H1440"/></svg>
+  @endif
   <div class="kap">
     <div>
       <div class="etiket gorun">{{ $brans ?: 'Muayenehane' }}@if($e->city) · {{ $e->city->name }}@endif</div>
@@ -388,6 +392,13 @@
 
 @if($rakamlar)
   <div class="kap"><div class="bilgi-kart rakamlar gorun" style="--sutun:{{ count($rakamlar) }};">@foreach($rakamlar as $r)<div><span class="rakam">{{ $r['deger'] }}</span><span class="rakam-et">{{ $r['etiket'] }}</span></div>@endforeach</div></div>
+@endif
+
+@if(! empty($hareketli) && isset($menu['ilgi']) && count($ilgi) >= 3)
+  {{-- 25 Ekim 2026: hareketli tasarımda uzmanlık alanları kayan şerit. --}}
+  <div class="ilgi-serit" aria-hidden="true">
+    <div class="serit"><div class="serit-ic" style="--sure:{{ max(28, count($ilgi) * 6) }}s;">@foreach([0, 1] as $kopya)@foreach($ilgi as $alan)<span>{{ $alan }}</span>@endforeach @endforeach</div></div>
+  </div>
 @endif
 
 @if(isset($menu['hakkimda']))
@@ -415,7 +426,7 @@
   <section class="bolum krem" id="ilgi">
     <div class="kap">
       <div class="bolum-bas gorun"><div class="sol"><div class="etiket">Uzmanlık alanları</div><h2>Hangi konularda yardımcı oluyorum?</h2></div></div>
-      <div class="etiket-bulut gorun">@foreach($ilgi as $alan)<span>{{ $alan }}</span>@endforeach</div>
+      <div class="etiket-bulut gorun">@foreach($ilgi as $alan)<span style="--n:{{ $loop->index }};">{{ $alan }}</span>@endforeach</div>
     </div>
   </section>
 @endif
@@ -504,7 +515,7 @@
   </div>
 @endif
 @if(! empty($hareketliDemo))
-  <div class="onizleme">✨ Hareketli Profesyonel tasarım önizlemesi — doktorlar için sade sürüm</div>
+  <div class="onizleme">✨ Hareketli Profesyonel tasarım önizlemesi</div>
 @elseif($demoPro)
   <div class="onizleme">Profesyonel Site tasarım önizlemesi — paket etkinleşince site bu görünümde yayınlanır.</div>
 @elseif($isPreview)
