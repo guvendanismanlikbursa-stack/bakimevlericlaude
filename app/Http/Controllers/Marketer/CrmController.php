@@ -25,7 +25,7 @@ class CrmController extends Controller
     // ve ayri bir "Randevulu Aramalar" sekmesi ('callback' => true, durum
     // listesi degil, marketing_callback_at dolu/gelecekteki kurumlari gosterir
     // - yetkili o an musait olmayip "su gun su saatte arayin" dediginde).
-    private const GROUPS = [
+    public const GROUPS = [
         'all' => ['title' => 'Tümü', 'statuses' => null],
         'to_call' => ['title' => 'Aranacaklar', 'statuses' => [null, 'called']],
         'callback' => ['title' => 'Randevulu Aramalar', 'callback' => true],
@@ -46,7 +46,7 @@ class CrmController extends Controller
     // kaldirilmadi). Huni sirasi: called < reached_decision_maker <
     // listened_details < price_requested < subscribed (bkz. Admin\
     // MarketerController::funnel()).
-    private const STATUSES = [
+    public const STATUSES = [
         'called' => 'Arandı',
         'reached_decision_maker' => 'Yetkiliyle Görüştü',
         'listened_details' => 'Detay Dinledi',

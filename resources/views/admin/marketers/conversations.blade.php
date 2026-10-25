@@ -2,7 +2,8 @@
 @section('title', 'Pazarlamacı Görüşmeleri')
 
 @php
-  $statusLabels = ['called'=>'Arandı','thinking'=>'Düşünecek','interested'=>'İlgileniyor','subscribed'=>'Üye Oldu','not_interested'=>'İlgilenmiyor','receipt_sent'=>'Dekont Geldi'];
+  // 25 Ekim 2026: tüm durumlar tek kaynaktan (CRM ile aynı).
+  $statusLabels = \App\Http\Controllers\Marketer\CrmController::STATUSES;
 @endphp
 
 @section('content')
@@ -10,7 +11,12 @@
   <h1 class="text-2xl font-bold">Pazarlamacı Görüşmeleri</h1>
   <a href="{{ route('admin.marketers.index') }}" class="text-sm font-semibold text-gray-700 underline">Pazarlamacılara dön</a>
 </div>
-<p class="text-sm text-gray-500 mb-6">Tüm pazarlamacıların hangi kurumla ne zaman görüştüğü, sonucu ve notu — en yeniden eskiye.</p>
+<p class="text-sm text-gray-500 mb-4">Tüm pazarlamacıların hangi kurum ya da doktorla ne zaman görüştüğü, sonucu ve notu — en yeniden eskiye.</p>
+{{-- 25 Ekim 2026: Kurum / Doktor görüşmeleri sekmesi. --}}
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="{{ route('admin.marketers.conversations', array_filter(['marketer' => request('marketer')])) }}" style="border-radius:10px;padding:7px 14px;font-weight:700;font-size:14px;text-decoration:none;border:1.5px solid {{ $doktor ? '#e5e7eb' : '#111827' }};background:{{ $doktor ? '#fff' : '#111827' }};color:{{ $doktor ? '#374151' : '#fff' }};">🏠 Kurum görüşmeleri</a>
+  <a href="{{ route('admin.marketers.conversations', array_filter(['tur' => 'doktor', 'marketer' => request('marketer')])) }}" style="border-radius:10px;padding:7px 14px;font-weight:700;font-size:14px;text-decoration:none;border:1.5px solid {{ $doktor ? '#111827' : '#e5e7eb' }};background:{{ $doktor ? '#111827' : '#fff' }};color:{{ $doktor ? '#fff' : '#374151' }};">🩺 Doktor görüşmeleri</a>
+</div>
 
 {{-- 19 Ekim 2026: kurum sitesi fikri ölçümü özeti --}}
 <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
@@ -29,6 +35,7 @@
 </div>
 
 <form method="GET" class="mb-4">
+  @if($doktor)<input type="hidden" name="tur" value="doktor">@endif
   <select name="marketer" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
     <option value="">Tüm pazarlamacılar</option>
     @foreach($marketers as $m)
@@ -44,7 +51,12 @@
     <div class="p-4 flex flex-col gap-2">
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">
-          @if($note->facility)
+          @if($doktor && $note->expert)
+            <a href="{{ route('admin.experts.edit', $note->expert) }}" class="text-blue-600 font-bold">🩺 {{ trim(($note->expert->title ? $note->expert->title.' ' : '').$note->expert->name) }}</a>
+            <div class="text-xs text-gray-400">{{ $note->expert->branch_label ?: $note->expert->branch }} · {{ $note->expert->district }} / {{ $note->expert->city?->name }}</div>
+          @elseif($doktor)
+            <span class="text-gray-300 font-bold">(silinmiş doktor)</span>
+          @elseif($note->facility)
             <a href="{{ route('admin.facilities.edit', $note->facility) }}" class="text-blue-600 font-bold">{{ $note->facility->name }}</a>
             <div class="text-xs text-gray-400">{{ $note->facility->district }} / {{ $note->facility->city?->name }}</div>
           @else
@@ -55,6 +67,7 @@
         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">{{ $statusLabels[$note->status] ?? $note->status }}</span>
       </div>
       @if($note->contactLabel())<div class="text-xs text-gray-700 font-semibold">👤 Görüşülen: {{ $note->contactLabel() }}</div>@endif
+      @if($doktor && $note->package_interest)<div class="text-xs text-gray-700 font-semibold">📦 İlgilendiği paket: {{ \App\Models\ExpertMarketingNote::PACKAGES[$note->package_interest] ?? $note->package_interest }}</div>@endif
       @if($note->website_status || $note->site_offer_interest)<div class="text-xs text-gray-700">🌐 {{ \App\Models\FacilityMarketingNote::WEBSITE_STATUSES[$note->website_status] ?? '' }}@if($note->website_status && $note->site_offer_interest) · @endif{{ \App\Models\FacilityMarketingNote::SITE_OFFER_INTEREST[$note->site_offer_interest] ?? '' }}</div>@endif
       <div class="text-xs text-gray-600 break-words">{{ $note->note ?: '—' }}</div>
       <div class="flex items-center gap-3 flex-wrap text-xs text-gray-500">

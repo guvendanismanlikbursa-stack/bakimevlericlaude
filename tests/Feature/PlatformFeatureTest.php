@@ -7864,6 +7864,38 @@ class PlatformFeatureTest extends TestCase
         $this->withSession($admin)->get(route('admin.experts.website.edit', $expert))->assertOk()->assertSee('Site raporu', false);
     }
 
+    // 25 Ekim 2026: pazarlamacı CRM'inde doktorlar - aynı sorular, yalnızca paket seçenekleri farklı.
+    public function test_marketer_crm_doctors_tab_notes_and_admin_conversations(): void
+    {
+        $marketer = \App\Models\Marketer::create(['name' => 'Pazarlamaci D', 'phone' => '05559998866', 'password' => Hash::make('x'), 'is_active' => true]);
+        $expert = \App\Models\Expert::create(['name' => 'Murat Can', 'slug' => 'murat-can', 'title' => 'Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru',
+            'city_id' => $this->city->id, 'phone' => '0532 000 11 22', 'is_published' => true]);
+        $m = ['marketer_id' => $marketer->id];
+
+        $this->withSession($m)->get('/pazarlamaci/crm')->assertOk()->assertSee('🩺 Doktorlar', false);
+        $this->withSession($m)->get('/pazarlamaci/crm/doktorlar')->assertOk()
+            ->assertSee('Murat Can', false)->assertSee('İlgilendiği paket', false)->assertSee('İyilik Hareketi Destekçisi (1.200 ₺/yıl)', false)
+            ->assertSee('Broşür dağıtımı', false)->assertSee('Ne zaman aranacak', false)->assertSee('Yetkiliyle Görüştü', false);
+
+        $this->withSession($m)->post(route('marketer.crm.doctors.store-note', $expert), [
+            'status' => 'price_requested', 'package_interest' => 'profesyonel_site', 'contact_name' => 'Sekreter Ayşe', 'contact_role' => 'calisan',
+            'website_status' => 'yok', 'site_offer_interest' => 'ilgilendi', 'note' => 'Fiyat istedi', 'callback_at' => now()->addDay()->format('Y-m-d H:i'),
+        ])->assertRedirect()->assertSessionHas('success');
+        $expert->refresh();
+        $this->assertSame('price_requested', $expert->marketing_status);
+        $this->assertNotNull($expert->marketing_callback_at);
+        $this->assertSame('yok', $expert->website_status);
+        $this->assertSame('profesyonel_site', $expert->marketingNotes()->first()->package_interest);
+        $this->withSession($m)->get('/pazarlamaci/crm/doktorlar?group=price_requested')->assertOk()->assertSee('Murat Can', false)->assertSee('Profesyonel Site', false);
+        $this->withSession($m)->post(route('marketer.crm.doctors.store-note', $expert), ['status' => 'called', 'package_interest' => 'yanlis'])->assertSessionHasErrors('package_interest');
+        $this->withSession($m)->post(route('marketer.crm.doctors.notify-admin', $expert))->assertRedirect();
+        $this->flushSession();
+
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.marketers.conversations', ['tur' => 'doktor']))->assertOk()
+            ->assertSee('Murat Can', false)->assertSee('İlgilendiği paket: Profesyonel Site', false);
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.marketers.conversations'))->assertOk()->assertSee('Doktor görüşmeleri', false);
+    }
+
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
     {
         \App\Models\Setting::set('membership_live', '1');

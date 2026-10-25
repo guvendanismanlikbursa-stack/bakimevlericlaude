@@ -18,6 +18,7 @@ class Expert extends Model
         'google_maps_url', 'rating', 'review_count', 'reviews', 'supporter_until',
         'website_status', 'website_url', 'website_checked_at',
         'source', 'source_payload', 'is_published', 'is_claimed',
+        'marketing_status', 'marketing_status_at', 'marketing_brochure_requested', 'marketing_callback_at',
     ];
 
     protected function casts(): array
@@ -25,6 +26,9 @@ class Expert extends Model
         return [
             'supporter_until' => 'date',
             'website_checked_at' => 'datetime',
+            'marketing_status_at' => 'datetime',
+            'marketing_callback_at' => 'datetime',
+            'marketing_brochure_requested' => 'boolean',
             'lat' => 'float',
             'lng' => 'float',
             'rating' => 'float',
@@ -124,6 +128,12 @@ class Expert extends Model
     public function city()
     {
         return $this->belongsTo(City::class);
+    }
+
+    // 25 Ekim 2026: pazarlamacı CRM görüşme notları (en yeni üstte).
+    public function marketingNotes()
+    {
+        return $this->hasMany(ExpertMarketingNote::class)->latest();
     }
 
     // 7 Ekim 2026: kullanicinin talebi - karttaki yuvarlak rozette rastgele

@@ -49,6 +49,7 @@
     </div>
   </div>
 
+  @include('marketer.crm._sekme')
   <div class="max-w-6xl mx-auto px-4 py-6">
     @if(session('success'))
       <div class="bg-green-100 text-green-800 px-4 py-3 rounded-lg text-sm mb-4">{{ session('success') }}</div>

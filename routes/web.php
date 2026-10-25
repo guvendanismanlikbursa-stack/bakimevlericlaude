@@ -726,6 +726,10 @@ Route::prefix('pazarlamaci')->name('marketer.')->group(function () {
 
     Route::middleware('marketer.auth')->group(function () {
         Route::get('/crm', [\App\Http\Controllers\Marketer\CrmController::class, 'index'])->name('crm.index');
+        // 25 Ekim 2026: kullanıcının talebi - CRM'de doktorlar.
+        Route::get('/crm/doktorlar', [\App\Http\Controllers\Marketer\DoctorCrmController::class, 'index'])->name('crm.doctors');
+        Route::post('/crm/doktorlar/{expert}/not', [\App\Http\Controllers\Marketer\DoctorCrmController::class, 'storeNote'])->name('crm.doctors.store-note');
+        Route::post('/crm/doktorlar/{expert}/admine-bildir', [\App\Http\Controllers\Marketer\DoctorCrmController::class, 'notifyAdmin'])->name('crm.doctors.notify-admin');
         Route::post('/crm/{facility}/not', [\App\Http\Controllers\Marketer\CrmController::class, 'storeNote'])->name('crm.store-note');
         Route::post('/crm/{facility}/admine-bildir', [\App\Http\Controllers\Marketer\CrmController::class, 'notifyAdmin'])->name('crm.notify-admin');
         Route::get('/crm/{facility}/teklif-sayfasi', [\App\Http\Controllers\Marketer\CrmController::class, 'offerPage'])->name('crm.offer-page');

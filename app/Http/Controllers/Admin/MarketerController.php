@@ -90,7 +90,11 @@ class MarketerController extends Controller
      */
     public function conversations(Request $request)
     {
-        $query = FacilityMarketingNote::with(['facility.city', 'facility.category', 'marketer'])->latest();
+        // 25 Ekim 2026: ?tur=doktor ile doktor görüşmeleri (CRM'e doktorlar eklendi).
+        $doktor = $request->query('tur') === 'doktor';
+        $query = $doktor
+            ? \App\Models\ExpertMarketingNote::with(['expert.city', 'marketer'])->latest()
+            : FacilityMarketingNote::with(['facility.city', 'facility.category', 'marketer'])->latest();
 
         if ($request->filled('marketer')) {
             $query->where('marketer_id', $request->integer('marketer'));
@@ -113,7 +117,7 @@ class MarketerController extends Controller
             'ilgilendi' => $latestInterest->where('site_offer_interest', 'ilgilendi')->count(),
         ];
 
-        return view('admin.marketers.conversations', compact('notes', 'marketers', 'siteSurvey'));
+        return view('admin.marketers.conversations', compact('notes', 'marketers', 'siteSurvey', 'doktor'));
     }
 
     // 29 Eylul 2026: kullanicinin talebi - satis hunisi ayrintili sayfasi,
