@@ -8167,4 +8167,22 @@ class PlatformFeatureTest extends TestCase
         }
         $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()->assertSee('Test sayfası', false);
     }
+
+    // 25 Ekim 2026: unvan alanı boşsa rozet unvanı isimden okur.
+    public function test_expert_badge_reads_title_from_name_when_title_empty(): void
+    {
+        $e = fn (string $ad, ?string $unvan = null) => new \App\Models\Expert(['name' => $ad, 'title' => $unvan]);
+        $this->assertSame('DR', $e('Acar Familycare Clinic Dr. Buğra ACAR')->titleAbbreviation());
+        $this->assertSame('DOÇ', $e('Adana Çocuk Alerji Doktoru | Doç. Dr. Belgin Usta Güç')->titleAbbreviation());
+        $this->assertSame('UZM', $e('Adana Çocuk Alerji, Uzm.Dr. Veysel Karakulak')->titleAbbreviation());
+        $this->assertSame('PROF', $e('Adana Çocuk Kardiyoloji Doktoru | Prof. Dr. Selman Vefa')->titleAbbreviation());
+        $this->assertSame('OP', $e('Op. Dr. Ali Veli')->titleAbbreviation());
+        $this->assertSame('DT', $e('ADANA DİŞ HEKİMİ Fulya Güler Muayenehanesi')->titleAbbreviation());
+        $this->assertSame('DT', $e('Adadent Adana Diş Kliniği Diş Hekimi Sinem')->titleAbbreviation());
+        // "Doktoru", "Andrea", "Uzman" gibi kelimeler unvan sayılmaz.
+        $this->assertSame('A', $e('Andrea Doktoru Klinik')->titleAbbreviation());
+        $this->assertSame('#4f46e5', $e('X | Doç. Dr. Y')->titleRankColor());
+        // Unvan alanı doluysa eskisi gibi o kullanılır.
+        $this->assertSame('UZM', $e('Abdurrezak KAYA', 'Uzm. Dr.')->titleAbbreviation());
+    }
 }

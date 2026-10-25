@@ -152,6 +152,26 @@ class Expert extends Model
     {
         $t = mb_strtoupper((string) $this->title, 'UTF-8');
 
+        // 25 Ekim 2026: kullanıcının bildirdiği sorun - bazı kayıtlarda unvan ayrı alana değil
+        // ismin içine yazılmış ("Acar Familycare Clinic Dr. Buğra ACAR", "... | Doç. Dr. Belgin ...");
+        // unvan alanı boş olunca rozette ismin ilk harfi ("A") çıkıyordu. Unvan boşsa isimden,
+        // yalnızca tam kelime olarak geçen unvan kısaltmalarına bakılır (kayıt değişmez).
+        if (trim($t) === '') {
+            $ad = mb_strtoupper((string) $this->name, 'UTF-8');
+            $kelime = fn (string $k) => (bool) preg_match('/(?<!\p{L})'.$k.'(?!\p{L})/u', $ad);
+
+            return match (true) {
+                $kelime('PROF\.?') => 'PROF',
+                $kelime('DOÇ\.?') => 'DOÇ',
+                $kelime('OP\.') => 'OP',
+                $kelime('UZM\.?') => 'UZM',
+                $kelime('DT\.') => 'DT',
+                $kelime('DR\.?') => 'DR',
+                (bool) preg_match('/D[İI]Ş\s+HEK[İI]M/u', $ad) => 'DT',
+                default => mb_substr((string) $this->name, 0, 1, 'UTF-8'),
+            };
+        }
+
         return match (true) {
             str_contains($t, 'PROF') => 'PROF',
             str_contains($t, 'DOÇ') => 'DOÇ',
