@@ -28,6 +28,9 @@
     </div>
   @endunless
 
+  {{-- 25 Ekim 2026: bölüm kartları bu sayfada da görünsün (bölüm yayındayken). --}}
+  @if(doctors_live())@include('themes._shared.partials.bolum-kartlari-ust')@endif
+
   <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
   <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
 

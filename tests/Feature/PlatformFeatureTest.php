@@ -8156,7 +8156,8 @@ class PlatformFeatureTest extends TestCase
                 ->assertSee('/site/'.$m.'/uzmanlar', false);
         }
         $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
-            ->assertDontSee('Test sayfası', false)->assertSee('index,follow', false);
+            ->assertDontSee('Test sayfası', false)->assertSee('index,follow', false)
+            ->assertSee('bolum-kartlari-4', false)->assertSee('aria-current=page', false)->assertSee('bolum=cocuk', false);
         $this->withSession($admin)->get(route('admin.experts.index'))->assertOk()->assertSee('Bölümü gizle (geri al)', false);
 
         $this->withSession($admin)->post(route('admin.experts.section-toggle'), ['live' => 0])->assertRedirect();
