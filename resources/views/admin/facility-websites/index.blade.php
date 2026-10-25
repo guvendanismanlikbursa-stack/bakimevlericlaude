@@ -99,6 +99,7 @@
         <a href="{{ route('admin.facility-websites.preview', ['facility' => $f->id, 'tasarim' => 'standart']) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Standart önizle</a>
         <a href="{{ route('admin.facility-websites.preview', ['facility' => $f->id, 'tasarim' => 'pro']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#e9d3ab;color:#8a6a35;">★ Profesyonel önizle</a>
         <a href="{{ route('admin.facility-websites.edit', $f->id) }}" style="{{ $btn }}border-color:#0d6e6a;color:#0d6e6a;">Düzenle</a>
+        <a href="{{ route('admin.site-sales.create', ['tur' => 'kurum', 'id' => $f->id, 'plan' => $proAcik ? 'profesyonel' : 'standart']) }}" style="{{ $btn }}">💰 Satış</a>
         @unless($proAcik)
           @php $stdYayinda = $f->site_durum === 'yayinda'; @endphp
           <form method="POST" action="{{ route('admin.facility-websites.toggle-standard', $f->id) }}" onsubmit="return confirm('{{ $stdYayinda ? 'Standart site yayından kaldırılsın mı?' : 'Standart site açılıp yayına alınsın mı?' }}')" style="display:inline;margin:0;">

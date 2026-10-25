@@ -102,6 +102,7 @@
         <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'standart']) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Standart önizle</a>
         <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'pro']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#e9d3ab;color:#8a6a35;">★ Profesyonel önizle</a>
         <a href="{{ route('admin.experts.website.edit', $e->id) }}" style="{{ $btn }}border-color:#0d6e6a;color:#0d6e6a;">Düzenle</a>
+        <a href="{{ route('admin.site-sales.create', ['tur' => 'doktor', 'id' => $e->id, 'plan' => $proAcik ? 'profesyonel' : 'standart']) }}" style="{{ $btn }}">💰 Satış</a>
         @unless($proAcik)
           <form method="POST" action="{{ route('admin.expert-websites.toggle-standard', $e->id) }}" onsubmit="return confirm('{{ $yayinda ? 'Standart site yayından kaldırılsın mı?' : 'Standart site açılıp yayına alınsın mı?' }}')" style="display:inline;margin:0;">
             @csrf

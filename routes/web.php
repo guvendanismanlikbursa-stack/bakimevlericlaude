@@ -454,6 +454,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/kurum-siteleri', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'index'])->name('facility-websites.index');
         // 25 Ekim 2026: tek tıkla standart site (kurum) ve Doktor Siteleri listesi.
         Route::post('/kurum-siteleri/{facility}/standart', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'toggleStandard'])->name('facility-websites.toggle-standard');
+        // 25 Ekim 2026: kurum ve doktor sitesi satış takibi.
+        Route::get('/site-satislari', [\App\Http\Controllers\Admin\SiteSaleController::class, 'index'])->name('site-sales.index');
+        Route::get('/site-satislari/yeni', [\App\Http\Controllers\Admin\SiteSaleController::class, 'create'])->name('site-sales.create');
+        Route::post('/site-satislari', [\App\Http\Controllers\Admin\SiteSaleController::class, 'store'])->name('site-sales.store');
+        Route::get('/site-satislari/{satis}/duzenle', [\App\Http\Controllers\Admin\SiteSaleController::class, 'edit'])->name('site-sales.edit');
+        Route::put('/site-satislari/{satis}', [\App\Http\Controllers\Admin\SiteSaleController::class, 'update'])->name('site-sales.update');
+        Route::delete('/site-satislari/{satis}', [\App\Http\Controllers\Admin\SiteSaleController::class, 'destroy'])->name('site-sales.destroy');
         Route::get('/doktor-siteleri', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'index'])->name('expert-websites.index');
         Route::post('/doktor-siteleri/{expert}/standart', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'toggleStandard'])->name('expert-websites.toggle-standard');
         Route::post('/doktor-siteleri/{expert}/profesyonel', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'togglePro'])->name('expert-websites.toggle-pro');

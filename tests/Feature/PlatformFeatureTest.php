@@ -8055,4 +8055,62 @@ class PlatformFeatureTest extends TestCase
             @unlink($kucuk);
         }
     }
+
+    // 25 Ekim 2026: Site Satışları - kurum + doktor satış kaydı, siteye uygulama, filtre, silme.
+    public function test_admin_site_sales_track_facility_and_doctor_sales(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $marketer = \App\Models\Marketer::create(['name' => 'Satici Ayse', 'phone' => '05559998855', 'password' => Hash::make('x'), 'is_active' => true]);
+        $expert = \App\Models\Expert::create([
+            'name' => 'Can Er', 'slug' => 'can-er', 'title' => 'Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk',
+            'city_id' => $this->city->id, 'district' => 'Nilüfer', 'phone' => '0533 444 55 77', 'is_published' => true,
+        ]);
+
+        $this->withSession($admin)->get(route('admin.site-sales.index'))->assertOk()->assertSee('Henüz satış kaydı yok', false);
+        $this->withSession($admin)->get(route('admin.site-sales.create', ['tur' => 'doktor', 'id' => $expert->id, 'plan' => 'profesyonel']))
+            ->assertOk()->assertSee('Dr. Can Er', false);
+        $this->withSession($admin)->get(route('admin.facility-websites.index'))->assertOk()->assertSee('💰 Satış', false);
+
+        // Olmayan kurum -> hata.
+        $this->withSession($admin)->post(route('admin.site-sales.store'), [
+            'owner_type' => 'kurum', 'owner_id' => 999999, 'plan' => 'standart', 'baslangic' => now()->toDateString(), 'ucret' => 100, 'odeme' => 'odendi',
+        ])->assertSessionHasErrors('owner_id');
+
+        // Doktor profesyonel satış, siteye uygulanır.
+        $bitis = now()->addDays(20)->toDateString();
+        $this->withSession($admin)->post(route('admin.site-sales.store'), [
+            'owner_type' => 'doktor', 'owner_id' => $expert->id, 'plan' => 'profesyonel', 'baslangic' => now()->subDays(345)->toDateString(),
+            'bitis' => $bitis, 'ucret' => 4500, 'odeme' => 'kismi', 'marketer_id' => $marketer->id, 'notlar' => 'Havale ile yarisi alindi', 'siteye_uygula' => 1,
+        ])->assertRedirect(route('admin.site-sales.index'));
+        $site = \App\Models\ExpertWebsite::where('expert_id', $expert->id)->firstOrFail();
+        $this->assertSame('yayinda', $site->status);
+        $this->assertSame('profesyonel', $site->plan);
+        $this->assertSame($bitis, $site->pro_until->toDateString());
+
+        // Kurum standart satış, siteye uygulanmaz.
+        $this->withSession($admin)->post(route('admin.site-sales.store'), [
+            'owner_type' => 'kurum', 'owner_id' => $this->rehabFacility->id, 'plan' => 'standart', 'baslangic' => now()->toDateString(),
+            'bitis' => now()->addYear()->toDateString(), 'ucret' => 1500, 'odeme' => 'odendi',
+        ])->assertRedirect();
+        $this->assertNull(\App\Models\FacilityWebsite::where('facility_id', $this->rehabFacility->id)->value('status'));
+
+        $this->withSession($admin)->get(route('admin.site-sales.index'))->assertOk()
+            ->assertSee('Dr. Can Er', false)->assertSee(e($this->rehabFacility->name), false)->assertSee('Satici Ayse', false)
+            ->assertSee('Havale ile yarisi alindi', false)->assertSee('6.000 ₺', false)->assertSee('1 / 1', false);
+        $this->withSession($admin)->get(route('admin.site-sales.index', ['durum' => 'bitiyor']))->assertOk()
+            ->assertSee('Dr. Can Er', false)->assertDontSee('🏠 '.e($this->rehabFacility->name), false);
+        $this->withSession($admin)->get(route('admin.site-sales.index', ['tur' => 'kurum']))->assertOk()->assertDontSee('🩺 Dr. Can Er', false);
+
+        $satis = \App\Models\SiteSale::where('owner_type', 'doktor')->firstOrFail();
+        $this->withSession($admin)->get(route('admin.site-sales.edit', $satis))->assertOk()->assertSee('Satışı Düzenle', false);
+        $this->withSession($admin)->put(route('admin.site-sales.update', $satis), [
+            'owner_type' => 'doktor', 'owner_id' => $expert->id, 'plan' => 'profesyonel', 'baslangic' => $satis->baslangic->toDateString(),
+            'bitis' => $bitis, 'ucret' => 4500, 'odeme' => 'odendi',
+        ])->assertRedirect();
+        $this->assertSame('odendi', $satis->fresh()->odeme);
+
+        $this->withSession($admin)->delete(route('admin.site-sales.destroy', $satis))->assertRedirect();
+        $this->assertSame(1, \App\Models\SiteSale::count());
+        $this->assertSame('yayinda', $site->fresh()->status);
+    }
 }
