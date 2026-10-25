@@ -175,7 +175,9 @@ class KurumSitesiController extends Controller
         $whatsapp = classify_phone_type($facility->phone) === 'mobile' ? normalize_whatsapp_number($facility->phone) : '';
 
         // Profesyonel şablon: paket etkinse, ya da önizlemede ?tasarim=pro ile.
-        $demoPro = $canPreview && $request->input('tasarim') === 'pro';
+        // 25 Ekim 2026: ?tasarim=hareketli - yeni hareketli Profesyonel tasarımın deneme önizlemesi (yalnızca admin/kurum önizlemesi).
+        $hareketli = $canPreview && $request->input('tasarim') === 'hareketli';
+        $demoPro = $canPreview && in_array($request->input('tasarim'), ['pro', 'hareketli'], true);
         $standartZorla = $canPreview && $request->input('tasarim') === 'standart';
         $pro = ($site->isPro() && ! $standartZorla) || $demoPro;
         if ($sayfa !== '' && ! $pro) {
@@ -209,7 +211,7 @@ class KurumSitesiController extends Controller
         if ($sayfa !== '' && ! isset($sayfalar[$sayfa])) {
             abort(404);
         }
-        $sorgu = $demoPro ? '?onizleme=1&tasarim=pro' : (($isPreview || $request->boolean('onizleme')) ? '?onizleme=1' : '');
+        $sorgu = $hareketli ? '?onizleme=1&tasarim=hareketli' : ($demoPro ? '?onizleme=1&tasarim=pro' : (($isPreview || $request->boolean('onizleme')) ? '?onizleme=1' : ''));
 
         return response()->view('themes._shared.kurum-sitesi.pro.sayfa', $ortak + [
             'renk' => $site->proColors(),
@@ -219,6 +221,7 @@ class KurumSitesiController extends Controller
             'formAction' => ($base === '' ? '' : $base).'/iletisim',
             'olayAdresi' => ($base === '' ? '' : $base).'/olay',
             'demoPro' => $demoPro,
+            'hareketli' => $hareketli,
         ])->header('X-Robots-Tag', $isPreview ? 'noindex, nofollow' : 'index, follow');
     }
 

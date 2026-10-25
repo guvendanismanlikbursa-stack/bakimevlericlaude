@@ -98,6 +98,8 @@
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
         <a href="{{ route('admin.facility-websites.preview', ['facility' => $f->id, 'tasarim' => 'standart']) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Standart önizle</a>
         <a href="{{ route('admin.facility-websites.preview', ['facility' => $f->id, 'tasarim' => 'pro']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#e9d3ab;color:#8a6a35;">★ Profesyonel önizle</a>
+        {{-- 25 Ekim 2026: yeni hareketli Profesyonel tasarımın deneme önizlemesi. --}}
+        <a href="{{ route('admin.facility-websites.preview', ['facility' => $f->id, 'tasarim' => 'hareketli']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#c4b5fd;color:#6d28d9;">✨ Hareketli önizle</a>
         <a href="{{ route('admin.facility-websites.edit', $f->id) }}" style="{{ $btn }}border-color:#0d6e6a;color:#0d6e6a;">Düzenle</a>
         <a href="{{ route('admin.site-sales.create', ['tur' => 'kurum', 'id' => $f->id, 'plan' => $proAcik ? 'profesyonel' : 'standart']) }}" style="{{ $btn }}">💰 Satış</a>
         @unless($proAcik)

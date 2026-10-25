@@ -334,9 +334,11 @@
   @media(prefers-reduced-motion:reduce){.js .gorun{opacity:1;transform:none;transition:none}.giris-foto{animation:none;transform:none}html{scroll-behavior:auto}}
   :focus-visible{outline:3px solid var(--ana);outline-offset:3px}
 </style>
+@if(! empty($hareketli))@include('themes._shared.kurum-sitesi.pro._hareketli', ['parca' => 'css'])@endif
 <script>document.documentElement.classList.add('js')</script>
 </head>
-<body>
+<body class="{{ ! empty($hareketli) ? 'hrk' : '' }}">
+@if(! empty($hareketli))<div class="ilerleme" id="ilerleme" aria-hidden="true"></div>@endif
 
 @php
   $ikonTel = '<svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2z"/></svg>';
@@ -386,6 +388,10 @@
 <section class="giris {{ $sayfa !== '' ? 'ic-sayfa' : '' }} {{ $hero ? '' : 'desensiz' }}">
   @if($hero)<div class="giris-foto" style="background-image:url('{{ $foto($hero) }}');" role="img" aria-label="{{ $temsili ? 'Temsili görsel' : $ad }}"></div>@endif
   @if($hero && $temsili)<span class="temsili">Temsili görseldir</span>@endif
+  @if(! empty($hareketli))
+    <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    @if($sayfa === '')<a href="#icerik" class="asagi" aria-label="Aşağı kaydır"><span></span></a>@endif
+  @endif
   <div class="kap">
     @if($sayfa === '')
       <div class="etiket gorun">{{ $f->category->name ?? 'Hoş geldiniz' }}@if($f->city) · {{ $f->city->name }}@endif</div>
@@ -409,6 +415,7 @@
 </section>
 
 @if($sayfa === '')
+  <span id="icerik"></span>
   {{-- Rakamlar ya da temel bilgiler: girişin altına binen kart --}}
   <div class="kap">
     @if($rakamlar)
@@ -506,11 +513,32 @@
           <div class="sol"><div class="etiket">Galeri</div><h2>{{ $temsili ? 'Görseller' : 'Kurumumuzdan kareler' }}</h2>@if($temsili)<p class="giris-metni" style="margin-top:12px;font-size:15px;">Görseller temsilidir; kurumun kendi fotoğraflarını göstermez.</p>@endif</div>
           @if($gallery->count() > 5)<a href="{{ $link('galeri') }}" class="ok-link">Tüm fotoğraflar {!! $ikonOk !!}</a>@endif
         </div>
+        @if(! empty($hareketli) && $gallery->count() >= 4)
+          @php
+            $seritFotolar = $gallery->take(16)->values();
+            $yarim = (int) ceil($seritFotolar->count() / 2);
+            $seritler = $seritFotolar->count() >= 8 ? [$seritFotolar->take($yarim), $seritFotolar->slice($yarim)] : [$seritFotolar];
+          @endphp
+          <div data-galeri class="gorun">
+            @foreach($seritler as $sira => $parca)
+              <div class="serit {{ $sira === 1 ? 'ters' : '' }}">
+                <div class="serit-ic" style="--sure:{{ max(30, $parca->count() * 9) }}s;">
+                  @foreach([0, 1] as $kopya)
+                    @foreach($parca as $g)
+                      <a href="{{ $foto($g) }}" class="galeri-oge" data-isik @if($kopya) aria-hidden="true" tabindex="-1" @endif><img src="{{ $foto($g) }}" alt="{{ $kopya ? '' : ($temsili ? 'Temsili görsel' : $ad.' fotoğraf '.$loop->iteration) }}" loading="lazy"></a>
+                    @endforeach
+                  @endforeach
+                </div>
+              </div>
+            @endforeach
+          </div>
+        @else
         <div class="galeri-izgara" data-galeri>
           @foreach($gallery->take(5) as $g)
             <a href="{{ $foto($g) }}" class="galeri-oge gorun {{ $loop->first ? 'buyuk' : '' }}" data-isik><img src="{{ $foto($g) }}" alt="{{ $temsili ? 'Temsili görsel' : $ad.' fotoğraf '.$loop->iteration }}" loading="lazy"></a>
           @endforeach
         </div>
+        @endif
       </div>
     </section>
   @endif
@@ -740,7 +768,9 @@
   </div>
 @endif
 
-@if($demoPro)
+@if(! empty($hareketli))
+  <div class="onizleme">✨ Yeni hareketli Profesyonel tasarım — deneme önizlemesi (canlı sitelerde henüz kullanılmıyor)</div>
+@elseif($demoPro)
   <div class="onizleme">Profesyonel Site tasarım önizlemesi — paket etkinleşince siteniz bu görünümde yayınlanır.</div>
 @elseif($isPreview)
   <div class="onizleme">Önizleme — bu site henüz yayında değil. Yalnızca siz görüyorsunuz.</div>
@@ -798,5 +828,6 @@
   });
 })();
 </script>
+@if(! empty($hareketli))@include('themes._shared.kurum-sitesi.pro._hareketli', ['parca' => 'js'])@endif
 </body>
 </html>

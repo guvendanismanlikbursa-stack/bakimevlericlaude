@@ -141,7 +141,7 @@ class FacilityWebsiteController extends Controller
     {
         $site = FacilityWebsite::forFacility($facility);
         // 25 Ekim 2026: ?tasarim=standart / ?tasarim=pro ile istenen görünüm.
-        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart'], true) ? '&tasarim='.$request->query('tasarim') : '';
+        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart', 'hareketli'], true) ? '&tasarim='.$request->query('tasarim') : '';
 
         return redirect('/siteler/'.$site->slug.'?onizleme=1'.$tasarim);
     }

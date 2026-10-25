@@ -8195,4 +8195,34 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('sigorta sürecinizi sizin için biz başlatalım', false);
         $this->get('/site/bakimevleri/?bolum=yasli-bakim')->assertOk()->assertSee('Takibini Biz Üstlenelim', false)->assertDontSee('ayda 2 kez sizin adınıza', false);
     }
+
+    // 25 Ekim 2026: yeni hareketli Profesyonel tasarım - yalnızca admin önizlemesinde (?tasarim=hareketli).
+    public function test_professional_site_animated_design_preview_only(): void
+    {
+        $facility = $this->facilityUser->facility;
+        $facility->update(['is_claimed' => true, 'phone' => '0532 777 88 99', 'services' => ['Hemşire desteği', 'Fizyoterapi', '7/24 bakım']]);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $site->update(['status' => 'yayinda', 'slug' => 'isik-yuva', 'plan' => 'profesyonel', 'pro_until' => now()->addYear(), 'about_text' => 'Otuz yıldır aile sıcaklığında hizmet veriyoruz.',
+            'stats' => [['deger' => '30+', 'etiket' => 'Yıllık deneyim'], ['deger' => '1.200', 'etiket' => 'Mutlu aile'], ['deger' => '4,9', 'etiket' => 'Google puanı']],
+            'values_list' => [['baslik' => 'Sevgi', 'metin' => 'Aile sıcaklığı'], ['baslik' => 'Güven', 'metin' => '7/24 hemşire']],
+            'faqs' => [['soru' => 'Ziyaret saatleri?', 'cevap' => 'Her gün 10-18.']]]);
+        $admin = ['admin_id' => $this->admin->id];
+
+        // Ziyaretçi: yayındaki Profesyonel site eskisi gibi, hareket katmanı yok (parametre yok sayılır).
+        $this->get('/siteler/isik-yuva')->assertOk()->assertSee('id="cekmece"', false)->assertDontSee('class="hrk"', false);
+        $this->get('/siteler/isik-yuva?tasarim=hareketli')->assertOk()->assertDontSee('class="hrk"', false)->assertDontSee('aurora', false);
+
+        // Admin önizlemesi: hareket katmanı, iç sayfa bağlantıları parametreyi taşır.
+        $this->withSession($admin)->get(route('admin.facility-websites.preview', ['facility' => $facility, 'tasarim' => 'hareketli']))
+            ->assertRedirect('/siteler/isik-yuva?onizleme=1&tasarim=hareketli');
+        $h = $this->withSession($admin)->get('/siteler/isik-yuva?onizleme=1&tasarim=hareketli')->assertOk()
+            ->assertSee('class="hrk"', false)->assertSee('class="aurora"', false)->assertSee('id="ilerleme"', false)
+            ->assertSee('Yeni hareketli Profesyonel tasarım', false)->assertSee('hakkimizda?onizleme=1&amp;tasarim=hareketli', false)
+            ->assertSee('noindex,nofollow', false)->getContent();
+        $this->withSession($admin)->get('/siteler/isik-yuva/hakkimizda?onizleme=1&tasarim=hareketli')->assertOk()->assertSee('class="hrk"', false);
+        $this->withSession($admin)->get(route('admin.facility-websites.index'))->assertOk()->assertSee('Hareketli önizle', false);
+        if (getenv('HRK_DUMP')) {
+            file_put_contents(getenv('HRK_DUMP'), $h);
+        }
+    }
 }
