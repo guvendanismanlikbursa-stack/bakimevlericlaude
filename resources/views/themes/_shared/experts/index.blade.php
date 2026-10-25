@@ -35,14 +35,14 @@
   <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
 
   <form method="GET" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-expert-results" data-count-target="js-expert-count" class="js-location-filter flex flex-wrap gap-3 mb-6" style="background:rgba(255,255,255,.92);border:1px solid #d5ebe8;border-radius:16px;padding:12px;box-shadow:0 6px 20px -12px rgba(13,110,106,.35);">
-    <input type="search" name="search" value="{{ request('search') }}" placeholder="Doktor adı veya branş ile ara..." autocomplete="off" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[180px]">
-    <select name="city" class="js-city border rounded-lg px-3 py-2 text-sm">
+    <input type="search" name="search" value="{{ request('search') }}" placeholder="Doktor adı veya branş ile ara..." autocomplete="off" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[180px]" style="max-width:100%;">
+    <select name="city" class="js-city border rounded-lg px-3 py-2 text-sm" style="max-width:100%;min-width:0;text-overflow:ellipsis;">
       <option value="">Tüm İller</option>
       @foreach($cities as $city)
         <option value="{{ $city->slug }}" @selected(request('city') === $city->slug)>{{ $city->name }}</option>
       @endforeach
     </select>
-    <select name="district" data-selected="{{ request('district') }}" class="js-district border rounded-lg px-3 py-2 text-sm" @if(! request('city')) disabled @endif>
+    <select name="district" data-selected="{{ request('district') }}" class="js-district border rounded-lg px-3 py-2 text-sm" style="max-width:100%;min-width:0;text-overflow:ellipsis;" @if(! request('city')) disabled @endif>
       <option value="">{{ request('city') ? 'Tüm İlçeler' : 'Önce il seçin' }}</option>
       @if(request('city'))
         @foreach($districtMap[request('city')] ?? [] as $districtName)
@@ -50,14 +50,14 @@
         @endforeach
       @endif
     </select>
-    <select name="branch" class="border rounded-lg px-3 py-2 text-sm">
+    <select name="branch" class="border rounded-lg px-3 py-2 text-sm" style="max-width:100%;min-width:0;text-overflow:ellipsis;">
       <option value="">Tüm Branşlar</option>
       @foreach($branches as $slug => $b)
         <option value="{{ $slug }}" @selected(request('branch') === $slug)>{{ $b['title'] }} ({{ $b['label'] }})</option>
       @endforeach
     </select>
     {{-- 7 Ekim 2026: kullanicinin talebi - Google puanina gore filtre. --}}
-    <select name="min_rating" class="border rounded-lg px-3 py-2 text-sm">
+    <select name="min_rating" class="border rounded-lg px-3 py-2 text-sm" style="max-width:100%;min-width:0;text-overflow:ellipsis;">
       <option value="">Tüm Puanlar</option>
       <option value="4.5" @selected(request('min_rating') === '4.5')>★ 4.5 ve üzeri</option>
       <option value="4" @selected(request('min_rating') === '4')>★ 4.0 ve üzeri</option>
