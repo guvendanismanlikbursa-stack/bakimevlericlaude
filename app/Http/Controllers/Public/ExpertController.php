@@ -110,7 +110,11 @@ class ExpertController extends Controller
             ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
 
-        return view('themes._shared.experts.index', compact('experts', 'cities', 'districtMap', 'branches', 'activeExpertSlug', 'activeExpert', 'publiclyVisible', 'hasFilter'));
+        // 25 Ekim 2026: sayfa altındaki teşekkür listesi - süresi devam eden İyilik Hareketi destekçisi hekimler, alfabetik.
+        $destekciler = Expert::query()->where('is_published', true)->whereDate('supporter_until', '>=', now()->toDateString())
+            ->with('city:id,name')->orderBy('name')->get(['id', 'name', 'title', 'city_id']);
+
+        return view('themes._shared.experts.index', compact('experts', 'cities', 'districtMap', 'branches', 'activeExpertSlug', 'activeExpert', 'publiclyVisible', 'hasFilter', 'destekciler'));
     }
     /**
      * 25 Ekim 2026: kart açılması / telefon tıklaması (sayfadaki betik gönderir).

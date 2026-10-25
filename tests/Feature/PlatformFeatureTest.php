@@ -8120,6 +8120,19 @@ class PlatformFeatureTest extends TestCase
         $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
             ->assertSee('ℹ️ Bilgilendirme', false)
             ->assertSee('Bu bölümde hiçbir hekimin reklamı yapılmamaktadır', false)
-            ->assertSeeInOrder(['ℹ️ Bilgilendirme', 'Özel Doktorlar'], false);
+            ->assertSeeInOrder(['Özel Doktorlar Bölümüne Hoş Geldiniz', 'ℹ️ Bilgilendirme'], false)
+            ->assertDontSee('💛 Teşekkür', false);
+
+        \App\Models\Expert::create([
+            'name' => 'Deniz Kaya', 'slug' => 'deniz-kaya', 'title' => 'Uzm. Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk',
+            'city_id' => $this->city->id, 'phone' => '0533 111 22 99', 'is_published' => true, 'supporter_until' => now()->addMonths(3),
+        ]);
+        \App\Models\Expert::create([
+            'name' => 'Eski Destekci', 'slug' => 'eski-destekci', 'title' => 'Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk',
+            'city_id' => $this->city->id, 'phone' => '0533 111 22 98', 'is_published' => true, 'supporter_until' => now()->subDay(),
+        ]);
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
+            ->assertSeeInOrder(['Özel Doktorlar Bölümüne Hoş Geldiniz', 'ℹ️ Bilgilendirme', '💛 Teşekkür', 'Uzm. Dr. Deniz Kaya'], false)
+            ->assertDontSee('Eski Destekci', false);
     }
 }

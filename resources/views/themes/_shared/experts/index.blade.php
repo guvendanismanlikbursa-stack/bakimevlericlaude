@@ -25,12 +25,6 @@
     </div>
   @endunless
 
-  {{-- 25 Ekim 2026: kullanıcının talebi - hekimlerde reklam yasağı nedeniyle sayfa bu bilgilendirmeyle başlar (metin kullanıcının onayladığı haliyle). --}}
-  <div role="note" style="margin-bottom:20px;border:1px solid #cfe3e1;background:#f3faf9;border-radius:14px;padding:14px 16px;color:#1f2937;font-size:14px;line-height:1.6;">
-    <div style="font-weight:800;color:#0d6e6a;margin-bottom:4px;">ℹ️ Bilgilendirme</div>
-    Bu sayfada yer alan hekim bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları hekime daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir hekimin reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir hekim öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
-  </div>
-
   <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
   <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
 
@@ -73,6 +67,27 @@
 
   <div id="js-expert-results">
     @include('themes._shared.experts._results', ['experts' => $experts, 'activeExpertSlug' => $activeExpertSlug])
+  </div>
+
+  {{-- 25 Ekim 2026: kullanıcının talebi - hoş geldiniz yazısının altında bilgilendirme ve
+       İyilik Hareketi destekçisi hekimlere teşekkür, alt alta. Teşekkür listesi bilerek sade:
+       yalnızca unvan, isim, şehir; fotoğraf, telefon, bağlantı yok (reklam yasağı). --}}
+  <div style="margin-top:28px;">
+  <div role="note" style="margin-bottom:12px;border:1px solid #cfe3e1;background:#f3faf9;border-radius:14px;padding:14px 16px;color:#1f2937;font-size:14px;line-height:1.6;">
+    <div style="font-weight:800;color:#0d6e6a;margin-bottom:4px;">ℹ️ Bilgilendirme</div>
+    Bu sayfada yer alan hekim bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları hekime daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir hekimin reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir hekim öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
+  </div>
+  @if($destekciler->isNotEmpty())
+    <section style="border:1px solid #f1e4c8;background:#fffaf0;border-radius:14px;padding:14px 16px;color:#1f2937;font-size:14px;line-height:1.6;">
+      <div style="font-weight:800;color:#8a6a35;margin-bottom:4px;">💛 Teşekkür</div>
+      <p style="margin:0 0 10px;">İyilik Hareketi'ne destek veren hekimlerimize teşekkür ederiz. Liste alfabetiktir; bir tanıtım ya da sıralama değildir.</p>
+      <ul style="margin:0;padding:0;list-style:none;display:grid;gap:4px 18px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));">
+        @foreach($destekciler as $d)
+          <li style="overflow-wrap:anywhere;">{{ trim(($d->title ? $d->title.' ' : '').$d->name) }}@if($d->city)<span style="color:#6b7280;"> · {{ $d->city->name }}</span>@endif</li>
+        @endforeach
+      </ul>
+    </section>
+  @endif
   </div>
 
   {{-- 7 Ekim 2026: kullanicinin bildirdigi gercek hata - "filtreleme hic
