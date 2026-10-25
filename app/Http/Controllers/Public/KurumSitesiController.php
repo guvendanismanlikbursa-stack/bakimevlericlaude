@@ -176,7 +176,8 @@ class KurumSitesiController extends Controller
 
         // Profesyonel şablon: paket etkinse, ya da önizlemede ?tasarim=pro ile.
         $demoPro = $canPreview && $request->input('tasarim') === 'pro';
-        $pro = $site->isPro() || $demoPro;
+        $standartZorla = $canPreview && $request->input('tasarim') === 'standart';
+        $pro = ($site->isPro() && ! $standartZorla) || $demoPro;
         if ($sayfa !== '' && ! $pro) {
             return redirect($base === '' ? '/' : $base.($isPreview ? '?onizleme=1' : ''));
         }

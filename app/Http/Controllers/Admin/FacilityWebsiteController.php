@@ -103,6 +103,27 @@ class FacilityWebsiteController extends Controller
     }
 
     /**
+     * 25 Ekim 2026: kullanıcının talebi - tek tıkla standart site: yayında
+     * değilse standart olarak yayına alınır; yayındaki standart site taslağa döner.
+     */
+    public function toggleStandard(Facility $facility)
+    {
+        $site = FacilityWebsite::forFacility($facility);
+        if ($site->isLive() && ! $site->isPro()) {
+            $site->update(['status' => 'taslak']);
+            $mesaj = $facility->name.': site yayından kaldırıldı (taslak).';
+        } else {
+            $site->fill(['status' => 'yayinda', 'plan' => 'standart', 'pro_until' => null, 'pro_yayina_aldi' => false]);
+            $site->published_at ??= now();
+            $site->save();
+            $mesaj = $facility->name.': standart site yayında.';
+        }
+        log_admin_event('facility_website_standard_toggled', $facility, ['status' => $site->status]);
+
+        return back()->with('success', $mesaj);
+    }
+
+    /**
      * Kurum panelindeki Profesyonel Site tanıtımında görünen fiyat yazısı.
      */
     public function savePrice(Request $request)
@@ -116,11 +137,13 @@ class FacilityWebsiteController extends Controller
     /**
      * Listeden tek tıkla önizleme: kayıt yoksa taslak olarak oluşturulur.
      */
-    public function preview(Facility $facility)
+    public function preview(Request $request, Facility $facility)
     {
         $site = FacilityWebsite::forFacility($facility);
+        // 25 Ekim 2026: ?tasarim=standart / ?tasarim=pro ile istenen görünüm.
+        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart'], true) ? '&tasarim='.$request->query('tasarim') : '';
 
-        return redirect('/siteler/'.$site->slug.'?onizleme=1');
+        return redirect('/siteler/'.$site->slug.'?onizleme=1'.$tasarim);
     }
 
     public function edit(Facility $facility)

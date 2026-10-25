@@ -17,7 +17,10 @@
     <h1 class="text-2xl font-bold">Doktor Sitesi</h1>
     <div style="color:#6b7280;font-size:14px;">{{ $site->fullName() }} · <a href="{{ route('admin.experts.edit', $expert) }}" style="text-decoration:underline;">Doktor kaydına dön</a></div>
   </div>
-  <a href="{{ url('/dr/'.$site->slug) }}?onizleme=1" target="_blank" rel="noopener" style="border:2px solid #0d6e6a;color:#0d6e6a;font-weight:800;border-radius:12px;padding:9px 16px;text-decoration:none;">👁 Siteyi önizle</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ url('/dr/'.$site->slug) }}?onizleme=1&tasarim=standart" target="_blank" rel="noopener" style="border:2px solid #0d6e6a;color:#0d6e6a;font-weight:800;border-radius:12px;padding:9px 16px;text-decoration:none;">👁 Standart önizle</a>
+    <a href="{{ url('/dr/'.$site->slug) }}?onizleme=1&tasarim=pro" target="_blank" rel="noopener" style="border:2px solid #b08d57;color:#8a6a35;font-weight:800;border-radius:12px;padding:9px 16px;text-decoration:none;">★ Profesyonel önizle</a>
+  </div>
 </div>
 
 @if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:16px;">{{ session('success') }}</div>@endif
@@ -47,6 +50,19 @@
       <input id="ds-domain" name="custom_domain" value="{{ old('custom_domain', $site->custom_domain) }}" maxlength="190" placeholder="drayseyilmaz.com" style="{{ $alan }}">
       <div style="{{ $ipucu }}">Alan adı hostinge (cPanel'de ana sitenin klasörüne) yönlendirildikten sonra girin. Site yayındaysa eski adres bu alan adına yönlenir.</div>
       @error('custom_domain')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+    </div>
+    <div>
+      <label for="ds-plan" style="{{ $etiket }}">Site paketi</label>
+      <select id="ds-plan" name="plan" style="{{ $alan }}">
+        @foreach(\App\Models\ExpertWebsite::PLANS as $key => $label)
+          <option value="{{ $key }}" @selected(old('plan', $site->plan ?: 'standart') === $key)>{{ $label === 'Hazır site' ? 'Standart site' : $label }}</option>
+        @endforeach
+      </select>
+    </div>
+    <div>
+      <label for="ds-pro-bitis" style="{{ $etiket }}">Profesyonel Site bitiş tarihi</label>
+      <input id="ds-pro-bitis" type="date" name="pro_until" value="{{ old('pro_until', optional($site->pro_until)->format('Y-m-d')) }}" style="{{ $alan }}">
+      <div style="{{ $ipucu }}">Süre bitince site kendiliğinden standart tasarıma döner. Boş: süresiz.</div>
     </div>
   </div>
   <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;">
@@ -129,8 +145,74 @@
     <div style="{{ $ipucu }}">Telefon, adres, klinik ve branş doktor kaydından gelir; değiştirmek için doktor kaydını düzenleyin. Hasta yorumları hukuki nedenle sitede yer almaz.</div>
   </div>
 
+
+  {{-- 25 Ekim 2026: Profesyonel Site içerikleri (isteğe bağlı, kapalı bölme). --}}
+  @php
+    $L = \App\Models\ExpertWebsite::LIMITS;
+    $satirlar = function (string $alan, int $bos) use ($site, $L) {
+        $dolu = old($alan) !== null ? array_values((array) old($alan)) : $site->listOf($alan);
+        return array_pad(array_slice($dolu, 0, $L[$alan]), min($L[$alan], count($dolu) + $bos), []);
+    };
+    $satirStil = 'display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;';
+    $proHata = collect($errors->keys())->contains(fn ($k) => \Illuminate\Support\Str::startsWith($k, ['logo', 'brand_color', 'font_style', 'video_url', 'stats', 'faqs', 'announcements']));
+  @endphp
+  <input type="hidden" name="pro_form" value="1">
+  <details @if($proHata) open @endif style="border:1.5px solid #e9d3ab;border-radius:14px;background:#fffdf8;">
+    <summary style="cursor:pointer;padding:14px 16px;font-weight:800;color:#8a6a35;">★ Gelişmiş ayarları göster <span style="font-weight:600;color:#6b7280;font-size:13px;">(Profesyonel tasarımda görünür: logo, renk, video, rakamlar, S.S.S., duyurular)</span></summary>
+    <div style="padding:0 16px 16px;display:grid;gap:16px;">
+      <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:start;">
+        <div>
+          <label style="{{ $etiket }}">Logo</label>
+          @if($site->logo_path)<img src="{{ facility_asset($site->logo_path) }}" alt="Logo" style="max-height:56px;max-width:200px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:6px;margin-bottom:8px;">@endif
+          <input type="file" name="logo" accept="image/png,image/jpeg,image/webp" style="{{ $alan }}">
+          @if($site->logo_path)<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin-top:6px;"><input type="checkbox" name="remove_logo" value="1"> Logoyu kaldır</label>@endif
+          @error('logo')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+        </div>
+        <div>
+          <label style="{{ $etiket }}" for="dp-renk">Renk</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="dp-renk" type="color" value="{{ old('brand_color', $site->brand_color ?: $site->proColors()['ana']) }}" oninput="document.getElementById('dp-renk-kod').value=this.value" style="width:52px;height:44px;border:1.5px solid #d6dde0;border-radius:10px;padding:2px;background:#fff;">
+            <input id="dp-renk-kod" name="brand_color" value="{{ old('brand_color', $site->brand_color) }}" maxlength="7" placeholder="Boş: seçili hazır renk" style="{{ $alan }}">
+          </div>
+          @error('brand_color')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+        </div>
+        <div>
+          <label style="{{ $etiket }}">Yazı stili</label>
+          @foreach(\App\Models\ExpertWebsite::FONT_STYLES as $k => $lbl)
+            <label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:4px;"><input type="radio" name="font_style" value="{{ $k }}" @checked(old('font_style', $site->font_style ?: 'zarif') === $k)> {{ $lbl }}</label>
+          @endforeach
+        </div>
+      </div>
+      <div>
+        <label style="{{ $etiket }}">Tanıtım videosu (YouTube)</label>
+        <input name="video_url" value="{{ old('video_url', $site->video_url) }}" maxlength="255" placeholder="https://www.youtube.com/watch?v=..." style="{{ $alan }}">
+        @error('video_url')<div style="{{ $hataStil }}">{{ $message }}</div>@enderror
+      </div>
+      <div style="display:grid;gap:8px;">
+        <div style="{{ $etiket }}">Rakamlarla (en fazla {{ $L['stats'] }}) <span style="font-weight:600;color:#6b7280;font-size:12px;">ör. "15+" — "Yıllık tecrübe". Yalnızca doğru bilgi yazın.</span></div>
+        @foreach($satirlar('stats', 4) as $i => $r)
+          <div style="{{ $satirStil }}"><input name="stats[{{ $i }}][deger]" value="{{ $r['deger'] ?? '' }}" maxlength="20" placeholder="Rakam" style="{{ $alan }}"><input name="stats[{{ $i }}][etiket]" value="{{ $r['etiket'] ?? '' }}" maxlength="60" placeholder="Açıklama" style="{{ $alan }}"></div>
+        @endforeach
+      </div>
+      <div style="display:grid;gap:8px;">
+        <div style="{{ $etiket }}">Sık sorulan sorular (en fazla {{ $L['faqs'] }})</div>
+        @foreach($satirlar('faqs', 2) as $i => $r)
+          <div style="{{ $satirStil }}"><input name="faqs[{{ $i }}][soru]" value="{{ $r['soru'] ?? '' }}" maxlength="200" placeholder="Soru (ör. Randevu nasıl alınır?)" style="{{ $alan }}"><textarea name="faqs[{{ $i }}][cevap]" rows="2" maxlength="1500" placeholder="Cevap" style="{{ $alan }}">{{ $r['cevap'] ?? '' }}</textarea></div>
+        @endforeach
+      </div>
+      <div style="display:grid;gap:8px;">
+        <div style="{{ $etiket }}">Duyurular (en fazla {{ $L['announcements'] }})</div>
+        @foreach($satirlar('announcements', 1) as $i => $r)
+          <div style="{{ $satirStil }}"><input name="announcements[{{ $i }}][baslik]" value="{{ $r['baslik'] ?? '' }}" maxlength="150" placeholder="Başlık" style="{{ $alan }}"><input type="date" name="announcements[{{ $i }}][tarih]" value="{{ $r['tarih'] ?? '' }}" style="{{ $alan }}"><textarea name="announcements[{{ $i }}][metin]" rows="2" maxlength="2000" placeholder="Metin" style="{{ $alan }}">{{ $r['metin'] ?? '' }}</textarea></div>
+        @endforeach
+      </div>
+    </div>
+  </details>
+
   <div><button type="submit" style="background:#0d6e6a;color:#fff;border:0;border-radius:12px;padding:12px 22px;font-weight:800;font-size:15px;cursor:pointer;">Kaydet</button></div>
 </form>
+
+<div style="margin-top:18px;">@include('themes._shared.kurum-sitesi.pro._rapor', ['site' => $site])</div>
 
 <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-top:18px;">
   <h2 style="font-size:18px;font-weight:900;margin:0 0 10px;">Değişiklik geçmişi</h2>

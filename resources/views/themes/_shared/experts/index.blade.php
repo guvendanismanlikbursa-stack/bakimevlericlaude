@@ -153,6 +153,18 @@ new MutationObserver(function () {
   document.getElementById('js-expert-count-wrap').classList.remove('hidden');
 }).observe(document.getElementById('js-expert-results'), { childList: true });
 
+// 25 Ekim 2026: kart sayacı (yalnızca admin panelinde görünür).
+function kartOlay(slug, tur) {
+  try {
+    if (!navigator.sendBeacon || !slug) return;
+    var v = new FormData(); v.append('_token', @json(csrf_token())); v.append('slug', slug); v.append('tur', tur);
+    navigator.sendBeacon(@json(brand_route('experts.card-event')), v);
+  } catch (e) {}
+}
+document.getElementById('js-expert-results').addEventListener('click', function (event) {
+  var tel = event.target.closest('a[href^="tel:"]');
+  if (tel && tel.closest('.js-expert-card')) { kartOlay(tel.closest('.js-expert-card').dataset.slug, 'arama'); }
+});
 document.getElementById('js-expert-results').addEventListener('click', function (event) {
   var btn = event.target.closest('.js-expert-toggle');
   if (!btn) return;
@@ -163,6 +175,7 @@ document.getElementById('js-expert-results').addEventListener('click', function 
   document.querySelectorAll('.js-expert-card').forEach(function (c) { setCardOpen(c, false); });
 
   if (!wasOpen) {
+    kartOlay(card.dataset.slug, 'acilma');
     setCardOpen(card, true);
     var url = new URL(window.location.href);
     url.searchParams.set('uzman', card.dataset.slug);

@@ -452,7 +452,10 @@ class ProfileController extends Controller
             return back()->withErrors(['video' => 'Video 200MB sınırını aşıyor, eklenemedi.']);
         }
 
-        set_time_limit(180);
+        // 25 Ekim 2026: süresiz çalışan ortamda (komut satırı/testler) sınır koyma.
+        if ((int) ini_get('max_execution_time') !== 0) {
+            set_time_limit(180);
+        }
 
         try {
             $path = app(\App\Services\VideoCompressionService::class)->store($request->file('video'), 'facilities/videos');

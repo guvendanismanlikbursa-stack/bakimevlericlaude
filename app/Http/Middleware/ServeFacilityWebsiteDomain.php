@@ -62,6 +62,9 @@ class ServeFacilityWebsiteDomain
         if ($kurumId && $request->isMethod('GET') && array_key_exists($request->path(), FacilityWebsite::PRO_PAGES)) {
             return app()->call([$controller, 'showForDomain'], ['request' => $request, 'site' => $site, 'sayfa' => $request->path()]);
         }
+        if (! $kurumId && $request->isMethod('POST') && $request->is('olay')) {
+            return app()->call([$controller, 'eventForDomain'], ['request' => $request, 'site' => $site]);
+        }
         if ($kurumId && $request->isMethod('POST') && $request->is('olay')) {
             return app()->call([$controller, 'eventForDomain'], ['request' => $request, 'site' => $site]);
         }

@@ -26,7 +26,7 @@ class DoktorSitesiController extends Controller
             return redirect()->away($site->publicUrl(), 301);
         }
 
-        return $this->render($site, ! $site->isLive(), route('doktor-sitesi.iletisim', ['slug' => $site->slug], false));
+        return $this->render($site, ! $site->isLive(), route('doktor-sitesi.iletisim', ['slug' => $site->slug], false), $preview ? (string) $request->query('tasarim') : '');
     }
 
     public function showForDomain(ExpertWebsite $site)
@@ -67,6 +67,9 @@ class DoktorSitesiController extends Controller
             'message' => 'Telefon: '.$data['phone']."\n\n".trim((string) ($data['message'] ?? ''))
                 ."\n\n(Doktorun internet sitesindeki iletişim formundan gönderildi. Doktor kaydı #".$expert->id.')',
         ]);
+        if ($site->isLive()) {
+            $site->recordStat('form');
+        }
         \App\Models\Admin::all()->each(fn ($admin) => notify_user(
             $admin,
             'contact_message_submitted',
@@ -87,6 +90,32 @@ class DoktorSitesiController extends Controller
         return redirect($back.'#iletisim')->with('doktor_sitesi_basarili', 'Mesajınız iletildi, en kısa sürede sizi arayacağız.');
     }
 
+    /** 25 Ekim 2026: WhatsApp / telefon tıklaması (sayfadaki betik gönderir). */
+    public function event(Request $request)
+    {
+        return $this->recordEvent($request, $this->findBySlug((string) $request->route('slug')));
+    }
+
+    public function eventForDomain(Request $request, ExpertWebsite $site)
+    {
+        return $this->recordEvent($request, $site);
+    }
+
+    private function recordEvent(Request $request, ExpertWebsite $site)
+    {
+        $tur = (string) $request->input('tur');
+        if ($site->isLive() && in_array($tur, ['whatsapp', 'arama'], true) && ! $this->isBot($request) && ! session('admin_id')) {
+            $site->recordStat($tur);
+        }
+
+        return response()->noContent();
+    }
+
+    private function isBot(Request $request): bool
+    {
+        return (bool) preg_match('/bot|crawl|spider|slurp|facebookexternalhit|preview|monitor|curl|wget|python|headless/i', (string) $request->userAgent());
+    }
+
     private function findBySlug(string $slug): ExpertWebsite
     {
         $site = ExpertWebsite::where('slug', $slug)->first();
@@ -95,9 +124,29 @@ class DoktorSitesiController extends Controller
         return $site;
     }
 
-    private function render(ExpertWebsite $site, bool $isPreview, string $formAction)
+    private function render(ExpertWebsite $site, bool $isPreview, string $formAction, string $tasarim = '')
     {
         $expert = $site->expert->load('city');
+        // Ziyaret sayacı: yayındaki site, admin ve botlar hariç.
+        if ($site->isLive() && ! $isPreview && ! session('admin_id') && ! $this->isBot(request())) {
+            $site->recordStat('ziyaret');
+        }
+        view()->share('olayAdresi', str_starts_with($formAction, '/dr/') ? '/dr/'.$site->slug.'/olay' : '/olay');
+        // 25 Ekim 2026: Profesyonel Site paketi etkinse premium şablon; admin
+        // önizlemede ?tasarim=pro / ?tasarim=standart ile ikisini de görebilir.
+        $demoPro = $tasarim === 'pro' && ! $site->isPro();
+        $pro = ($site->isPro() && $tasarim !== 'standart') || $tasarim === 'pro';
+        if ($pro) {
+            return response()->view('themes._shared.doktor-sitesi.pro', [
+                'site' => $site,
+                'expert' => $expert,
+                'renk' => $site->proColors(),
+                'isPreview' => $isPreview,
+                'demoPro' => $demoPro,
+                'formAction' => $formAction,
+                'whatsapp' => classify_phone_type($expert->phone) === 'mobile' ? normalize_whatsapp_number($expert->phone) : '',
+            ])->header('X-Robots-Tag', ($isPreview || $demoPro) ? 'noindex, nofollow' : 'index, follow');
+        }
 
         return response()->view('themes._shared.doktor-sitesi.show', [
             'site' => $site,

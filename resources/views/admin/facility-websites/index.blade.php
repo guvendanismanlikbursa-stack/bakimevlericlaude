@@ -82,7 +82,7 @@
         <div style="font-size:12px;color:#6b7280;margin-top:2px;">{{ $f->city?->name }} · {{ $f->category?->name }}@if($f->is_claimed) · <span style="color:#0d6e6a;font-weight:700;">Sahipli</span>@endif</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center;">
           @if($f->site_durum)
-            <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:9999px;{{ $durumRozet[$f->site_durum][1] ?? '' }}">Bizim site: {{ $durumRozet[$f->site_durum][0] ?? $f->site_durum }}</span>
+            <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:9999px;{{ $durumRozet[$f->site_durum][1] ?? '' }}">Bizim site: {{ $durumRozet[$f->site_durum][0] ?? $f->site_durum }}{{ $f->site_durum === 'yayinda' && ! $proAcik ? ' (Standart)' : '' }}</span>
           @else
             <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:9999px;background:#f3f4f6;color:#6b7280;">Bizim site: açılmamış</span>
           @endif
@@ -96,8 +96,20 @@
         @endif
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
-        <a href="{{ route('admin.facility-websites.preview', $f->id) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Önizle</a>
+        <a href="{{ route('admin.facility-websites.preview', ['facility' => $f->id, 'tasarim' => 'standart']) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Standart önizle</a>
+        <a href="{{ route('admin.facility-websites.preview', ['facility' => $f->id, 'tasarim' => 'pro']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#e9d3ab;color:#8a6a35;">★ Profesyonel önizle</a>
         <a href="{{ route('admin.facility-websites.edit', $f->id) }}" style="{{ $btn }}border-color:#0d6e6a;color:#0d6e6a;">Düzenle</a>
+        @unless($proAcik)
+          @php $stdYayinda = $f->site_durum === 'yayinda'; @endphp
+          <form method="POST" action="{{ route('admin.facility-websites.toggle-standard', $f->id) }}" onsubmit="return confirm('{{ $stdYayinda ? 'Standart site yayından kaldırılsın mı?' : 'Standart site açılıp yayına alınsın mı?' }}')" style="display:inline;margin:0;">
+            @csrf
+            @if($stdYayinda)
+              <button type="submit" style="{{ $btn }}cursor:pointer;color:#6b7280;">Yayından kaldır</button>
+            @else
+              <button type="submit" style="{{ $btn }}cursor:pointer;background:#0d6e6a;border-color:#0d6e6a;color:#fff;">Standart siteyi aç</button>
+            @endif
+          </form>
+        @endunless
         <form method="POST" action="{{ route('admin.facility-websites.toggle-pro', $f->id) }}" onsubmit="return confirm('{{ $proAcik ? 'Profesyonel Site kapatılsın mı? Site hazır tasarıma döner.' : 'Profesyonel Site 1 yıllığına açılsın ve site yayına alınsın mı?' }}')" style="display:inline;margin:0;">
           @csrf
           @if($proAcik)

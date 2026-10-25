@@ -82,6 +82,40 @@ class Expert extends Model
         };
     }
 
+    /**
+     * 25 Ekim 2026: Doktorlar sayfası kart sayacı (bkz. expert_card_stats).
+     * $idler verilirse hepsi için birden artırılır (listelenme).
+     */
+    public static function recordCardStat(array $idler, string $alan): void
+    {
+        $idler = array_values(array_unique(array_filter(array_map('intval', $idler))));
+        if (! $idler || ! in_array($alan, ['listelenme', 'acilma', 'arama'], true)) {
+            return;
+        }
+        try {
+            $gun = now()->toDateString();
+            \Illuminate\Support\Facades\DB::table('expert_card_stats')->insertOrIgnore(array_map(fn ($id) => ['expert_id' => $id, 'gun' => $gun], $idler));
+            \Illuminate\Support\Facades\DB::table('expert_card_stats')->whereIn('expert_id', $idler)->where('gun', $gun)->increment($alan);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Son 30 günlük kart sayaçları, doktor id => {listelenme, acilma, arama}.
+     *
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    public static function cardStats30(array $idler)
+    {
+        return \Illuminate\Support\Facades\DB::table('expert_card_stats')
+            ->whereIn('expert_id', array_values(array_filter($idler)) ?: [0])
+            ->where('gun', '>=', now()->subDays(29)->toDateString())
+            ->groupBy('expert_id')
+            ->selectRaw('expert_id, SUM(listelenme) listelenme, SUM(acilma) acilma, SUM(arama) arama')
+            ->get()->keyBy('expert_id');
+    }
+
     public function isSupporter(): bool
     {
         return $this->supporter_until !== null && ! $this->supporter_until->copy()->endOfDay()->isPast();

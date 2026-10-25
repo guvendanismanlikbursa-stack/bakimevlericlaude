@@ -17,7 +17,15 @@ class ExpertWebsite extends Model
     public const THEMES = FacilityWebsite::THEMES;
 
     // Değişiklik geçmişine yazılan (geri alınabilen) alanlar.
-    public const EDITABLE = ['hero_title', 'hero_subtitle', 'about_text', 'ilgi_alanlari', 'calisma_saatleri', 'photo_path', 'theme', 'sections'];
+    public const EDITABLE = ['hero_title', 'hero_subtitle', 'about_text', 'ilgi_alanlari', 'calisma_saatleri', 'photo_path', 'theme', 'sections',
+        'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'faqs', 'announcements'];
+
+    // 25 Ekim 2026: Profesyonel Site paketi (bkz. 2026_10_25_150000 migration).
+    public const PLANS = FacilityWebsite::PLANS;
+
+    public const FONT_STYLES = FacilityWebsite::FONT_STYLES;
+
+    public const LIMITS = ['stats' => 4, 'faqs' => 12, 'announcements' => 10];
 
     public const SECTIONS = [
         'hakkimda' => 'Hakkımda',
@@ -29,6 +37,7 @@ class ExpertWebsite extends Model
     protected $fillable = [
         'expert_id', 'slug', 'status', 'custom_domain', 'hero_title', 'hero_subtitle', 'about_text',
         'ilgi_alanlari', 'calisma_saatleri', 'photo_path', 'theme', 'sections', 'published_at',
+        'plan', 'pro_until', 'pro_yayina_aldi', 'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'faqs', 'announcements',
     ];
 
     protected function casts(): array
@@ -37,6 +46,11 @@ class ExpertWebsite extends Model
             'expert_id' => 'integer',
             'sections' => 'array',
             'published_at' => 'datetime',
+            'pro_until' => 'date',
+            'pro_yayina_aldi' => 'boolean',
+            'stats' => 'array',
+            'faqs' => 'array',
+            'announcements' => 'array',
         ];
     }
 
@@ -77,6 +91,99 @@ class ExpertWebsite extends Model
     public function isLive(): bool
     {
         return $this->status === 'yayinda';
+    }
+
+    /** Profesyonel Site paketi etkin mi (bitiş tarihi boşsa süresiz). */
+    public function isPro(): bool
+    {
+        return $this->plan === 'profesyonel'
+            && ($this->pro_until === null || ! $this->pro_until->copy()->endOfDay()->isPast());
+    }
+
+    /** @return array{ana: string, koyu: string, acik: string} */
+    public function proColors(): array
+    {
+        $hex = $this->brand_color && preg_match('/^#[0-9a-f]{6}$/i', $this->brand_color) ? strtolower($this->brand_color) : null;
+        if (! $hex) {
+            $t = $this->themeColors();
+
+            return ['ana' => $t['ana'], 'koyu' => $t['koyu'], 'acik' => $t['acik']];
+        }
+
+        return ['ana' => $hex, 'koyu' => FacilityWebsite::mixHex($hex, '#000000', 0.32), 'acik' => FacilityWebsite::mixHex($hex, '#ffffff', 0.9)];
+    }
+
+    public function videoEmbedUrl(): ?string
+    {
+        return (new FacilityWebsite(['video_url' => $this->video_url]))->videoEmbedUrl();
+    }
+
+    /** Dolu satırlar (boş satırlar atılır). */
+    public function listOf(string $alan): array
+    {
+        return array_values(array_filter((array) ($this->{$alan} ?? []), fn ($r) => is_array($r) && array_filter($r, fn ($v) => trim((string) $v) !== '')));
+    }
+
+    /** 25 Ekim 2026: ziyaret / WhatsApp / arama / form sayacını bugün için bir artırır. */
+    public function recordStat(string $alan): void
+    {
+        if (! in_array($alan, ['ziyaret', 'whatsapp', 'arama', 'form'], true)) {
+            return;
+        }
+        try {
+            $gun = now()->toDateString();
+            \Illuminate\Support\Facades\DB::table('expert_website_stats')->insertOrIgnore(['expert_website_id' => $this->id, 'gun' => $gun]);
+            \Illuminate\Support\Facades\DB::table('expert_website_stats')->where('expert_website_id', $this->id)->where('gun', $gun)->increment($alan);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** Son 30 gün toplamı ve son 6 ayın aylık toplamları (kurum raporuyla aynı biçim). */
+    public function statsReport(): array
+    {
+        $tablo = \Illuminate\Support\Facades\DB::table('expert_website_stats')->where('expert_website_id', $this->id);
+        $alanlar = ['ziyaret', 'whatsapp', 'arama', 'form'];
+        $son30 = (clone $tablo)->where('gun', '>=', now()->subDays(29)->toDateString())
+            ->selectRaw('COALESCE(SUM(ziyaret),0) ziyaret, COALESCE(SUM(whatsapp),0) whatsapp, COALESCE(SUM(arama),0) arama, COALESCE(SUM(form),0) form')->first();
+        $satirlar = (clone $tablo)->where('gun', '>=', now()->startOfMonth()->subMonths(5)->toDateString())->get();
+        $aylar = [];
+        for ($i = 0; $i < 6; $i++) {
+            $ay = now()->startOfMonth()->subMonths($i);
+            $buAy = $satirlar->filter(fn ($s) => substr((string) $s->gun, 0, 7) === $ay->format('Y-m'));
+            $kayit = ['ay' => $ay->locale('tr')->translatedFormat('F Y')];
+            foreach ($alanlar as $a) {
+                $kayit[$a] = (int) $buAy->sum($a);
+            }
+            $aylar[] = $kayit;
+        }
+
+        return ['son30' => collect($alanlar)->mapWithKeys(fn ($a) => [$a => (int) ($son30->{$a} ?? 0)])->all(), 'aylar' => $aylar];
+    }
+
+    /**
+     * 25 Ekim 2026: admin ana sayfası / Doktor Siteleri özeti.
+     */
+    public static function summary(): array
+    {
+        $bugun = now()->toDateString();
+        $stat = \Illuminate\Support\Facades\DB::table('expert_website_stats')->where('gun', '>=', now()->subDays(29)->toDateString());
+        $toplam = (clone $stat)->selectRaw('COALESCE(SUM(ziyaret),0) ziyaret, COALESCE(SUM(whatsapp),0) whatsapp, COALESCE(SUM(arama),0) arama, COALESCE(SUM(form),0) form')->first();
+        $enCok = (clone $stat)->join('expert_websites as ew', 'ew.id', '=', 'expert_website_stats.expert_website_id')
+            ->join('experts as e', 'e.id', '=', 'ew.expert_id')
+            ->groupBy('ew.expert_id', 'e.name')
+            ->selectRaw('ew.expert_id, e.name as ad, SUM(ziyaret) ziyaret, SUM(whatsapp) whatsapp, SUM(arama) arama, SUM(form) form')
+            ->orderByDesc('ziyaret')->limit(5)->get()->filter(fn ($s) => (int) $s->ziyaret > 0)->values();
+
+        return [
+            'son30' => ['ziyaret' => (int) $toplam->ziyaret, 'whatsapp' => (int) $toplam->whatsapp, 'arama' => (int) $toplam->arama, 'form' => (int) $toplam->form],
+            'en_cok' => $enCok,
+            'pro_aktif' => static::where('plan', 'profesyonel')->where(fn ($w) => $w->whereNull('pro_until')->orWhere('pro_until', '>=', $bugun))->count(),
+            'standart_yayinda' => static::where('status', 'yayinda')->where(fn ($q) => $q->where('plan', '!=', 'profesyonel')->orWhereNull('plan')->orWhere('pro_until', '<', $bugun))->count(),
+            'taslak' => static::where('status', 'taslak')->count(),
+            'pro_bitiyor' => static::where('plan', 'profesyonel')->whereBetween('pro_until', [$bugun, now()->addDays(30)->toDateString()])->count(),
+            'pro_dolmus' => static::where('plan', 'profesyonel')->where('pro_until', '<', $bugun)->count(),
+        ];
     }
 
     public function sectionEnabled(string $key): bool

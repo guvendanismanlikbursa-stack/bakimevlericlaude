@@ -95,6 +95,9 @@
       </div>
       <div class="flex items-center gap-2 flex-wrap text-xs">
         <span class="text-gray-600">📞 {{ $expert->phone ?: '—' }}</span>
+        {{-- 25 Ekim 2026: Doktorlar sayfası kart sayacı, son 30 gün (yalnızca admin). --}}
+        @php $ks = $kartStat[$expert->id] ?? null; @endphp
+        <span style="display:inline-block;background:#f0fdfa;color:#115e59;border-radius:9999px;padding:2px 10px;font-weight:600;" title="Son 30 gün: kartın listelendiği arama sayısı · detayının açılma sayısı · telefon tıklaması">30 gün: 📋 {{ (int) ($ks->listelenme ?? 0) }} listelenme · 👁 {{ (int) ($ks->acilma ?? 0) }} açılma · 📞 {{ (int) ($ks->arama ?? 0) }} arama</span>
         @if($expert->website_status)@include('partials.website-status-badge', ['facility' => $expert])@endif
         @if($expert->trashed())
           <span class="inline-block rounded-full px-2.5 py-0.5 font-semibold bg-red-100 text-red-700">Silinmiş</span>

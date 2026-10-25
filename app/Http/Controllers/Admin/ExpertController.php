@@ -67,7 +67,9 @@ class ExpertController extends Controller
         $totalCount = Expert::count();
         $publishedCount = Expert::where('is_published', true)->count();
 
-        return view('admin.experts.index', compact('experts', 'cities', 'branches', 'totalCount', 'publishedCount'));
+        $kartStat = Expert::cardStats30($experts->pluck('id')->all());
+
+        return view('admin.experts.index', compact('experts', 'cities', 'branches', 'totalCount', 'publishedCount', 'kartStat'));
     }
 
     public function create()

@@ -190,6 +190,7 @@
   .bilgi-kart small{font-size:14.5px;color:var(--soluk);line-height:1.5;display:block}
   .bilgi-kart.rakamlar{grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--cizgi)}
   @media(min-width:720px){.bilgi-kart.rakamlar{grid-template-columns:repeat(var(--sutun,4),minmax(0,1fr))}}
+  @media(max-width:719px){.bilgi-kart.rakamlar > div:last-child:nth-child(odd){grid-column:1/-1}}
   .bilgi-kart.rakamlar > div{flex-direction:column;gap:0;align-items:flex-start;background:#fff;border:0;padding:22px 20px}
   @media(min-width:720px){.bilgi-kart.rakamlar > div{padding:28px 30px}.bilgi-kart .rakam{font-size:clamp(34px,3.4vw,46px)}}
 

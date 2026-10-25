@@ -256,5 +256,17 @@
   @if($telLink)<a href="{{ $telLink }}" aria-label="Telefonla ara" style="background:var(--ana);color:#fff;">📞</a>@endif
 </div>
 
+<script>
+// 25 Ekim 2026: WhatsApp / telefon tıklama sayacı (raporda görünür).
+document.addEventListener('click', function (e) {
+  var a = e.target.closest ? e.target.closest('a') : null;
+  if (!a) return;
+  var h = a.getAttribute('href') || '';
+  var tur = h.indexOf('tel:') === 0 ? 'arama' : (h.indexOf('wa.me') !== -1 ? 'whatsapp' : '');
+  if (!tur || !navigator.sendBeacon) return;
+  var v = new FormData(); v.append('_token', @json(csrf_token())); v.append('tur', tur);
+  navigator.sendBeacon(@json($olayAdresi ?? ''), v);
+});
+</script>
 </body>
 </html>

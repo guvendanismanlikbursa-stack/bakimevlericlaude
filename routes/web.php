@@ -117,6 +117,7 @@ $siteRoutes = function () {
     // bolum. BILEREK henuz hicbir menude linklenmiyor (sadece dogrudan
     // URL ile erisilir) - kullanici onaylamadan public hale getirilmeyecek.
     Route::get('/uzmanlar', [\App\Http\Controllers\Public\ExpertController::class, 'index'])->middleware('throttle:public-browse')->name('experts.index');
+    Route::post('/uzmanlar/olay', [\App\Http\Controllers\Public\ExpertController::class, 'cardEvent'])->middleware('throttle:public-browse')->name('experts.card-event');
     // 7 Ekim 2026: "Organizasyon Şirketleri" - Uzmanlar ile AYNI desen,
     // BILEREK henuz hicbir menude linklenmiyor (sadece dogrudan URL ile
     // erisilir) - kullanici onaylamadan public hale getirilmeyecek.
@@ -139,6 +140,7 @@ $siteRoutes = function () {
     // 23 Ekim 2026: kullanıcının talebi - kurumun internet sitesi (bkz. KurumSitesiController).
     // 23 Ekim 2026: kullanıcının talebi - doktorun internet sitesi (bkz. DoktorSitesiController).
     Route::get('/dr/{slug}', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'show'])->middleware('throttle:public-browse')->name('doktor-sitesi.show');
+    Route::post('/dr/{slug}/olay', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'event'])->middleware('throttle:public-browse')->name('doktor-sitesi.olay');
     Route::post('/dr/{slug}/iletisim', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('doktor-sitesi.iletisim');
     Route::get('/siteler/{slug}', [\App\Http\Controllers\Public\KurumSitesiController::class, 'show'])->middleware('throttle:public-browse')->name('kurum-sitesi.show');
     Route::post('/siteler/{slug}/iletisim', [\App\Http\Controllers\Public\KurumSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('kurum-sitesi.iletisim');
@@ -450,6 +452,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->except(['show']);
         // 23 Ekim 2026: kullanıcının talebi - her kurumun internet sitesini admin düzenler/yayına alır.
         Route::get('/kurum-siteleri', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'index'])->name('facility-websites.index');
+        // 25 Ekim 2026: tek tıkla standart site (kurum) ve Doktor Siteleri listesi.
+        Route::post('/kurum-siteleri/{facility}/standart', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'toggleStandard'])->name('facility-websites.toggle-standard');
+        Route::get('/doktor-siteleri', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'index'])->name('expert-websites.index');
+        Route::post('/doktor-siteleri/{expert}/standart', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'toggleStandard'])->name('expert-websites.toggle-standard');
+        Route::post('/doktor-siteleri/{expert}/profesyonel', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'togglePro'])->name('expert-websites.toggle-pro');
         Route::post('/kurum-siteleri/fiyat', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'savePrice'])->name('facility-websites.price');
         Route::post('/kurum-siteleri/{facility}/profesyonel', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'togglePro'])->name('facility-websites.toggle-pro');
         Route::get('/kurumlar/{facility}/web-sitesi/onizle', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'preview'])->name('facility-websites.preview');

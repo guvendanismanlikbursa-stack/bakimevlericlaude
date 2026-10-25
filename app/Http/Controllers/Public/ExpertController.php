@@ -97,6 +97,10 @@ class ExpertController extends Controller
             }
 
             $experts = $query->orderBy('name')->paginate(24)->withQueryString();
+            // 25 Ekim 2026: kart sayacı - bu sayfada listelenen doktorlar (bot ve admin hariç).
+            if (! $this->sayacDisi($request)) {
+                Expert::recordCardStat($experts->pluck('id')->all(), 'listelenme');
+            }
         }
 
         if ($request->ajax()) {
@@ -107,5 +111,27 @@ class ExpertController extends Controller
         }
 
         return view('themes._shared.experts.index', compact('experts', 'cities', 'districtMap', 'branches', 'activeExpertSlug', 'activeExpert', 'publiclyVisible', 'hasFilter'));
+    }
+    /**
+     * 25 Ekim 2026: kart açılması / telefon tıklaması (sayfadaki betik gönderir).
+     */
+    public function cardEvent(Request $request)
+    {
+        $tur = (string) $request->input('tur');
+        $slug = (string) $request->input('slug');
+        if (in_array($tur, ['acilma', 'arama'], true) && $slug !== '' && ! $this->sayacDisi($request)) {
+            $id = Expert::where('slug', $slug)->where('is_published', true)->value('id');
+            if ($id) {
+                Expert::recordCardStat([$id], $tur);
+            }
+        }
+
+        return response()->noContent();
+    }
+
+    private function sayacDisi(Request $request): bool
+    {
+        return (bool) session('admin_id')
+            || (bool) preg_match('/bot|crawl|spider|slurp|facebookexternalhit|preview|monitor|curl|wget|python|headless/i', (string) $request->userAgent());
     }
 }

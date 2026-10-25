@@ -1179,7 +1179,10 @@ class FacilityController extends Controller
         // 27 Agustos 2026: video sikistirma (60sn'lik bir klip icin bile)
         // PHP'nin varsayilan kisa max_execution_time'ini (paylasimli
         // hosting'te genelde 30sn) rahatlikla asabilir - bu istek ozelinde genisletilir.
-        set_time_limit(180);
+        // 25 Ekim 2026: süresiz çalışan ortamda (komut satırı/testler) sınır koyma.
+        if ((int) ini_get('max_execution_time') !== 0) {
+            set_time_limit(180);
+        }
 
         try {
             $path = app(\App\Services\VideoCompressionService::class)->store($file, 'facilities/videos');

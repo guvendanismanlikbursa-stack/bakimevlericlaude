@@ -7732,7 +7732,7 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(42, $oz['son30']['ziyaret']);
 
         $this->withSession($admin)->get(route('admin.dashboard'))->assertOk()
-            ->assertSee('🌐 Kurum Siteleri', false)->assertSee('★ Profesyonel (aktif)', false)->assertSee('30 gün içinde bitiyor', false)
+            ->assertSee('🌐 Kurum Siteleri', false)->assertSee('🩺 Doktor Siteleri', false)->assertSee('★ Profesyonel (aktif)', false)->assertSee('30 gün içinde bitiyor', false)
             ->assertSee($this->rehabFacility->name, false);
 
         $this->withSession($admin)->get(route('admin.facilities.index'))->assertOk()
@@ -7745,6 +7745,123 @@ class PlatformFeatureTest extends TestCase
         $liste(['paket' => 'standart'])->assertSee($kart($this->elderlyFacility), false)->assertDontSee($kart($this->rehabFacility), false);
         $liste(['bitis_bas' => now()->toDateString(), 'bitis_son' => now()->addDays(20)->toDateString()])
             ->assertSee($kart($this->rehabFacility), false)->assertDontSee($kart($this->elderlyFacility), false)->assertSee('👀 42 ziyaret', false);
+    }
+
+    // 25 Ekim 2026: Doktor Siteleri listesi, tek tıkla standart/profesyonel, iki önizleme, doktor profesyonel şablonu.
+    public function test_expert_sites_list_toggles_previews_and_pro_template(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $expert = \App\Models\Expert::create([
+            'name' => 'Selin Arı', 'slug' => 'selin-ari', 'title' => 'Uzm. Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Sağlığı',
+            'city_id' => $this->city->id, 'district' => 'Nilüfer', 'phone' => '0533 444 55 66', 'is_published' => true,
+            'reviews' => [['author' => 'Hasta', 'text' => 'Gizli yorum metni']],
+        ]);
+
+        $this->withSession($admin)->get(route('admin.expert-websites.index'))->assertOk()
+            ->assertSee('Doktor Siteleri', false)->assertSee('Bizim site: açılmamış', false)->assertSee('Standart siteyi aç', false)
+            ->assertSee("★ Profesyonel'e geçir", false)->assertSee('Profesyonel önizle', false)->assertDontSee('<table', false);
+
+        // Standart siteyi aç -> yayında, standart.
+        $this->withSession($admin)->post(route('admin.expert-websites.toggle-standard', $expert))->assertRedirect()->assertSessionHas('success');
+        $site = \App\Models\ExpertWebsite::where('expert_id', $expert->id)->firstOrFail();
+        $this->assertTrue($site->isLive());
+        $this->assertFalse($site->isPro());
+        $this->flushSession();
+        $this->get('/dr/'.$site->slug)->assertOk()->assertDontSee('id="cekmece"', false)->assertDontSee('Gizli yorum metni', false);
+
+        // Önizlemeler: profesyonel tasarım admin'e açık, ziyaretçiye kapalı.
+        $this->get('/dr/'.$site->slug.'?onizleme=1&tasarim=pro')->assertOk()->assertDontSee('id="cekmece"', false);
+        $this->withSession($admin)->get(route('admin.experts.website.preview', ['expert' => $expert, 'tasarim' => 'pro']))
+            ->assertRedirect('/dr/'.$site->slug.'?onizleme=1&tasarim=pro');
+        $this->withSession($admin)->get('/dr/'.$site->slug.'?onizleme=1&tasarim=pro')->assertOk()
+            ->assertSee('id="cekmece"', false)->assertSee('Profesyonel Site tasarım önizlemesi', false)->assertDontSee('Gizli yorum metni', false);
+
+        // Profesyonel'e geçir + içerik.
+        $this->withSession($admin)->post(route('admin.expert-websites.toggle-pro', $expert))->assertRedirect();
+        $this->assertTrue($site->fresh()->isPro());
+        $this->withSession($admin)->put(route('admin.experts.website.update', $expert), [
+            'status' => 'yayinda', 'slug' => $site->slug, 'custom_domain' => '', 'theme' => 'mavi', 'plan' => 'profesyonel', 'pro_until' => now()->addYear()->toDateString(),
+            'ilgi_alanlari' => "Astım\nAlerji", 'calisma_saatleri' => 'Hafta içi 09-18', 'sections' => ['hakkimda' => '1', 'ilgi_alanlari' => '1', 'calisma_saatleri' => '1'],
+            'pro_form' => '1', 'brand_color' => '#123456', 'font_style' => 'modern', 'video_url' => 'https://youtu.be/dQw4w9WgXcQ',
+            'stats' => [['deger' => '15+', 'etiket' => 'Yıllık tecrübe']], 'faqs' => [['soru' => 'Randevu nasıl alınır?', 'cevap' => 'Telefonla.']],
+            'announcements' => [['baslik' => 'Bayram çalışma saatleri', 'tarih' => '2026-10-01', 'metin' => 'Açığız.']],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $site->refresh();
+        $this->assertSame('#123456', $site->brand_color);
+        $this->assertCount(1, $site->faqs);
+        $this->flushSession();
+        $this->get('/dr/'.$site->slug)->assertOk()->assertSee('id="cekmece"', false)->assertSee('#123456', false)
+            ->assertSee('15+', false)->assertSee('Randevu nasıl alınır?', false)->assertSee('Bayram çalışma saatleri', false)
+            ->assertSee('youtube-nocookie.com/embed/dQw4w9WgXcQ', false)->assertSee('Astım', false)->assertDontSee('Gizli yorum metni', false);
+        // Admin profesyonel sitenin standart halini de görebilir.
+        $this->withSession($admin)->get('/dr/'.$site->slug.'?onizleme=1&tasarim=standart')->assertOk()->assertDontSee('id="cekmece"', false);
+        $this->withSession($admin)->get(route('admin.expert-websites.index', ['paket' => 'profesyonel']))->assertOk()->assertSee('Profesyoneli kapat', false);
+
+        // Profesyoneli kapat: site zaten yayındaydı -> standart yayında kalır.
+        $this->withSession($admin)->post(route('admin.expert-websites.toggle-pro', $expert))->assertRedirect();
+        $site->refresh();
+        $this->assertFalse($site->isPro());
+        $this->assertTrue($site->isLive());
+        // Yayından kaldır.
+        $this->withSession($admin)->post(route('admin.expert-websites.toggle-standard', $expert))->assertRedirect();
+        $this->assertFalse($site->fresh()->isLive());
+    }
+
+    // 25 Ekim 2026: Kurum Siteleri listesinde "Standart siteyi aç" düğmesi ve iki önizleme.
+    public function test_facility_sites_standard_toggle_and_two_previews(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $f = $this->rehabFacility;
+        \App\Models\FacilityWebsite::where('facility_id', $f->id)->delete();
+        $this->withSession($admin)->get(route('admin.facility-websites.index'))->assertOk()
+            ->assertSee('Standart siteyi aç', false)->assertSee('Standart önizle', false)->assertSee('Profesyonel önizle', false);
+        $this->withSession($admin)->post(route('admin.facility-websites.toggle-standard', $f))->assertRedirect();
+        $site = \App\Models\FacilityWebsite::where('facility_id', $f->id)->firstOrFail();
+        $this->assertTrue($site->isLive());
+        $this->assertFalse($site->isPro());
+        $this->withSession($admin)->get(route('admin.facility-websites.preview', ['facility' => $f, 'tasarim' => 'pro']))->assertRedirect('/siteler/'.$site->slug.'?onizleme=1&tasarim=pro');
+        $site->update(['plan' => 'profesyonel', 'pro_until' => now()->addYear()]);
+        $this->withSession($admin)->get('/siteler/'.$site->slug.'?onizleme=1&tasarim=standart')->assertOk()->assertDontSee('id="cekmece"', false);
+        $this->withSession($admin)->get('/siteler/'.$site->slug.'?onizleme=1')->assertOk()->assertSee('id="cekmece"', false);
+        $site->update(['plan' => 'standart', 'pro_until' => null]);
+        $this->withSession($admin)->post(route('admin.facility-websites.toggle-standard', $f))->assertRedirect();
+        $this->assertFalse($site->fresh()->isLive());
+    }
+
+    // 25 Ekim 2026: doktor sitesi sayacı ve Doktorlar sayfası kart sayacı (yalnızca admin'de görünür).
+    public function test_expert_site_and_card_counters_show_in_admin(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $expert = \App\Models\Expert::create(['name' => 'Kerem Uz', 'slug' => 'kerem-uz', 'title' => 'Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru',
+            'city_id' => $this->city->id, 'phone' => '0533 111 22 33', 'is_published' => true]);
+        $site = \App\Models\ExpertWebsite::forExpert($expert);
+        $site->update(['status' => 'yayinda']);
+
+        // Site: ziyaret (ziyaretçi sayılır, admin ve bot sayılmaz), tıklama, form.
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/dr/'.$site->slug)->assertOk()->assertSee(json_encode('/dr/'.$site->slug.'/olay'), false);
+        $this->withHeaders(['User-Agent' => 'Googlebot'])->get('/dr/'.$site->slug)->assertOk();
+        $this->withSession($admin)->get('/dr/'.$site->slug)->assertOk();
+        $this->flushSession();
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->post('/dr/'.$site->slug.'/olay', ['tur' => 'whatsapp'])->assertNoContent();
+        $this->post('/dr/'.$site->slug.'/olay', ['tur' => 'arama'])->assertNoContent();
+        $this->post('/dr/'.$site->slug.'/iletisim', ['full_name' => 'Sayaç Aile', 'phone' => '05550001111']);
+        $r = $site->fresh()->statsReport()['son30'];
+        $this->assertSame(['ziyaret' => 1, 'whatsapp' => 1, 'arama' => 1, 'form' => 1], $r);
+        $this->assertSame(1, \App\Models\ExpertWebsite::summary()['son30']['ziyaret']);
+
+        // Kart: listelenme (arama sonucu), açılma, telefon tıklaması.
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar?search=Kerem')->assertOk();
+        $this->post('/site/bakimevleri/uzmanlar/olay', ['slug' => 'kerem-uz', 'tur' => 'acilma'])->assertNoContent();
+        $this->post('/site/bakimevleri/uzmanlar/olay', ['slug' => 'kerem-uz', 'tur' => 'arama'])->assertNoContent();
+        $this->post('/site/bakimevleri/uzmanlar/olay', ['slug' => 'kerem-uz', 'tur' => 'kotu'])->assertNoContent();
+        $ks = \App\Models\Expert::cardStats30([$expert->id])[$expert->id];
+        $this->assertSame([1, 1, 1], [(int) $ks->listelenme, (int) $ks->acilma, (int) $ks->arama]);
+
+        // Admin ekranları.
+        $this->withSession($admin)->get(route('admin.dashboard'))->assertOk()->assertSee('Son 30 gün (tüm doktor siteleri', false)->assertSee('Kerem Uz', false);
+        $this->withSession($admin)->get(route('admin.experts.index'))->assertOk()->assertSee('1 listelenme · 👁 1 açılma · 📞 1 arama', false);
+        $this->withSession($admin)->get(route('admin.expert-websites.index'))->assertOk()->assertSee('Doktorlar sayfası kartı (30 gün)', false)->assertSee('👀 1 ziyaret', false);
+        $this->withSession($admin)->get(route('admin.experts.website.edit', $expert))->assertOk()->assertSee('Site raporu', false);
     }
 
     public function test_launch_notice_shows_by_default_and_admin_can_change_or_hide_it(): void
