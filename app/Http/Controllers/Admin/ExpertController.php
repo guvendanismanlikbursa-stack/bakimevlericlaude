@@ -25,6 +25,21 @@ class ExpertController extends Controller
         'Ortopedi' => 'Kemik ve Eklem Hastalıkları',
     ];
 
+    /**
+     * 25 Ekim 2026: "Özel Doktorlar" bölümünü yayına alır / gizler. Açınca anasayfada
+     * 4. kart çıkar, /uzmanlar herkese açılır; kapatınca her şey eski haline döner.
+     */
+    public function toggleSection(Request $request)
+    {
+        $live = $request->boolean('live');
+        \App\Models\Setting::set('doctors_live', $live ? '1' : '0');
+        log_admin_event('doctors_section_'.($live ? 'published' : 'hidden'));
+
+        return back()->with('success', $live
+            ? 'Doktorlar bölümü yayında: anasayfada "Özel Doktorlar" kartı çıktı, sayfa herkese açık.'
+            : 'Doktorlar bölümü gizlendi: anasayfa kartları eski haline döndü, sayfa yine yalnızca bağlantıyı bilenlere açık.');
+    }
+
     public function index(Request $request)
     {
         $query = Expert::query()->with('city')->withTrashed();

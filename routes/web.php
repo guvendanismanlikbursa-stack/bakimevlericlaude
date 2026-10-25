@@ -473,6 +473,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // 7 Ekim 2026: kullanicinin talebi - "Doktorlar" admin bolumu,
         // Kurumlar'daki temel islemlerin (listele/filtrele/ekle/duzenle/
         // sil) aynisi, Expert modeli icin.
+        // 25 Ekim 2026: Doktorlar bölümünü yayına al / gizle (geri alınabilir).
+        Route::post('/doktorlar-bolumu/yayin', [\App\Http\Controllers\Admin\ExpertController::class, 'toggleSection'])->name('experts.section-toggle');
         Route::resource('doktorlar', \App\Http\Controllers\Admin\ExpertController::class)
             ->parameters(['doktorlar' => 'expert'])
             ->names('experts')

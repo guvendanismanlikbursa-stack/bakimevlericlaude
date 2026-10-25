@@ -8135,4 +8135,35 @@ class PlatformFeatureTest extends TestCase
             ->assertSeeInOrder(['Özel Doktorlar Bölümüne Hoş Geldiniz', 'ℹ️ Bilgilendirme', '💛 Teşekkür', 'Uzm. Dr. Deniz Kaya'], false)
             ->assertDontSee('Eski Destekci', false);
     }
+
+    // 25 Ekim 2026: Doktorlar bölümü aç/kapat - anasayfada 4. kart, /uzmanlar herkese açık; geri alınabilir.
+    public function test_doctors_section_toggle_adds_home_card_and_reverts(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $markalar = ['bakimevleri', 'bakimevibul', 'bakimeviara'];
+
+        foreach ($markalar as $m) {
+            $this->get('/site/'.$m.'/')->assertOk()->assertDontSee('doktor-bolum-karti', false)->assertDontSee('bolum-kartlari-4', false);
+        }
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
+            ->assertSee('Test sayfası', false)->assertSee('noindex,nofollow', false);
+        $this->withSession($admin)->get(route('admin.experts.index'))->assertOk()->assertSee('Gizli (test)', false)->assertSee('Bölümü yayına al', false);
+
+        $this->withSession($admin)->post(route('admin.experts.section-toggle'), ['live' => 1])->assertRedirect()->assertSessionHas('success');
+        $this->assertTrue(doctors_live());
+        foreach ($markalar as $m) {
+            $this->get('/site/'.$m.'/')->assertOk()->assertSee('bolum-kartlari-4', false)->assertSee('Özel Doktorlar', false)
+                ->assertSee('/site/'.$m.'/uzmanlar', false);
+        }
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
+            ->assertDontSee('Test sayfası', false)->assertSee('index,follow', false);
+        $this->withSession($admin)->get(route('admin.experts.index'))->assertOk()->assertSee('Bölümü gizle (geri al)', false);
+
+        $this->withSession($admin)->post(route('admin.experts.section-toggle'), ['live' => 0])->assertRedirect();
+        $this->assertFalse(doctors_live());
+        foreach ($markalar as $m) {
+            $this->get('/site/'.$m.'/')->assertOk()->assertDontSee('doktor-bolum-karti', false);
+        }
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()->assertSee('Test sayfası', false);
+    }
 }

@@ -28,7 +28,7 @@ class CacheStaticPage
         // de (Setting senkronu sayesinde) eski önbellek kendiliğinden devre dışı kalır.
         // 19 Ekim 2026: gizli kategori listesi de anahtara dahil - admin bir
         // kategoriyi gizleyip açınca önbellekteki eski sayfalar kullanılmaz.
-        $key = 'static-page:v1:'.(membership_live() ? 'm1:' : 'm0:').substr(md5(implode(',', hidden_category_ids())), 0, 6).':'.md5($request->getHost().'|'.$request->getRequestUri().'|'.($request->ajax() ? 'ajax' : ''));
+        $key = 'static-page:v1:'.(membership_live() ? 'm1:' : 'm0:').(doctors_live() ? 'd1:' : '').substr(md5(implode(',', hidden_category_ids())), 0, 6).':'.md5($request->getHost().'|'.$request->getRequestUri().'|'.($request->ajax() ? 'ajax' : ''));
         $staleOnly = $mode === 'stale';
 
         $fresh = $staleOnly ? null : Cache::get($key);

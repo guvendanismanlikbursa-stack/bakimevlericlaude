@@ -1450,6 +1450,18 @@ if (! function_exists('membership_live')) {
     }
 }
 
+if (! function_exists('doctors_live')) {
+    /**
+     * 25 Ekim 2026: kullanıcının talebi - "Özel Doktorlar" bölümü yayında mı?
+     * Açıkken anasayfada 4. bölüm kartı çıkar ve /uzmanlar herkese açılır
+     * (Google'a da). Admin > Doktorlar sayfasından tek tıkla geri alınabilir.
+     */
+    function doctors_live(): bool
+    {
+        return (string) \App\Models\Setting::get('doctors_live', '0') === '1';
+    }
+}
+
 if (! function_exists('membership_viewable')) {
     /**
      * Program sayfaları: yayındaysa herkes, değilse yalnızca admin (önizleme).

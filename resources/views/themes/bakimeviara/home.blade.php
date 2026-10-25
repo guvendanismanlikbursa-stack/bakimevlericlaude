@@ -26,7 +26,7 @@
     {{-- 12 Agustos 2026: kullanicinin talebi - sira (mobilde de) "bolum
          karti -> filtreleme -> bilgilendirme" olmali. --}}
     <div class="max-w-5xl mx-auto mb-7">
-      <div class="grid sm:grid-cols-3 gap-3">
+      <div class="grid sm:grid-cols-3 gap-3{{ doctors_live() ? ' bolum-kartlari-4' : '' }}">
         @foreach($sections as $slug => $item)
           @php $active = $item['slug'] === $section['slug']; @endphp
           <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="group relative section-card-beam rounded-2xl border p-4 min-h-[112px] overflow-hidden transition hover:-translate-y-0.5 hover:shadow-xl {{ $active ? 'text-white shadow-lg' : 'text-white border-gray-100 shadow-sm' }}" style="--beam-color: {{ $active ? '#ffffff' : $item['theme']['secondary'] }}; {{ $active ? 'background:'.$colors['primary'].'; border-color:'.$colors['primary'].';' : '' }}">
@@ -35,15 +35,16 @@
               <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/35 to-black/10"></div>
             @endunless
             <div class="relative flex items-start justify-between gap-3">
-              <span class="inline-flex rounded-xl p-2 {{ $active ? 'bg-white/18 text-white' : 'bg-white/15' }}">
+              <span class="bk-ikon inline-flex rounded-xl p-2 {{ $active ? 'bg-white/18 text-white' : 'bg-white/15' }}">
                 @include('themes._shared.partials.section-icon', ['section' => $item, 'class' => 'w-7 h-7'])
               </span>
-              @if($active)<span class="rounded-full bg-white/20 px-2 py-1 text-[11px] font-black">Seçili</span>@endif
+              @if($active)<span class="bk-secili rounded-full bg-white/20 px-2 py-1 text-[11px] font-black">Seçili</span>@endif
             </div>
-            <div class="relative font-black mt-3">{{ $item['title'] }}</div>
-            <div class="relative text-xs mt-1 {{ $active ? 'text-white/80' : 'text-white/85' }}">{{ implode(', ', array_slice($item['features'], 0, 2)) }}</div>
+            <div class="bk-baslik relative font-black mt-3">{{ $item['title'] }}</div>
+            <div class="bk-alt relative text-xs mt-1 {{ $active ? 'text-white/80' : 'text-white/85' }}">{{ implode(', ', array_slice($item['features'], 0, 2)) }}</div>
           </a>
         @endforeach
+        @if(doctors_live())@include('themes._shared.partials.doktor-bolum-karti', ['kose' => 16])@endif
       </div>
     </div>
 

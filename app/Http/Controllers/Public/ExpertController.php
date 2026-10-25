@@ -44,7 +44,8 @@ class ExpertController extends Controller
         $activeExpert = $activeExpertSlug
             ? Expert::where('slug', $activeExpertSlug)->where('is_published', true)->with('city')->first()
             : null;
-        $publiclyVisible = self::PUBLICLY_VISIBLE;
+        // 25 Ekim 2026: admin bölümü yayına aldıysa herkese açık (bkz. doctors_live()).
+        $publiclyVisible = self::PUBLICLY_VISIBLE || doctors_live();
 
         // 7 Ekim 2026: kullanicinin talebi - kullanici hicbir filtre/arama
         // yapmadan sayfaya ilk geldiginde RASTGELE doktorlar gosterilmesin,

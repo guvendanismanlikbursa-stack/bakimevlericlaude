@@ -33,7 +33,7 @@
          Bakim/Cocuk/Rehabilitasyon) EN USTE, her seyden once geliyor;
          hangi bolumle ilgilenildigini secmek site kullanimindaki ILK
          adim olmali. --}}
-    <div class="grid sm:grid-cols-3 gap-3 mb-6">
+    <div class="grid sm:grid-cols-3 gap-3 mb-6{{ doctors_live() ? ' bolum-kartlari-4' : '' }}">
       @foreach($sections as $slug => $item)
         @php $active = $item['slug'] === $section['slug']; @endphp
         <a href="{{ brand_route('home', ['bolum' => $slug]) }}" class="section-card-beam relative border rounded-xl p-4 overflow-hidden transition {{ $active ? 'bg-white text-gray-950 border-white' : 'text-white border-white/14 hover:brightness-110' }}" style="--beam-color: {{ $active ? $item['theme']['primary'] : $item['theme']['secondary'] }};">
@@ -50,13 +50,14 @@
             <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/35 to-black/10"></div>
           @endunless
           <div class="relative flex items-center justify-between gap-2">
-            <span class="inline-flex rounded-lg p-2 {{ $active ? 'bg-gray-100' : 'bg-white/15' }}" style="{{ $active ? 'color:'.$colors['primary'].';' : '' }}">@include('themes._shared.partials.section-icon', ['section' => $item, 'class' => 'w-6 h-6'])</span>
-            @if($active)<span class="text-[11px] font-bold rounded bg-gray-100 px-2 py-1" style="color: {{ $colors['primary'] }};">Seçili</span>@endif
+            <span class="bk-ikon inline-flex rounded-lg p-2 {{ $active ? 'bg-gray-100' : 'bg-white/15' }}" style="{{ $active ? 'color:'.$colors['primary'].';' : '' }}">@include('themes._shared.partials.section-icon', ['section' => $item, 'class' => 'w-6 h-6'])</span>
+            @if($active)<span class="bk-secili text-[11px] font-bold rounded bg-gray-100 px-2 py-1" style="color: {{ $colors['primary'] }};">Seçili</span>@endif
           </div>
-          <div class="relative font-black mt-3">{{ $item['title'] }}</div>
-          <div class="relative text-xs mt-1 {{ $active ? 'text-gray-500' : 'text-white/85' }}">{{ implode(' · ', array_slice($item['features'], 0, 2)) }}</div>
+          <div class="bk-baslik relative font-black mt-3">{{ $item['title'] }}</div>
+          <div class="bk-alt relative text-xs mt-1 {{ $active ? 'text-gray-500' : 'text-white/85' }}">{{ implode(' · ', array_slice($item['features'], 0, 2)) }}</div>
         </a>
       @endforeach
+      @if(doctors_live())@include('themes._shared.partials.doktor-bolum-karti', ['kose' => 12])@endif
     </div>
 
     @include('themes._shared.partials.broker-incentive-banner')

@@ -18,6 +18,19 @@
   </div>
   <a href="{{ route('admin.experts.create') }}" class="bg-blue-600 text-white rounded-lg px-5 py-2.5 text-sm font-bold">+ Doktor Ekle</a>
 </div>
+{{-- 25 Ekim 2026: Doktorlar bölümünü yayına al / gizle - tek tıkla geri alınabilir. --}}
+@php $doktorYayinda = doctors_live(); @endphp
+<div style="display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;border-radius:14px;padding:12px 16px;margin-bottom:16px;{{ $doktorYayinda ? 'background:#ecfdf5;border:1.5px solid #86efac;' : 'background:#fffbeb;border:1.5px solid #fcd34d;' }}">
+  <div style="font-size:14px;color:#1f2937;min-width:0;flex:1 1 260px;">
+    <b>Doktorlar bölümü: {{ $doktorYayinda ? '🟢 Yayında' : '🔒 Gizli (test)' }}</b><br>
+    <span style="color:#4b5563;">{{ $doktorYayinda ? 'Anasayfada "Özel Doktorlar" kartı görünüyor, /uzmanlar herkese ve Google\'a açık.' : 'Anasayfada kart yok, /uzmanlar yalnızca bağlantıyı bilenlere açık ve Google\'a kapalı.' }}</span>
+  </div>
+  <form method="POST" action="{{ route('admin.experts.section-toggle') }}" onsubmit="return confirm('{{ $doktorYayinda ? 'Doktorlar bölümü gizlensin mi? Anasayfa kartları eski haline döner.' : 'Doktorlar bölümü yayına alınsın mı? Anasayfada 4. kart çıkar, sayfa Google\'a açılır.' }}')" style="margin:0;">
+    @csrf
+    <input type="hidden" name="live" value="{{ $doktorYayinda ? '0' : '1' }}">
+    <button type="submit" style="border:0;border-radius:10px;padding:9px 16px;font-weight:800;font-size:14px;cursor:pointer;color:#fff;background:{{ $doktorYayinda ? '#b91c1c' : '#0d6e6a' }};">{{ $doktorYayinda ? 'Bölümü gizle (geri al)' : 'Bölümü yayına al' }}</button>
+  </form>
+</div>
 
 <form method="GET" class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3 mb-5 border border-gray-100">
   <input type="text" name="q" value="{{ request('q') }}" placeholder="İsimle ara..." class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]" data-live-search autocomplete="off">
