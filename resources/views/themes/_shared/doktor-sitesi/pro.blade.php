@@ -22,6 +22,15 @@
   $harf = mb_strtoupper(mb_substr((string) $e->name, 0, 1, 'UTF-8'), 'UTF-8');
   $rakamlar = $site->listOf('stats');
   $sss = $site->listOf('faqs');
+  // 25 Ekim 2026: branşa göre otomatik bilgilendirme içerikleri (bkz. App\Support\DoktorIcerik).
+  $icerikTur = \App\Support\DoktorIcerik::tur($e->branch, $e->branch_label);
+  $durumlar = \App\Support\DoktorIcerik::durumlar($icerikTur);
+  $hazirlik = \App\Support\DoktorIcerik::hazirlik($icerikTur);
+  $surec = \App\Support\DoktorIcerik::surec((bool) $whatsapp);
+  $sssVarsayilan = ! $sss;
+  if ($sssVarsayilan) {
+      $sss = \App\Support\DoktorIcerik::varsayilanSss((bool) $whatsapp);
+  }
   $duyurular = $site->listOf('announcements');
   $video = $site->videoEmbedUrl();
   $metaAciklama = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $hakkimda ?: $altBaslik)), 155);
@@ -29,6 +38,7 @@
   $menu = array_filter([
       'hakkimda' => $bolum('hakkimda') && $hakkimda !== '' ? 'Hakkımda' : null,
       'ilgi' => $bolum('ilgi_alanlari') && $ilgi ? 'Uzmanlık Alanları' : null,
+      'surec' => 'Muayene Süreci',
       'duyurular' => $duyurular ? 'Duyurular' : null,
       'sss' => $sss ? 'S.S.S.' : null,
       'iletisim' => 'Randevu',
@@ -60,7 +70,7 @@
     'medicalSpecialty' => $brans ?: null, 'telephone' => $telefon ?: null, 'image' => $foto, 'description' => $metaAciklama ?: null,
     'address' => $adres ? ['@type' => 'PostalAddress', 'streetAddress' => $e->address, 'addressLocality' => $e->district, 'addressRegion' => $e->city->name ?? null, 'addressCountry' => 'TR'] : null,
 ]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
-@if($sss)
+@if($sss && ! $sssVarsayilan)
 <script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => collect($sss)->map(fn ($s) => ['@type' => 'Question', 'name' => $s['soru'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $s['cevap']]])->all()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
 @endif
 <style>
@@ -327,6 +337,18 @@
   .etiket-bulut{display:flex;flex-wrap:wrap;gap:12px}
   .etiket-bulut span{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--cizgi);border-radius:999px;padding:12px 18px;font-weight:700;color:var(--ink);font-size:15.5px}
   .etiket-bulut span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ana)}
+  /* 25 Ekim 2026: muayene süreci adımları + hazırlık listesi + bilgilendirme notu */
+  .adimlar{display:grid;gap:18px;grid-template-columns:1fr;position:relative}
+  @media(min-width:900px){.adimlar{grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}.adimlar::before{content:"";position:absolute;left:12%;right:12%;top:30px;height:2px;background:linear-gradient(90deg,var(--acik),var(--ana),var(--acik));opacity:.6}}
+  .adim{position:relative;background:#fff;border:1px solid var(--cizgi);border-radius:var(--yuvarlak);padding:26px 24px;text-align:left}
+  .adim-no{position:relative;z-index:1;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--ana),var(--koyu));color:#fff;font-family:var(--baslik);font-size:24px;margin-bottom:16px;box-shadow:0 10px 24px -12px var(--ana)}
+  .adim h3{font-size:20px}
+  .adim p{color:var(--soluk);margin-top:8px;font-size:15.5px}
+  .hazirlik{margin-top:44px;background:#fff;border:1px solid var(--cizgi);border-radius:var(--yuvarlak);padding:clamp(22px,3vw,36px)}
+  .hazirlik h3{font-size:clamp(20px,2.2vw,26px)}
+  .hazirlik .izgara{margin-top:18px}
+  .hazirlik .hizmet{padding:16px 18px;font-size:15.5px}
+  .tibbi-not{font-size:13.5px;color:var(--soluk);background:var(--krem);border:1px solid var(--cizgi);border-radius:14px;padding:14px 18px;margin:0}
   .saat-kart{background:#fff;border:1px solid var(--cizgi);border-radius:var(--yuvarlak);padding:28px 30px;white-space:pre-line;font-weight:600;color:var(--ink);box-shadow:var(--golge)}
   .ust.dolu .marka-ad b,.ust.dolu .marka-ad small{color:var(--ink)}
 </style>
@@ -431,6 +453,36 @@
   </section>
 @endif
 
+{{-- 25 Ekim 2026: branşa göre bilgilendirme - başvuru durumları --}}
+<section class="bolum" id="durumlar">
+  <div class="kap">
+    <div class="bolum-bas gorun"><div class="sol"><div class="etiket">Bilgilendirme</div><h2>Hangi durumlarda başvurabilirsiniz?</h2><p class="giris-metni" style="margin-top:14px;">{{ $brans ? $brans.' alanında' : 'Muayenehanede' }} sık karşılaşılan başvuru nedenlerinden bazıları.</p></div></div>
+    <div class="izgara uc">
+      @foreach($durumlar as [$durumBaslik, $durumMetin])
+        <div class="deger gorun"><span class="no">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span><h3>{{ $durumBaslik }}</h3><p>{{ $durumMetin }}</p></div>
+      @endforeach
+    </div>
+  </div>
+</section>
+
+{{-- 25 Ekim 2026: muayene süreci + muayeneye hazırlık listesi --}}
+<section class="bolum krem" id="surec">
+  <div class="kap">
+    <div class="bolum-bas gorun"><div class="sol"><div class="etiket">Muayene süreci</div><h2>Randevudan takibe adım adım</h2></div></div>
+    <div class="adimlar">
+      @foreach($surec as [$adimBaslik, $adimMetin])
+        <div class="adim gorun"><span class="adim-no">{{ $loop->iteration }}</span><h3>{{ $adimBaslik }}</h3><p>{{ $adimMetin }}</p></div>
+      @endforeach
+    </div>
+    <div class="hazirlik gorun">
+      <h3>Muayeneye gelirken yanınızda bulunsun</h3>
+      <div class="izgara uc">
+        @foreach($hazirlik as $hazir)<div class="hizmet"><span class="tik"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>{{ $hazir }}</div>@endforeach
+      </div>
+    </div>
+  </div>
+</section>
+
 @if($video)
   <section class="bolum koyu-bolum">
     <div class="kap">
@@ -498,6 +550,8 @@
 @if($bolum('konum') && $e->lat && $e->lng)
   <section class="bolum" style="padding-top:0;"><div class="kap gorun"><iframe class="harita" title="{{ $ad }} harita" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q={{ $e->lat }},{{ $e->lng }}&z=15&output=embed"></iframe></div></section>
 @endif
+
+<div class="kap" style="padding-bottom:32px;"><p class="tibbi-not">ℹ️ Bu sitedeki bilgiler genel bilgilendirme amaçlıdır; muayene, tanı ve tedavinin yerine geçmez. Acil durumlarda 112’yi arayın.</p></div>
 
 <footer class="altbilgi">
   <div class="kap">

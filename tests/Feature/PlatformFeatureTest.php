@@ -8278,4 +8278,28 @@ class PlatformFeatureTest extends TestCase
         $this->flushSession();
         $this->get('/dr/'.$ds->slug)->assertOk()->assertSee('class="hrk hrk-dr"', false)->assertDontSee('Hareketli Profesyonel tasarım önizlemesi', false);
     }
+
+    // 25 Ekim 2026: doktor Profesyonel sitesi branşa göre otomatik bilgilendirme içerikleri.
+    public function test_doctor_pro_site_has_branch_based_information_sections(): void
+    {
+        $this->assertSame('pediatri', \App\Support\DoktorIcerik::tur('Pediatri', 'Çocuk Doktoru'));
+        $this->assertSame('cocuk-noroloji', \App\Support\DoktorIcerik::tur('Çocuk Nörolojisi', 'Çocuk Beyin ve Sinir Hastalıkları'));
+        $this->assertSame('geriatri', \App\Support\DoktorIcerik::tur('Geriatri', 'Yaşlılık Uzmanı'));
+        $this->assertSame('dis', \App\Support\DoktorIcerik::tur('Diş Hekimliği', null));
+        $this->assertSame('genel', \App\Support\DoktorIcerik::tur('Kardiyoloji', null));
+
+        $expert = \App\Models\Expert::create(['name' => 'Ada Yel', 'slug' => 'ada-yel', 'title' => 'Uzm. Dr.', 'branch' => 'Geriatri', 'branch_label' => 'Yaşlılık Uzmanı',
+            'city_id' => $this->city->id, 'phone' => '0533 444 55 09', 'is_published' => true]);
+        $site = \App\Models\ExpertWebsite::forExpert($expert);
+        $site->update(['status' => 'yayinda', 'plan' => 'profesyonel', 'pro_until' => now()->addYear()]);
+
+        $this->get('/dr/'.$site->slug)->assertOk()
+            ->assertSeeInOrder(['Hangi durumlarda başvurabilirsiniz?', 'İlaç düzenlemesi', 'Randevudan takibe adım adım', 'Muayeneye gelirken yanınızda bulunsun', 'Kullanılan tüm ilaçlar'], false)
+            ->assertSee('Randevu nasıl alabilirim?', false)->assertDontSee('"FAQPage"', false)
+            ->assertSee('muayene, tanı ve tedavinin yerine geçmez', false)->assertSee('href="#surec"', false);
+
+        // Doktor kendi SSS'sini girerse o gösterilir ve arama motoru özeti basılır.
+        $site->update(['faqs' => [['soru' => 'Evde muayene var mı?', 'cevap' => 'Hayır.']]]);
+        $this->get('/dr/'.$site->slug)->assertOk()->assertSee('Evde muayene var mı?', false)->assertDontSee('Randevu nasıl alabilirim?', false)->assertSee('"FAQPage"', false);
+    }
 }
