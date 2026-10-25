@@ -8113,4 +8113,13 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(1, \App\Models\SiteSale::count());
         $this->assertSame('yayinda', $site->fresh()->status);
     }
+
+    // 25 Ekim 2026: doktorlar sayfası reklam yasağı bilgilendirmesiyle başlar.
+    public function test_experts_page_starts_with_no_advertising_notice(): void
+    {
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
+            ->assertSee('ℹ️ Bilgilendirme', false)
+            ->assertSee('Bu bölümde hiçbir hekimin reklamı yapılmamaktadır', false)
+            ->assertSeeInOrder(['ℹ️ Bilgilendirme', 'Özel Doktorlar'], false);
+    }
 }

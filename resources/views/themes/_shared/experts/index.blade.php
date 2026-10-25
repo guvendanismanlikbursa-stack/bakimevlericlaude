@@ -25,6 +25,12 @@
     </div>
   @endunless
 
+  {{-- 25 Ekim 2026: kullanıcının talebi - hekimlerde reklam yasağı nedeniyle sayfa bu bilgilendirmeyle başlar (metin kullanıcının onayladığı haliyle). --}}
+  <div role="note" style="margin-bottom:20px;border:1px solid #cfe3e1;background:#f3faf9;border-radius:14px;padding:14px 16px;color:#1f2937;font-size:14px;line-height:1.6;">
+    <div style="font-weight:800;color:#0d6e6a;margin-bottom:4px;">ℹ️ Bilgilendirme</div>
+    Bu sayfada yer alan hekim bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları hekime daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir hekimin reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir hekim öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
+  </div>
+
   <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
   <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
 
