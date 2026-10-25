@@ -200,7 +200,42 @@ class SitemapController extends Controller
                 }
             });
 
+        // 25 Ekim 2026: kullanıcının talebi - Doktorlar bölümü ve kurum/doktor siteleri için
+        // maksimum görünürlük. Asıl adres bakimevleri.com olduğundan yalnızca onun haritasında.
+        if ($brandSlug === 'bakimevleri') {
+            $this->doktorAdresleri($urls, $prefix);
+        }
+
         return view('sitemap', ['urls' => $urls->unique('loc')->values()])->render();
+    }
+
+    /** Doktorlar bölümü (il / ilçe / branş sayfaları, doktor profilleri) + yayındaki kurum ve doktor siteleri. */
+    private function doktorAdresleri($urls, string $prefix): void
+    {
+        if (doctors_live()) {
+            $urls->push($this->url($prefix.'/uzmanlar', 'daily', '0.8'));
+            $dagilim = \App\Support\DoktorSeo::dagilim();
+            $ekle = function (string $yol, string $oncelik) use ($urls, $prefix) {
+                $urls->push($this->url($prefix.'/uzmanlar/'.$yol, 'weekly', $oncelik));
+            };
+            $dagilim->pluck('il_slug')->unique()->each(fn ($il) => $ekle($il, '0.7'));
+            $dagilim->whereNotNull('brans_slug')->map(fn ($r) => $r['il_slug'].'/'.$r['brans_slug'])->unique()->each(fn ($y) => $ekle($y, '0.7'));
+            $dagilim->whereNotNull('ilce_slug')->map(fn ($r) => $r['il_slug'].'/'.$r['ilce_slug'])->unique()->each(fn ($y) => $ekle($y, '0.6'));
+            $dagilim->whereNotNull('ilce_slug')->whereNotNull('brans_slug')->map(fn ($r) => $r['il_slug'].'/'.$r['ilce_slug'].'/'.$r['brans_slug'])->unique()->each(fn ($y) => $ekle($y, '0.7'));
+
+            \App\Models\Expert::query()->where('is_published', true)->select(['id', 'slug', 'updated_at'])->orderBy('id')
+                ->chunk(500, function ($doktorlar) use ($urls, $prefix) {
+                    foreach ($doktorlar as $d) {
+                        $urls->push($this->url($prefix.'/doktor/'.$d->slug, 'weekly', '0.6', $d->updated_at));
+                    }
+                });
+        }
+
+        // Kendi alan adı olmayan, yayındaki kurum ve doktor siteleri bakimevleri.com altında yayınlanır.
+        \App\Models\FacilityWebsite::query()->where('status', 'yayinda')->where(fn ($q) => $q->whereNull('custom_domain')->orWhere('custom_domain', ''))->get(['slug', 'updated_at'])
+            ->each(fn ($s) => $urls->push($this->url($prefix.'/siteler/'.$s->slug, 'weekly', '0.7', $s->updated_at)));
+        \App\Models\ExpertWebsite::query()->where('status', 'yayinda')->where(fn ($q) => $q->whereNull('custom_domain')->orWhere('custom_domain', ''))->get(['slug', 'updated_at'])
+            ->each(fn ($s) => $urls->push($this->url($prefix.'/dr/'.$s->slug, 'weekly', '0.7', $s->updated_at)));
     }
 
     /**

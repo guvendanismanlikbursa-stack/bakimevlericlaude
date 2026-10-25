@@ -118,6 +118,9 @@ $siteRoutes = function () {
     // URL ile erisilir) - kullanici onaylamadan public hale getirilmeyecek.
     Route::get('/uzmanlar', [\App\Http\Controllers\Public\ExpertController::class, 'index'])->middleware('throttle:public-browse')->name('experts.index');
     Route::post('/uzmanlar/olay', [\App\Http\Controllers\Public\ExpertController::class, 'cardEvent'])->middleware('throttle:public-browse')->name('experts.card-event');
+    // 25 Ekim 2026: Doktorlar bölümü arama motoru sayfaları - il / ilçe / branş açılışları ve doktor profili.
+    Route::get('/uzmanlar/{il}/{a?}/{b?}', [\App\Http\Controllers\Public\ExpertSeoController::class, 'liste'])->where(['il' => '[a-z0-9-]+', 'a' => '[a-z0-9-]+', 'b' => '[a-z0-9-]+'])->middleware('throttle:public-browse')->name('experts.landing');
+    Route::get('/doktor/{slug}', [\App\Http\Controllers\Public\ExpertSeoController::class, 'doktor'])->where('slug', '[A-Za-z0-9-]+')->middleware('throttle:public-browse')->name('experts.show');
     // 7 Ekim 2026: "Organizasyon Şirketleri" - Uzmanlar ile AYNI desen,
     // BILEREK henuz hicbir menude linklenmiyor (sadece dogrudan URL ile
     // erisilir) - kullanici onaylamadan public hale getirilmeyecek.

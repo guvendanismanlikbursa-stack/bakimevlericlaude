@@ -45,6 +45,8 @@
           @if($expert->description)
             <p class="text-sm text-gray-700 mb-4">{{ $expert->description }}</p>
           @endif
+          {{-- 25 Ekim 2026: doktorun kendi sayfası (arama motorları için de ayrı adres). --}}
+          <a href="{{ brand_route('experts.show', $expert->slug) }}" style="display:inline-block;margin-bottom:12px;font-size:13.5px;font-weight:800;color:#0d6e6a;text-decoration:none;">Doktor sayfası →</a>
           <div class="grid sm:grid-cols-2 gap-3 text-sm mb-4">
             @if($expert->clinic_name)
               <div class="bg-white rounded-lg px-3 py-2 border border-gray-100"><span class="text-gray-400 text-xs block">Klinik/Hastane</span><span class="font-bold text-gray-800">{{ $expert->clinic_name }}</span></div>

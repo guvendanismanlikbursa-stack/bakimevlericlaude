@@ -30,7 +30,16 @@ class ExpertController extends Controller
         'ortopedi' => ['title' => 'Ortopedi', 'label' => 'Kemik ve Eklem Hastalıkları'],
     ];
 
+    /**
+     * $seo: il / ilçe / branş açılış sayfasından gelindiyse başlık, açıklama, SSS ve
+     * bağlantılar (bkz. ExpertSeoController::liste). Boşsa normal Doktorlar sayfası.
+     */
     public function index(Request $request)
+    {
+        return $this->sayfa($request, []);
+    }
+
+    public function sayfa(Request $request, array $seo = [])
     {
         $cities = City::orderBy('name')->get();
         $districtMap = $cities->mapWithKeys(fn ($city) => [$city->slug => districts_for_city($city->name)]);
@@ -61,7 +70,10 @@ class ExpertController extends Controller
             if ($request->filled('city')) {
                 $query->whereHas('city', fn ($c) => $c->where('slug', $request->city));
             }
-            if ($request->filled('district')) {
+            if (! empty($seo['ilceYazimlari'])) {
+                // 25 Ekim 2026: aynı ilçenin farklı yazımları (ör. "Nilüfer" / "NİLÜFER") birlikte.
+                $query->whereIn('district', $seo['ilceYazimlari']);
+            } elseif ($request->filled('district')) {
                 $query->where('district', $request->district);
             }
             if ($request->filled('branch') && isset(self::BRANCHES[$request->branch])) {
@@ -115,7 +127,14 @@ class ExpertController extends Controller
         $destekciler = Expert::query()->where('is_published', true)->whereDate('supporter_until', '>=', now()->toDateString())
             ->with('city:id,name')->orderBy('name')->get(['id', 'name', 'title', 'city_id']);
 
-        return view('themes._shared.experts.index', compact('experts', 'cities', 'districtMap', 'branches', 'activeExpertSlug', 'activeExpert', 'publiclyVisible', 'hasFilter', 'destekciler'));
+        // 25 Ekim 2026: filtresiz sayfada "Popüler aramalar" bağlantıları (il / ilçe / branş açılış sayfaları).
+        $populer = $hasFilter || $seo ? collect() : \App\Support\DoktorSeo::dagilim()->whereNotNull('ilce_slug')->whereNotNull('brans_slug')
+            ->groupBy(fn ($r) => $r['il_slug'].'|'.$r['ilce_slug'].'|'.$r['brans_slug'])
+            ->map(fn ($g) => $g->first() + ['toplam' => $g->sum('adet')])->sortByDesc('toplam')->take(30)->values();
+        $populerIller = $hasFilter || $seo ? collect() : \App\Support\DoktorSeo::dagilim()->groupBy('il_slug')
+            ->map(fn ($g) => ['il_slug' => $g->first()['il_slug'], 'il_ad' => $g->first()['il_ad'], 'toplam' => $g->sum('adet')])->sortByDesc('toplam')->take(20)->values();
+
+        return view('themes._shared.experts.index', compact('experts', 'cities', 'districtMap', 'branches', 'activeExpertSlug', 'activeExpert', 'publiclyVisible', 'hasFilter', 'destekciler', 'seo', 'populer', 'populerIller'));
     }
     /**
      * 25 Ekim 2026: kart açılması / telefon tıklaması (sayfadaki betik gönderir).

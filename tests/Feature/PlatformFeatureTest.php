@@ -8303,4 +8303,57 @@ class PlatformFeatureTest extends TestCase
         $site->update(['faqs' => [['soru' => 'Evde muayene var mı?', 'cevap' => 'Hayır.']]]);
         $this->get('/dr/'.$site->slug)->assertOk()->assertSee('Evde muayene var mı?', false)->assertDontSee('Randevu nasıl alabilirim?', false)->assertSee('"FAQPage"', false);
     }
+
+    // 25 Ekim 2026: Doktorlar bölümü arama motoru sayfaları - il/ilçe/branş açılışları, doktor profili, site haritası.
+    public function test_doctor_seo_landing_profile_pages_and_sitemap(): void
+    {
+        $il = $this->city->slug;
+        $mk = fn (string $ad, string $slug, string $ilce, string $branch, string $label) => \App\Models\Expert::create([
+            'name' => $ad, 'slug' => $slug, 'title' => 'Uzm. Dr.', 'branch' => $branch, 'branch_label' => $label,
+            'city_id' => $this->city->id, 'district' => $ilce, 'phone' => '0533 444 55 '.random_int(10, 99), 'is_published' => true, 'address' => 'Test Cad. No:1',
+            'reviews' => [['author_name' => 'Veli', 'rating' => 5, 'body' => 'Çok ilgili bir hekim.']], 'rating' => 4.8, 'review_count' => 12]);
+        $mk('Ayşe Kar', 'ayse-kar', 'Nilüfer', 'Pediatri', 'Çocuk Doktoru');
+        $mk('Burak Deniz', 'burak-deniz', 'Nilüfer', 'Pediatri', 'Çocuk Doktoru');
+        $mk('Cem Ova', 'cem-ova', 'Osmangazi', 'Pediatri', 'Çocuk Doktoru');
+        $mk('Deniz Tan', 'deniz-tan', 'Nilüfer', 'Geriatri', 'Yaşlılık Uzmanı');
+        \Illuminate\Support\Facades\Cache::forget('doktor-seo:dagilim:v1');
+        $ua = ['User-Agent' => 'Mozilla/5.0'];
+
+        // Bölüm kapalıyken sayfalar açılır ama dizine alınmaz.
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/'.$il.'/nilufer/pediatri')->assertOk()->assertSee('noindex,nofollow', false);
+        \App\Models\Setting::set('doctors_live', '1');
+
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/'.$il.'/nilufer/pediatri')->assertOk()
+            ->assertSee('<h1 class="text-2xl font-black text-gray-950 mb-2">Nilüfer Çocuk Doktorları (Pediatri)</h1>', false)
+            ->assertSee('<link rel="canonical" href="https://bakimevleri.com/uzmanlar/'.$il.'/nilufer/pediatri">', false)
+            ->assertSee('index,follow', false)->assertSee('"FAQPage"', false)->assertSee('"BreadcrumbList"', false)
+            ->assertSee('Ayşe Kar', false)->assertSee('Burak Deniz', false)->assertDontSee('Cem Ova', false)->assertDontSee('Deniz Tan', false)
+            ->assertSee('Bu bölgedeki diğer branşlar', false)->assertSee('Yakın ilçeler', false)
+            ->assertSee('https://bakimevleri.com/doktor/ayse-kar', false)->assertSee('/site/bakimevleri/doktor/ayse-kar', false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/'.$il.'/pediatri')->assertOk()->assertSee('Cem Ova', false)->assertDontSee('Deniz Tan', false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/'.$il.'/nilufer')->assertOk()->assertSee('Deniz Tan', false)->assertDontSee('Cem Ova', false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/'.$il)->assertOk()->assertSee('İlçelere göre', false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/'.$il.'/yokilce')->assertNotFound();
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/'.$il.'/osmangazi/geriatri')->assertNotFound();
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar/olmayan-il')->assertNotFound();
+
+        // Doktor profili
+        $this->withHeaders($ua)->get('/site/bakimevleri/doktor/ayse-kar')->assertOk()
+            ->assertSee('<h1', false)->assertSee('Uzm. Dr. Ayşe Kar', false)->assertSee('"Physician"', false)
+            ->assertSee('<link rel="canonical" href="https://bakimevleri.com/doktor/ayse-kar">', false)->assertDontSee('AggregateRating', false)
+            ->assertSee('Çok ilgili bir hekim.', false)->assertSee('Burak Deniz', false)->assertSee('/site/bakimevleri/uzmanlar/'.$il.'/nilufer/pediatri', false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/doktor/olmayan')->assertNotFound();
+
+        // Ana Doktorlar sayfası: popüler aramalar; filtre sonuçları dizine alınmaz; asıl adres bakimevleri.com
+        $this->withHeaders($ua)->get('/site/bakimevibul/uzmanlar')->assertOk()->assertSee('Popüler aramalar', false)
+            ->assertSee('<link rel="canonical" href="https://bakimevleri.com/uzmanlar">', false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar?city='.$il)->assertOk()->assertSee('noindex,follow', false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar?uzman=ayse-kar')->assertOk()->assertSee('https://bakimevleri.com/doktor/ayse-kar">', false);
+
+        // Site haritası: yalnızca bakimevleri.com'da
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('http://bakimevleri.com/sitemap.xml')->assertOk()
+            ->assertSee('/uzmanlar/'.$il.'/nilufer/pediatri</loc>', false)->assertSee('/doktor/ayse-kar</loc>', false)->assertSee('/uzmanlar/'.$il.'/pediatri</loc>', false);
+        $this->get('http://bakimevibul.com/sitemap.xml')->assertOk()->assertDontSee('/doktor/ayse-kar', false);
+    }
 }

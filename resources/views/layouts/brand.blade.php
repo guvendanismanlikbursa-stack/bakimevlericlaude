@@ -552,6 +552,8 @@ if (new URLSearchParams(window.location.search).has('page')) {
         <li><a href="{{ brand_route('guides.index') }}" class="hover:text-primary">Bakım Rehberi</a></li>
         <li><a href="{{ brand_route('stats.index') }}" class="hover:text-primary">Türkiye İstatistikleri</a></li>
         <li><a href="{{ brand_route('faq.index') }}" class="hover:text-primary">Sıkça Sorulan Sorular</a></li>
+        {{-- 25 Ekim 2026: Doktorlar bölümü yayındaysa alt bilgide bağlantı (iç bağlantı / keşif). --}}
+        @if(doctors_live())<li><a href="{{ brand_route('experts.index') }}" class="hover:text-primary">Özel Doktorlar</a></li>@endif
       </ul>
     </div>
     <div>

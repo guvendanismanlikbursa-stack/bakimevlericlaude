@@ -11,10 +11,26 @@
       ? trim("{$activeExpert->title} {$activeExpert->name}, ".($activeExpert->district ? "{$activeExpert->district}/" : '').($activeExpert->city?->name ?? '')." bölgesinde {$activeExpert->branch_label} olarak hizmet veriyor.".($activeExpert->phone ? " İletişim: {$activeExpert->phone}." : ''))
       : 'Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları il, ilçe veya branşa göre bulun.';
 @endphp
+@php
+  // 25 Ekim 2026: arama motoru düzeni - asıl adres her zaman bakimevleri.com; il/ilçe/branş
+  // açılış sayfaları kendi başlığını taşır; sorgu parametreli filtre sonuçları açılış
+  // sayfalarının kopyası olduğu için dizine alınmaz (bağlantılar izlenir).
+  $seo = $seo ?? [];
+  if ($seo) {
+      $__title = $seo['title'];
+      $__description = $seo['aciklama'];
+      $__kanonik = $seo['kanonik'];
+  } elseif ($activeExpert) {
+      $__kanonik = \App\Support\DoktorSeo::asilAdres('/doktor/'.$activeExpert->slug);
+  } else {
+      $__kanonik = \App\Support\DoktorSeo::asilAdres('/uzmanlar');
+  }
+  $__robots = ! $publiclyVisible ? 'noindex,nofollow' : (($seo || $activeExpert || ! $hasFilter) ? 'index,follow' : 'noindex,follow');
+@endphp
 @section('title', $__title)
 @section('meta_description', $__description)
-@section('canonical', canonical_url(['city', 'district', 'branch', 'search', 'min_rating', 'uzman']))
-@section('robots_meta', $publiclyVisible ? 'index,follow' : 'noindex,nofollow')
+@section('canonical', $__kanonik)
+@section('robots_meta', $__robots)
 
 @section('content')
 {{-- 25 Ekim 2026: kullanıcının talebi - sade arka plan yerine doktorlar bölümüne uygun, hafif
@@ -31,10 +47,20 @@
   {{-- 25 Ekim 2026: bölüm kartları bu sayfada da görünsün (bölüm yayındayken). --}}
   @if(doctors_live())@include('themes._shared.partials.bolum-kartlari-ust')@endif
 
-  <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
-  <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
+  @if($seo)
+    <nav aria-label="Konum" style="font-size:13px;color:#6b7280;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px;">
+      @foreach($seo['kirinti'] as $k)
+        @if(! $loop->last)<a href="{{ $k['url'] }}" style="color:#0d6e6a;text-decoration:none;font-weight:600;">{{ $k['ad'] }}</a><span aria-hidden="true">›</span>@else<span>{{ $k['ad'] }}</span>@endif
+      @endforeach
+    </nav>
+    <h1 class="text-2xl font-black text-gray-950 mb-2">{{ $seo['h1'] }}</h1>
+    <p class="text-gray-600 mb-6" style="max-width:820px;line-height:1.65;">{{ $seo['giris'] }}</p>
+  @else
+    <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
+    <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
+  @endif
 
-  <form method="GET" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-expert-results" data-count-target="js-expert-count" class="js-location-filter flex flex-wrap gap-3 mb-6" style="background:rgba(255,255,255,.92);border:1px solid #d5ebe8;border-radius:16px;padding:12px;box-shadow:0 6px 20px -12px rgba(13,110,106,.35);">
+  <form method="GET" action="{{ brand_route('experts.index') }}" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-expert-results" data-count-target="js-expert-count" class="js-location-filter flex flex-wrap gap-3 mb-6" style="background:rgba(255,255,255,.92);border:1px solid #d5ebe8;border-radius:16px;padding:12px;box-shadow:0 6px 20px -12px rgba(13,110,106,.35);">
     <input type="search" name="search" value="{{ request('search') }}" placeholder="Doktor adı veya branş ile ara..." autocomplete="off" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[180px]" style="max-width:100%;">
     <select name="city" class="js-city border rounded-lg px-3 py-2 text-sm" style="max-width:100%;min-width:0;text-overflow:ellipsis;">
       <option value="">Tüm İller</option>
@@ -74,6 +100,54 @@
   <div id="js-expert-results">
     @include('themes._shared.experts._results', ['experts' => $experts, 'activeExpertSlug' => $activeExpertSlug])
   </div>
+
+  {{-- 25 Ekim 2026: arama motoru sayfaları - ilgili ilçe / branş bağlantıları ve sık sorulan sorular. --}}
+  @php $linkKutu = 'display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #d5ebe8;border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:700;color:#0f172a;text-decoration:none;'; @endphp
+  @if($seo)
+    <div style="margin-top:28px;display:grid;gap:18px;">
+      @if($seo['bransLinkleri']->isNotEmpty())
+        <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
+          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">Bu bölgedeki diğer branşlar</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">@foreach($seo['bransLinkleri'] as $l)<a href="{{ $l['url'] }}" style="{{ $linkKutu }}">{{ $l['ad'] }} <span style="color:#0d9488;">{{ $l['adet'] }}</span></a>@endforeach</div>
+        </section>
+      @endif
+      @if($seo['ilceLinkleri']->isNotEmpty())
+        <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
+          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">{{ $seo['tumIl'] ? 'Yakın ilçeler' : 'İlçelere göre' }}</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">@foreach($seo['ilceLinkleri'] as $l)<a href="{{ $l['url'] }}" style="{{ $linkKutu }}">{{ $l['ad'] }} <span style="color:#0d9488;">{{ $l['adet'] }}</span></a>@endforeach</div>
+          @if($seo['tumIl'])<a href="{{ $seo['tumIl']['url'] }}" style="display:inline-block;margin-top:12px;font-weight:800;color:#0d6e6a;font-size:14px;">Tüm {{ $seo['tumIl']['ad'] }} →</a>@endif
+        </section>
+      @endif
+      <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
+        <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:6px;">Sık sorulan sorular</h2>
+        @foreach($seo['sss'] as $s)
+          <details style="border-top:1px solid #eef2f2;padding:10px 0;" @if($loop->first) open @endif>
+            <summary style="cursor:pointer;font-weight:800;color:#0f172a;font-size:15px;">{{ $s['soru'] }}</summary>
+            <p style="margin-top:6px;color:#475569;font-size:14.5px;line-height:1.6;">{{ $s['cevap'] }}</p>
+          </details>
+        @endforeach
+      </section>
+    </div>
+  @elseif(! $hasFilter && ($populer->isNotEmpty() || $populerIller->isNotEmpty()))
+    <div style="margin-top:28px;display:grid;gap:18px;">
+      @if($populer->isNotEmpty())
+        <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
+          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">Popüler aramalar</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            @foreach($populer as $p)<a href="{{ brand_route('experts.landing', ['il' => $p['il_slug'], 'a' => $p['ilce_slug'], 'b' => $p['brans_slug']]) }}" style="{{ $linkKutu }}">{{ $p['ilce'] }} {{ \App\Support\DoktorSeo::BRANSLAR[$p['brans_slug']]['cogul'] }} <span style="color:#0d9488;">{{ $p['toplam'] }}</span></a>@endforeach
+          </div>
+        </section>
+      @endif
+      @if($populerIller->isNotEmpty())
+        <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
+          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">İllere göre özel doktorlar</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            @foreach($populerIller as $p)<a href="{{ brand_route('experts.landing', ['il' => $p['il_slug']]) }}" style="{{ $linkKutu }}">{{ $p['il_ad'] }} <span style="color:#0d9488;">{{ $p['toplam'] }}</span></a>@endforeach
+          </div>
+        </section>
+      @endif
+    </div>
+  @endif
 
   {{-- 25 Ekim 2026: kullanıcının talebi - hoş geldiniz yazısının altında bilgilendirme ve
        İyilik Hareketi destekçisi hekimlere teşekkür, alt alta. Teşekkür listesi bilerek sade:
@@ -121,14 +195,15 @@
       'addressRegion' => $activeExpert->city?->name,
       'addressCountry' => 'TR',
   ]),
-  'aggregateRating' => $activeExpert->rating ? array_filter([
-      '@type' => 'AggregateRating',
-      'ratingValue' => $activeExpert->rating,
-      'reviewCount' => $activeExpert->review_count,
-  ]) : null,
+  'url' => \App\Support\DoktorSeo::asilAdres('/doktor/'.$activeExpert->slug),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
 </script>
-@elseif($experts && $experts->count())
+@endif
+@if($seo)
+<script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => collect($seo['kirinti'])->values()->map(fn ($k, $i) => ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $k['ad'], 'item' => $k['asil']])->all()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+<script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => collect($seo['sss'])->map(fn ($s) => ['@type' => 'Question', 'name' => $s['soru'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $s['cevap']]])->all()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+@endif
+@if(! $activeExpert && $experts && $experts->count())
 <script type="application/ld+json">
 {!! json_encode([
   '@@context' => 'https://schema.org',
@@ -138,7 +213,7 @@
           '@type' => 'ListItem',
           'position' => $index + 1,
           'name' => trim($expert->title.' '.$expert->name),
-          'url' => brand_route('experts.index', ['uzman' => $expert->slug]),
+          'url' => \App\Support\DoktorSeo::asilAdres('/doktor/'.$expert->slug),
       ];
   })->all(),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
