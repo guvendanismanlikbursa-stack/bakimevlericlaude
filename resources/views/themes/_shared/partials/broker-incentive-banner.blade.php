@@ -19,7 +19,8 @@
     'yasli-bakim' => [
       'icon' => '🤝',
       'title' => 'Anlaşmalı Kurumlarımıza Yerleştirin, Takibini Biz Üstlenelim',
-      'body' => 'Yakınınızı sitemizdeki anlaşmalı bir kuruma yerleştirdiğinizde, ayda 2 kez sizin adınıza ziyaret edip durumu hakkında sizi bilgilendiriyoruz; dışarıdan temin edilmesi gereken bir ihtiyacı olursa bunu da sizin için tedarik edip ulaştırıyoruz.',
+      // 25 Ekim 2026: kullanıcının talebi - açıklama metni çok yer kaplıyordu, kaldırıldı.
+      'body' => '',
       'cta' => 'Bu hizmetten faydalanmak için yerleştirme sürecini kurumla doğrudan değil, sitemiz üzerinden başlatmanız yeterli.',
     ],
     default => null,

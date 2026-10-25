@@ -8193,6 +8193,6 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('1 Yıl Ferdi Kaza Sigortası Bizden!', false)
             ->assertDontSee('okul saatleri içinde ve dışında', false)
             ->assertSee('sigorta sürecinizi sizin için biz başlatalım', false);
-        $this->get('/site/bakimevleri/?bolum=yasli-bakim')->assertOk()->assertSee('ayda 2 kez sizin adınıza', false);
+        $this->get('/site/bakimevleri/?bolum=yasli-bakim')->assertOk()->assertSee('Takibini Biz Üstlenelim', false)->assertDontSee('ayda 2 kez sizin adınıza', false);
     }
 }
