@@ -49,8 +49,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{ $baslik }}{{ $brans ? ' | '.$brans : '' }}{{ $e->city ? ' | '.$e->city->name : '' }}</title>
-<meta name="description" content="{{ $metaAciklama }}">
+<title>{{ $site->seoBaslik() }}</title>
+<meta name="description" content="{{ $site->seoAciklama() }}">
 <meta name="robots" content="{{ $isPreview || $demoPro ? 'noindex,nofollow' : 'index,follow' }}">
 <meta name="theme-color" content="{{ $koyu }}">
 <link rel="canonical" href="{{ $site->publicUrl() }}">
@@ -67,6 +67,7 @@
 @endif
 <script type="application/ld+json">{!! json_encode(array_filter([
     '@context' => 'https://schema.org', '@type' => 'Physician', 'name' => $ad, 'url' => $site->publicUrl(),
+    'areaServed' => trim(($e->district ? $e->district.', ' : '').($e->city->name ?? ''), ', ') ?: null,
     'medicalSpecialty' => $brans ?: null, 'telephone' => $telefon ?: null, 'image' => $foto, 'description' => $metaAciklama ?: null,
     'address' => $adres ? ['@type' => 'PostalAddress', 'streetAddress' => $e->address, 'addressLocality' => $e->district, 'addressRegion' => $e->city->name ?? null, 'addressCountry' => 'TR'] : null,
 ]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
@@ -396,7 +397,7 @@
   @endif
   <div class="kap">
     <div>
-      <div class="etiket gorun">{{ $brans ?: 'Muayenehane' }}@if($e->city) · {{ $e->city->name }}@endif</div>
+      <div class="etiket gorun">{{ $brans ?: 'Muayenehane' }}@if($e->district || $e->city) · {{ trim(($e->district ? $e->district.' / ' : '').($e->city->name ?? ''), ' /') }}@endif</div>
       <h1 class="gorun">{{ $baslik }}</h1>
       @if($altBaslik)<p class="alt gorun">{{ $altBaslik }}</p>@endif
       <div class="btnler gorun">

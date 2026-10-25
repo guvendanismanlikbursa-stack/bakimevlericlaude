@@ -44,7 +44,7 @@
       'iletisim' => 'İletişim',
       default => $baslik,
   };
-  $metaAciklama = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $hakkimizda ?: $altBaslik)), 155);
+  $metaAciklama = $site->seoAciklama();
   $kanonik = rtrim($site->publicUrl(), '/').($sayfa !== '' ? '/'.$sayfa : '');
   $kisaHakkimizda = \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $hakkimizda), 520, '…', preserveWords: true);
 @endphp
@@ -53,13 +53,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{ $sayfa !== '' ? $sayfaBasligi.' | '.$ad : $baslik.($f->city ? ' | '.$f->city->name : '') }}</title>
+<title>{{ $site->seoBaslik($sayfa !== '' ? $sayfaBasligi : '') }}</title>
 <meta name="description" content="{{ $metaAciklama }}">
 <meta name="robots" content="{{ $isPreview || $demoPro ? 'noindex,nofollow' : 'index,follow' }}">
 <meta name="theme-color" content="{{ $koyu }}">
 <link rel="canonical" href="{{ $kanonik }}">
 <meta property="og:type" content="website">
-<meta property="og:title" content="{{ $sayfa !== '' ? $sayfaBasligi.' | '.$ad : $baslik }}">
+<meta property="og:title" content="{{ $site->seoBaslik($sayfa !== '' ? $sayfaBasligi : '') }}">
+<meta property="og:url" content="{{ $kanonik }}">
+<meta property="og:locale" content="tr_TR">
 <meta property="og:description" content="{{ $metaAciklama }}">
 @if($hero && ! $temsili)<meta property="og:image" content="{{ $foto($hero) }}">@endif
 @if($logo)<link rel="icon" href="{{ $logo }}">@endif
@@ -73,7 +75,8 @@
 @endif
 @if($sayfa === '')
 <script type="application/ld+json">{!! json_encode(array_filter([
-    '@context' => 'https://schema.org', '@type' => 'LocalBusiness', 'name' => $ad, 'url' => $site->publicUrl(),
+    '@context' => 'https://schema.org', '@type' => $site->schemaTuru(), 'name' => $ad, 'url' => $site->publicUrl(),
+    'areaServed' => trim(($f->district ? $f->district.', ' : '').($f->city->name ?? ''), ', ') ?: null,
     'telephone' => $telefon ?: null, 'image' => ($hero && ! $temsili) ? $foto($hero) : null, 'logo' => $logo, 'description' => $metaAciklama ?: null,
     'address' => $adres ? ['@type' => 'PostalAddress', 'streetAddress' => $f->address, 'addressLocality' => $f->district, 'addressRegion' => $f->city->name ?? null, 'addressCountry' => 'TR'] : null,
     'geo' => ($f->lat && $f->lng) ? ['@type' => 'GeoCoordinates', 'latitude' => $f->lat, 'longitude' => $f->lng] : null,
@@ -397,7 +400,7 @@
   @endif
   <div class="kap">
     @if($sayfa === '')
-      <div class="etiket gorun">{{ $f->category->name ?? 'Hoş geldiniz' }}@if($f->city) · {{ $f->city->name }}@endif</div>
+      <div class="etiket gorun">{{ $f->category->name ?? 'Hoş geldiniz' }}@if($f->district || $f->city) · {{ trim(($f->district ? $f->district.' / ' : '').($f->city->name ?? ''), ' /') }}@endif</div>
       <h1 class="gorun">{{ $baslik }}</h1>
       @if($altBaslik)<p class="alt gorun">{{ $altBaslik }}</p>@endif
       <div class="btnler gorun">

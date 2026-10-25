@@ -299,6 +299,51 @@ class FacilityWebsite extends Model
         return 'https://bakimevleri.com/siteler/'.$this->slug;
     }
 
+    /**
+     * 25 Ekim 2026: kullanıcının talebi - "Nilüfer rehabilitasyon merkezi" gibi aramalarda çıkmak.
+     * Arama sonucunda görünen başlık: önce ilçe + kurum türü, sonra kurum adı ve il.
+     * Sayfadaki büyük başlık (heroTitle) değişmez; bu yalnızca <title> içindir.
+     */
+    public function seoBaslik(string $sayfa = ''): string
+    {
+        $f = $this->facility;
+        $tur = trim((string) ($f->category->name ?? ''));
+        $yer = trim((string) ($f->district ?: ($f->city->name ?? '')));
+        $anahtar = trim($yer.' '.$tur);
+        $ad = (string) $f->name;
+        if ($sayfa !== '') {
+            return $sayfa.' | '.$ad.($anahtar !== '' ? ' – '.$anahtar : '');
+        }
+        $il = $f->district && $f->city ? ' | '.$f->city->name : '';
+
+        return $anahtar !== '' && ! str_contains(mb_strtolower($ad, 'UTF-8'), mb_strtolower($anahtar, 'UTF-8'))
+            ? $anahtar.' – '.$ad.$il
+            : $ad.($f->city ? ' | '.$f->city->name : '');
+    }
+
+    /** Arama sonucundaki açıklama: kim, nerede, ne hizmeti, nasıl ulaşılır (en çok ~158 karakter). */
+    public function seoAciklama(): string
+    {
+        $f = $this->facility;
+        $yer = trim(($f->district ? $f->district.'/' : '').($f->city->name ?? ''), '/');
+        $tur = mb_strtolower(trim((string) ($f->category->name ?? 'bakım')), 'UTF-8');
+        $giris = $f->name.($yer ? ', '.$yer.' bölgesinde' : '').' '.$tur.' hizmeti veriyor.';
+        $ek = trim(preg_replace('/\s+/', ' ', $this->aboutText()));
+
+        return \Illuminate\Support\Str::limit(trim($giris.' '.$ek), 158);
+    }
+
+    /** schema.org türü: çocuk bakımı, özel eğitim, rehabilitasyon ya da genel yerel işletme. */
+    public function schemaTuru(): string
+    {
+        return match ($this->facility->category->brand_scope ?? null) {
+            'cocuk-bakim' => 'ChildCare',
+            'ozel-egitim' => 'EducationalOrganization',
+            'rehabilitasyon', 'fizik-tedavi' => 'MedicalClinic',
+            default => 'LocalBusiness',
+        };
+    }
+
     public function heroTitle(): string
     {
         return $this->hero_title ?: (string) $this->facility->name;

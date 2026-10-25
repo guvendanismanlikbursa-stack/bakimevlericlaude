@@ -16,24 +16,28 @@
   $hizmetler = collect($f->services ?? [])->filter()->values();
   $bosYer = \App\Models\FacilityWebsite::vacancyText($f);
   $temsili = $temsili ?? false;
-  $metaAciklama = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $hakkimizda ?: $altBaslik)), 155);
+  $metaAciklama = $site->seoAciklama();
 @endphp
 <!doctype html>
 <html lang="tr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ $baslik }}{{ $f->city ? ' | '.$f->city->name : '' }}</title>
+<title>{{ $site->seoBaslik() }}</title>
 <meta name="description" content="{{ $metaAciklama }}">
 <meta name="robots" content="{{ $isPreview ? 'noindex,nofollow' : 'index,follow' }}">
 <link rel="canonical" href="{{ $site->publicUrl() }}">
-<meta property="og:title" content="{{ $baslik }}">
+<meta property="og:title" content="{{ $site->seoBaslik() }}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ $site->publicUrl() }}">
+<meta property="og:locale" content="tr_TR">
 <meta property="og:description" content="{{ $metaAciklama }}">
 @if($hero && ! $temsili)<meta property="og:image" content="{{ facility_asset($hero->path) }}">@endif
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap">
 <script type="application/ld+json">{!! json_encode(array_filter([
-    '@context' => 'https://schema.org', '@type' => 'LocalBusiness', 'name' => $f->name, 'url' => $site->publicUrl(),
+    '@context' => 'https://schema.org', '@type' => $site->schemaTuru(), 'name' => $f->name, 'url' => $site->publicUrl(),
+    'areaServed' => trim(($f->district ? $f->district.', ' : '').($f->city->name ?? ''), ', ') ?: null,
     'telephone' => $telefon ?: null, 'image' => ($hero && ! $temsili) ? facility_asset($hero->path) : null, 'description' => $metaAciklama ?: null,
     'address' => $adres ? ['@type' => 'PostalAddress', 'streetAddress' => $f->address, 'addressLocality' => $f->district, 'addressRegion' => $f->city->name ?? null, 'addressCountry' => 'TR'] : null,
     'geo' => ($f->lat && $f->lng) ? ['@type' => 'GeoCoordinates', 'latitude' => $f->lat, 'longitude' => $f->lng] : null,

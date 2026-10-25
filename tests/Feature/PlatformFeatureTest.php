@@ -8356,4 +8356,50 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('/uzmanlar/'.$il.'/nilufer/pediatri</loc>', false)->assertSee('/doktor/ayse-kar</loc>', false)->assertSee('/uzmanlar/'.$il.'/pediatri</loc>', false);
         $this->get('http://bakimevibul.com/sitemap.xml')->assertOk()->assertDontSee('/doktor/ayse-kar', false);
     }
+
+    // 25 Ekim 2026: kurum / doktor sitelerinde arama motoru düzeni - ilçe + tür başlığı, tür bilgisi, alan adı dosyaları, kontrol listesi.
+    public function test_facility_and_doctor_sites_local_seo(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $f = $this->rehabFacility;
+        $f->update(['district' => 'Nilüfer', 'phone' => '0224 111 22 33', 'address' => 'Ata Cad. No:5']);
+        $f->load('category', 'city');
+        $site = \App\Models\FacilityWebsite::forFacility($f);
+        $site->update(['status' => 'yayinda', 'slug' => 'guneş-rehab' === '' ? '' : 'gunes-rehab', 'about_text' => 'Kısa metin.']);
+        $beklenen = 'Nilüfer '.$f->category->name.' – '.$f->name.' | '.$f->city->name;
+        $this->assertSame($beklenen, $site->fresh()->seoBaslik());
+
+        $this->get('/siteler/gunes-rehab')->assertOk()->assertSee('<title>'.e($beklenen).'</title>', false)
+            ->assertSee('"@type":"'.$site->fresh()->schemaTuru().'"', false)->assertSee('"areaServed":"Nilüfer, '.$f->city->name.'"', false)
+            ->assertSee('bölgesinde', false);
+
+        // Profesyonel: iç sayfa başlığı ve etiket satırında ilçe
+        $site->update(['plan' => 'profesyonel', 'pro_until' => now()->addYear()]);
+        $this->get('/siteler/gunes-rehab')->assertOk()->assertSee('<title>'.e($beklenen).'</title>', false)->assertSee('Nilüfer / '.$f->city->name, false);
+        $this->get('/siteler/gunes-rehab/iletisim')->assertOk()->assertSee('<title>İletişim | '.e($f->name).' – Nilüfer '.e($f->category->name).'</title>', false);
+
+        // Platformdaki kurum sayfasından siteye bağlantı
+        $this->get('/site/bakimeviara/kurumlar/'.$f->slug)->assertOk()->assertSee('Kurumun web sitesi', false)->assertSee($site->publicUrl(), false);
+
+        // Admin kontrol listesi ve Google önizlemesi
+        $this->withSession($admin)->get(route('admin.facility-websites.edit', $f))->assertOk()
+            ->assertSee('Google hazırlığı', false)->assertSee('✗ Özgün tanıtım metni', false)->assertSee('✓ İlçe girilmiş', false)->assertSee(e($beklenen), false);
+
+        // Doktor sitesi başlığı
+        $e = \App\Models\Expert::create(['name' => 'Ece Su', 'slug' => 'ece-su', 'title' => 'Uzm. Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru',
+            'city_id' => $this->city->id, 'district' => 'Nilüfer', 'phone' => '0533 444 55 77', 'is_published' => true]);
+        $ds = \App\Models\ExpertWebsite::forExpert($e);
+        $ds->update(['status' => 'yayinda']);
+        $dBaslik = 'Nilüfer Çocuk Doktoru – Uzm. Dr. Ece Su | '.$this->city->name;
+        $this->get('/dr/'.$ds->slug)->assertOk()->assertSee('<title>'.e($dBaslik).'</title>', false);
+        $ds->update(['plan' => 'profesyonel', 'pro_until' => now()->addYear()]);
+        $this->get('/dr/'.$ds->slug)->assertOk()->assertSee('<title>'.e($dBaslik).'</title>', false)->assertSee('"areaServed":"Nilüfer, '.$this->city->name.'"', false);
+        $this->withSession($admin)->get(route('admin.experts.website.edit', $e))->assertOk()->assertSee('Google hazırlığı', false)->assertSee('✗ Fotoğraf', false);
+
+        // Kendi alan adı: robots.txt ve sitemap.xml
+        $site->update(['custom_domain' => 'gunesrehab.com']);
+        \Illuminate\Support\Facades\Cache::forget('facility_website_domains');
+        $this->get('http://gunesrehab.com/robots.txt')->assertOk()->assertSee('Sitemap: https://gunesrehab.com/sitemap.xml', false);
+        $this->get('http://gunesrehab.com/sitemap.xml')->assertOk()->assertSee('<loc>https://gunesrehab.com/</loc>', false)->assertSee('<loc>https://gunesrehab.com/iletisim</loc>', false);
+    }
 }

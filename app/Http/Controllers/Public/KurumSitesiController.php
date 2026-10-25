@@ -234,6 +234,18 @@ class KurumSitesiController extends Controller
      *
      * @return array<string, string>
      */
+    /** 25 Ekim 2026: site haritası için - Profesyonel sitede içeriği olan iç sayfaların adresleri. */
+    public function sayfaListesi(FacilityWebsite $site): array
+    {
+        if (! $site->isPro() || ! $site->facility) {
+            return [];
+        }
+        $facility = $site->facility->load(['city', 'category', 'images', 'googleReviews', 'approvedReviews']);
+        [$gallery] = FacilityWebsite::siteGallery($facility);
+
+        return array_keys($this->proPages($site, $facility, $gallery, FacilityWebsite::siteReviews($facility)));
+    }
+
     private function proPages(FacilityWebsite $site, $facility, $gallery, $reviews): array
     {
         $var = [

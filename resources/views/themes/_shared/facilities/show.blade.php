@@ -579,6 +579,15 @@
       </div>
     @endif
 
+    {{-- 25 Ekim 2026: kurumun yayındaki web sitesi - ziyaretçiye ve arama motorlarına güçlü bağlantı. --}}
+    @php $kurumSitesi = \App\Models\FacilityWebsite::where('facility_id', $facility->id)->where('status', 'yayinda')->first(); @endphp
+    @if($kurumSitesi)
+      <a href="{{ $kurumSitesi->publicUrl() }}" target="_blank" rel="noopener" class="mt-6 flex items-center justify-between gap-3 rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition" style="border-color: {{ $colors['primary'] }}; text-decoration:none;">
+        <span><span class="block text-xs font-black uppercase tracking-wider" style="color: {{ $colors['primary'] }};">Kurumun web sitesi</span><span class="block font-black text-gray-950 mt-1">{{ $facility->name }} — resmi sitesini ziyaret edin</span></span>
+        <span class="text-2xl" aria-hidden="true">🌐</span>
+      </a>
+    @endif
+
     <div class="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
       <div class="text-sm font-black mb-3" style="color: {{ $colors['primary'] }};">Bu bölümde sorulacak aksiyonlar</div>
       <div class="grid sm:grid-cols-3 gap-3">

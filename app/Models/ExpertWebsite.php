@@ -231,6 +231,25 @@ class ExpertWebsite extends Model
         return $this->hero_title ?: $this->fullName();
     }
 
+    /** 25 Ekim 2026: arama sonucu başlığı - "Nilüfer Çocuk Doktoru – Uzm. Dr. Selin Arı | Bursa". */
+    public function seoBaslik(): string
+    {
+        $e = $this->expert;
+        $anahtar = trim(($e->district ?: ($e->city->name ?? '')).' '.($e->branch_label ?: $e->branch ?: 'Doktor'));
+
+        return $anahtar.' – '.$this->fullName().($e->district && $e->city ? ' | '.$e->city->name : '');
+    }
+
+    public function seoAciklama(): string
+    {
+        $e = $this->expert;
+        $yer = trim(($e->district ? $e->district.'/' : '').($e->city->name ?? ''), '/');
+        $giris = $this->fullName().($yer ? ', '.$yer.' bölgesinde' : '').($e->branch ? ' '.$e->branch.($e->branch_label ? ' ('.$e->branch_label.')' : '').' alanında' : '').' muayene hizmeti veriyor.';
+        $ek = trim(preg_replace('/\s+/', ' ', $this->aboutText()));
+
+        return \Illuminate\Support\Str::limit(trim($giris.' '.$ek.' Randevu ve iletişim bilgileri.'), 158);
+    }
+
     public function heroSubtitle(): string
     {
         if ($this->hero_subtitle) {

@@ -27,8 +27,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ $baslik }}{{ $brans ? ' | '.$brans : '' }}{{ $e->city ? ' | '.$e->city->name : '' }}</title>
-<meta name="description" content="{{ $metaAciklama }}">
+<title>{{ $site->seoBaslik() }}</title>
+<meta name="description" content="{{ $site->seoAciklama() }}">
 <meta name="robots" content="{{ $isPreview ? 'noindex,nofollow' : 'index,follow' }}">
 <link rel="canonical" href="{{ $site->publicUrl() }}">
 <meta property="og:title" content="{{ $baslik }}">

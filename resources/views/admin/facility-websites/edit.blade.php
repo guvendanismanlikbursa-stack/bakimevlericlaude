@@ -21,6 +21,8 @@
 
 @if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:16px;">{{ session('success') }}</div>@endif
 
+@include('admin._seo_hazirlik', ['tur' => 'kurum', 'site' => $site])
+
 <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
   @include('themes._shared.kurum-sitesi._form', ['site' => $site, 'facility' => $facility, 'images' => $images, 'action' => route('admin.facility-websites.update', $facility), 'ustAlanlar' => 'admin.facility-websites._ayarlar', 'proAlanlar' => true])
 </div>

@@ -54,6 +54,20 @@ class ServeFacilityWebsiteDomain
         if ($request->isMethod('GET') && $request->path() === '/') {
             return app()->call([$controller, 'showForDomain'], ['site' => $site]);
         }
+        // 25 Ekim 2026: kendi alan adlı sitenin arama motoru dosyaları.
+        if ($request->isMethod('GET') && $request->path() === 'robots.txt') {
+            return response("User-agent: *\nAllow: /\n\nSitemap: https://".$host."/sitemap.xml\n", 200)->header('Content-Type', 'text/plain; charset=UTF-8');
+        }
+        if ($request->isMethod('GET') && $request->path() === 'sitemap.xml') {
+            $sayfalar = $kurumId ? $controller->sayfaListesi($site) : [];
+            $tarih = optional($site->updated_at)->toAtomString() ?: now()->toAtomString();
+            $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+            foreach (array_merge([''], $sayfalar) as $s) {
+                $xml .= '<url><loc>https://'.$host.'/'.$s.'</loc><lastmod>'.$tarih.'</lastmod><changefreq>weekly</changefreq><priority>'.($s === '' ? '1.0' : '0.7').'</priority></url>';
+            }
+
+            return response($xml.'</urlset>', 200)->header('Content-Type', 'application/xml; charset=UTF-8');
+        }
         // Web grubunun sonuna eklendiği için oturum ve CSRF doğrulaması bu noktada yapılmış olur.
         if ($request->isMethod('POST') && $request->is('iletisim')) {
             return app()->call([$controller, 'contactForDomain'], ['request' => $request, 'site' => $site]);

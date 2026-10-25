@@ -232,8 +232,14 @@ class SitemapController extends Controller
         }
 
         // Kendi alan adı olmayan, yayındaki kurum ve doktor siteleri bakimevleri.com altında yayınlanır.
-        \App\Models\FacilityWebsite::query()->where('status', 'yayinda')->where(fn ($q) => $q->whereNull('custom_domain')->orWhere('custom_domain', ''))->get(['slug', 'updated_at'])
-            ->each(fn ($s) => $urls->push($this->url($prefix.'/siteler/'.$s->slug, 'weekly', '0.7', $s->updated_at)));
+        $kurumSitesi = app(\App\Http\Controllers\Public\KurumSitesiController::class);
+        \App\Models\FacilityWebsite::query()->with('facility')->where('status', 'yayinda')->where(fn ($q) => $q->whereNull('custom_domain')->orWhere('custom_domain', ''))->get()
+            ->each(function ($s) use ($urls, $prefix, $kurumSitesi) {
+                $urls->push($this->url($prefix.'/siteler/'.$s->slug, 'weekly', '0.7', $s->updated_at));
+                foreach ($kurumSitesi->sayfaListesi($s) as $sayfa) {
+                    $urls->push($this->url($prefix.'/siteler/'.$s->slug.'/'.$sayfa, 'weekly', '0.5', $s->updated_at));
+                }
+            });
         \App\Models\ExpertWebsite::query()->where('status', 'yayinda')->where(fn ($q) => $q->whereNull('custom_domain')->orWhere('custom_domain', ''))->get(['slug', 'updated_at'])
             ->each(fn ($s) => $urls->push($this->url($prefix.'/dr/'.$s->slug, 'weekly', '0.7', $s->updated_at)));
     }
