@@ -81,6 +81,13 @@
   /* Üst menü dolunca alt çizgi akar */
   .hrk .ust.dolu::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--ana),var(--altin),transparent);background-size:200% auto;animation:hrk-akis 5s linear infinite;opacity:.7}
 
+  /* Doktorlar için sade sürüm (reklam yasağı: dikkat çekici parıltılar yok, sakin ve bilgilendirici) */
+  .hrk-sade .btn-dolu::after,.hrk-sade .btn-wa::after,.hrk-sade .btn-beyaz::after,
+  .hrk-sade .giris .btnler .btn:first-child::before,.hrk-sade .cagri .btnler .btn:first-child::before{display:none}
+  .hrk-sade .aurora{opacity:.32}
+  .hrk-sade .guven > span{animation:none}
+  .hrk-sade .bolum:not(.koyu-bolum) .etiket{animation:none}
+
   @media(prefers-reduced-motion:reduce){
     .hrk *,.hrk *::before,.hrk *::after{animation:none !important}
     .hrk .giris h1 .kelime,.hrk .giris h1 .vurgu{opacity:1;filter:none;transform:none}
@@ -111,7 +118,7 @@
     h1.textContent = '';
     kelimeler.forEach(function (k, i) {
       var s = document.createElement('span');
-      s.className = (i === kelimeler.length - 1 && kelimeler.length > 2) ? 'vurgu' : 'kelime';
+      s.className = (i === kelimeler.length - 1 && kelimeler.length > 2 && !b.classList.contains('hrk-sade')) ? 'vurgu' : 'kelime';
       if (s.className === 'vurgu') s.style.display = 'inline-block';
       s.style.setProperty('--i', i);
       s.setAttribute('aria-hidden', 'true');

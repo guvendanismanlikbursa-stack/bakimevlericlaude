@@ -134,8 +134,11 @@ class DoktorSitesiController extends Controller
         view()->share('olayAdresi', str_starts_with($formAction, '/dr/') ? '/dr/'.$site->slug.'/olay' : '/olay');
         // 25 Ekim 2026: Profesyonel Site paketi etkinse premium şablon; admin
         // önizlemede ?tasarim=pro / ?tasarim=standart ile ikisini de görebilir.
-        $demoPro = $tasarim === 'pro' && ! $site->isPro();
-        $pro = ($site->isPro() && $tasarim !== 'standart') || $tasarim === 'pro';
+        $onizlemePro = in_array($tasarim, ['pro', 'hareketli'], true);
+        $demoPro = $onizlemePro && ! $site->isPro();
+        $pro = ($site->isPro() && $tasarim !== 'standart') || $onizlemePro;
+        // 25 Ekim 2026: admin'in seçtiği Profesyonel tasarım (Klasik / Hareketli - doktorlarda sade sürüm).
+        $hareketli = $pro && ($tasarim === 'hareketli' || ($site->pro_tasarim === 'hareketli' && $tasarim !== 'pro'));
         if ($pro) {
             return response()->view('themes._shared.doktor-sitesi.pro', [
                 'site' => $site,
@@ -143,6 +146,8 @@ class DoktorSitesiController extends Controller
                 'renk' => $site->proColors(),
                 'isPreview' => $isPreview,
                 'demoPro' => $demoPro,
+                'hareketli' => $hareketli,
+                'hareketliDemo' => $tasarim === 'hareketli',
                 'formAction' => $formAction,
                 'whatsapp' => classify_phone_type($expert->phone) === 'mobile' ? normalize_whatsapp_number($expert->phone) : '',
             ])->header('X-Robots-Tag', ($isPreview || $demoPro) ? 'noindex, nofollow' : 'index, follow');

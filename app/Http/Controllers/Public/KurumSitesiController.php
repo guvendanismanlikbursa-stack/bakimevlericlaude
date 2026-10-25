@@ -180,6 +180,9 @@ class KurumSitesiController extends Controller
         $demoPro = $canPreview && in_array($request->input('tasarim'), ['pro', 'hareketli'], true);
         $standartZorla = $canPreview && $request->input('tasarim') === 'standart';
         $pro = ($site->isPro() && ! $standartZorla) || $demoPro;
+        // Admin'in siteye seçtiği Profesyonel tasarım; önizlemede ?tasarim=pro klasiği, ?tasarim=hareketli hareketliyi gösterir.
+        $hareketliDemo = $hareketli;
+        $hareketli = $pro && ($hareketliDemo || ($site->pro_tasarim === 'hareketli' && ! ($canPreview && $request->input('tasarim') === 'pro')));
         if ($sayfa !== '' && ! $pro) {
             return redirect($base === '' ? '/' : $base.($isPreview ? '?onizleme=1' : ''));
         }
@@ -211,7 +214,7 @@ class KurumSitesiController extends Controller
         if ($sayfa !== '' && ! isset($sayfalar[$sayfa])) {
             abort(404);
         }
-        $sorgu = $hareketli ? '?onizleme=1&tasarim=hareketli' : ($demoPro ? '?onizleme=1&tasarim=pro' : (($isPreview || $request->boolean('onizleme')) ? '?onizleme=1' : ''));
+        $sorgu = $hareketliDemo ? '?onizleme=1&tasarim=hareketli' : ($demoPro ? '?onizleme=1&tasarim=pro' : (($isPreview || $request->boolean('onizleme')) ? '?onizleme=1' : ''));
 
         return response()->view('themes._shared.kurum-sitesi.pro.sayfa', $ortak + [
             'renk' => $site->proColors(),
@@ -222,6 +225,7 @@ class KurumSitesiController extends Controller
             'olayAdresi' => ($base === '' ? '' : $base).'/olay',
             'demoPro' => $demoPro,
             'hareketli' => $hareketli,
+            'hareketliDemo' => $hareketliDemo,
         ])->header('X-Robots-Tag', $isPreview ? 'noindex, nofollow' : 'index, follow');
     }
 

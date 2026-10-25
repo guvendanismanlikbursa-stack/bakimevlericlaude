@@ -64,6 +64,16 @@
       <input id="ds-pro-bitis" type="date" name="pro_until" value="{{ old('pro_until', optional($site->pro_until)->format('Y-m-d')) }}" style="{{ $alan }}">
       <div style="{{ $ipucu }}">Süre bitince site kendiliğinden standart tasarıma döner. Boş: süresiz.</div>
     </div>
+    {{-- 25 Ekim 2026: Klasik ya da Hareketli (doktorlarda sade sürüm) tasarımı admin seçer. --}}
+    <div>
+      <label for="ds-pro-tasarim" style="{{ $etiket }}">Profesyonel tasarım</label>
+      <select id="ds-pro-tasarim" name="pro_tasarim" style="{{ $alan }}">
+        @foreach(\App\Models\ExpertWebsite::PRO_TASARIMLAR as $key => $label)
+          <option value="{{ $key }}" @selected(old('pro_tasarim', $site->pro_tasarim ?: 'klasik') === $key)>{{ $label }}</option>
+        @endforeach
+      </select>
+      <div style="{{ $ipucu }}">Yalnızca Profesyonel pakette geçerli. Hareketli tasarım doktorlarda sade sürümdür.</div>
+    </div>
   </div>
   <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;">
     <div style="font-weight:900;margin-bottom:6px;">Şu anki adres</div>

@@ -101,6 +101,7 @@
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
         <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'standart']) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Standart önizle</a>
         <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'pro']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#e9d3ab;color:#8a6a35;">★ Profesyonel önizle</a>
+        <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'hareketli']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#c4b5fd;color:#6d28d9;">✨ Hareketli önizle</a>
         <a href="{{ route('admin.experts.website.edit', $e->id) }}" style="{{ $btn }}border-color:#0d6e6a;color:#0d6e6a;">Düzenle</a>
         <a href="{{ route('admin.site-sales.create', ['tur' => 'doktor', 'id' => $e->id, 'plan' => $proAcik ? 'profesyonel' : 'standart']) }}" style="{{ $btn }}">💰 Satış</a>
         @unless($proAcik)

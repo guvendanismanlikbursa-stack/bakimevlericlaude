@@ -8225,4 +8225,48 @@ class PlatformFeatureTest extends TestCase
             file_put_contents(getenv('HRK_DUMP'), $h);
         }
     }
+
+    // 25 Ekim 2026: Profesyonel tasarımı admin seçer (Klasik / Hareketli); doktorda sade sürüm.
+    public function test_admin_chooses_professional_design_for_facility_and_doctor(): void
+    {
+        $admin = ['admin_id' => $this->admin->id];
+        $facility = $this->facilityUser->facility;
+        $facility->update(['is_claimed' => true, 'phone' => '0532 777 88 99']);
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $site->update(['status' => 'yayinda', 'slug' => 'secim-yuva', 'plan' => 'profesyonel', 'pro_until' => now()->addYear()]);
+        $this->assertSame('klasik', $site->fresh()->pro_tasarim);
+
+        // Varsayılan klasik: ziyaretçi hareket katmanını görmez.
+        $this->get('/siteler/secim-yuva')->assertOk()->assertSee('id="cekmece"', false)->assertDontSee('class="hrk"', false);
+        $this->withSession($admin)->get(route('admin.facility-websites.edit', $facility))->assertOk()->assertSee('name="pro_tasarim"', false);
+        $this->flushSession();
+
+        // Admin hareketliyi seçer: ziyaretçi hareketli görür, önizleme bandı yok; ?tasarim=pro önizlemesi klasiği gösterir.
+        $site->update(['pro_tasarim' => 'hareketli']);
+        $this->get('/siteler/secim-yuva')->assertOk()->assertSee('class="hrk"', false)->assertDontSee('Yeni hareketli Profesyonel tasarım', false)
+            ->assertSee('index,follow', false);
+        $this->get('/siteler/secim-yuva/hakkimizda')->assertOk()->assertSee('class="hrk"', false);
+        $this->withSession($admin)->get('/siteler/secim-yuva?onizleme=1&tasarim=pro')->assertOk()->assertDontSee('class="hrk"', false);
+        $this->flushSession();
+
+        // Paket standarda dönerse hareketli seçimi etkisiz (standart şablon).
+        $site->update(['plan' => 'standart', 'pro_until' => null]);
+        $this->get('/siteler/secim-yuva')->assertOk()->assertDontSee('id="cekmece"', false)->assertDontSee('class="hrk"', false);
+
+        // Doktor: sade hareketli.
+        $expert = \App\Models\Expert::create(['name' => 'Ece Tan', 'slug' => 'ece-tan', 'title' => 'Uzm. Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk',
+            'city_id' => $this->city->id, 'phone' => '0533 444 55 01', 'is_published' => true]);
+        $this->withSession($admin)->post(route('admin.expert-websites.toggle-pro', $expert))->assertRedirect();
+        $this->withSession($admin)->get(route('admin.experts.website.edit', $expert))->assertOk()->assertSee('name="pro_tasarim"', false);
+        $this->withSession($admin)->get(route('admin.expert-websites.index'))->assertOk()->assertSee('Hareketli önizle', false);
+        $ds = \App\Models\ExpertWebsite::where('expert_id', $expert->id)->firstOrFail();
+        $this->withSession($admin)->get(route('admin.experts.website.preview', ['expert' => $expert, 'tasarim' => 'hareketli']))
+            ->assertRedirect('/dr/'.$ds->slug.'?onizleme=1&tasarim=hareketli');
+        $this->withSession($admin)->get('/dr/'.$ds->slug.'?onizleme=1&tasarim=hareketli')->assertOk()
+            ->assertSee('class="hrk hrk-sade"', false)->assertSee('doktorlar için sade sürüm', false);
+        $this->flushSession();
+        $this->get('/dr/'.$ds->slug)->assertOk()->assertDontSee('hrk-sade', false);
+        $ds->update(['pro_tasarim' => 'hareketli']);
+        $this->get('/dr/'.$ds->slug)->assertOk()->assertSee('class="hrk hrk-sade"', false)->assertDontSee('doktorlar için sade sürüm', false);
+    }
 }

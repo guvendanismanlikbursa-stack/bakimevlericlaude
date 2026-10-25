@@ -166,6 +166,7 @@ class FacilityWebsiteController extends Controller
             'custom_domain' => ['nullable', 'string', 'max:190'],
             'plan' => ['nullable', Rule::in(array_keys(FacilityWebsite::PLANS))],
             'pro_until' => ['nullable', 'date'],
+            'pro_tasarim' => ['nullable', Rule::in(array_keys(FacilityWebsite::PRO_TASARIMLAR))],
         ], ['slug.regex' => 'Adres yalnızca küçük harf, rakam ve tire içerebilir (ör. gunes-bakimevi).']);
 
         $domain = FacilityWebsite::normalizeDomain($admin['custom_domain'] ?? null);
@@ -192,6 +193,7 @@ class FacilityWebsiteController extends Controller
             'custom_domain' => $domain,
             'plan' => $admin['plan'] ?? ($site->plan ?: 'standart'),
             'pro_until' => $admin['pro_until'] ?? null,
+            'pro_tasarim' => $admin['pro_tasarim'] ?? ($site->pro_tasarim ?: 'klasik'),
         ]);
         if ($site->status === 'yayinda' && ! $site->published_at) {
             $site->published_at = now();

@@ -144,6 +144,7 @@ class ExpertWebsiteController extends Controller
             'remove_photo' => ['nullable', 'boolean'],
             'plan' => ['nullable', Rule::in(array_keys(ExpertWebsite::PLANS))],
             'pro_until' => ['nullable', 'date'],
+            'pro_tasarim' => ['nullable', Rule::in(array_keys(ExpertWebsite::PRO_TASARIMLAR))],
             'brand_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'font_style' => ['nullable', Rule::in(array_keys(ExpertWebsite::FONT_STYLES))],
             'video_url' => ['nullable', 'string', 'max:255'],
@@ -248,7 +249,8 @@ class ExpertWebsiteController extends Controller
 
         $site->applyChanges($content, session('admin_id'), session('admin_name'));
         $site->fill(['status' => $data['status'], 'slug' => $data['slug'], 'custom_domain' => $domain,
-            'plan' => $data['plan'] ?? ($site->plan ?: 'standart'), 'pro_until' => $data['pro_until'] ?? null]);
+            'plan' => $data['plan'] ?? ($site->plan ?: 'standart'), 'pro_until' => $data['pro_until'] ?? null,
+            'pro_tasarim' => $data['pro_tasarim'] ?? ($site->pro_tasarim ?: 'klasik')]);
         if ($site->status === 'yayinda' && ! $site->published_at) {
             $site->published_at = now();
         }
@@ -261,7 +263,7 @@ class ExpertWebsiteController extends Controller
     public function preview(Request $request, Expert $expert)
     {
         $site = ExpertWebsite::forExpert($expert);
-        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart'], true) ? '&tasarim='.$request->query('tasarim') : '';
+        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart', 'hareketli'], true) ? '&tasarim='.$request->query('tasarim') : '';
 
         return redirect('/dr/'.$site->slug.'?onizleme=1'.$tasarim);
     }

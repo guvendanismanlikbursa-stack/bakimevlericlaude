@@ -330,9 +330,11 @@
   .saat-kart{background:#fff;border:1px solid var(--cizgi);border-radius:var(--yuvarlak);padding:28px 30px;white-space:pre-line;font-weight:600;color:var(--ink);box-shadow:var(--golge)}
   .ust.dolu .marka-ad b,.ust.dolu .marka-ad small{color:var(--ink)}
 </style>
+@if(! empty($hareketli))@include('themes._shared.kurum-sitesi.pro._hareketli', ['parca' => 'css'])@endif
 <script>document.documentElement.classList.add('js')</script>
 </head>
-<body>
+<body class="{{ ! empty($hareketli) ? 'hrk hrk-sade' : '' }}">
+@if(! empty($hareketli))<div class="ilerleme" id="ilerleme" aria-hidden="true"></div>@endif
 @php
   $ikonTel = '<svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2z"/></svg>';
   $ikonWa = '<svg class="ikon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2l-.5-.3z"/></svg>';
@@ -362,6 +364,7 @@
 </div>
 
 <section class="giris desensiz dr-giris">
+  @if(! empty($hareketli))<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>@endif
   <div class="kap">
     <div>
       <div class="etiket gorun">{{ $brans ?: 'Muayenehane' }}@if($e->city) · {{ $e->city->name }}@endif</div>
@@ -500,7 +503,9 @@
     @if($waLink)<a href="{{ $waLink }}" class="btn btn-wa" target="_blank" rel="noopener">{!! $ikonWa !!} WhatsApp</a>@endif
   </div>
 @endif
-@if($demoPro)
+@if(! empty($hareketliDemo))
+  <div class="onizleme">✨ Hareketli Profesyonel tasarım önizlemesi — doktorlar için sade sürüm</div>
+@elseif($demoPro)
   <div class="onizleme">Profesyonel Site tasarım önizlemesi — paket etkinleşince site bu görünümde yayınlanır.</div>
 @elseif($isPreview)
   <div class="onizleme">Önizleme — bu site henüz yayında değil.</div>
@@ -535,5 +540,6 @@ document.addEventListener('click', function (e) {
   navigator.sendBeacon(@json($olayAdresi ?? ''), v);
 });
 </script>
+@if(! empty($hareketli))@include('themes._shared.kurum-sitesi.pro._hareketli', ['parca' => 'js'])@endif
 </body>
 </html>

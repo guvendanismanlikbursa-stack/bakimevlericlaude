@@ -39,6 +39,16 @@
       <div style="font-size:12px;color:#6b7280;margin-top:4px;">Ödeme dönemi bitince site kendiliğinden hazır tasarıma döner. Boş: süresiz.</div>
       @error('pro_until')<div style="color:#b91c1c;font-size:13px;margin-top:4px;">{{ $message }}</div>@enderror
     </div>
+    {{-- 25 Ekim 2026: kurumla görüşüp Klasik ya da Hareketli tasarımı admin seçer. --}}
+    <div>
+      <label for="ks-pro-tasarim" style="{{ $etiket }}">Profesyonel tasarım</label>
+      <select id="ks-pro-tasarim" name="pro_tasarim" style="{{ $alan }}">
+        @foreach(\App\Models\FacilityWebsite::PRO_TASARIMLAR as $key => $label)
+          <option value="{{ $key }}" @selected(old('pro_tasarim', $site->pro_tasarim ?: 'klasik') === $key)>{{ $label }}</option>
+        @endforeach
+      </select>
+      <div style="font-size:12px;color:#6b7280;margin-top:4px;">Yalnızca Profesyonel pakette geçerli. İkisini de "★ Profesyonel önizle" / "✨ Hareketli önizle" ile görebilirsiniz.</div>
+    </div>
   </div>
   <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;">
     <div style="font-weight:900;margin-bottom:6px;">Şu anki adres</div>

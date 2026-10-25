@@ -14,6 +14,9 @@ class FacilityWebsite extends Model
     public const STATUSES = ['taslak' => 'Taslak (yayında değil)', 'yayinda' => 'Yayında'];
 
     // Kurumun ve adminin değiştirebildiği alanlar (değişiklik geçmişine yazılır).
+    /** 25 Ekim 2026: Profesyonel sitenin tasarımı - admin kurumla/doktorla görüşüp seçer. */
+    public const PRO_TASARIMLAR = ['klasik' => 'Klasik', 'hareketli' => '✨ Hareketli'];
+
     public const EDITABLE = ['hero_title', 'hero_subtitle', 'about_text', 'hero_image_id', 'theme', 'sections',
         'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements'];
 
@@ -56,7 +59,7 @@ class FacilityWebsite extends Model
     protected $fillable = [
         'facility_id', 'slug', 'status', 'custom_domain', 'hero_title', 'hero_subtitle', 'about_text',
         'hero_image_id', 'theme', 'sections', 'published_at',
-        'plan', 'pro_until', 'pro_yayina_aldi', 'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements',
+        'plan', 'pro_until', 'pro_yayina_aldi', 'pro_tasarim', 'logo_path', 'brand_color', 'font_style', 'video_url', 'stats', 'values_list', 'team', 'faqs', 'announcements',
     ];
 
     protected function casts(): array
