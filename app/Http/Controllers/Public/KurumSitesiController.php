@@ -177,12 +177,12 @@ class KurumSitesiController extends Controller
         // Profesyonel şablon: paket etkinse, ya da önizlemede ?tasarim=pro ile.
         // 25 Ekim 2026: ?tasarim=hareketli - yeni hareketli Profesyonel tasarımın deneme önizlemesi (yalnızca admin/kurum önizlemesi).
         $hareketli = $canPreview && $request->input('tasarim') === 'hareketli';
-        $demoPro = $canPreview && in_array($request->input('tasarim'), ['pro', 'hareketli'], true);
+        $demoPro = $canPreview && in_array($request->input('tasarim'), ['pro', 'klasik', 'hareketli'], true);
         $standartZorla = $canPreview && $request->input('tasarim') === 'standart';
         $pro = ($site->isPro() && ! $standartZorla) || $demoPro;
         // Admin'in siteye seçtiği Profesyonel tasarım; önizlemede ?tasarim=pro klasiği, ?tasarim=hareketli hareketliyi gösterir.
         $hareketliDemo = $hareketli;
-        $hareketli = $pro && ($hareketliDemo || ($site->pro_tasarim === 'hareketli' && ! ($canPreview && $request->input('tasarim') === 'pro')));
+        $hareketli = $pro && ($hareketliDemo || ($site->pro_tasarim === 'hareketli' && ! ($canPreview && $request->input('tasarim') === 'klasik')));
         if ($sayfa !== '' && ! $pro) {
             return redirect($base === '' ? '/' : $base.($isPreview ? '?onizleme=1' : ''));
         }
@@ -214,7 +214,7 @@ class KurumSitesiController extends Controller
         if ($sayfa !== '' && ! isset($sayfalar[$sayfa])) {
             abort(404);
         }
-        $sorgu = $hareketliDemo ? '?onizleme=1&tasarim=hareketli' : ($demoPro ? '?onizleme=1&tasarim=pro' : (($isPreview || $request->boolean('onizleme')) ? '?onizleme=1' : ''));
+        $sorgu = $hareketliDemo ? '?onizleme=1&tasarim=hareketli' : ($demoPro ? '?onizleme=1&tasarim='.$request->input('tasarim') : (($isPreview || $request->boolean('onizleme')) ? '?onizleme=1' : ''));
 
         return response()->view('themes._shared.kurum-sitesi.pro.sayfa', $ortak + [
             'renk' => $site->proColors(),

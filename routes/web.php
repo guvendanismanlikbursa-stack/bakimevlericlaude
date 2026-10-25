@@ -463,8 +463,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/site-satislari/{satis}', [\App\Http\Controllers\Admin\SiteSaleController::class, 'destroy'])->name('site-sales.destroy');
         Route::get('/doktor-siteleri', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'index'])->name('expert-websites.index');
         Route::post('/doktor-siteleri/{expert}/standart', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'toggleStandard'])->name('expert-websites.toggle-standard');
+        Route::post('/doktor-siteleri/{expert}/tasarim', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'setDesign'])->name('expert-websites.design');
         Route::post('/doktor-siteleri/{expert}/profesyonel', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'togglePro'])->name('expert-websites.toggle-pro');
         Route::post('/kurum-siteleri/fiyat', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'savePrice'])->name('facility-websites.price');
+        Route::post('/kurum-siteleri/{facility}/tasarim', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'setDesign'])->name('facility-websites.design');
         Route::post('/kurum-siteleri/{facility}/profesyonel', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'togglePro'])->name('facility-websites.toggle-pro');
         Route::get('/kurumlar/{facility}/web-sitesi/onizle', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'preview'])->name('facility-websites.preview');
         Route::get('/kurumlar/{facility}/web-sitesi', [\App\Http\Controllers\Admin\FacilityWebsiteController::class, 'edit'])->name('facility-websites.edit');

@@ -100,8 +100,18 @@
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
         <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'standart']) }}" target="_blank" rel="noopener" style="{{ $btn }}">👁 Standart önizle</a>
-        <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'pro']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#e9d3ab;color:#8a6a35;">★ Profesyonel önizle</a>
+        <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'klasik']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#e9d3ab;color:#8a6a35;">★ Profesyonel önizle (Klasik)</a>
         <a href="{{ route('admin.experts.website.preview', ['expert' => $e->id, 'tasarim' => 'hareketli']) }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#c4b5fd;color:#6d28d9;">✨ Hareketli önizle</a>
+        {{-- 25 Ekim 2026: Profesyonel tasarım seçimi - tek tıkla Klasik / Hareketli. --}}
+        @if($proAcik)
+          @php $secili = $e->site_tasarim ?: 'klasik'; @endphp
+          <form method="POST" action="{{ route('admin.expert-websites.design', $e->id) }}" style="display:inline-flex;align-items:center;gap:0;margin:0;border:1.5px solid #c4b5fd;border-radius:10px;overflow:hidden;" title="Profesyonel site tasarımı">
+            @csrf
+            <span style="font-size:12px;font-weight:800;color:#6d28d9;padding:5px 8px;background:#f5f3ff;">Tasarım</span>
+            <button type="submit" name="tasarim" value="klasik" style="border:0;cursor:pointer;font-weight:800;font-size:13px;padding:5px 10px;{{ $secili === 'klasik' ? 'background:#8a6a35;color:#fff;' : 'background:#fff;color:#6b7280;' }}">{{ $secili === 'klasik' ? '✓ ' : '' }}Klasik</button>
+            <button type="submit" name="tasarim" value="hareketli" style="border:0;border-left:1px solid #ddd6fe;cursor:pointer;font-weight:800;font-size:13px;padding:5px 10px;{{ $secili === 'hareketli' ? 'background:#6d28d9;color:#fff;' : 'background:#fff;color:#6b7280;' }}">{{ $secili === 'hareketli' ? '✓ ' : '' }}✨ Hareketli</button>
+          </form>
+        @endif
         <a href="{{ route('admin.experts.website.edit', $e->id) }}" style="{{ $btn }}border-color:#0d6e6a;color:#0d6e6a;">Düzenle</a>
         <a href="{{ route('admin.site-sales.create', ['tur' => 'doktor', 'id' => $e->id, 'plan' => $proAcik ? 'profesyonel' : 'standart']) }}" style="{{ $btn }}">💰 Satış</a>
         @unless($proAcik)

@@ -23,7 +23,7 @@ class FacilityWebsiteController extends Controller
     {
         $q = Facility::query()->with(['city', 'category'])
             ->leftJoin('facility_websites as fw', 'fw.facility_id', '=', 'facilities.id')
-            ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme', 'fw.plan as site_plan', 'fw.pro_until as site_pro_bitis', 'fw.id as site_id');
+            ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme', 'fw.plan as site_plan', 'fw.pro_until as site_pro_bitis', 'fw.pro_tasarim as site_tasarim', 'fw.id as site_id');
         if ($request->filled('q')) {
             $q->where('facilities.name', 'like', '%'.$request->q.'%');
         }
@@ -81,6 +81,20 @@ class FacilityWebsiteController extends Controller
      * paket 1 yıllığına açılır ve site yayına alınır; açıksa kapatılır
      * (site hazır tasarıma döner, yayında kalır).
      */
+    /**
+     * 25 Ekim 2026: kullanıcının talebi - Profesyonel sitenin tasarımını (Klasik / Hareketli)
+     * listeden tek tıkla seçme; kurumla/doktorla görüştükten sonra admin karar verir.
+     */
+    public function setDesign(Request $request, Facility $facility)
+    {
+        $tasarim = $request->validate(['tasarim' => ['required', Rule::in(array_keys(FacilityWebsite::PRO_TASARIMLAR))]])['tasarim'];
+        $site = FacilityWebsite::forFacility($facility);
+        $site->update(['pro_tasarim' => $tasarim]);
+        log_admin_event('facility_website_design_set', $facility, ['tasarim' => $tasarim]);
+
+        return back()->with('success', ''.$facility->name.': Profesyonel tasarım "'.strip_tags(FacilityWebsite::PRO_TASARIMLAR[$tasarim]).'" olarak seçildi.'.($site->isPro() ? '' : ' (Paket Profesyonel olunca geçerli olur.)'));
+    }
+
     public function togglePro(Facility $facility)
     {
         $site = FacilityWebsite::forFacility($facility);
@@ -141,7 +155,7 @@ class FacilityWebsiteController extends Controller
     {
         $site = FacilityWebsite::forFacility($facility);
         // 25 Ekim 2026: ?tasarim=standart / ?tasarim=pro ile istenen görünüm.
-        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart', 'hareketli'], true) ? '&tasarim='.$request->query('tasarim') : '';
+        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart', 'klasik', 'hareketli'], true) ? '&tasarim='.$request->query('tasarim') : '';
 
         return redirect('/siteler/'.$site->slug.'?onizleme=1'.$tasarim);
     }

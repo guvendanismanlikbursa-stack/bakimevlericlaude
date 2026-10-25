@@ -24,7 +24,7 @@ class ExpertWebsiteController extends Controller
     {
         $q = Expert::query()->with('city')
             ->leftJoin('expert_websites as ew', 'ew.expert_id', '=', 'experts.id')
-            ->select('experts.*', 'ew.status as site_durum', 'ew.slug as site_slug', 'ew.custom_domain as site_domain', 'ew.plan as site_plan', 'ew.pro_until as site_pro_bitis', 'ew.id as site_id');
+            ->select('experts.*', 'ew.status as site_durum', 'ew.slug as site_slug', 'ew.custom_domain as site_domain', 'ew.plan as site_plan', 'ew.pro_until as site_pro_bitis', 'ew.pro_tasarim as site_tasarim', 'ew.id as site_id');
         if ($request->filled('q')) {
             $q->where('experts.name', 'like', '%'.$request->q.'%');
         }
@@ -100,6 +100,20 @@ class ExpertWebsiteController extends Controller
      * Tek tıkla Profesyonel Site: 1 yıllık açılır ve yayına alınır; açıksa
      * kapatılır (site bu düğmeyle yayına alındıysa taslağa döner).
      */
+    /**
+     * 25 Ekim 2026: kullanıcının talebi - Profesyonel sitenin tasarımını (Klasik / Hareketli)
+     * listeden tek tıkla seçme; kurumla/doktorla görüştükten sonra admin karar verir.
+     */
+    public function setDesign(Request $request, Expert $expert)
+    {
+        $tasarim = $request->validate(['tasarim' => ['required', Rule::in(array_keys(ExpertWebsite::PRO_TASARIMLAR))]])['tasarim'];
+        $site = ExpertWebsite::forExpert($expert);
+        $site->update(['pro_tasarim' => $tasarim]);
+        log_admin_event('expert_website_design_set', $expert, ['tasarim' => $tasarim]);
+
+        return back()->with('success', ''.$expert->name.': Profesyonel tasarım "'.strip_tags(ExpertWebsite::PRO_TASARIMLAR[$tasarim]).'" olarak seçildi.'.($site->isPro() ? '' : ' (Paket Profesyonel olunca geçerli olur.)'));
+    }
+
     public function togglePro(Expert $expert)
     {
         $site = ExpertWebsite::forExpert($expert);
@@ -263,7 +277,7 @@ class ExpertWebsiteController extends Controller
     public function preview(Request $request, Expert $expert)
     {
         $site = ExpertWebsite::forExpert($expert);
-        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart', 'hareketli'], true) ? '&tasarim='.$request->query('tasarim') : '';
+        $tasarim = in_array($request->query('tasarim'), ['pro', 'standart', 'klasik', 'hareketli'], true) ? '&tasarim='.$request->query('tasarim') : '';
 
         return redirect('/dr/'.$site->slug.'?onizleme=1'.$tasarim);
     }

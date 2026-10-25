@@ -8246,7 +8246,14 @@ class PlatformFeatureTest extends TestCase
         $this->get('/siteler/secim-yuva')->assertOk()->assertSee('class="hrk"', false)->assertDontSee('Yeni hareketli Profesyonel tasarım', false)
             ->assertSee('index,follow', false);
         $this->get('/siteler/secim-yuva/hakkimizda')->assertOk()->assertSee('class="hrk"', false);
-        $this->withSession($admin)->get('/siteler/secim-yuva?onizleme=1&tasarim=pro')->assertOk()->assertDontSee('class="hrk"', false);
+        $this->withSession($admin)->get('/siteler/secim-yuva?onizleme=1&tasarim=klasik')->assertOk()->assertDontSee('class="hrk"', false);
+        $this->withSession($admin)->get('/siteler/secim-yuva?onizleme=1&tasarim=pro')->assertOk()->assertSee('class="hrk"', false);
+        // Listeden tek tıkla seçim.
+        $this->withSession($admin)->get(route('admin.facility-websites.index'))->assertOk()->assertSee('✓ ✨ Hareketli', false);
+        $this->withSession($admin)->post(route('admin.facility-websites.design', $facility), ['tasarim' => 'klasik'])->assertRedirect()->assertSessionHas('success');
+        $this->assertSame('klasik', $site->fresh()->pro_tasarim);
+        $this->withSession($admin)->post(route('admin.facility-websites.design', $facility), ['tasarim' => 'bozuk'])->assertSessionHasErrors('tasarim');
+        $this->withSession($admin)->post(route('admin.facility-websites.design', $facility), ['tasarim' => 'hareketli'])->assertRedirect();
         $this->flushSession();
 
         // Paket standarda dönerse hareketli seçimi etkisiz (standart şablon).
@@ -8266,7 +8273,9 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('class="hrk hrk-sade"', false)->assertSee('doktorlar için sade sürüm', false);
         $this->flushSession();
         $this->get('/dr/'.$ds->slug)->assertOk()->assertDontSee('hrk-sade', false);
-        $ds->update(['pro_tasarim' => 'hareketli']);
+        $this->withSession($admin)->post(route('admin.expert-websites.design', $expert), ['tasarim' => 'hareketli'])->assertRedirect()->assertSessionHas('success');
+        $this->withSession($admin)->get(route('admin.expert-websites.index'))->assertOk()->assertSee('✓ ✨ Hareketli', false);
+        $this->flushSession();
         $this->get('/dr/'.$ds->slug)->assertOk()->assertSee('class="hrk hrk-sade"', false)->assertDontSee('doktorlar için sade sürüm', false);
     }
 }
