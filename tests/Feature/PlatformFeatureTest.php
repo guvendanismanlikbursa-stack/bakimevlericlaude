@@ -8476,4 +8476,15 @@ class PlatformFeatureTest extends TestCase
         $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => 'dun']))->assertOk()->assertSee('Bu dönem için henüz kayıt yok.', false);
         $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => '365']))->assertOk();
     }
+
+    // 26 Ekim 2026: yedek (bekleme) sunucusu anahtarı - açıkken Google'a kapalı, kapalıyken değişiklik yok.
+    public function test_standby_mode_blocks_indexing_only_when_enabled(): void
+    {
+        $this->get('/robots.txt')->assertOk()->assertSee('Sitemap:', false)->assertHeaderMissing('X-Robots-Tag');
+        config(['app.bekleme' => true]);
+        $this->get('/robots.txt')->assertOk()->assertSee("Disallow: /
+", false)->assertDontSee('Sitemap:', false)
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->get('/site/bakimevleri/')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
 }

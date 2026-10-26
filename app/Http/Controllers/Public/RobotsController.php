@@ -10,6 +10,12 @@ class RobotsController extends Controller
     public function __invoke(): Response
     {
         $sitemapUrl = url('/sitemap.xml');
+        // 26 Ekim 2026: yedek (bekleme) sunucusu - hiçbir sayfa taranmasın.
+        if (config('app.bekleme')) {
+            return response("User-agent: *
+Disallow: /
+", 200)->header('Content-Type', 'text/plain; charset=UTF-8');
+        }
 
         $lines = [
             'User-agent: *',
