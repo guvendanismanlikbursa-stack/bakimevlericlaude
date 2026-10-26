@@ -83,7 +83,8 @@ class TrafikAnaliz
                         $varlik[$tarih][$ip] = true;
                         continue;
                     }
-                    if (preg_match('#^/(\.well-known|_ops|_internal|up$)|\.(map|txt|xml|json|mp4)(\?|$)#i', $m[6])) {
+                    // Yönetim panelleri ziyaretçi değildir (admin, kurum paneli, pazarlamacı, aile paneli).
+                    if (preg_match('#^/(\.well-known|_ops|_internal|up$|admin|kurum-panel|pazarlamaci|aile/panel|aile/bildirimler|aile/mesajlar|site/[a-z]+/(admin|kurum-panel))|\.(map|txt|xml|json|mp4)(\?|$)#i', $m[6])) {
                         continue;
                     }
                     $tur = self::tur($m[8]);
