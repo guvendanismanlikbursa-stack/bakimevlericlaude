@@ -149,6 +149,7 @@ class ExpertSeoController extends Controller
         }
         $kirinti[] = ['ad' => trim($expert->title.' '.$expert->name), 'url' => $request->url(), 'asil' => DoktorSeo::asilAdres('/doktor/'.$expert->slug)];
 
+        \App\Models\Expert::girisKaydet($expert, $request);
         // Kart sayacı ile aynı: profil açılması (bot ve admin hariç).
         if (! session('admin_id') && ! preg_match('/bot|crawl|spider|slurp|facebookexternalhit|preview|monitor|curl|wget|python|headless/i', (string) $request->userAgent())) {
             Expert::recordCardStat([$expert->id], 'acilma');

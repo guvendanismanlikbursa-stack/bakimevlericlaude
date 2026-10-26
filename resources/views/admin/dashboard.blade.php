@@ -149,6 +149,26 @@
      Ayrica doldurma cubugu "bg-primary" adinda TANIMLI OLMAYAN bir Tailwind
      rengi kullaniyordu (bkz. site-stats sayfasindaki ayni turden hata) -
      gorunmez kaliyordu, gercek bir hex renge cevrildi. --}}
+{{-- 26 Ekim 2026: kullanıcının talebi - 4 bölümde son 24 saatlik giriş sayaçları. --}}
+<div class="bg-white rounded-xl shadow-sm p-5 mb-10">
+  <h2 class="font-bold text-lg mb-1">Son 24 Saat — Bölümlere Giriş</h2>
+  <p class="text-xs text-gray-500 mb-4">Kurum / doktor sayfası açılışları. <b>Gerçek kişi:</b> bot hariç, aynı tarayıcı ya da bağlantı aynı sayfayı 24 saatte 1 kez sayılır. <b>Toplam giriş:</b> her açılış; arama motoru botları ve tekrar açılışlar dahil.</p>
+  <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+    @foreach($son24 as $s)
+      @php $oran = $s['toplam'] > 0 ? round($s['gercek'] / $s['toplam'] * 100) : 0; @endphp
+      <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:14px 16px;">
+        <div style="font-weight:800;color:#111827;">{{ $s['baslik'] === 'Doktorlar' ? '🩺 ' : '' }}{{ $s['baslik'] }}</div>
+        <div style="margin-top:8px;font-size:26px;font-weight:900;color:#1e6f5c;line-height:1;">{{ number_format($s['gercek'], 0, ',', '.') }}</div>
+        <div style="font-size:12.5px;font-weight:700;color:#6b7280;margin-top:2px;">👤 gerçek kişi</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:800;color:#0b5d8c;line-height:1;">{{ number_format($s['toplam'], 0, ',', '.') }}</div>
+        <div style="font-size:12.5px;font-weight:700;color:#6b7280;margin-top:2px;">🌐 toplam giriş (bot dahil)</div>
+        @if($s['toplam'] > 0)<div style="margin-top:8px;font-size:12px;color:#6b7280;">Girişlerin %{{ $oran }}'i tekil gerçek kişi</div>@endif
+      </div>
+    @endforeach
+  </div>
+  <p class="text-xs text-gray-400 mt-3">Doktorlar bölümü sayımı 26.10.2026'da başladı; ilk günlerde düşük görünmesi normaldir.</p>
+</div>
+
 <div class="bg-white rounded-xl shadow-sm p-5 mb-10">
   <h2 class="font-bold text-lg mb-1">Kurum Türüne Göre İlgi</h2>
   @if($categoryDemand['has_trend_data'])

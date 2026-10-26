@@ -90,6 +90,34 @@ class Expert extends Model
      * 25 Ekim 2026: Doktorlar sayfası kart sayacı (bkz. expert_card_stats).
      * $idler verilirse hepsi için birden artırılır (listelenme).
      */
+    /**
+     * 26 Ekim 2026: kullanıcının talebi - doktor sayfası girişleri, kurum sayfalarıyla aynı mantıkla:
+     * her açılış 'view' (bot ve tekrar dahil); bot değilse ve aynı tarayıcı / bağlantı bu doktoru
+     * son 24 saatte açmadıysa ayrıca 'real_view' (tekil gerçek kişi). Panelde bölüm sayaçları bunu kullanır.
+     */
+    public static function girisKaydet(self $expert, \Illuminate\Http\Request $request): void
+    {
+        try {
+            $tablo = \Illuminate\Support\Facades\DB::table('expert_engagement_events');
+            $tablo->insert(['expert_id' => $expert->id, 'type' => 'view', 'created_at' => now()]);
+            if (is_bot_user_agent($request->userAgent())) {
+                return;
+            }
+            $anahtar = 'real_view_dr_'.$expert->id;
+            $son = session($anahtar);
+            $ipHash = hash('sha256', $request->ip().config('app.key'));
+            $yeni = (! $son || now()->diffInHours($son) >= 24)
+                && ! \Illuminate\Support\Facades\DB::table('expert_engagement_events')->where('expert_id', $expert->id)->where('type', 'real_view')
+                    ->where('ip_hash', $ipHash)->where('created_at', '>=', now()->subDay())->exists();
+            if ($yeni) {
+                \Illuminate\Support\Facades\DB::table('expert_engagement_events')->insert(['expert_id' => $expert->id, 'type' => 'real_view', 'ip_hash' => $ipHash, 'created_at' => now()]);
+            }
+            session([$anahtar => now()]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Doktor giriş kaydı yazılamadı: '.$e->getMessage(), ['expert_id' => $expert->id]);
+        }
+    }
+
     public static function recordCardStat(array $idler, string $alan): void
     {
         $idler = array_values(array_unique(array_filter(array_map('intval', $idler))));

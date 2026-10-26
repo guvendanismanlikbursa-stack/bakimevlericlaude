@@ -8402,4 +8402,35 @@ class PlatformFeatureTest extends TestCase
         $this->get('http://gunesrehab.com/robots.txt')->assertOk()->assertSee('Sitemap: https://gunesrehab.com/sitemap.xml', false);
         $this->get('http://gunesrehab.com/sitemap.xml')->assertOk()->assertSee('<loc>https://gunesrehab.com/</loc>', false)->assertSee('<loc>https://gunesrehab.com/iletisim</loc>', false);
     }
+
+    // 26 Ekim 2026: Doktorlar bölümü giriş sayaçları + panelde 4 bölüm için son 24 saat (gerçek kişi / toplam).
+    public function test_doctor_entry_counters_and_dashboard_last_24h(): void
+    {
+        $e = \App\Models\Expert::create(['name' => 'Sayac Dr', 'slug' => 'sayac-dr', 'title' => 'Dr.', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru',
+            'city_id' => $this->city->id, 'district' => 'Nilüfer', 'phone' => '0533 444 55 31', 'is_published' => true]);
+        $tarayici = ['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0) Chrome/120'];
+        $sayi = fn (string $tur) => \Illuminate\Support\Facades\DB::table('expert_engagement_events')->where('expert_id', $e->id)->where('type', $tur)->count();
+
+        $this->withHeaders($tarayici)->get('/site/bakimevleri/doktor/sayac-dr')->assertOk();
+        $this->withHeaders($tarayici)->get('/site/bakimevleri/doktor/sayac-dr')->assertOk();
+        $this->assertSame(2, $sayi('view'));
+        $this->assertSame(1, $sayi('real_view'));
+
+        $this->withHeaders(['User-Agent' => 'Googlebot/2.1'])->get('/site/bakimevleri/doktor/sayac-dr')->assertOk();
+        $this->assertSame(3, $sayi('view'));
+        $this->assertSame(1, $sayi('real_view'));
+
+        // Kart açılması da giriş sayılır
+        $this->withHeaders($tarayici)->post('/site/bakimevleri/uzmanlar/olay', ['tur' => 'acilma', 'slug' => 'sayac-dr'])->assertNoContent();
+        $this->assertSame(4, $sayi('view'));
+
+        // Kurum sayfası: bir gerçek açılış
+        $this->withHeaders($tarayici)->get('/site/bakimeviara/kurumlar/'.$this->rehabFacility->slug)->assertOk();
+
+        $this->flushSession();
+        $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.dashboard'))->assertOk()
+            ->assertSee('Son 24 Saat — Bölümlere Giriş', false)->assertSee('🩺 Doktorlar', false)
+            ->assertSeeInOrder(['🩺 Doktorlar', '>1<', 'gerçek kişi', '>4<', 'toplam giriş (bot dahil)'], false)
+            ->assertSeeInOrder(['Kurum Türüne Göre İlgi', 'Doktorlar', 'Gerçek Tıklama (Bot Hariç)', 'Doktorlar'], false);
+    }
 }

@@ -83,6 +83,8 @@ class DashboardController extends Controller
 
         $health = $this->healthSummary();
         $categoryDemand = $this->categoryDemandSummary();
+        // 26 Ekim 2026: kullanıcının talebi - 4 bölümde son 24 saat: tekil gerçek kişi ve toplam giriş (bot dahil).
+        $son24 = $this->son24SaatGirisler();
         // 13 Ekim 2026: kullanicinin talebi - "en cok tiklanan kurumlar
         // dogru sonucu gostermiyor, turkiye ve il bazli filtreleme olmali,
         // bolum bolum de ayrilmali". Liste artik secilen il (varsa) ve
@@ -102,7 +104,7 @@ class DashboardController extends Controller
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
             'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health',
             'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions', 'realClickDemand', 'salesFunnel', 'newInterestLeads',
-            'realClickCities', 'realClickSections', 'realClickCityId', 'realClickSection'
+            'realClickCities', 'realClickSections', 'realClickCityId', 'realClickSection', 'son24'
         ));
     }
 
@@ -159,6 +161,8 @@ class DashboardController extends Controller
                 : (int) $count;
             $bySection[$title] = ($bySection[$title] ?? 0) + $value;
         }
+        // 26 Ekim 2026: Doktorlar bölümü - doktor sayfası açılışları (bot dahil), son 30 gün.
+        $bySection['Doktorlar'] = (int) \Illuminate\Support\Facades\DB::table('expert_engagement_events')->where('type', 'view')->where('created_at', '>=', now()->subDays(30))->count();
         arsort($bySection);
 
         $total = array_sum($bySection) ?: 1;
@@ -188,6 +192,40 @@ class DashboardController extends Controller
      * gunden itibaren KISMI ama GERCEK veri gosterir - "veri birikiyor"
      * beklemeye gerek yok, sadece zamanla dolar.
      */
+    /**
+     * 26 Ekim 2026: son 24 saatte her bölüm için toplam giriş (her açılış; bot ve tekrar dahil) ve
+     * tekil gerçek kişi (bot hariç, aynı tarayıcı/bağlantı 24 saatte 1 kez). Kurumlarda kurum sayfası,
+     * Doktorlarda doktor sayfası / kart açılışı sayılır.
+     *
+     * @return array<int, array{baslik: string, toplam: int, gercek: int}>
+     */
+    private function son24SaatGirisler(): array
+    {
+        $since = now()->subDay();
+        $satirlar = [];
+        foreach (service_sections() as $bolum) {
+            $satirlar[$bolum['title']] = ['baslik' => $bolum['title'], 'toplam' => 0, 'gercek' => 0];
+        }
+        \Illuminate\Support\Facades\DB::table('facility_engagement_events')
+            ->join('facilities', 'facilities.id', '=', 'facility_engagement_events.facility_id')
+            ->join('facility_categories', 'facility_categories.id', '=', 'facilities.facility_category_id')
+            ->whereIn('facility_engagement_events.type', ['view', 'real_view'])
+            ->where('facility_engagement_events.created_at', '>=', $since)
+            ->selectRaw('facility_categories.brand_scope as kapsam, facility_engagement_events.type as tur, count(*) as adet')
+            ->groupBy('facility_categories.brand_scope', 'facility_engagement_events.type')->get()
+            ->each(function ($r) use (&$satirlar) {
+                $baslik = service_section_for_scope($r->kapsam)['title'] ?? null;
+                if ($baslik && isset($satirlar[$baslik])) {
+                    $satirlar[$baslik][$r->tur === 'view' ? 'toplam' : 'gercek'] += (int) $r->adet;
+                }
+            });
+        $doktor = \Illuminate\Support\Facades\DB::table('expert_engagement_events')->whereIn('type', ['view', 'real_view'])->where('created_at', '>=', $since)
+            ->selectRaw('type, count(*) as adet')->groupBy('type')->pluck('adet', 'type');
+        $satirlar['Doktorlar'] = ['baslik' => 'Doktorlar', 'toplam' => (int) ($doktor['view'] ?? 0), 'gercek' => (int) ($doktor['real_view'] ?? 0)];
+
+        return array_values($satirlar);
+    }
+
     private function categoryRealClickSummary(?int $cityId = null, ?string $sectionSlug = null): array
     {
         $since = now()->subDays(30);
@@ -206,6 +244,8 @@ class DashboardController extends Controller
             $title = service_section_for_scope($scope)['title'] ?? $scope;
             $bySection[$title] = ($bySection[$title] ?? 0) + (int) $count;
         }
+        // 26 Ekim 2026: Doktorlar bölümü - tekil gerçek kişi (bot hariç), son 30 gün.
+        $bySection['Doktorlar'] = (int) \Illuminate\Support\Facades\DB::table('expert_engagement_events')->where('type', 'real_view')->where('created_at', '>=', $since)->count();
         arsort($bySection);
 
         $total = array_sum($bySection);

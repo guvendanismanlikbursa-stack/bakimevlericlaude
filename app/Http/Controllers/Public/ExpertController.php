@@ -53,6 +53,9 @@ class ExpertController extends Controller
         $activeExpert = $activeExpertSlug
             ? Expert::where('slug', $activeExpertSlug)->where('is_published', true)->with('city')->first()
             : null;
+        if ($activeExpert) {
+            Expert::girisKaydet($activeExpert, $request);
+        }
         // 25 Ekim 2026: admin bölümü yayına aldıysa herkese açık (bkz. doctors_live()).
         $publiclyVisible = self::PUBLICLY_VISIBLE || doctors_live();
 
@@ -143,6 +146,10 @@ class ExpertController extends Controller
     {
         $tur = (string) $request->input('tur');
         $slug = (string) $request->input('slug');
+        // 26 Ekim 2026: kart açılması = doktor sayfasına giriş (bölüm sayaçları; bot/tekrar ayrımı içeride).
+        if ($tur === 'acilma' && $slug !== '' && ($girilen = Expert::where('slug', $slug)->where('is_published', true)->first())) {
+            Expert::girisKaydet($girilen, $request);
+        }
         if (in_array($tur, ['acilma', 'arama'], true) && $slug !== '' && ! $this->sayacDisi($request)) {
             $id = Expert::where('slug', $slug)->where('is_published', true)->value('id');
             if ($id) {
