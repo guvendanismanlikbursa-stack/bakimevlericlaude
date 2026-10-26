@@ -14,10 +14,85 @@
         <div><div class="text-gray-500 text-xs">Bugün</div><div class="font-black text-lg">{{ number_format($stat['today'], 0, ',', '.') }}</div></div>
         <div><div class="text-gray-500 text-xs">Son 7 gün</div><div class="font-black text-lg">{{ number_format($stat['last_7_days'], 0, ',', '.') }}</div></div>
         <div><div class="text-gray-500 text-xs">Son 30 gün</div><div class="font-black text-lg">{{ number_format($stat['last_30_days'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Son 3 ay</div><div class="font-black text-lg">{{ number_format($stat['last_90_days'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Son 6 ay</div><div class="font-black text-lg">{{ number_format($stat['last_180_days'], 0, ',', '.') }}</div></div>
+        <div><div class="text-gray-500 text-xs">Son 1 yıl</div><div class="font-black text-lg">{{ number_format($stat['last_365_days'], 0, ',', '.') }}</div></div>
         <div><div class="text-gray-500 text-xs">Toplam</div><div class="font-black text-lg">{{ number_format($stat['all_time'], 0, ',', '.') }}</div></div>
       </div>
     </div>
   @endforeach
+</div>
+
+{{-- 26 Ekim 2026: kullanıcının talebi - "bot mu insan mı" ayrıntılı tablo, dönem seçmeli. --}}
+@php
+  $markaAd = ['bakimevleri' => 'bakimevleri.com', 'bakimevibul' => 'bakimevibul.com', 'bakimeviara' => 'bakimeviara.com'];
+  $turAd = \App\Support\TrafikAnaliz::TURLER;
+  $turRenk = ['insan' => '#15803d', 'supheli' => '#b45309', 'googlebot' => '#2563eb', 'bing' => '#0891b2', 'yz' => '#7c3aed', 'diger_bot' => '#6b7280'];
+  $th = 'padding:8px 10px;text-align:right;font-size:12px;color:#6b7280;font-weight:800;white-space:nowrap;border-bottom:1px solid #e5e7eb;';
+  $td = 'padding:8px 10px;text-align:right;font-size:14px;white-space:nowrap;border-bottom:1px solid #f1f5f9;';
+  $toplamlar = [];
+@endphp
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10" id="ziyaretci-turleri">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center;">
+    <h2 class="font-bold text-lg">Ziyaretçi Türleri — Bot mu, İnsan mı?</h2>
+    <div style="display:inline-flex;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+      @foreach($donemler as $k => $ad)
+        <a href="{{ request()->fullUrlWithQuery(['donem' => $k]) }}#ziyaretci-turleri" style="padding:6px 11px;font-size:13px;font-weight:700;text-decoration:none;{{ $donem === (string) $k ? 'background:#0b5d8c;color:#fff;' : 'color:#4b5563;' }}{{ $loop->first ? '' : 'border-left:1px solid #e5e7eb;' }}">{{ $ad }}</a>
+      @endforeach
+    </div>
+  </div>
+  <p style="font-size:12.5px;color:#6b7280;margin:8px 0 12px;line-height:1.55;">
+    Sunucunun kendi erişim kayıtlarından, yalnızca <b>sayfa</b> istekleri (resim, stil, yazı tipi hariç). <b>Gerçek kişi (muhtemel):</b> tarayıcı ile gelip sayfanın resim ve stil dosyalarını da yükleyen ziyaretçi.
+    <b>Şüpheli tarayıcı:</b> kendini tarayıcı gibi gösterip yalnızca sayfa metnini çeken ziyaretçi; büyük kısmı tarayıcı taklidi yapan botlardır. Botlar kendi adlarıyla ayrılır.
+    Parantez içi: günlük farklı IP sayılarının toplamı.
+    @if($trafikBaslangic) Kayıt başlangıcı: {{ \Illuminate\Support\Carbon::parse($trafikBaslangic)->format('d.m.Y') }} — bu tarihten önceki günler için ayrım yok. @endif
+  </p>
+  @if(! $trafik)
+    <p style="font-size:14px;color:#9ca3af;">Bu dönem için henüz kayıt yok.</p>
+  @else
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;min-width:820px;">
+        <thead><tr><th style="{{ $th }}text-align:left;">Site</th>@foreach($turAd as $k => $ad)<th style="{{ $th }}color:{{ $turRenk[$k] }};">{{ $ad }}</th>@endforeach<th style="{{ $th }}">Toplam</th><th style="{{ $th }}">Gerçek kişi payı</th></tr></thead>
+        <tbody>
+          @foreach($markaAd as $m => $ad)
+            @php $satir = $trafik[$m] ?? []; $top = collect($satir)->sum('istek'); @endphp
+            <tr>
+              <td style="{{ $td }}text-align:left;font-weight:800;">{{ $ad }}</td>
+              @foreach($turAd as $k => $x)
+                @php $d = $satir[$k] ?? ['istek' => 0, 'ip' => 0]; $toplamlar[$k]['istek'] = ($toplamlar[$k]['istek'] ?? 0) + $d['istek']; $toplamlar[$k]['ip'] = ($toplamlar[$k]['ip'] ?? 0) + $d['ip']; @endphp
+                <td style="{{ $td }}"><b>{{ number_format($d['istek'], 0, ',', '.') }}</b> <span style="color:#9ca3af;font-size:12px;">({{ number_format($d['ip'], 0, ',', '.') }})</span></td>
+              @endforeach
+              <td style="{{ $td }}font-weight:800;">{{ number_format($top, 0, ',', '.') }}</td>
+              <td style="{{ $td }}font-weight:800;color:#15803d;">%{{ $top ? round(($satir['insan']['istek'] ?? 0) / $top * 100) : 0 }}</td>
+            </tr>
+          @endforeach
+          @php $genel = collect($toplamlar)->sum('istek'); @endphp
+          <tr style="background:#f8fafc;">
+            <td style="{{ $td }}text-align:left;font-weight:900;">Toplam</td>
+            @foreach($turAd as $k => $x)<td style="{{ $td }}font-weight:900;">{{ number_format($toplamlar[$k]['istek'] ?? 0, 0, ',', '.') }} <span style="color:#9ca3af;font-size:12px;font-weight:600;">(%{{ $genel ? round(($toplamlar[$k]['istek'] ?? 0) / $genel * 100) : 0 }})</span></td>@endforeach
+            <td style="{{ $td }}font-weight:900;">{{ number_format($genel, 0, ',', '.') }}</td>
+            <td style="{{ $td }}font-weight:900;color:#15803d;">%{{ $genel ? round(($toplamlar['insan']['istek'] ?? 0) / $genel * 100) : 0 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    @if($trafikGunluk->count() > 1)
+      <details style="margin-top:14px;">
+        <summary style="cursor:pointer;font-weight:800;font-size:14px;color:#111827;">Gün gün döküm (3 site toplamı)</summary>
+        <div style="overflow-x:auto;margin-top:8px;">
+          <table style="width:100%;border-collapse:collapse;min-width:720px;">
+            <thead><tr><th style="{{ $th }}text-align:left;">Gün</th>@foreach($turAd as $k => $ad)<th style="{{ $th }}color:{{ $turRenk[$k] }};">{{ $ad }}</th>@endforeach<th style="{{ $th }}">Toplam</th></tr></thead>
+            <tbody>
+              @foreach($trafikGunluk->sortKeysDesc() as $g => $rows)
+                @php $gTop = $rows->sum('istek'); $byTur = $rows->keyBy('tur'); @endphp
+                <tr><td style="{{ $td }}text-align:left;">{{ \Illuminate\Support\Carbon::parse($g)->format('d.m.Y') }}</td>@foreach($turAd as $k => $x)<td style="{{ $td }}">{{ number_format((int) ($byTur[$k]->istek ?? 0), 0, ',', '.') }}</td>@endforeach<td style="{{ $td }}font-weight:800;">{{ number_format($gTop, 0, ',', '.') }}</td></tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </details>
+    @endif
+  @endif
 </div>
 
 @if($dailySeries->isNotEmpty())
@@ -36,6 +111,8 @@
         <button type="button" data-range="7" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">7 gün</button>
         <button type="button" data-range="30" class="trend-range-btn px-3 py-1.5 font-semibold border-l border-gray-200 transition" style="background:#0b5d8c;color:#fff;">30 gün</button>
         <button type="button" data-range="90" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">90 gün</button>
+        <button type="button" data-range="180" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">6 ay</button>
+        <button type="button" data-range="365" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">1 yıl</button>
       </div>
     </div>
     <div style="height: 260px;">

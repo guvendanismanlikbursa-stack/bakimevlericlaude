@@ -8433,4 +8433,47 @@ class PlatformFeatureTest extends TestCase
             ->assertSeeInOrder(['🩺 Doktorlar', '>1<', 'gerçek kişi', '>4<', 'toplam giriş (bot dahil)'], false)
             ->assertSeeInOrder(['Kurum Türüne Göre İlgi', 'Doktorlar', 'Gerçek Tıklama (Bot Hariç)', 'Doktorlar'], false);
     }
+
+    // 26 Ekim 2026: erişim kayıtlarından ziyaretçi türü özeti + Site İstatistikleri dönem tablosu.
+    public function test_traffic_summary_classifies_visitors_and_shows_periods(): void
+    {
+        $klasor = storage_path('framework/testing/access-logs-'.uniqid());
+        @mkdir($klasor, 0777, true);
+        $g = now()->format('d/M/Y');
+        $s = fn ($ip, $yol, $ua, $saat = '10:00:00') => $ip.' - - ['.$g.':'.$saat.' +0300] "GET '.$yol.' HTTP/2" 200 1234 "-" "'.$ua.'" "S-port: 1"'."\n";
+        $chrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+        $guncel = $s('1.1.1.1', '/kurumlar/a', $chrome)                  // insan: sayfa + stil
+            .$s('1.1.1.1', '/build/assets/app.css', $chrome)
+            .$s('1.1.1.1', '/kurumlar/b', $chrome, '10:01:00')
+            .$s('2.2.2.2', '/kurumlar/c', $chrome)                         // şüpheli: yalnız sayfa
+            .$s('66.249.1.1', '/uzmanlar', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')
+            .$s('3.3.3.3', '/', 'Mozilla/5.0 (compatible; GPTBot/1.2)')
+            .$s('4.4.4.4', '/sss', 'curl/8.0')
+            .$s('5.5.5.5', '/storage/x.webp', $chrome);                    // yalnız resim: sayılmaz
+        file_put_contents($klasor.'/bakimevleri.com-ssl_log', $guncel);
+        // Aynı satır arşivde de var: iki kez sayılmamalı
+        file_put_contents('compress.zlib://'.$klasor.'/bakimevleri.com-ssl_log-'.now()->format('M-Y').'.gz', $s('2.2.2.2', '/kurumlar/c', $chrome));
+        \App\Support\TrafikAnaliz::$klasor = $klasor;
+
+        $this->artisan('platform:trafik-ozet', ['--gun' => 1])->assertSuccessful();
+        $v = fn ($tur) => \Illuminate\Support\Facades\DB::table('trafik_gunluk')->where('tarih', now()->toDateString())->where('marka', 'bakimevleri')->where('tur', $tur)->first();
+        $this->assertSame(2, (int) $v('insan')->istek);
+        $this->assertSame(1, (int) $v('insan')->ip);
+        $this->assertSame(1, (int) $v('supheli')->istek);
+        $this->assertSame(1, (int) $v('googlebot')->istek);
+        $this->assertSame(1, (int) $v('yz')->istek);
+        $this->assertSame(1, (int) $v('diger_bot')->istek);
+
+        // Yeniden çalıştırınca üzerine yazar, ikiye katlamaz
+        $this->artisan('platform:trafik-ozet', ['--gun' => 1])->assertSuccessful();
+        $this->assertSame(2, (int) $v('insan')->istek);
+        \App\Support\TrafikAnaliz::$klasor = null;
+
+        $admin = ['admin_id' => $this->admin->id];
+        $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => '1']))->assertOk()
+            ->assertSee('Ziyaretçi Türleri — Bot mu, İnsan mı?', false)->assertSee('Gerçek kişi (muhtemel)', false)
+            ->assertSee('Son 6 ay', false)->assertSee('Son 1 yıl', false)->assertSee('%33', false);
+        $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => 'dun']))->assertOk()->assertSee('Bu dönem için henüz kayıt yok.', false);
+        $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => '365']))->assertOk();
+    }
 }

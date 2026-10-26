@@ -103,6 +103,15 @@ ScheduledJobMonitor::attach(
 // getirelim". Saatlik calisir, komutun kendisi 08-23 disinda hicbir sey
 // yapmadan cikar (bkz. App\Console\Commands\BoostFacilityViews) - gece
 // goruntulenme eklenmesi inandiriciligi kacirirdi.
+// 26 Ekim 2026: kullanıcının talebi - sunucu erişim kayıtlarından günlük ziyaretçi türü özeti
+// (gerçek kişi / şüpheli tarayıcı / Googlebot / Bing / yapay zekâ / diğer botlar). Kayıtlar kısa
+// tutulduğu için saatlik özetlenir; bugün ve dün her seferinde yeniden hesaplanır (bkz. TrafikOzet).
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:trafik-ozet')->hourlyAt(17),
+    'platform:trafik-ozet',
+    90
+);
+
 ScheduledJobMonitor::attach(
     Schedule::command('platform:boost-facility-views')->hourly(),
     'platform:boost-facility-views',
