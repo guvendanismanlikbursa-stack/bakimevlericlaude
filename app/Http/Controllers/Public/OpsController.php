@@ -21,7 +21,7 @@ use Symfony\Component\Process\Process;
 // acik bir pencereydi, bu uc kalici ve token korumali.
 class OpsController extends Controller
 {
-    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'backup-files-now', 'backup-file-list', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'traffic-trend', 'traffic-log-days', 'trafik-ozet-run', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'db-size', 'pending-image-twins', 'pending-image-folders', 'prune-expired-cache', 'inode-count', 'storage-cleanup', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'facility-category-move', 'facility-website-import', 'facility-geo-wrong-audit', 'expert-clean-combining-marks', 'expert-duplicate-scan', 'membership-preview-links', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-duplicate-name-scan', 'facility-duplicate-city-district-scan', 'facility-export-basic', 'government-name-fix', 'government-name-kamu-list', 'city-image-review-gap-check', 'city-review-gap-targets', 'fabricated-address-prefix-audit', 'fabricated-address-prefix-fix', 'facility-fill-location-from-source-payload', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist', 'guides-bulk-create', 'facility-address-city-mismatch-scan', 'facility-category-fix-ozel-egitim', 'phone-fix', 'fee-info-request-status-backfill', 'facility-undo-recent-centroid-fill', 'seed-demo-experts', 'import-nilufer-pediatric-doctors', 'expert-import-file', 'government-name-revert-to-ozel', 'organization-import-file', 'organization-type-prune', 'organization-type-remap', 'facility-neighborhood-fill', 'expert-name-check', 'expert-remove', 'expert-pediatri-mismatch-scan', 'expert-category-crosscheck', 'expert-phone-set', 'expert-phone-missing-report', 'expert-source-payload', 'expert-phone-missing-detail', 'expert-identity-fix', 'expert-branch-set', 'expert-export-basic', 'expert-website-export', 'expert-website-backfill', 'family-need-survey-render-test', 'tani-rehberi-render-test', 'care-advisor-lead-render-test', 'description-coverage-nationwide', 'description-fix-remaining-templates', 'knows-about-schema-check', 'care-advisor-lead-cleanup-test-data', 'admin-notification-system-render-test', 'expert-count-by-source', 'facility-import-scraped-multi-district', 'facility-count-by-source', 'facility-clean-combining-marks', 'nominatim-raw-debug', 'facility-geocode-by-neighborhood'];
+    private const ACTIONS = ['migrate', 'seed', 'storage-link', 'create-admin', 'package-discover', 'cache-refresh', 'log-tail', 'sentry-test', 'queue-status', 'queue-work', 'queue-test', 'diagnostics-image', 'backup-now', 'backup-files-now', 'backup-file-list', 'geo-status', 'geo-missing-list', 'geo-apply', 'legal-page-set', 'geo-fill-city-centroid', 'python-check', 'category-audit', 'category-audit-city', 'invitation-status-audit', 'invitation-status-fix', 'invitation-detail', 'phone-type-audit', 'phone-type-fix', 'ownership-audit', 'ownership-fix', 'miscategory-scan', 'miscategory-fix', 'facility-remove', 'district-audit', 'district-fix', 'ownership-verify', 'facility-remove-by-ownership', 'ownership-fix-bulk', 'mail-render-test', 'qa-pick-facilities', 'qa-check', 'qa-setup', 'qa-setup-unclaimed', 'qa-password-reset-link', 'qa-registration-edit-link', 'qa-push-fix-subscription', 'qa-facility-set-known-password', 'qa-admin-push-diagnostic', 'qa-admin-push-test', 'fix-push-encoding', 'qa-staging-htpasswd-add', 'qa-staging-htpasswd-remove', 'qa-teardown', 'qa-verify-family-email', 'qa-debug-quote', 'qa-approve-claim', 'qa-cleanup-claim', 'qa-reject-claim', 'qa-reset-invitation-status', 'qa-approve-topup', 'qa-reject-topup', 'facility-user-unclaimed-audit', 'facility-user-unclaimed-fix', 'facility-set-city', 'php-upload-limits', 'queue-failed-detail', 'registration-revert-to-pending', 'registration-detail', 'document-diagnostic', 'admin-panel-smoke-test', 'qa-approve-registration', 'queue-flush-failed', 'gallery-health-scan', 'gallery-prune-broken', 'demo-images-cleanup', 'gallery-check-health', 'check-user-flows', 'cleanup-stale-qa-debris', 'test-platform-error', 'cleanup-test-platform-errors', 'name-cleanup-audit', 'name-cleanup-fix', 'facility-lookup', 'facility-borrow-demo-images', 'facility-borrow-demo-images-bulk', 'invite-review-families', 'snapshot-facility-stats', 'menu-image-demo-apply', 'restore-accidentally-deleted-claimed-facility-demo-images', 'sessions-gc', 'menu-image-repair', 'bursa-visit-export', 'mysql-tmp-diagnostics', 'qa-instant-claim-test', 'qa-verify-balance-brand-fixes', 'check-admin-flows', 'platform-errors-list', 'ffmpeg-check', 'ffmpeg-install', 'ffmpeg-x264-diagnose', 'admin-facility-edit-render', 'admin-facility-update-simulate', 'facilities-with-video-list', 'facility-trash-check', 'facility-find-and-restore', 'facility-clear-video-only', 'qa-delete-video-test', 'qa-facility-impersonate-test', 'site-visits-diagnose', 'traffic-trend', 'traffic-log-days', 'trafik-ozet-run', 'supheli-analiz', 'broker-claimed-overlap-check', 'qa-admin-review-add-test', 'services-column-diagnose', 'recent-activity-scan', 'snapshot-category-views', 'admin-dashboard-render', 'real-view-check', 'mysql-connections-diagnose', 'facility-user-duplicate-check', 'facility-user-cleanup-placeholder', 'resolve-old-errors-before', 'geo-address-centroid-audit', 'facility-geo-detail', 'qa-instant-claim-after-impersonate-test', 'facility-user-reset-password', 'qa-video-upload-test', 'qa-facility-panel-video-test', 'disk-usage', 'db-size', 'pending-image-twins', 'pending-image-folders', 'prune-expired-cache', 'inode-count', 'storage-cleanup', 'vacancy-set-default-available', 'category-demand-stats', 'seed-bursa-kres-rehberi', 'seed-bursa-bakimevi-rehberi', 'seed-bursa-rehabilitasyon-rehberi', 'geocode-missing-now', 'facility-geo-recheck', 'facility-geo-mismatch-scan', 'facility-geo-set', 'facility-district-fix-from-geo', 'too-many-connections-history', 'facility-geo-pin-verify', 'facility-city-count', 'facility-city-list', 'facility-profile-render-test', 'chat-show-render-test', 'route-cache-fix', 'site-stats-render-test', 'top-clicked-verify', 'facility-user-fix-email', 'facility-slug-check', 'facility-slug-free-up', 'vc-neighborhoods-test', 'vc-index-render-test', 'facility-category-move', 'facility-website-import', 'facility-geo-wrong-audit', 'expert-clean-combining-marks', 'expert-duplicate-scan', 'membership-preview-links', 'veri-cekici-bursa-existing-list', 'veri-cekici-import-file', 'veri-cekici-trim-images', 'veri-cekici-batch-status', 'veri-cekici-review-rows', 'veri-cekici-approve-row', 'veri-cekici-clear-stale-rows', 'broker-map-debug', 'city-price-stats', 'seed-istanbul-kres-rehberi', 'facility-clean-unfixable-broken-images', 'facility-source-payload', 'veri-cekici-google-review-targets', 'veri-cekici-import-google-reviews', 'veri-cekici-import-google-reviews-by-maps-url', 'gorsel-cekici-bursa-targets', 'gorsel-cekici-import-images', 'gorsel-cekici-debug-facility', 'gorsel-cekici-cleanup-duplicates', 'gorsel-cekici-cleanup-demo-where-real-exists', 'konum-cekici-bursa-targets', 'konum-cekici-import-coords', 'generate-descriptions-from-reviews', 'batch-status-check', 'facility-geo-clear', 'city-geo-outliers', 'facility-images-symlink-to-shared', 'facility-image-coverage-stats', 'facility-borrow-demo-images-for-empty', 'facility-admin-events-audit', 'facility-duplicate-coordinates-scan', 'facility-duplicate-name-scan', 'facility-duplicate-city-district-scan', 'facility-export-basic', 'government-name-fix', 'government-name-kamu-list', 'city-image-review-gap-check', 'city-review-gap-targets', 'fabricated-address-prefix-audit', 'fabricated-address-prefix-fix', 'facility-fill-location-from-source-payload', 'facility-wrong-province-scan', 'facility-district-fix-from-address', 'bursa-google-review-gaps', 'facility-real-image-gaps', 'facility-image-gap-targets-turkiye', 'facility-place-ids', 'marketer-crm-diagnose', 'admin-notifications-clear-all', 'marketer-qa-test', 'facility-anaokulu-kres-count', 'facility-anaokulu-category-fix', 'elitokullar-anaokulu-export', 'bursa-description-audit', 'bursa-description-complete', 'description-no-quote-diagnose', 'description-add-short-quotes', 'description-add-public-data-note', 'subscription-packages-list', 'subscription-package-toggle', 'seed-legal-pages', 'content-pages-debug', 'offer-request-debug-lookup', 'mail-config-debug', 'boost-facility-views-run', 'description-fix-locative', 'platform-errors-timeline', 'import-batch-errors', 'protected-facilities-touch-audit', 'private-docs-symlink-to-shared', 'scheduled-jobs-status', 'scheduled-job-forget', 'facility-category-split-fizyoterapist', 'guides-bulk-create', 'facility-address-city-mismatch-scan', 'facility-category-fix-ozel-egitim', 'phone-fix', 'fee-info-request-status-backfill', 'facility-undo-recent-centroid-fill', 'seed-demo-experts', 'import-nilufer-pediatric-doctors', 'expert-import-file', 'government-name-revert-to-ozel', 'organization-import-file', 'organization-type-prune', 'organization-type-remap', 'facility-neighborhood-fill', 'expert-name-check', 'expert-remove', 'expert-pediatri-mismatch-scan', 'expert-category-crosscheck', 'expert-phone-set', 'expert-phone-missing-report', 'expert-source-payload', 'expert-phone-missing-detail', 'expert-identity-fix', 'expert-branch-set', 'expert-export-basic', 'expert-website-export', 'expert-website-backfill', 'family-need-survey-render-test', 'tani-rehberi-render-test', 'care-advisor-lead-render-test', 'description-coverage-nationwide', 'description-fix-remaining-templates', 'knows-about-schema-check', 'care-advisor-lead-cleanup-test-data', 'admin-notification-system-render-test', 'expert-count-by-source', 'facility-import-scraped-multi-district', 'facility-count-by-source', 'facility-clean-combining-marks', 'nominatim-raw-debug', 'facility-geocode-by-neighborhood'];
 
     // 28 Temmuz 2026: KVKK denetiminde metin guncellemesi icin sadece bu
     // 3 statik hukuk sayfasina yazma izni verilir - baska bir slug asla
@@ -80,6 +80,7 @@ class OpsController extends Controller
             'site-visits-diagnose' => $this->siteVisitsDiagnose(),
             'traffic-trend' => $this->trafficTrend($request),
             'traffic-log-days' => $this->trafficLogDays($request),
+            'supheli-analiz' => $this->supheliAnaliz(),
             'trafik-ozet-run' => (function () use ($request) {
                 Artisan::call('platform:trafik-ozet', ['--gun' => max(1, min(31, (int) $request->query('gun', 2)))] + ($request->query('sifirla') === '1' ? ['--sifirla' => true] : []));
 
@@ -948,6 +949,112 @@ class OpsController extends Controller
         }
 
         return $out;
+    }
+
+    /**
+     * 26 Ekim 2026: YALNIZCA OKUR. Bugünün "şüpheli tarayıcı" ziyaretçileri (tarayıcı kimliği, ama
+     * resim/stil yüklemeyen IP'ler): hangi sayfaları istiyorlar, hangi ağlardan, hangi tarayıcı kimliğiyle,
+     * hangi saatlerde. En kalabalık ağlardan birer örnek IP'nin ters DNS adı (en çok 15 sorgu).
+     */
+    private function supheliAnaliz(): string
+    {
+        $bugun = now()->format('d/M/Y');
+        $out = '';
+        foreach (\App\Support\TrafikAnaliz::SITELER as $marka => $kayitAdi) {
+            $dosya = \App\Support\TrafikAnaliz::kayitKlasoru().'/'.$kayitAdi.'-ssl_log';
+            if (! is_readable($dosya)) {
+                continue;
+            }
+            $sayfa = [];
+            $varlik = [];
+            $fh = fopen($dosya, 'r');
+            while (($satir = fgets($fh)) !== false) {
+                if (! str_contains($satir, $bugun) || ! preg_match('#^(\S+) \S+ \S+ \[[^:]+:(\d{2})[^\]]*\] "(GET|HEAD) (\S+)[^"]*" (\d{3}) \S+ "([^"]*)" "([^"]*)"#', $satir, $m)) {
+                    continue;
+                }
+                if (preg_match('#^/(build|storage|kucuk-resim|images)/|\.(css|js|webp|png|jpe?g|gif|svg|ico|woff2?|ttf)(\?|$)#i', $m[4])) {
+                    $varlik[$m[1]] = true;
+                    continue;
+                }
+                if (\App\Support\TrafikAnaliz::tur($m[7]) !== 'tarayici' || preg_match('#^/(admin|kurum-panel|pazarlamaci|_ops|\.well-known)#', $m[4])) {
+                    continue;
+                }
+                $sayfa[] = ['ip' => $m[1], 'saat' => $m[2], 'yol' => $m[4], 'kod' => $m[5], 'ref' => $m[6], 'ua' => $m[7]];
+            }
+            fclose($fh);
+            $supheli = array_values(array_filter($sayfa, fn ($r) => ! isset($varlik[$r['ip']])));
+            $n = count($supheli);
+            if (! $n) {
+                continue;
+            }
+            $say = function (callable $f) use ($supheli) {
+                $c = [];
+                foreach ($supheli as $r) {
+                    $k = $f($r);
+                    $c[$k] = ($c[$k] ?? 0) + 1;
+                }
+                arsort($c);
+
+                return $c;
+            };
+            $yuzde = fn ($v) => '%'.round($v / $n * 100, 1);
+            $out .= "\n=============== {$kayitAdi}: bugun {$n} supheli sayfa istegi, ".count(array_unique(array_column($supheli, 'ip')))." farkli IP ===============\n";
+
+            $out .= "\n-- Istenen sayfa turleri --\n";
+            foreach ($say(fn ($r) => match (true) {
+                (bool) preg_match('#^/kurumlar/[^/?]+/sahiplen#', $r['yol']) => 'Kurum "sahiplen" sayfasi',
+                (bool) preg_match('#^/kurumlar/[^/?]+/(yorum|ziyaret)#', $r['yol']) => 'Kurum yorum/ziyaret formu',
+                (bool) preg_match('#^/kurumlar/[^/?]+(\?|$)#', $r['yol']) => 'Kurum detay sayfasi',
+                (bool) preg_match('#^/kurumlar(\?|$)#', $r['yol']) => 'Kurum listesi / arama',
+                (bool) preg_match('#^/(doktor/|uzmanlar)#', $r['yol']) => 'Doktor sayfalari',
+                (bool) preg_match('#^/(rehber|fiyat-rehberi|tani-rehberi|bakim-rehberi)#', $r['yol']) => 'Rehber / fiyat sayfalari',
+                (bool) preg_match('#^/siteler/|^/dr/#', $r['yol']) => 'Kurum/doktor siteleri',
+                $r['yol'] === '/' || str_starts_with($r['yol'], '/?') => 'Anasayfa',
+                default => 'Diger: '.preg_replace('#^(/[^/?]+).*#', '$1', $r['yol']),
+            }) as $k => $v) {
+                $out .= sprintf("  %-34s %6d  %s\n", $k, $v, $yuzde($v));
+            }
+
+            $out .= "\n-- Yanit kodu --\n";
+            foreach (array_slice($say(fn ($r) => $r['kod']), 0, 5, true) as $k => $v) {
+                $out .= sprintf("  %-6s %6d  %s\n", $k, $v, $yuzde($v));
+            }
+
+            $out .= "\n-- Nereden yonlendirildi (referer) --\n";
+            foreach (array_slice($say(fn ($r) => $r['ref'] === '-' ? 'yok (dogrudan)' : (parse_url($r['ref'], PHP_URL_HOST) ?: 'diger')), 0, 6, true) as $k => $v) {
+                $out .= sprintf("  %-34s %6d  %s\n", $k, $v, $yuzde($v));
+            }
+
+            $out .= "\n-- Tarayici kimligi (en sik 8) --\n";
+            foreach (array_slice($say(fn ($r) => preg_replace('/\s+/', ' ', mb_substr($r['ua'], 0, 110))), 0, 8, true) as $k => $v) {
+                $out .= sprintf("  %6d  %s  %s\n", $v, $yuzde($v), $k);
+            }
+            $surum = $say(fn ($r) => preg_match('#Chrome/(\d+)#', $r['ua'], $c) ? 'Chrome '.$c[1] : (preg_match('#Firefox/(\d+)#', $r['ua'], $c) ? 'Firefox '.$c[1] : (str_contains($r['ua'], 'Safari') ? 'Safari' : 'diger')));
+            $out .= '  Surum dagilimi: '.implode(', ', array_map(fn ($k, $v) => $k.'='.$v, array_keys(array_slice($surum, 0, 10, true)), array_slice($surum, 0, 10, true)))."\n";
+
+            $out .= "\n-- Saatlere gore --\n  ";
+            $saat = $say(fn ($r) => $r['saat']);
+            ksort($saat);
+            foreach ($saat as $k => $v) {
+                $out .= $k.':'.$v.'  ';
+            }
+            $out .= "\n";
+
+            $out .= "\n-- En kalabalik aglar (ilk iki blok) + ornek IP'nin ters DNS adi --\n";
+            $ag = $say(fn ($r) => implode('.', array_slice(explode('.', $r['ip']), 0, 2)));
+            $ornek = [];
+            foreach ($supheli as $r) {
+                $ornek[implode('.', array_slice(explode('.', $r['ip']), 0, 2))] ??= $r['ip'];
+            }
+            $i = 0;
+            foreach (array_slice($ag, 0, 15, true) as $k => $v) {
+                $dns = $i++ < 15 && str_contains((string) $ornek[$k], '.') ? @gethostbyaddr($ornek[$k]) : '';
+                $out .= sprintf("  %-10s %6d  %-6s  %s\n", $k.'.x.x', $v, $yuzde($v), ($dns && $dns !== $ornek[$k]) ? $dns : '(ters DNS yok)');
+            }
+            $out .= '  Toplam farkli ag (ilk iki blok): '.count($ag)."\n";
+        }
+
+        return $out ?: 'Bugun icin supheli kayit yok.';
     }
 
     private function siteVisitsDiagnose(): string
