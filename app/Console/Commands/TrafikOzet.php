@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 // satırlar da tamamlansın diye). --gun=N ile kayıtlarda hâlâ duran son N gün geriye dönük doldurulur.
 class TrafikOzet extends Command
 {
-    protected $signature = 'platform:trafik-ozet {--gun=2 : Bugün dahil kaç gün geriye}';
+    protected $signature = 'platform:trafik-ozet {--gun=2 : Bugün dahil kaç gün geriye} {--sifirla : Bu günlerin eski kaydını silip sıfırdan hesapla}';
 
     protected $description = 'Erişim kayıtlarından günlük trafik özetini (ziyaretçi türüne göre) trafik_gunluk tablosuna yazar';
 
@@ -20,13 +20,18 @@ class TrafikOzet extends Command
         $gun = max(1, min(31, (int) $this->option('gun')));
         $tarihler = collect(range(0, $gun - 1))->map(fn ($i) => now()->subDays($i)->toDateString())->all();
         $sonuc = TrafikAnaliz::gunler($tarihler);
+        if ($this->option('sifirla')) {
+            DB::table('trafik_gunluk')->whereIn('tarih', array_keys($sonuc))->delete();
+        }
         $satir = 0;
         foreach ($sonuc as $tarih => $markalar) {
             foreach ($markalar as $marka => $turler) {
                 foreach ($turler as $tur => $d) {
+                    // Sunucu kayıt dosyasını gün içinde kısaltabilir: önceki hesap daha yüksekse korunur (veri kaybolmaz).
+                    $eski = DB::table('trafik_gunluk')->where(['tarih' => $tarih, 'marka' => $marka, 'tur' => $tur])->first();
                     DB::table('trafik_gunluk')->updateOrInsert(
                         ['tarih' => $tarih, 'marka' => $marka, 'tur' => $tur],
-                        ['istek' => $d['istek'], 'ip' => $d['ip'], 'updated_at' => now(), 'created_at' => now()]
+                        ['istek' => max($d['istek'], (int) ($eski->istek ?? 0)), 'ip' => max($d['ip'], (int) ($eski->ip ?? 0)), 'updated_at' => now(), 'created_at' => $eski->created_at ?? now()]
                     );
                     $satir++;
                 }

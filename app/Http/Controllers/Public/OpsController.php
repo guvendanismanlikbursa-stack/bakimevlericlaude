@@ -81,7 +81,7 @@ class OpsController extends Controller
             'traffic-trend' => $this->trafficTrend($request),
             'traffic-log-days' => $this->trafficLogDays($request),
             'trafik-ozet-run' => (function () use ($request) {
-                Artisan::call('platform:trafik-ozet', ['--gun' => max(1, min(31, (int) $request->query('gun', 2)))]);
+                Artisan::call('platform:trafik-ozet', ['--gun' => max(1, min(31, (int) $request->query('gun', 2)))] + ($request->query('sifirla') === '1' ? ['--sifirla' => true] : []));
 
                 return Artisan::output();
             })(),
