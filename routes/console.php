@@ -37,6 +37,17 @@ ScheduledJobMonitor::attach(
 // 03:30'da veritabani gecici erisilemezse yedek atlaniyordu; bugun icin yedek yoksa 04:10'da tekrar dener.
 Schedule::command('backup:database --if-missing')->dailyAt('04:10');
 
+// 27 Ekim 2026: kullanıcının talebi - ayda bir TAM dosya yedeği (tüm fotoğraf ve
+// belgeler tek zip). Eski paylaşımlı sunucuda bu iş web isteği içinde çalıştığı
+// için yarıda kesiliyordu; VDS'te gerçek cron ile çalıştığından sorun yok.
+// Sunucuda yalnızca en son tam yedek tutulur (bkz. BackupDatabase::pruneOldBackups),
+// bilgisayardaki günlük çekme görevi bunu C:\Yedeklerakimevleri_gunluk'e indirir.
+ScheduledJobMonitor::attach(
+    Schedule::command('backup:database --with-files')->monthlyOn(1, '02:00'),
+    'backup:database --with-files',
+    60 * 24 * 32
+);
+
 // 23 Ekim 2026: kullanıcının talebi - her akşam o gün eklenen/değişen dosyalar
 // (görseller, videolar, belgeler) + .env yedeklenir (bkz. App\Console\Commands\BackupFilesDaily).
 ScheduledJobMonitor::attach(
