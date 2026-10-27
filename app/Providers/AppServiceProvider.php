@@ -110,8 +110,11 @@ class AppServiceProvider extends ServiceProvider
      */
     private function registerRateLimiters(): void
     {
+        // 27 Ekim 2026: 3 marka artık tek sunucuda tek kopya olarak çalışıyor.
+        // Eskiden her markanın ayrı kopyası (ve ayrı sayacı) vardı; sayaç bu yüzden
+        // marka adresi + IP ile tutuluyor, böylece davranış birebir aynı kalıyor.
         foreach (config('platform.throttle', []) as $name => $perMinute) {
-            RateLimiter::for($name, fn ($request) => Limit::perMinute($perMinute)->by($request->ip()));
+            RateLimiter::for($name, fn ($request) => Limit::perMinute($perMinute)->by($request->getHost().'|'.$request->ip()));
         }
     }
 }
