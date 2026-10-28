@@ -7274,7 +7274,8 @@ class PlatformFeatureTest extends TestCase
             'experts' => new \Illuminate\Pagination\LengthAwarePaginator([$expert->fresh()], 1, 20),
             'activeExpertSlug' => null, 'hasFilter' => true, 'publiclyVisible' => true,
         ])->render();
-        $this->assertStringContainsString('İyilik Hareketi Destekçisi', $html);
+        // 28 Ekim 2026: TTB md. 13 - etiket artık herkese açık kartta gösterilmez (yalnızca admin).
+        $this->assertStringNotContainsString('İyilik Hareketi Destekçisi', $html);
 
         $expert->update(['supporter_until' => now()->subDays(2)->toDateString()]);
         $this->assertFalse($expert->fresh()->isSupporter());
@@ -7484,15 +7485,10 @@ class PlatformFeatureTest extends TestCase
         $this->get('/dr/dr-ayse-yilmaz')->assertOk()->assertSee('Dr. Ayşe Yılmaz Muayenehanesi', false)
             ->assertSee('Tiroid', false)->assertSee('Hafta içi 09:00-18:00', false)->assertDontSee('Önizleme — bu site', false);
 
-        // İletişim formu admin mesajlarına düşer; e-postasız mesaja cevap e-postası denenmez.
-        $this->post('/dr/dr-ayse-yilmaz/iletisim', ['full_name' => 'Ali Hasta', 'phone' => '05550009988', 'message' => 'Randevu'])->assertRedirect();
-        $mesaj = \App\Models\ContactMessage::where('name', 'Ali Hasta')->firstOrFail();
-        $this->assertStringContainsString('05550009988', $mesaj->message);
-        $this->assertStringContainsString('Ayşe Yılmaz', (string) $mesaj->subject);
-        $this->withSession($admin)->post(route('admin.contact-messages.reply', $mesaj), ['body' => 'Merhaba'])->assertSessionHas('error');
-        $this->withSession($admin)->get(route('admin.contact-messages.index'))->assertOk()->assertSee('Ali Hasta', false);
-        $this->flushSession();
-        $this->post('/dr/dr-ayse-yilmaz/iletisim', ['full_name' => 'Bot', 'phone' => '1', 'website' => 'spam'])->assertSessionHasErrors('website');
+        // 28 Ekim 2026: TTB md. 13 - doktor sitesinde form yok, gönderim reddedilir; uyarı en başta.
+        $this->get('/dr/dr-ayse-yilmaz')->assertSee('Sayfa içeriği sadece bilgilendirme amaçlıdır', false)->assertDontSee('name="full_name"', false);
+        $this->post('/dr/dr-ayse-yilmaz/iletisim', ['full_name' => 'Ali Hasta', 'phone' => '05550009988', 'message' => 'Randevu'])->assertNotFound();
+        $this->assertFalse(\App\Models\ContactMessage::where('name', 'Ali Hasta')->exists());
 
         // Alan adı: kurum sitesinde kullanılan alan adı doktora verilemez; geçerli alan adıyla açılır.
         $kurumSitesi = \App\Models\FacilityWebsite::forFacility($this->rehabFacility);
@@ -7508,8 +7504,8 @@ class PlatformFeatureTest extends TestCase
         $this->get('/dr/dr-ayse-yilmaz')->assertRedirect('https://drayse.com');
         $this->get('http://drayse.com/')->assertOk()->assertSee('Dr. Ayşe Yılmaz Muayenehanesi', false);
         $this->get('http://drayse.com/uzmanlar')->assertRedirect('/');
-        $this->post('http://drayse.com/iletisim', ['full_name' => 'Veli Alan', 'phone' => '05554443322'])->assertRedirect();
-        $this->assertTrue(\App\Models\ContactMessage::where('name', 'Veli Alan')->exists());
+        $this->post('http://drayse.com/iletisim', ['full_name' => 'Veli Alan', 'phone' => '05554443322'])->assertNotFound();
+        $this->assertFalse(\App\Models\ContactMessage::where('name', 'Veli Alan')->exists());
 
         // Geri alma: başlık önceki haline döner.
         $rev = $site->fresh()->revisions()->get()->first(fn ($r) => array_key_exists('hero_title', $r->before));
@@ -7898,9 +7894,10 @@ class PlatformFeatureTest extends TestCase
         $this->flushSession();
         $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->post('/dr/'.$site->slug.'/olay', ['tur' => 'whatsapp'])->assertNoContent();
         $this->post('/dr/'.$site->slug.'/olay', ['tur' => 'arama'])->assertNoContent();
-        $this->post('/dr/'.$site->slug.'/iletisim', ['full_name' => 'Sayaç Aile', 'phone' => '05550001111']);
+        // 28 Ekim 2026: doktor sitesinde form kaldırıldı (TTB md. 13), form sayacı 0 kalır.
+        $this->post('/dr/'.$site->slug.'/iletisim', ['full_name' => 'Sayaç Aile', 'phone' => '05550001111'])->assertNotFound();
         $r = $site->fresh()->statsReport()['son30'];
-        $this->assertSame(['ziyaret' => 1, 'whatsapp' => 1, 'arama' => 1, 'form' => 1], $r);
+        $this->assertSame(['ziyaret' => 1, 'whatsapp' => 1, 'arama' => 1, 'form' => 0], $r);
         $this->assertSame(1, \App\Models\ExpertWebsite::summary()['son30']['ziyaret']);
 
         // Kart: listelenme (arama sonucu), açılma, telefon tıklaması.
@@ -8186,7 +8183,8 @@ class PlatformFeatureTest extends TestCase
             'city_id' => $this->city->id, 'phone' => '0533 111 22 98', 'is_published' => true, 'supporter_until' => now()->subDay(),
         ]);
         $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
-            ->assertSeeInOrder(['Özel Doktorlar Bölümüne Hoş Geldiniz', 'ℹ️ Bilgilendirme', '💛 Teşekkür', 'Uzm. Dr. Deniz Kaya'], false)
+            ->assertSeeInOrder(['Sayfa içeriği sadece bilgilendirme amaçlıdır, tanı ve tedavi için mutlaka doktorunuza başvurunuz.', 'Özel Doktorlar Bölümüne Hoş Geldiniz', 'ℹ️ Bilgilendirme'], false)
+            ->assertDontSee('💛 Teşekkür', false)->assertDontSee('Uzm. Dr. Deniz Kaya', false)
             ->assertDontSee('Eski Destekci', false);
     }
 

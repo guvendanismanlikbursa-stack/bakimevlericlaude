@@ -44,6 +44,8 @@
     </div>
   @endunless
 
+  @include('themes._shared.partials.hekim-uyari')
+
   {{-- 25 Ekim 2026: bölüm kartları bu sayfada da görünsün (bölüm yayındayken). --}}
   @if(doctors_live())@include('themes._shared.partials.bolum-kartlari-ust')@endif
 
@@ -159,17 +161,8 @@
     <div style="font-weight:800;color:#0d6e6a;margin-bottom:4px;">ℹ️ Bilgilendirme</div>
     Bu sayfada yer alan hekim bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları hekime daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir hekimin reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir hekim öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
   </div>
-  @if($destekciler->isNotEmpty())
-    <section style="border:1px solid #f1e4c8;background:#fffaf0;border-radius:14px;padding:14px 16px;color:#1f2937;font-size:14px;line-height:1.6;">
-      <div style="font-weight:800;color:#8a6a35;margin-bottom:4px;">💛 Teşekkür</div>
-      <p style="margin:0 0 10px;">İyilik Hareketi'ne destek veren hekimlerimize teşekkür ederiz. Liste alfabetiktir; bir tanıtım ya da sıralama değildir.</p>
-      <ul style="margin:0;padding:0;list-style:none;display:grid;gap:4px 18px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));">
-        @foreach($destekciler as $d)
-          <li style="overflow-wrap:anywhere;">{{ trim(($d->title ? $d->title.' ' : '').$d->name) }}@if($d->city)<span style="color:#6b7280;"> · {{ $d->city->name }}</span>@endif</li>
-        @endforeach
-      </ul>
-    </section>
-  @endif
+  {{-- 28 Ekim 2026: İyilik Hareketi destekçi hekim teşekkür listesi kaldırıldı - TTB md. 13:
+       hekimler aracılık yapan platformlara üye olamaz; üyelik/destekçilik izlenimi verilmez. --}}
   </div>
 
   {{-- 7 Ekim 2026: kullanicinin bildirdigi gercek hata - "filtreleme hic

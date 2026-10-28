@@ -112,6 +112,8 @@
   <div class="onizleme">Önizleme — bu site henüz yayında değil. Yalnızca siz görüyorsunuz.</div>
 @endif
 
+@include('themes._shared.partials.hekim-uyari', ['boyut' => 'inherit'])
+
 <header class="menu">
   <div class="kap">
     <a href="#" class="logo">{{ $adSoyad }}</a>
@@ -134,7 +136,7 @@
       <div class="btnler">
         @if($telLink)<a href="{{ $telLink }}" class="btn btn-ana" style="background:#fff;color:var(--koyu);">📞 {{ $telefon }}</a>@endif
         @if($whatsapp)<a href="https://wa.me/{{ $whatsapp }}?text={{ rawurlencode('Merhaba, randevu almak istiyorum.') }}" target="_blank" rel="noopener" class="btn btn-wa">WhatsApp'tan Yazın</a>@endif
-        <a href="#iletisim" class="btn btn-cerceve">Randevu Talebi</a>
+        <a href="#iletisim" class="btn btn-cerceve">İletişim</a>
       </div>
     </div>
     @if($foto)
@@ -208,39 +210,15 @@
     <div>
       <div class="ust-etiket" style="color:rgba(255,255,255,.8);">Randevu</div>
       <h2 style="color:#fff;">Randevu almak ya da bilgi almak ister misiniz?</h2>
-      <div class="yazi">Formu doldurun, sizi en kısa sürede arayalım. Dilerseniz doğrudan telefonla da ulaşabilirsiniz.</div>
+      <div class="yazi">Randevu ve bilgi için muayenehaneyi doğrudan arayabilirsiniz.</div>
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:22px;">
         @if($telLink)<a href="{{ $telLink }}" class="btn btn-cerceve">📞 {{ $telefon }}</a>@endif
         @if($whatsapp)<a href="https://wa.me/{{ $whatsapp }}" target="_blank" rel="noopener" class="btn btn-wa">WhatsApp</a>@endif
       </div>
       @if($adres)<p class="yazi" style="margin-top:18px;">📍 {{ $adres }}</p>@endif
     </div>
-    <form method="POST" action="{{ $formAction }}" class="form">
-      @csrf
-      @include('themes._shared.partials.honeypot')
-      @if(session('doktor_sitesi_basarili'))<div class="basari" role="status">{{ session('doktor_sitesi_basarili') }}</div>@endif
-      <div>
-        <label for="ds-ad">Adınız soyadınız</label>
-        <input id="ds-ad" name="full_name" value="{{ old('full_name') }}" required maxlength="120" autocomplete="name">
-        @error('full_name')<div class="hata">{{ $message }}</div>@enderror
-      </div>
-      <div>
-        <label for="ds-tel">Telefonunuz</label>
-        <input id="ds-tel" name="phone" value="{{ old('phone') }}" required maxlength="30" inputmode="tel" autocomplete="tel">
-        @error('phone')<div class="hata">{{ $message }}</div>@enderror
-      </div>
-      <div>
-        <label for="ds-mesaj">Mesajınız (isteğe bağlı)</label>
-        <textarea id="ds-mesaj" name="message" rows="4" maxlength="2000">{{ old('message') }}</textarea>
-      </div>
-      @if($whatsapp)
-        <button type="submit" class="btn btn-wa" style="width:100%;">WhatsApp ile Gönder</button>
-        <p style="margin:0;font-size:12px;color:var(--soluk);">Gönder'e basınca WhatsApp açılır, mesajınız hazır yazılı gelir; göndermeniz yeterli.</p>
-      @else
-        <button type="submit" class="btn btn-ana" style="width:100%;">Gönder</button>
-      @endif
-      <p style="margin:0;font-size:12px;color:var(--soluk);">Bilgileriniz yalnızca size dönüş yapılması için kullanılır. Lütfen sağlık bilgilerinizi bu forma yazmayın.</p>
-    </form>
+    {{-- 28 Ekim 2026: iletişim formu kaldırıldı - TTB md. 13: mesajlar platform üzerinden
+         geçmesin (aracılık / hasta yönlendirme sayılır); yalnızca doğrudan telefon ve WhatsApp. --}}
   </div>
 </section>
 

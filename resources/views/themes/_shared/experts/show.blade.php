@@ -24,6 +24,7 @@
 @section('content')
 <div style="background-color:#f4faf9;background-image:radial-gradient(ellipse 60% 45% at 8% 0%, rgba(13,148,136,.14), transparent 70%),linear-gradient(180deg,#e9f6f4 0%,#f4faf9 35%,#ffffff 100%);min-height:70vh;margin-bottom:-4rem;padding-bottom:4rem;">
 <div class="max-w-5xl mx-auto px-4 py-8">
+  @include('themes._shared.partials.hekim-uyari')
   <nav aria-label="Konum" style="font-size:13px;color:#6b7280;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:4px;">
     @foreach($kirinti as $k)
       @if(! $loop->last)<a href="{{ $k['url'] }}" style="color:#0d6e6a;text-decoration:none;font-weight:600;">{{ $k['ad'] }}</a><span aria-hidden="true">›</span>@else<span>{{ $k['ad'] }}</span>@endif
@@ -37,7 +38,6 @@
       <p style="color:#475569;margin-top:6px;font-size:15px;">{{ $e->branch }}@if($e->branch_label) <span style="color:#94a3b8;">({{ $e->branch_label }})</span>@endif @if($yer) · {{ $yer }}@endif</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
         @if(doctor_reviews_visible() && $e->rating)<span style="font-size:13px;font-weight:800;color:#b45309;background:#fffbeb;border-radius:999px;padding:4px 10px;">Google’da ★ {{ number_format($e->rating, 1, ',', '') }}@if($e->review_count) ({{ $e->review_count }} yorum)@endif</span>@endif
-        @if($e->isSupporter())<span style="font-size:12px;font-weight:800;color:#be185d;background:#fdf2f8;border:1px solid #fbcfe8;border-radius:999px;padding:4px 10px;">💗 İyilik Hareketi Destekçisi</span>@endif
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;">
         @if($telLink)<a href="{{ $telLink }}" style="display:inline-flex;align-items:center;gap:8px;background:#16a34a;color:#fff;font-weight:900;border-radius:12px;padding:11px 18px;text-decoration:none;">📞 {{ $e->phone }}</a>@endif
@@ -58,18 +58,11 @@
         @if($yer)<div style="{{ $bilgi }}"><span style="display:block;font-size:12px;color:#94a3b8;">İlçe / İl</span><b style="color:#0f172a;">{{ $yer }}</b></div>@endif
         @if($e->phone)<div style="{{ $bilgi }}"><span style="display:block;font-size:12px;color:#94a3b8;">Telefon</span><b style="color:#0f172a;">{{ $e->phone }}</b></div>@endif
       </div>
-      @if($e->description)<p style="margin-top:12px;color:#334155;font-size:14.5px;line-height:1.65;">{{ $e->description }}</p>@endif
+      {{-- 28 Ekim 2026: TTB mevzuatı - açıklama metni gösterilmez (hasta yorumu alıntıları içeriyor). --}}
     </section>
 
-    <section style="{{ $kart }}">
-      <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">{{ $e->branch ?: 'Bu alanda' }} — hangi durumlarda başvurulur?</h2>
-      <ul style="margin:0;padding:0;list-style:none;display:grid;gap:8px;">
-        @foreach(array_slice($durumlar, 0, 6) as [$baslik, $metin])
-          <li style="font-size:14px;color:#334155;line-height:1.5;"><b style="color:#0f172a;">{{ $baslik }}:</b> {{ $metin }}</li>
-        @endforeach
-      </ul>
-      <p style="margin-top:10px;font-size:12.5px;color:#64748b;">Genel bilgilendirmedir; tanı ve tedavi için muayene gerekir.</p>
-    </section>
+    {{-- 28 Ekim 2026: "hangi durumlarda başvurulur" bölümü kaldırıldı - TTB md. 14: hekim sayfası
+         uzmanlık alanı dışındaki (hastalık adı gibi) anahtar kelimelerle bulunmamalı. --}}
   </div>
 
   @if(doctor_reviews_visible() && $e->reviews && count($e->reviews))

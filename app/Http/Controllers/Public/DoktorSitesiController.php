@@ -48,46 +48,13 @@ class DoktorSitesiController extends Controller
     }
 
     /**
-     * Doktorların paneli olmadığı için mesaj admin "İletişim Mesajları"na düşer.
+     * 28 Ekim 2026: kullanıcının talebi - TTB md. 13: hekimler aracılık yapan platformları
+     * kullanamaz; hasta mesajı platform (admin) üzerinden geçmemeli. Form kaldırıldı, eski
+     * adrese gelen gönderimler reddedilir. İletişim yalnızca doğrudan telefon / WhatsApp.
      */
     private function handleContact(Request $request, ExpertWebsite $site, string $back)
     {
-        $request->validate(['website' => 'max:0']);
-        $data = $request->validate([
-            'full_name' => 'required|string|max:120',
-            'phone' => 'required|string|max:30',
-            'message' => 'nullable|string|max:2000',
-        ]);
-        $expert = $site->expert;
-        $message = ContactMessage::create([
-            'brand' => 'bakimevleri',
-            'name' => $data['full_name'],
-            'email' => '',
-            'subject' => 'Doktor sitesi: '.$site->fullName(),
-            'message' => 'Telefon: '.$data['phone']."\n\n".trim((string) ($data['message'] ?? ''))
-                ."\n\n(Doktorun internet sitesindeki iletişim formundan gönderildi. Doktor kaydı #".$expert->id.')',
-        ]);
-        if ($site->isLive()) {
-            $site->recordStat('form');
-        }
-        \App\Models\Admin::all()->each(fn ($admin) => notify_user(
-            $admin,
-            'contact_message_submitted',
-            'Doktor sitesinden yeni mesaj',
-            $message->name.' — '.$site->fullName().' sitesinden yazdı.',
-        ));
-
-        // 23 Ekim 2026: kullanıcının talebi - form, doktorun WhatsApp (cep)
-        // hattına yönlendirir; mesaj hazır yazılı gelir. Kayıt yine tutulur.
-        $wa = classify_phone_type($expert->phone) === 'mobile' ? normalize_whatsapp_number($expert->phone) : '';
-        if ($wa) {
-            $metin = 'Merhaba, internet sitenizden yazıyorum.'."\nAdım: ".$data['full_name']."\nTelefonum: ".$data['phone']
-                .(trim((string) ($data['message'] ?? '')) !== '' ? "\n".trim($data['message']) : '');
-
-            return redirect()->away('https://wa.me/'.$wa.'?text='.rawurlencode($metin));
-        }
-
-        return redirect($back.'#iletisim')->with('doktor_sitesi_basarili', 'Mesajınız iletildi, en kısa sürede sizi arayacağız.');
+        abort(404);
     }
 
     /** 25 Ekim 2026: WhatsApp / telefon tıklaması (sayfadaki betik gönderir). */

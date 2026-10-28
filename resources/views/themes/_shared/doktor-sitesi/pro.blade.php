@@ -361,6 +361,7 @@
 </head>
 <body class="{{ ! empty($hareketli) ? 'hrk hrk-dr' : '' }}">
 @if(! empty($hareketli))<div class="ilerleme" id="ilerleme" aria-hidden="true"></div>@endif
+<div style="position:relative;z-index:80;padding:8px 12px 0;">@include('themes._shared.partials.hekim-uyari', ['boyut' => 'inherit'])</div>
 @php
   $ikonTel = '<svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2z"/></svg>';
   $ikonWa = '<svg class="ikon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2l-.5-.3z"/></svg>';
@@ -523,7 +524,7 @@
     <div class="gorun">
       <div class="etiket">Randevu</div>
       <h2>Randevu almak ister misiniz?</h2>
-      <p class="giris-metni" style="margin-top:16px;">Formu doldurun ya da doğrudan ulaşın, en kısa sürede dönüş yapalım.</p>
+      <p class="giris-metni" style="margin-top:16px;">Randevu için muayenehaneyi doğrudan arayabilir ya da WhatsApp’tan yazabilirsiniz.</p>
       <div style="margin-top:22px;border-top:1px solid var(--cizgi);">
         @if($telLink)<a href="{{ $telLink }}" class="kanal"><span class="yuvar">{!! $ikonTel !!}</span><span><b>Telefon</b><span>{{ $telefon }}</span></span></a>@endif
         @if($waLink)<a href="{{ $waLink }}" class="kanal" target="_blank" rel="noopener"><span class="yuvar" style="background:#e8f6ee;color:#1f9d55;">{!! $ikonWa !!}</span><span><b>WhatsApp</b><span>Mesaj gönderin, hızlıca dönelim</span></span></a>@endif
@@ -531,24 +532,7 @@
         @if($bolum('calisma_saatleri') && $saatler !== '')<div class="kanal"><span class="yuvar">{!! $ikonSaat !!}</span><span><b>Çalışma saatleri</b><span style="white-space:pre-line;">{{ $saatler }}</span></span></div>@endif
       </div>
     </div>
-    <div class="form-kart gorun">
-      <h3>Randevu talebi</h3>
-      <form method="POST" action="{{ $formAction }}">
-        @csrf
-        @include('themes._shared.partials.honeypot')
-        @if(session('doktor_sitesi_basarili'))<div class="basari" role="status">{{ session('doktor_sitesi_basarili') }}</div>@endif
-        <div><label for="pd-ad">Adınız soyadınız</label><input id="pd-ad" name="full_name" value="{{ old('full_name') }}" required maxlength="120" autocomplete="name">@error('full_name')<div class="hata">{{ $message }}</div>@enderror</div>
-        <div><label for="pd-tel">Telefonunuz</label><input id="pd-tel" name="phone" value="{{ old('phone') }}" required maxlength="30" inputmode="tel" autocomplete="tel">@error('phone')<div class="hata">{{ $message }}</div>@enderror</div>
-        <div><label for="pd-mesaj">Mesajınız (isteğe bağlı)</label><textarea id="pd-mesaj" name="message" rows="4" maxlength="2000">{{ old('message') }}</textarea></div>
-        @if($whatsapp)
-          <button type="submit" class="btn btn-wa" style="width:100%;">{!! $ikonWa !!} WhatsApp ile Gönder</button>
-          <p class="not">Gönder'e basınca WhatsApp açılır, mesajınız hazır yazılı gelir. Lütfen sağlık bilgilerinizi forma yazmayın.</p>
-        @else
-          <button type="submit" class="btn btn-dolu" style="width:100%;">Gönder</button>
-          <p class="not">Bilgileriniz yalnızca size dönüş yapılması için kullanılır. Lütfen sağlık bilgilerinizi forma yazmayın.</p>
-        @endif
-      </form>
-    </div>
+    {{-- 28 Ekim 2026: randevu formu kaldırıldı - TTB md. 13 (platform üzerinden mesaj = aracılık). --}}
   </div>
 </section>
 @if($bolum('konum') && $e->lat && $e->lng)

@@ -68,10 +68,10 @@ class ExpertSeoController extends Controller
 
         $h1 = ($ilceAdi ?: $city->name).' '.$neYazi.($brans ? ' ('.$brans['title'].')' : '');
         $title = $h1.($ilceAdi ? ' – '.$city->name : '').' | '.$adet.' Doktor, Adres ve Telefon'.($sayfa > 1 ? ' – Sayfa '.$sayfa : '');
-        $aciklama = $yer.' bölgesindeki '.$adet.' '.$neKucuk.' için klinik, adres, telefon ve Google yorumları. Liste herkese açık kaynaklardan derlenir ve alfabetiktir.';
+        $aciklama = $yer.' bölgesindeki '.$adet.' '.$neKucuk.' için klinik, adres ve telefon bilgileri. Liste herkese açık kaynaklardan derlenir ve alfabetiktir.';
 
         $giris = $yer.' bölgesinde muayenehanesi bulunan '.$adet.' '.$neKucuk.' aşağıda alfabetik sırayla listelenmiştir. '
-            .'Her doktorun kartında klinik, adres, telefon ve Google’daki yorumlarına ulaşabilir, doğrudan arayarak randevu alabilirsiniz.';
+            .'Her doktorun kartında klinik, adres ve telefon bilgisi yer alır; randevu doğrudan doktorun muayenehanesinden alınır.';
         if (! $ilceSlug) {
             $enCok = $kapsam->whereNotNull('ilce')->groupBy('ilce')->map->sum('adet')->sortDesc()->take(4);
             if ($enCok->count() > 1) {
@@ -83,11 +83,9 @@ class ExpertSeoController extends Controller
             ['soru' => $yer.' bölgesinde kaç '.$neKucuk.' listeleniyor?', 'cevap' => 'Sitemizde şu an '.$yer.' için '.$adet.' kayıt bulunuyor. Liste düzenli olarak güncellenir.'],
             ['soru' => 'Randevu nasıl alabilirim?', 'cevap' => 'Listede doktorun kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, doktorun muayenehanesiyle yapılır.'],
         ];
-        if ($brans) {
-            $durumlar = array_slice(array_column(DoktorIcerik::durumlar(DoktorIcerik::tur($brans['title'], $brans['label'])), 0), 0, 5);
-            $sss[] = ['soru' => 'Hangi durumlarda '.$brans['title'].' uzmanına başvurulur?', 'cevap' => 'Sık karşılaşılan başvuru nedenlerinden bazıları: '.mb_strtolower(implode(', ', $durumlar), 'UTF-8').'. Tanı ve tedavi için mutlaka muayene gerekir.'];
-        }
+        // 28 Ekim 2026: "hangi durumlarda başvurulur" sorusu kaldırıldı (TTB md. 14 - uzmanlık dışı anahtar kelime).
         $sss[] = ['soru' => 'Bu liste nasıl hazırlanıyor?', 'cevap' => 'Bilgiler herkese açık güncel kaynaklardan derlenir. Sıralama alfabetiktir; hiçbir doktor öne çıkarılmaz ve liste reklam amacı taşımaz.'];
+        $sss[] = ['soru' => 'Siteniz randevu ya da yönlendirme hizmeti veriyor mu?', 'cevap' => 'Hayır. Sitemiz hekimlerle hastalar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve hekimler sitemize üye değildir. İletişim doğrudan muayenehaneyle kurulur.'];
 
         // Bağlantılar: aynı ildeki ilçeler, aynı ilçedeki branşlar, il geneli
         $link = fn (array $p) => brand_route('experts.landing', $p);
@@ -160,7 +158,6 @@ class ExpertSeoController extends Controller
             'ayniYer' => $ayniYer, 'siteAdresi' => $siteAdresi, 'kirinti' => $kirinti,
             'kanonik' => DoktorSeo::asilAdres('/doktor/'.$expert->slug),
             'publiclyVisible' => doctors_live(),
-            'durumlar' => DoktorIcerik::durumlar(DoktorIcerik::tur($expert->branch, $expert->branch_label)),
         ]);
     }
 }

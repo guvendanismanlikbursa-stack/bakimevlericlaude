@@ -160,19 +160,20 @@
   </div>
 </section>
 
-{{-- DOKTORLAR BÖLÜMÜ --}}
+{{-- DOKTORLAR BÖLÜMÜ - 28 Ekim 2026: TTB md. 13 gereği hekimlerin aile yönlendirdiği ya da
+     platforma ait olduğu izlenimi verilmez; doktorlar yalnızca herkese açık bir rehberdir. --}}
 <section class="bg-gray-50 ih-sec">
   <div class="ih-wrap">
     <div class="ih-center" style="margin-bottom:28px;">
-      <span class="ih-eyebrow">Doktorlarımız</span>
-      <h2 class="ih-h2">Doktorlarımız, size aile getirir</h2>
+      <span class="ih-eyebrow">Özel Doktorlar bölümü</span>
+      <h2 class="ih-h2">Doktor arayan aileler, kurumunuzu da görür</h2>
       <p class="ih-lead">{{ $brand['name'] }}'da Türkiye genelinde {{ $doctorText }} doktor ve uzman yer alıyor. Doktor arayan aileler, bölgelerindeki kurumları da burada görür.</p>
     </div>
     <div class="ih-grid3">
       @foreach([
         ['👵', 'Yaşlı bakım kurumları için', 'Bakım kararı doktor odasında başlar', 'Bir nörolog alzheimer ya da inme teşhisi koyduğunda, bir ortopedist kalça kırığı sonrası uzun bakım gerektiğini söylediğinde ya da bir geriatri uzmanı evde bakımın artık yetmediğini anlattığında, aile o gün bakım kurumu aramaya başlar.', 'Nörolog, geriatri, ortopedi veya fizik tedavi uzmanı arayan aileler sitemize gelir; henüz hiçbir kurumla görüşmemiş bu ailelere ilk ulaşan kurum siz olursunuz.'],
         ['🧒', 'Çocuk kurumları için', 'Anne babalar en çok çocuk doktorlarına güvenir', 'Bir çocuğun gelişimiyle ilgili ilk soru genellikle çocuk doktorunun odasında sorulur: konuşması, arkadaşlarıyla ilişkisi, okula hazır olup olmadığı.', 'Çocuk doktoru, çocuk psikiyatristi ya da çocuk diş hekimi arayan anne babalar, çocuklarına uygun bir kreş ya da anaokulu da arayan ailelerdir.'],
-        ['🤝', 'Rehabilitasyon ve özel eğitim için', 'Teşhisi koyan doktor, aileyi size yönlendirir', 'Otizm, serebral palsi, gelişim geriliği ya da inme sonrası felç: teşhisi bir doktor koyar ve aileye "düzenli terapi ve eğitim gerekiyor" der.', 'Teşhisten hemen sonra kurum arayan aile, karar vermeye en hazır ailedir; sizinle görüşmeden önce başka bir merkeze bağlanmamış olur.'],
+        ['🤝', 'Rehabilitasyon ve özel eğitim için', 'Teşhisten sonra aile kurum arar', 'Otizm, serebral palsi, gelişim geriliği ya da inme sonrası felç: teşhisten sonra aileler düzenli terapi ve eğitim için kurum aramaya başlar.', 'Teşhisten hemen sonra kurum arayan aile, karar vermeye en hazır ailedir; sizinle görüşmeden önce başka bir merkeze bağlanmamış olur.'],
       ] as [$icon, $eyebrow, $title, $p1, $p2])
         <div class="ih-card">
           <div style="font-size:30px;line-height:1;">{{ $icon }}</div>
