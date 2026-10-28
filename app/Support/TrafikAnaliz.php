@@ -36,9 +36,58 @@ class TrafikAnaliz
     /** Testlerde örnek kayıt klasörü vermek için. */
     public static ?string $klasor = null;
 
+    /**
+     * 28 Ekim 2026: VDS'e taşındıktan sonra kayıtlar cPanel'in access-logs klasöründe değil,
+     * OpenLiteSpeed'in site klasöründeki logs/ altında (tek dosya, 3 marka birlikte) tutuluyor.
+     * Sırayla: elle verilen klasör → VDS (logs/*.access_log) → cPanel (access-logs).
+     */
     public static function kayitKlasoru(): string
     {
-        return self::$klasor ?? dirname(base_path()).'/access-logs';
+        if (self::$klasor !== null) {
+            return self::$klasor;
+        }
+        $vds = dirname(base_path()).'/logs';
+
+        return glob($vds.'/*.access_log') ? $vds : dirname(base_path()).'/access-logs';
+    }
+
+    /**
+     * Okunacak dosyalar: [dosya yolu => sabit marka | null].
+     * null: tek dosyada 3 marka var (VDS); marka her satırın sonundaki Host alanından bulunur.
+     *
+     * @return array<string, string|null>
+     */
+    private static function dosyalar(): array
+    {
+        $k = self::kayitKlasoru();
+        $liste = [];
+        $vds = glob($k.'/*.access_log') ?: [];
+        if ($vds) {
+            foreach (array_merge(glob($k.'/*.access_log.*') ?: [], $vds) as $d) {
+                $liste[$d] = null;
+            }
+        } else {
+            foreach (self::SITELER as $marka => $kayitAdi) {
+                foreach (array_merge(glob($k.'/'.$kayitAdi.'-ssl_log-*.gz') ?: [], [$k.'/'.$kayitAdi.'-ssl_log']) as $d) {
+                    $liste[$d] = $marka;
+                }
+            }
+        }
+
+        return array_filter($liste, fn ($m, $d) => is_file($d) && is_readable($d), ARRAY_FILTER_USE_BOTH);
+    }
+
+    /** Alan adından marka (www. ve port atılır); tanınmazsa null. */
+    private static function markaBul(string $host): ?string
+    {
+        $host = strtolower(preg_replace('#^(https?://)?(www\.)?([^/:]+).*$#i', '$3', trim($host)));
+
+        return match ($host) {
+            'bakimevleri.com', 'yedek.bakimevleri.com' => 'bakimevleri',
+            'bakimevibul.com', 'bakimevibul.bakimevleri.com' => 'bakimevibul',
+            'bakimeviara.com', 'bakimeviara.bakimevleri.com' => 'bakimeviara',
+            default => null,
+        };
     }
 
     /**
@@ -50,54 +99,57 @@ class TrafikAnaliz
     public static function gunler(array $tarihler): array
     {
         $istenen = array_flip($tarihler);
-        $sonuc = [];
-        foreach (self::SITELER as $marka => $kayitAdi) {
-            $dosyalar = array_values(array_filter(
-                array_merge(glob(self::kayitKlasoru().'/'.$kayitAdi.'-ssl_log-*.gz') ?: [], [self::kayitKlasoru().'/'.$kayitAdi.'-ssl_log']),
-                fn ($d) => is_file($d) && is_readable($d)
-            ));
-            $sayfa = [];   // [tarih][ip][tür] = istek
-            $varlik = [];  // [tarih][ip] = true (resim/stil/js yükledi)
-            $goruldu = []; // aynı satır hem arşivde hem güncel kayıtta olabilir
-            foreach ($dosyalar as $dosya) {
-                $gz = str_ends_with($dosya, '.gz');
-                $fh = $gz ? @gzopen($dosya, 'r') : @fopen($dosya, 'r');
-                if (! $fh) {
+        $sayfa = [];   // [marka][tarih][ip][tür] = istek
+        $varlik = [];  // [marka][tarih][ip] = true (resim/stil/js yükledi)
+        $goruldu = []; // aynı satır hem arşivde hem güncel kayıtta olabilir
+        foreach (self::dosyalar() as $dosya => $sabitMarka) {
+            $gz = str_ends_with($dosya, '.gz');
+            $fh = $gz ? @gzopen($dosya, 'r') : @fopen($dosya, 'r');
+            if (! $fh) {
+                continue;
+            }
+            while (($satir = $gz ? gzgets($fh) : fgets($fh)) !== false) {
+                // VDS satırları başta fazladan bir tırnakla başlayabiliyor ("1.2.3.4 - - ...).
+                if (! preg_match('#^"?(\S+) \S+ \S+ \[(\d{2})/(\w{3})/(\d{4}):[^\]]+\] "(GET|HEAD) (\S+)[^"]*" (\d{3}) \S+ "([^"]*)" "([^"]*)"(?: "([^"]*)")?#', $satir, $m)) {
                     continue;
                 }
-                while (($satir = $gz ? gzgets($fh) : fgets($fh)) !== false) {
-                    if (! preg_match('#^(\S+) \S+ \S+ \[(\d{2})/(\w{3})/(\d{4}):[^\]]+\] "(GET|HEAD) (\S+)[^"]*" (\d{3}) \S+ "[^"]*" "([^"]*)"#', $satir, $m)) {
-                        continue;
-                    }
-                    $tarih = sprintf('%04d-%02d-%02d', $m[4], self::AYLAR[$m[3]] ?? 0, $m[2]);
-                    if (! isset($istenen[$tarih])) {
-                        continue;
-                    }
-                    $iz = md5($satir);
-                    if (isset($goruldu[$tarih][$iz])) {
-                        continue;
-                    }
-                    $goruldu[$tarih][$iz] = true;
-                    $ip = $m[1];
-                    if (preg_match('#^/(build|storage|kucuk-resim|images)/|\.(css|js|webp|png|jpe?g|gif|svg|ico|woff2?|ttf)(\?|$)#i', $m[6])) {
-                        $varlik[$tarih][$ip] = true;
-                        continue;
-                    }
-                    // Yönetim panelleri ziyaretçi değildir (admin, kurum paneli, pazarlamacı, aile paneli).
-                    if (preg_match('#^/(\.well-known|_ops|_internal|up$|admin|kurum-panel|pazarlamaci|aile/panel|aile/bildirimler|aile/mesajlar|site/[a-z]+/(admin|kurum-panel))|\.(map|txt|xml|json|mp4)(\?|$)#i', $m[6])) {
-                        continue;
-                    }
-                    $tur = self::tur($m[8]);
-                    $sayfa[$tarih][$ip][$tur] = ($sayfa[$tarih][$ip][$tur] ?? 0) + 1;
+                $tarih = sprintf('%04d-%02d-%02d', $m[4], self::AYLAR[$m[3]] ?? 0, $m[2]);
+                if (! isset($istenen[$tarih])) {
+                    continue;
                 }
-                $gz ? gzclose($fh) : fclose($fh);
+                if ($sabitMarka !== null) {
+                    $marka = $sabitMarka;
+                } else {
+                    // Host alanı 28.10.2026'da eklendi; öncesindeki satırlarda yönlendiren adres, o da yoksa ana marka.
+                    $marka = self::markaBul($m[10] ?? '') ?? self::markaBul($m[8]) ?? 'bakimevleri';
+                }
+                $iz = md5($satir);
+                if (isset($goruldu[$tarih][$iz])) {
+                    continue;
+                }
+                $goruldu[$tarih][$iz] = true;
+                $ip = trim($m[1], '"');
+                if (preg_match('#^/(build|storage|kucuk-resim|images)/|\.(css|js|webp|png|jpe?g|gif|svg|ico|woff2?|ttf)(\?|$)#i', $m[6])) {
+                    $varlik[$marka][$tarih][$ip] = true;
+                    continue;
+                }
+                // Yönetim panelleri ziyaretçi değildir (admin, kurum paneli, pazarlamacı, aile paneli).
+                if (preg_match('#^/(\.well-known|_ops|_internal|up$|admin|kurum-panel|pazarlamaci|aile/panel|aile/bildirimler|aile/mesajlar|site/[a-z]+/(admin|kurum-panel))|\.(map|txt|xml|json|mp4)(\?|$)#i', $m[6])) {
+                    continue;
+                }
+                $tur = self::tur($m[9]);
+                $sayfa[$marka][$tarih][$ip][$tur] = ($sayfa[$marka][$tarih][$ip][$tur] ?? 0) + 1;
             }
-            foreach ($sayfa as $tarih => $ipler) {
+            $gz ? gzclose($fh) : fclose($fh);
+        }
+        $sonuc = [];
+        foreach (array_keys(self::SITELER) as $marka) {
+            foreach ($sayfa[$marka] ?? [] as $tarih => $ipler) {
                 $ozet = array_fill_keys(array_keys(self::TURLER), ['istek' => 0, 'ip' => 0]);
                 foreach ($ipler as $ip => $turler) {
                     foreach ($turler as $tur => $adet) {
                         if ($tur === 'tarayici') {
-                            $tur = isset($varlik[$tarih][$ip]) ? 'insan' : 'supheli';
+                            $tur = isset($varlik[$marka][$tarih][$ip]) ? 'insan' : 'supheli';
                         }
                         $ozet[$tur]['istek'] += $adet;
                         $ozet[$tur]['ip']++;

@@ -8477,6 +8477,34 @@ class PlatformFeatureTest extends TestCase
         $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => '365']))->assertOk();
     }
 
+    // 28 Ekim 2026: VDS (OpenLiteSpeed) kaydı - tek dosyada 3 marka, marka satır sonundaki Host alanından.
+    public function test_traffic_summary_reads_vds_single_log_split_by_host(): void
+    {
+        $klasor = storage_path('framework/testing/vds-logs-'.uniqid());
+        @mkdir($klasor, 0777, true);
+        $g = now()->format('d/M/Y');
+        $chrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+        $s = fn ($ip, $yol, $ua, $host, $ref = '-') => $ip.' - - ['.$g.':10:00:00 +0300] "GET '.$yol.' HTTP/2" 200 1234 "'.$ref.'" "'.$ua.'" "'.$host.'"'."\n";
+        // Eski biçim (Host alanı yok, satır başında fazladan tırnak)
+        $eski = fn ($ip, $yol, $ua, $ref = '-') => '"'.$ip.' - - ['.$g.':09:00:00 +0300] "GET '.$yol.' HTTP/2" 200 1234 "'.$ref.'" "'.$ua.'""'."\n";
+        file_put_contents($klasor.'/yedek.bakimevleri.com.access_log',
+            $s('1.1.1.1', '/kurumlar/a', $chrome, 'www.bakimevibul.com')
+            .$s('1.1.1.1', '/build/assets/app.css', $chrome, 'www.bakimevibul.com')
+            .$s('2.2.2.2', '/kurumlar/b', $chrome, 'bakimeviara.com')
+            .$s('66.249.1.1', '/', 'Mozilla/5.0 (compatible; Googlebot/2.1)', 'bakimevleri.com')
+            .$eski('7.7.7.7', '/kurumlar/c', $chrome, 'https://bakimeviara.com/kurumlar')
+            .$eski('8.8.8.8', '/sss', 'curl/8.0'));
+        file_put_contents('compress.zlib://'.$klasor.'/yedek.bakimevleri.com.access_log.'.now()->format('Y_m_d').'.gz', $s('2.2.2.2', '/kurumlar/b', $chrome, 'bakimeviara.com'));
+        \App\Support\TrafikAnaliz::$klasor = $klasor;
+        $r = \App\Support\TrafikAnaliz::gunler([now()->toDateString()])[now()->toDateString()];
+        \App\Support\TrafikAnaliz::$klasor = null;
+
+        $this->assertSame(1, $r['bakimevibul']['insan']['istek']);
+        $this->assertSame(2, $r['bakimeviara']['supheli']['istek']);   // 2.2.2.2 (tekrar sayılmaz) + 7.7.7.7 (yönlendirenden)
+        $this->assertSame(1, $r['bakimevleri']['googlebot']['istek']);
+        $this->assertSame(1, $r['bakimevleri']['diger_bot']['istek']); // Host ve yönlendiren yok → ana marka
+    }
+
     // 26 Ekim 2026: yedek (bekleme) sunucusu anahtarı - açıkken Google'a kapalı, kapalıyken değişiklik yok.
     public function test_standby_mode_blocks_indexing_only_when_enabled(): void
     {
