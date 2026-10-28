@@ -1255,7 +1255,17 @@
             <a href="{{ $subscriberWhatsapp }}" target="_blank" rel="noopener" data-contact-track="whatsapp" class="block text-sm font-black text-center mb-4" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
           @endif
         @endif
-        <form method="POST" action="{{ route('facility-interest-leads.store') }}" class="space-y-3">
+        {{-- 28 Ekim 2026: kullanıcının talebi - gönderen kişiye "talebiniz alındı" mutlaka gösterilir
+             ve aynı oturumda bu kuruma tekrar gönderilemez (bkz. FacilityInterestLeadController). --}}
+        <div id="ilgi-formu" style="scroll-margin-top:90px;"></div>
+        @if(in_array($facility->id, (array) session('ilgi_talebi_gonderildi', []), true))
+          <div role="status" class="rounded-xl border-2 p-4 text-center" style="border-color:#86efac;background:#f0fdf4;">
+            <div class="text-2xl" aria-hidden="true">✅</div>
+            <p class="font-black mt-1" style="color:#166534;">Talebiniz alındı</p>
+            <p class="text-sm mt-1" style="color:#15803d;">Ortalama 30 dakika - 1 saat içinde size dönüş yapılacaktır. Bu kurum için yeniden form göndermenize gerek yok.</p>
+          </div>
+        @else
+        <form method="POST" action="{{ route('facility-interest-leads.store') }}" class="space-y-3" data-ilgi-formu>
           @csrf
           @include('themes._shared.partials.honeypot')
           <input type="hidden" name="facility_id" value="{{ $facility->id }}">
@@ -1273,6 +1283,18 @@
                saat. --}}
           <p class="text-xs font-semibold mt-1" style="color: {{ $colors['primary'] }};">⚡ Talebiniz ortalama 30 dakika - 1 saat içinde değerlendirilir.</p>
         </form>
+        <script>
+        // 28 Ekim 2026: ilk basışta düğme kilitlenir - art arda basılsa da tek talep gider.
+        document.querySelectorAll('[data-ilgi-formu]').forEach(function (form) {
+          form.addEventListener('submit', function (e) {
+            if (form.dataset.gonderiliyor) { e.preventDefault(); return; }
+            form.dataset.gonderiliyor = '1';
+            var btn = form.querySelector('button');
+            if (btn) { btn.disabled = true; btn.style.opacity = '.7'; btn.textContent = '⏳ Gönderiliyor…'; }
+          });
+        });
+        </script>
+        @endif
         <script>
         document.querySelectorAll('[data-contact-track]').forEach(function (el) {
           el.addEventListener('click', function () {

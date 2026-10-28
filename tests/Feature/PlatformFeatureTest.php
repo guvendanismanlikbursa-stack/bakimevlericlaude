@@ -572,6 +572,40 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Bilgi ve Fiyat Talep Et');
     }
 
+    // 28 Ekim 2026: bir veli ilgi formunu 37 kez gönderdi - aynı oturumda aynı kuruma tek talep,
+    // kişiye "talebiniz alındı" kutusu, bildirim yanıttan sonra ve yalnızca bir kez.
+    public function test_interest_lead_is_created_once_per_session_and_shows_sent_box(): void
+    {
+        $f = $this->rehabFacility;
+        $sayfa = '/site/bakimevleri/kurumlar/'.$f->slug;
+        $this->get($sayfa)->assertOk()->assertSee('data-ilgi-formu', false)->assertSee('Gönderiliyor', false);
+        $veri = ['facility_id' => $f->id, 'full_name' => 'Tekrar Veli', 'phone' => '0555 111 22 33'];
+        $sayac = fn () => \App\Models\FacilityInterestLead::where('full_name', 'Tekrar Veli')->count();
+        $bildirim = fn () => \App\Models\PlatformNotification::where('type', 'facility_interest_lead')->count();
+
+        $this->from($sayfa)->post('/site/bakimevleri/kurum-ilgi-talebi', $veri)
+            ->assertRedirect()->assertSessionHas('success');
+        $this->assertSame(1, $sayac());
+        $ilkBildirim = $bildirim();
+        $this->assertGreaterThan(0, $ilkBildirim);
+
+        foreach (range(1, 3) as $i) {
+            $this->from($sayfa)->post('/site/bakimevleri/kurum-ilgi-talebi', $veri)->assertRedirect()->assertSessionHas('success');
+        }
+        $this->assertSame(1, $sayac());
+        $this->assertSame($ilkBildirim, $bildirim());
+        $this->get($sayfa)->assertOk()->assertSee('Talebiniz alındı', false)->assertDontSee('data-ilgi-formu', false);
+
+        // Oturum değişse bile aynı telefonla 24 saat içinde aynı kuruma ikinci kayıt açılmaz.
+        $this->flushSession();
+        $this->from($sayfa)->post('/site/bakimevleri/kurum-ilgi-talebi', ['phone' => '05551112233'] + $veri)->assertRedirect();
+        $this->assertSame(1, $sayac());
+        // Farklı kişi normal şekilde gönderebilir.
+        $this->flushSession();
+        $this->from($sayfa)->post('/site/bakimevleri/kurum-ilgi-talebi', ['full_name' => 'Baska Veli', 'phone' => '05009998877'] + $veri)->assertRedirect();
+        $this->assertTrue(\App\Models\FacilityInterestLead::where('full_name', 'Baska Veli')->exists());
+    }
+
     public function test_broker_managed_unclaimed_facility_accepts_offer_visit_and_question_requests(): void
     {
         // 1 Eylul 2026: kullanicinin bildirdigi gercek hata - anlasmali
