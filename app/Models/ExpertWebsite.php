@@ -277,7 +277,8 @@ class ExpertWebsite extends Model
             .($e->clinic_name ? ' '.$e->clinic_name.' bünyesinde' : '')
             .($yer ? ' '.$yer.' konumunda' : '').' kabul etmektedir.';
 
-        return $cumle."\nRandevu ve bilgi için telefonla ulaşabilir ya da aşağıdaki formu doldurabilirsiniz.";
+        // 28 Ekim 2026: form kaldırıldı (TTB md. 13) - yalnızca doğrudan telefon.
+        return $cumle."\nRandevu ve bilgi için muayenehaneyi telefonla arayabilirsiniz.";
     }
 
     /** @return array<int, string> */

@@ -284,7 +284,8 @@
 
   /* İletişim */
   .iletisim-izgara{display:grid;gap:28px}
-  @media(min-width:960px){.iletisim-izgara{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:48px}}
+  /* 28 Ekim 2026: form kaldırıldı - iletişim tek sütun. */
+  .iletisim-izgara{max-width:760px}
   .kanal{display:flex;gap:16px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--cizgi);text-decoration:none}
   .kanal .yuvar{width:50px;height:50px;border-radius:16px;background:var(--acik);color:var(--ana);display:flex;align-items:center;justify-content:center;flex:none}
   .kanal b{display:block;color:var(--ink);font-size:15px}

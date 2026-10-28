@@ -206,7 +206,7 @@
 @endif
 
 <section id="iletisim" class="bolum iletisim">
-  <div class="kap ikili">
+  <div class="kap" style="max-width:760px;">
     <div>
       <div class="ust-etiket" style="color:rgba(255,255,255,.8);">Randevu</div>
       <h2 style="color:#fff;">Randevu almak ya da bilgi almak ister misiniz?</h2>
