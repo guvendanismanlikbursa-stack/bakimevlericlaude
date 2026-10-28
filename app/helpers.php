@@ -1450,6 +1450,19 @@ if (! function_exists('membership_live')) {
     }
 }
 
+if (! function_exists('doctor_reviews_visible')) {
+    /**
+     * 28 Ekim 2026: kullanıcının talebi - sağlıkta reklam yasağı nedeniyle doktorların Google
+     * yıldız puanı ve hasta yorumları sitede GÖSTERİLMEZ; yerine "Google'daki yorumları gör"
+     * bağlantısı çıkar. Veriler silinmez; Admin > Doktorlar sayfasındaki düğmeyle tek tıkla
+     * yeniden açılabilir. Varsayılan: gizli.
+     */
+    function doctor_reviews_visible(): bool
+    {
+        return (string) \App\Models\Setting::get('doctor_reviews_visible', '0') === '1';
+    }
+}
+
 if (! function_exists('doctors_live')) {
     /**
      * 25 Ekim 2026: kullanıcının talebi - "Özel Doktorlar" bölümü yayında mı?

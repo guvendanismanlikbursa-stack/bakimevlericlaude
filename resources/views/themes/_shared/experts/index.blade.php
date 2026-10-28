@@ -82,6 +82,7 @@
         <option value="{{ $slug }}" @selected(request('branch') === $slug)>{{ $b['title'] }} ({{ $b['label'] }})</option>
       @endforeach
     </select>
+    @if(doctor_reviews_visible())
     {{-- 7 Ekim 2026: kullanicinin talebi - Google puanina gore filtre. --}}
     <select name="min_rating" class="border rounded-lg px-3 py-2 text-sm" style="max-width:100%;min-width:0;text-overflow:ellipsis;">
       <option value="">Tüm Puanlar</option>
@@ -90,6 +91,7 @@
       <option value="3.5" @selected(request('min_rating') === '3.5')>★ 3.5 ve üzeri</option>
       <option value="3" @selected(request('min_rating') === '3')>★ 3.0 ve üzeri</option>
     </select>
+    @endif
     @if($hasFilter)
       <a href="{{ request()->url() }}" class="text-sm font-semibold text-gray-500 underline self-center">Filtreyi temizle</a>
     @endif

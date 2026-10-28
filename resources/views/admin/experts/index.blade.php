@@ -32,6 +32,20 @@
   </form>
 </div>
 
+{{-- 28 Ekim 2026: doktor puan/yorumlarını sitede göster / gizle (sağlıkta reklam yasağı; veriler silinmez). --}}
+@php $yorumAcik = doctor_reviews_visible(); @endphp
+<div style="display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;border-radius:14px;padding:12px 16px;margin-bottom:16px;background:#f8fafc;border:1.5px solid #cbd5e1;">
+  <div style="font-size:14px;color:#1f2937;min-width:0;flex:1 1 260px;">
+    <b>Google puanları ve hasta yorumları: {{ $yorumAcik ? '👁️ Sitede görünüyor' : '🙈 Gizli' }}</b><br>
+    <span style="color:#4b5563;">{{ $yorumAcik ? 'Doktor kartlarında ve sayfalarında yıldız puanı, yorumlar ve puan filtresi görünüyor.' : 'Sitede yalnızca "Google’daki yorumları gör" bağlantısı var. Yorumlar silinmedi, düğmeyle yeniden açılabilir.' }}</span>
+  </div>
+  <form method="POST" action="{{ route('admin.experts.reviews-toggle') }}" onsubmit="return confirm('{{ $yorumAcik ? 'Doktor puanları ve yorumları sitede gizlensin mi?' : 'Doktor puanları ve yorumları sitede yeniden gösterilsin mi? (Sağlıkta reklam yasağını göz önünde bulundurun.)' }}')" style="margin:0;">
+    @csrf
+    <input type="hidden" name="visible" value="{{ $yorumAcik ? '0' : '1' }}">
+    <button type="submit" style="border:0;border-radius:10px;padding:9px 16px;font-weight:800;font-size:14px;cursor:pointer;color:#fff;background:{{ $yorumAcik ? '#b91c1c' : '#475569' }};">{{ $yorumAcik ? 'Yorumları gizle' : 'Yorumları yeniden göster' }}</button>
+  </form>
+</div>
+
 <form method="GET" class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3 mb-5 border border-gray-100">
   <input type="text" name="q" value="{{ request('q') }}" placeholder="İsimle ara..." class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]" data-live-search autocomplete="off">
   <select name="city" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">

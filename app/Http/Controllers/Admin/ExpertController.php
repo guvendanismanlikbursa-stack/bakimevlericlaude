@@ -40,6 +40,21 @@ class ExpertController extends Controller
             : 'Doktorlar bölümü gizlendi: anasayfa kartları eski haline döndü, sayfa yine yalnızca bağlantıyı bilenlere açık.');
     }
 
+    /**
+     * 28 Ekim 2026: doktorların Google puanı ve hasta yorumlarını sitede göster / gizle
+     * (bkz. doctor_reviews_visible). Veriler silinmez.
+     */
+    public function toggleReviews(Request $request)
+    {
+        $visible = $request->boolean('visible');
+        \App\Models\Setting::set('doctor_reviews_visible', $visible ? '1' : '0');
+        log_admin_event('doctor_reviews_'.($visible ? 'shown' : 'hidden'));
+
+        return back()->with('success', $visible
+            ? 'Doktorların Google puanları ve yorumları sitede yeniden gösteriliyor.'
+            : 'Doktorların Google puanları ve yorumları gizlendi; yerine "Google’daki yorumları gör" bağlantısı çıkıyor.');
+    }
+
     public function index(Request $request)
     {
         $query = Expert::query()->with('city')->withTrashed();

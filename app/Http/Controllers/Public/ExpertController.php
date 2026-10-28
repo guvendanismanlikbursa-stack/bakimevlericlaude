@@ -95,7 +95,7 @@ class ExpertController extends Controller
             }
             // 7 Ekim 2026: kullanicinin talebi - Google puanina gore filtre
             // (ör. "4.5 ve üzeri").
-            if ($request->filled('min_rating')) {
+            if ($request->filled('min_rating') && doctor_reviews_visible()) {
                 $query->where('rating', '>=', (float) $request->min_rating);
             }
             // 7 Ekim 2026: kullanicinin talebi - isimle anlik (her harfte)

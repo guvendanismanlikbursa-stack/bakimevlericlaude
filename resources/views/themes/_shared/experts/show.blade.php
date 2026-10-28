@@ -36,11 +36,13 @@
       <h1 style="font-size:clamp(22px,3.4vw,30px);font-weight:900;color:#0f172a;line-height:1.2;overflow-wrap:anywhere;">{{ $adSoyad }}</h1>
       <p style="color:#475569;margin-top:6px;font-size:15px;">{{ $e->branch }}@if($e->branch_label) <span style="color:#94a3b8;">({{ $e->branch_label }})</span>@endif @if($yer) · {{ $yer }}@endif</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
-        @if($e->rating)<span style="font-size:13px;font-weight:800;color:#b45309;background:#fffbeb;border-radius:999px;padding:4px 10px;">Google’da ★ {{ number_format($e->rating, 1, ',', '') }}@if($e->review_count) ({{ $e->review_count }} yorum)@endif</span>@endif
+        @if(doctor_reviews_visible() && $e->rating)<span style="font-size:13px;font-weight:800;color:#b45309;background:#fffbeb;border-radius:999px;padding:4px 10px;">Google’da ★ {{ number_format($e->rating, 1, ',', '') }}@if($e->review_count) ({{ $e->review_count }} yorum)@endif</span>@endif
         @if($e->isSupporter())<span style="font-size:12px;font-weight:800;color:#be185d;background:#fdf2f8;border:1px solid #fbcfe8;border-radius:999px;padding:4px 10px;">💗 İyilik Hareketi Destekçisi</span>@endif
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;">
         @if($telLink)<a href="{{ $telLink }}" style="display:inline-flex;align-items:center;gap:8px;background:#16a34a;color:#fff;font-weight:900;border-radius:12px;padding:11px 18px;text-decoration:none;">📞 {{ $e->phone }}</a>@endif
+        {{-- 28 Ekim 2026: puan/yorumlar gizliyken yalnızca Google'a bağlantı (bkz. doctor_reviews_visible). --}}
+        @if(! doctor_reviews_visible() && $e->google_maps_url)<a href="{{ $e->google_maps_url }}" target="_blank" rel="noopener nofollow" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0d6e6a;font-weight:800;border:1.5px solid #d5ebe8;border-radius:12px;padding:10px 16px;text-decoration:none;">💬 Google'daki yorumları gör</a>@endif
         @if($harita)<a href="{{ $harita }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0f172a;font-weight:800;border:1.5px solid #d5ebe8;border-radius:12px;padding:10px 16px;text-decoration:none;">📍 Yol tarifi</a>@endif
         @if($siteAdresi)<a href="{{ $siteAdresi }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0d6e6a;font-weight:800;border:1.5px solid #0d9488;border-radius:12px;padding:10px 16px;text-decoration:none;">🌐 Web sitesi</a>@endif
       </div>
@@ -70,7 +72,7 @@
     </section>
   </div>
 
-  @if($e->reviews && count($e->reviews))
+  @if(doctor_reviews_visible() && $e->reviews && count($e->reviews))
     <section style="{{ $kart }}margin-top:16px;">
       <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;">
         <h2 style="font-size:17px;font-weight:900;color:#0f172a;">Google’daki son yorumlar</h2>

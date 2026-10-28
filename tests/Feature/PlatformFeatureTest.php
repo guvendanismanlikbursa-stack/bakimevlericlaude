@@ -8361,8 +8361,24 @@ class PlatformFeatureTest extends TestCase
         $this->withHeaders($ua)->get('/site/bakimevleri/doktor/ayse-kar')->assertOk()
             ->assertSee('<h1', false)->assertSee('Uzm. Dr. Ayşe Kar', false)->assertSee('"Physician"', false)
             ->assertSee('<link rel="canonical" href="https://bakimevleri.com/doktor/ayse-kar">', false)->assertDontSee('AggregateRating', false)
-            ->assertSee('Çok ilgili bir hekim.', false)->assertSee('Burak Deniz', false)->assertSee('/site/bakimevleri/uzmanlar/'.$il.'/nilufer/pediatri', false);
+            ->assertDontSee('Çok ilgili bir hekim.', false)->assertSee('Burak Deniz', false)->assertSee('/site/bakimevleri/uzmanlar/'.$il.'/nilufer/pediatri', false);
         $this->withHeaders($ua)->get('/site/bakimevleri/doktor/olmayan')->assertNotFound();
+
+        // 28 Ekim 2026: sağlıkta reklam yasağı - puan/yorumlar varsayılan gizli, yerine Google bağlantısı;
+        // admin düğmesiyle yeniden açılabilir, veri silinmez.
+        \App\Models\Expert::where('slug', 'ayse-kar')->update(['google_maps_url' => 'https://maps.google.com/?cid=123']);
+        $this->withHeaders($ua)->get('/site/bakimevleri/doktor/ayse-kar')->assertOk()
+            ->assertDontSee('Çok ilgili bir hekim.', false)->assertDontSee('Google’da ★', false)->assertSee("Google'daki yorumları gör", false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar?search=Ayşe')->assertOk()
+            ->assertDontSee('Çok ilgili bir hekim.', false)->assertDontSee('★ 4.8', false)->assertDontSee('name="min_rating"', false)->assertSee("Google'daki yorumları gör", false);
+        $admin = ['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name];
+        $this->withSession($admin)->get(route('admin.experts.index'))->assertOk()->assertSee('Yorumları yeniden göster', false);
+        $this->withSession($admin)->post(route('admin.experts.reviews-toggle'), ['visible' => '1'])->assertRedirect();
+        $this->flushSession();
+        $this->withHeaders($ua)->get('/site/bakimevleri/doktor/ayse-kar')->assertOk()
+            ->assertSee('Çok ilgili bir hekim.', false)->assertSee('Google’da ★ 4,8', false)->assertDontSee("Google'daki yorumları gör", false);
+        $this->withHeaders($ua)->get('/site/bakimevleri/uzmanlar?search=Ayşe')->assertOk()->assertSee('name="min_rating"', false)->assertSee('Çok ilgili bir hekim.', false);
+        \App\Models\Setting::set('doctor_reviews_visible', '0');
 
         // Ana Doktorlar sayfası: popüler aramalar; filtre sonuçları dizine alınmaz; asıl adres bakimevleri.com
         $this->withHeaders($ua)->get('/site/bakimevibul/uzmanlar')->assertOk()->assertSee('Popüler aramalar', false)

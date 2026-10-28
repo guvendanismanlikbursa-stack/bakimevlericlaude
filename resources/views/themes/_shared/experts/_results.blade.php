@@ -32,7 +32,7 @@
             </div>
           </div>
           <div class="flex items-center gap-3 shrink-0">
-            @if($expert->rating)
+            @if(doctor_reviews_visible() && $expert->rating)
               <span class="text-xs font-black text-amber-600 bg-amber-50 rounded-full px-2 py-1">★ {{ number_format($expert->rating, 1) }}</span>
             @endif
             <svg class="js-expert-chevron w-5 h-5 transition-transform {{ $isOpen ? 'rotate-180' : '' }}" style="color: {{ $isOpen ? '#0d9488' : '#9ca3af' }}" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" /></svg>
@@ -63,7 +63,12 @@
             </a>
           @endif
 
-          @if($expert->reviews && count($expert->reviews))
+          {{-- 28 Ekim 2026: puan/yorumlar varsayılan olarak gizli (bkz. doctor_reviews_visible). --}}
+          @if(! doctor_reviews_visible())
+            @if($expert->google_maps_url)
+              <a href="{{ $expert->google_maps_url }}" target="_blank" rel="noopener nofollow" class="inline-block mt-3 text-sm font-bold text-teal-700 underline">Google'daki yorumları gör →</a>
+            @endif
+          @elseif($expert->reviews && count($expert->reviews))
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-black text-gray-500 uppercase tracking-wider">Google'daki Son Yapılan Yorumlar</span>
               @if($expert->google_maps_url)
