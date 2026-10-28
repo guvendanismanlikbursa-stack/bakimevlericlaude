@@ -8183,7 +8183,7 @@ class PlatformFeatureTest extends TestCase
             'city_id' => $this->city->id, 'phone' => '0533 111 22 98', 'is_published' => true, 'supporter_until' => now()->subDay(),
         ]);
         $this->withHeaders(['User-Agent' => 'Mozilla/5.0'])->get('/site/bakimevleri/uzmanlar')->assertOk()
-            ->assertSeeInOrder(['Sayfa içeriği sadece bilgilendirme amaçlıdır, tanı ve tedavi için mutlaka doktorunuza başvurunuz.', 'Özel Doktorlar Bölümüne Hoş Geldiniz', 'ℹ️ Bilgilendirme'], false)
+            ->assertSeeInOrder(['Sayfa içeriği sadece bilgilendirme amaçlıdır, reklam ve yönlendirme kesinlikle yasaktır.', 'Özel Doktorlar Bölümüne Hoş Geldiniz', 'ℹ️ Bilgilendirme'], false)
             ->assertDontSee('💛 Teşekkür', false)->assertDontSee('Uzm. Dr. Deniz Kaya', false)
             ->assertDontSee('Eski Destekci', false);
     }
