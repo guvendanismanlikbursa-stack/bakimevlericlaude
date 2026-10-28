@@ -25,7 +25,7 @@ class FacilityWebsiteController extends Controller
             ->leftJoin('facility_websites as fw', 'fw.facility_id', '=', 'facilities.id')
             ->select('facilities.*', 'fw.status as site_durum', 'fw.slug as site_slug', 'fw.custom_domain as site_domain', 'fw.updated_at as site_guncelleme', 'fw.plan as site_plan', 'fw.pro_until as site_pro_bitis', 'fw.pro_tasarim as site_tasarim', 'fw.id as site_id');
         if ($request->filled('q')) {
-            $q->where('facilities.name', 'like', '%'.$request->q.'%');
+            $q->whereTrLike('facilities.name', $request->q);
         }
         if ($request->filled('city')) {
             $q->where('facilities.city_id', $request->city);

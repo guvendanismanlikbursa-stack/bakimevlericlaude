@@ -26,7 +26,7 @@ class ExpertWebsiteController extends Controller
             ->leftJoin('expert_websites as ew', 'ew.expert_id', '=', 'experts.id')
             ->select('experts.*', 'ew.status as site_durum', 'ew.slug as site_slug', 'ew.custom_domain as site_domain', 'ew.plan as site_plan', 'ew.pro_until as site_pro_bitis', 'ew.pro_tasarim as site_tasarim', 'ew.id as site_id');
         if ($request->filled('q')) {
-            $q->where('experts.name', 'like', '%'.$request->q.'%');
+            $q->whereTrLike('experts.name', $request->q);
         }
         if ($request->filled('city')) {
             $q->where('experts.city_id', $request->city);

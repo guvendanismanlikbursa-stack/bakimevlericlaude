@@ -32,7 +32,7 @@ class UserController extends Controller
         if ($request->filled('q')) {
             $search = $request->q;
             $query->where(function ($w) use ($search) {
-                $w->where('name', 'like', "%{$search}%")
+                $w->whereTrLike('name', $search)
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%");
             });
@@ -98,10 +98,10 @@ class UserController extends Controller
         if ($request->filled('q')) {
             $search = $request->q;
             $query->where(function ($w) use ($search) {
-                $w->where('name', 'like', "%{$search}%")
+                $w->whereTrLike('name', $search)
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhereHas('facility', fn ($f) => $f->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('facility', fn ($f) => $f->whereTrLike('name', $search));
             });
         }
 

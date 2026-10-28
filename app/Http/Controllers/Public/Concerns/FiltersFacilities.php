@@ -29,7 +29,7 @@ trait FiltersFacilities
             // trait'teki sectionBreakdown() facilities'i facility_categories
             // ile JOIN ettiginde nitelenmemis "name" SQL'de belirsiz hale
             // gelip "Column 'name' in WHERE is ambiguous" hatasi veriyordu.
-            $query->where('facilities.name', 'like', '%'.trim($request->q).'%');
+            $query->whereTrLike('facilities.name', trim($request->q));
         }
 
         if ($request->filled('city')) {

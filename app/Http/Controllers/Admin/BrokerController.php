@@ -58,7 +58,7 @@ class BrokerController extends Controller
         }
 
         if ($q !== '') {
-            $query->where('name', 'like', '%'.$q.'%');
+            $query->whereTrLike('name', $q);
         }
 
         $facilities = $query->orderByDesc('is_broker_managed')->orderBy('name')->paginate(30)->withQueryString();

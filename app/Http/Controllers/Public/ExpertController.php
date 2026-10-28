@@ -106,9 +106,9 @@ class ExpertController extends Controller
             if ($request->filled('search')) {
                 $term = $request->search;
                 $query->where(function ($q) use ($term) {
-                    $q->where('name', 'like', '%'.$term.'%')
-                        ->orWhere('branch', 'like', '%'.$term.'%')
-                        ->orWhere('branch_label', 'like', '%'.$term.'%');
+                    $q->whereTrLike('name', $term)
+                        ->orWhereTrLike('branch', $term)
+                        ->orWhereTrLike('branch_label', $term);
                 });
             }
 

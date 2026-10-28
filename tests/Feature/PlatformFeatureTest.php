@@ -808,6 +808,26 @@ class PlatformFeatureTest extends TestCase
           ->assertDontSee('oninput="this.form.submit()"', false);
     }
 
+    // 28 Ekim 2026: aramalar büyük/küçük harften etkilenmemeli - Türkçe I/ı/İ/i dahil.
+    public function test_searches_ignore_case_including_turkish_dotted_i(): void
+    {
+        $this->elderlyFacility->update(['name' => 'Işık Huzurevi']);
+        \App\Models\Expert::create(['name' => 'İlkay Işıl', 'slug' => 'ilkay-isil', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'is_published' => true]);
+        \App\Models\Expert::create(['name' => 'Mehmet Gorunmez', 'slug' => 'mehmet-gorunmez', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'is_published' => true]);
+        $admin = ['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name];
+
+        foreach (['IŞIK', 'ışık', 'Işık', 'işik'] as $q) {
+            $this->withSession($admin)->get(route('admin.facilities.index', ['q' => $q]))->assertOk()
+                ->assertSee('Işık Huzurevi')->assertDontSee('Cocuk Kurum');
+            $this->assertSame(['Işık Huzurevi'], Facility::query()->whereTrLike('name', $q)->pluck('name')->all(), $q);
+        }
+        foreach (['İLKAY IŞIL', 'ilkay ışıl', 'ILKAY', 'işıl'] as $q) {
+            $this->withSession($admin)->get(route('admin.experts.index', ['q' => $q]))->assertOk()
+                ->assertSee('İlkay Işıl')->assertDontSee('Mehmet Gorunmez');
+        }
+        $this->assertSame(0, Facility::query()->whereTrLike('name', 'yok böyle')->count());
+    }
+
     public function test_admin_can_create_update_and_delete_facility(): void
     {
         $payload = [

@@ -31,7 +31,7 @@ class SiteSaleController extends Controller
             $q->where('odeme', $request->odeme);
         }
         if ($request->filled('q')) {
-            $q->where('owner_name', 'like', '%'.$request->q.'%');
+            $q->whereTrLike('owner_name', $request->q);
         }
         $bugun = now()->toDateString();
         match ($request->input('durum')) {

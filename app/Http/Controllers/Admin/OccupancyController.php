@@ -25,7 +25,7 @@ class OccupancyController extends Controller
         $query = Facility::with('city')->whereNull('deleted_at');
 
         if ($q !== '') {
-            $query->where('name', 'like', '%'.$q.'%');
+            $query->whereTrLike('name', $q);
         }
         if ($cityId) {
             $query->where('city_id', $cityId);

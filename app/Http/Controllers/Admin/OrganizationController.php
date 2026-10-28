@@ -30,7 +30,7 @@ class OrganizationController extends Controller
         $query = Organization::query()->with('city')->withTrashed();
 
         if ($request->filled('q')) {
-            $query->where('name', 'like', '%'.$request->q.'%');
+            $query->whereTrLike('name', $request->q);
         }
         if ($request->filled('city')) {
             $query->where('city_id', $request->city);

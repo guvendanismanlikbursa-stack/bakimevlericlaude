@@ -69,9 +69,9 @@ class OrganizationController extends Controller
             if ($request->filled('search')) {
                 $term = $request->search;
                 $query->where(function ($q) use ($term) {
-                    $q->where('name', 'like', '%'.$term.'%')
-                        ->orWhere('service_type', 'like', '%'.$term.'%')
-                        ->orWhere('service_type_label', 'like', '%'.$term.'%');
+                    $q->whereTrLike('name', $term)
+                        ->orWhereTrLike('service_type', $term)
+                        ->orWhereTrLike('service_type_label', $term);
                 });
             }
 

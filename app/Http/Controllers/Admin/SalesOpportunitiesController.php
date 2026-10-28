@@ -67,7 +67,7 @@ class SalesOpportunitiesController extends Controller
             $query->whereHas('city', fn ($q) => $q->where('slug', $request->city));
         }
         if ($request->filled('q')) {
-            $query->where('name', 'like', '%'.$request->string('q').'%');
+            $query->whereTrLike('name', $request->string('q'));
         }
 
         $facilities = $query->orderByDesc('period_views')->paginate(50)->withQueryString();

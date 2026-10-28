@@ -14,6 +14,7 @@ use App\Models\OfferRequest;
 use App\Models\VisitServiceRequest;
 use App\Models\WalletTopup;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerRateLimiters();
+        $this->registerTurkceArama();
 
         // Aktif markayi tum public view'larda kullanilabilir hale getir
         View::composer('themes.*', function ($view) {
@@ -116,5 +118,27 @@ class AppServiceProvider extends ServiceProvider
         foreach (config('platform.throttle', []) as $name => $perMinute) {
             RateLimiter::for($name, fn ($request) => Limit::perMinute($perMinute)->by($request->getHost().'|'.$request->ip()));
         }
+    }
+
+    /**
+     * 28 Ekim 2026: kullanıcının talebi - aramalar büyük/küçük harften etkilenmemeli.
+     * Veritabanı (utf8mb4_unicode_ci) çoğu harfi zaten eşit sayıyor ama Türkçe I/ı/İ/i'yi
+     * karıştırıyordu ("Işık" 30 sonuç, "IŞIK" 3 sonuç). Hem sütundaki hem aranan metindeki
+     * bu dört harf "i"ye çevrilip öyle karşılaştırılır.
+     * Kullanım: ->whereTrLike('name', $aranan) / ->orWhereTrLike('name', $aranan)
+     */
+    private function registerTurkceArama(): void
+    {
+        $katla = fn (string $metin) => mb_strtolower(str_replace(['İ', 'I', 'ı'], 'i', $metin), 'UTF-8');
+        QueryBuilder::macro('whereTrLike', function (string $sutun, $aranan, string $boolean = 'and') use ($katla) {
+            /** @var QueryBuilder $this */
+            $s = $this->getGrammar()->wrap($sutun);
+
+            return $this->whereRaw("LOWER(REPLACE(REPLACE(REPLACE($s, 'İ', 'i'), 'I', 'i'), 'ı', 'i')) LIKE ?", ['%'.$katla(trim((string) $aranan)).'%'], $boolean);
+        });
+        QueryBuilder::macro('orWhereTrLike', function (string $sutun, $aranan) {
+            /** @var QueryBuilder $this */
+            return $this->whereTrLike($sutun, $aranan, 'or');
+        });
     }
 }

@@ -137,7 +137,7 @@ class FacilityController extends Controller
         // tarafindan dolduruluyor, sabit bir liste degil), bu yuzden il/ilce
         // dropdown'lari gibi secim degil, isim arama gibi LIKE ile calisir.
         if ($request->filled('mahalle')) {
-            $query->where('neighborhood', 'like', '%'.$request->string('mahalle').'%');
+            $query->whereTrLike('neighborhood', $request->string('mahalle'));
         }
 
         if ($includeCategory && $request->filled('category')) {
@@ -150,7 +150,7 @@ class FacilityController extends Controller
         // filtrelerle degil, isim/anahtar kelimeyle bulup duzeltebilmesi
         // icin (bkz. miscategory-scan/-fix ops uclariyla ayni ihtiyac).
         if ($request->filled('q')) {
-            $query->where('name', 'like', '%'.$request->string('q').'%');
+            $query->whereTrLike('name', $request->string('q'));
         }
 
         // 22 Eylul 2026: kullanicinin talebi - Google Haritalar'dan otomatik
