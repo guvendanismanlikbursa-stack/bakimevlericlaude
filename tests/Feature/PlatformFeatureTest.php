@@ -8391,7 +8391,7 @@ class PlatformFeatureTest extends TestCase
 
         // Doktor profili
         $this->withHeaders($ua)->get('/site/bakimevleri/doktor/ayse-kar')->assertOk()
-            ->assertSee('<h1', false)->assertSee('Uzm. Dr. Ayşe Kar', false)->assertSee('"Physician"', false)
+            ->assertSee('<h1', false)->assertSee('Bu sayfa sadece bilgilendirme amaçlı hazırlanmıştır.', false)->assertSee('Uzm. Dr. Ayşe Kar', false)->assertSee('"Physician"', false)
             ->assertSee('<link rel="canonical" href="https://bakimevleri.com/doktor/ayse-kar">', false)->assertDontSee('AggregateRating', false)
             ->assertDontSee('Çok ilgili bir hekim.', false)->assertSee('Burak Deniz', false)->assertSee('/site/bakimevleri/uzmanlar/'.$il.'/nilufer/pediatri', false);
         $this->withHeaders($ua)->get('/site/bakimevleri/doktor/olmayan')->assertNotFound();

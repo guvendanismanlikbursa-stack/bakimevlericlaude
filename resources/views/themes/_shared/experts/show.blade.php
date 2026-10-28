@@ -24,7 +24,8 @@
 @section('content')
 <div style="background-color:#f4faf9;background-image:radial-gradient(ellipse 60% 45% at 8% 0%, rgba(13,148,136,.14), transparent 70%),linear-gradient(180deg,#e9f6f4 0%,#f4faf9 35%,#ffffff 100%);min-height:70vh;margin-bottom:-4rem;padding-bottom:4rem;">
 <div class="max-w-5xl mx-auto px-4 py-8">
-  @include('themes._shared.partials.hekim-uyari')
+  {{-- 28 Ekim 2026: kullanıcının talebi - profil sayfasında kısa bilgilendirme ibaresi. --}}
+  @include('themes._shared.partials.hekim-uyari', ['metin' => 'Bu sayfa sadece bilgilendirme amaçlı hazırlanmıştır.'])
   <nav aria-label="Konum" style="font-size:13px;color:#6b7280;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:4px;">
     @foreach($kirinti as $k)
       @if(! $loop->last)<a href="{{ $k['url'] }}" style="color:#0d6e6a;text-decoration:none;font-weight:600;">{{ $k['ad'] }}</a><span aria-hidden="true">›</span>@else<span>{{ $k['ad'] }}</span>@endif
