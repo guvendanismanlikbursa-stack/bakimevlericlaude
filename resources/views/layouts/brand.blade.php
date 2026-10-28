@@ -523,8 +523,19 @@ if (new URLSearchParams(window.location.search).has('page')) {
   {{-- 18 Ekim 2026: kullanıcının talebi - İyilik Hareketi ana sayfada da
        görünür olsun (yalnızca program yayındayken, yalnızca ana sayfada). --}}
   @if(membership_live() && request()->routeIs('home', 'brand.home'))
-    <a href="{{ brand_route('pages.membership') }}" class="block text-white text-center text-sm px-4 py-2.5" style="background:linear-gradient(90deg,#701a75,#92400e);">
-      <span class="font-black">💛 İyilik Hareketi:</span> Kurumlarımız üyelikleriyle Bursa Şehir Hastanesi'ndeki kimsesiz yaşlılarımızın bakımına destek oluyor. <span class="underline font-bold whitespace-nowrap">Detay →</span>
+    {{-- 28 Ekim 2026: kullanıcının talebi - göze batan renkli şerit yerine haber kanallarındaki gibi
+         sakin, akan tek satır yazı. Hareket azaltma tercihinde yazı durur. Tailwind derlenmediği için gömülü stil. --}}
+    <style>
+      .ih-akan{display:block;overflow:hidden;white-space:nowrap;background:#faf7f2;border-bottom:1px solid #eee5d8;color:#4b5563;font-size:13.5px;line-height:1;padding:9px 0;text-decoration:none;}
+      .ih-akan-ic{display:inline-block;padding-left:100%;animation:ihAkan 38s linear infinite;}
+      .ih-akan:hover .ih-akan-ic,.ih-akan:focus .ih-akan-ic{animation-play-state:paused;}
+      .ih-akan b{font-weight:700;color:#374151;}
+      .ih-akan u{color:#6b7280;}
+      @keyframes ihAkan{from{transform:translateX(0);}to{transform:translateX(-100%);}}
+      @media (prefers-reduced-motion:reduce){.ih-akan-ic{animation:none;padding-left:16px;}}
+    </style>
+    <a href="{{ brand_route('pages.membership') }}" class="ih-akan" aria-label="İyilik Hareketi: Kurumlarımız üyelikleriyle Bursa Şehir Hastanesi'ndeki kimsesiz yaşlılarımızın bakımına destek oluyor. Detay">
+      <span class="ih-akan-ic" aria-hidden="true"><b>İyilik Hareketi:</b> Kurumlarımız üyelikleriyle Bursa Şehir Hastanesi'ndeki kimsesiz yaşlılarımızın bakımına destek oluyor. <u>Detay</u></span>
     </a>
   @endif
   {{ $slot ?? '' }}

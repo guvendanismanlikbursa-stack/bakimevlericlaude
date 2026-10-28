@@ -7174,7 +7174,7 @@ class PlatformFeatureTest extends TestCase
 
         \App\Models\Setting::set('membership_live', '1');
         $this->get('/site/bakimevleri')->assertOk()
-            ->assertSee('💛 İyilik Hareketi:</span> Kurumlarımız üyelikleriyle', false)
+            ->assertSee('<b>İyilik Hareketi:</b> Kurumlarımız üyelikleriyle', false)->assertSee('class="ih-akan"', false)
             ->assertSee('💛 İyilik Hareketi</a>', false);
         // Band yalnızca ana sayfada, menü bağlantısı her sayfada.
         $this->get('/site/bakimevleri/kurumlar')->assertOk()
