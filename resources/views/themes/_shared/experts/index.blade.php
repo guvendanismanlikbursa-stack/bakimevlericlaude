@@ -45,7 +45,7 @@
   @endunless
 
   {{-- 28 Ekim 2026: kullanıcının talebi - TTB md. 5 cümlesi doktorun kendi sitesi içindir; rehber sayfasında bu metin. --}}
-  @include('themes._shared.partials.hekim-uyari', ['metin' => 'Sayfa içeriği sadece bilgilendirme amaçlıdır, reklam ve yönlendirme kesinlikle yasaktır.'])
+  @include('themes._shared.partials.hekim-uyari', ['metin' => 'Sayfa içeriği sadece bilgilendirme amaçlıdır, reklam ve yönlendirme kesinlikle yasaktır.', 'kisa' => 'Bilgilendirme amaçlıdır; reklam ve yönlendirme yasaktır.'])
 
   {{-- 25 Ekim 2026: bölüm kartları bu sayfada da görünsün (bölüm yayındayken). --}}
   @if(doctors_live())@include('themes._shared.partials.bolum-kartlari-ust')@endif
