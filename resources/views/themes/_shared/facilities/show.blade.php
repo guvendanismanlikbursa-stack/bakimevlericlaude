@@ -224,13 +224,7 @@
           <span class="text-3xl leading-none">🛡️</span>
           <div>
             <h3 class="font-black text-lg" style="color:#134e4a;">Çocuğunuza 1 Yıl Ücretsiz Ferdi Kaza Sigortası</h3>
-            <p class="text-sm mt-1.5 leading-relaxed" style="color:#115e59;">
-              Bu anlaşmalı kuruma, platformumuz üzerinden ulaşıp çocuğunuzu buradan kaydettirdiğinizde,
-              <span class="font-black">bakimevleri.com</span> çocuğunuz adına
-              <span class="font-black">1 yıllık ferdi kaza sigortasını tamamen ücretsiz olarak yaptırır</span> — sizden hiçbir
-              ek ücret talep edilmez. Okul saatleri içinde ve dışında geçerli bu güvence, çocuğunuzun kaza sonucu
-              yaralanma durumlarında ailenizin yanında olması için platformumuzun hediyesidir.
-            </p>
+            {{-- 28 Ekim 2026: kullanıcının talebi - uzun açıklama metni kaldırıldı (ana sayfadaki kutuda olduğu gibi). --}}
             <p class="text-xs mt-2" style="color:#0f766e;">
               Bu ayrıcalıktan yararlanabilmeniz için kurumla doğrudan değil, platformumuz üzerinden iletişime geçmeniz gerekir;
               sigorta süreci yalnızca bu şekilde tamamlanan kayıtlar için bakimevleri.com tarafından başlatılır.
