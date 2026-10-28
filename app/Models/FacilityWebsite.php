@@ -362,7 +362,7 @@ class FacilityWebsite extends Model
 
     public function aboutText(): string
     {
-        return (string) ($this->about_text ?: $this->facility->description);
+        return (string) ($this->about_text ?: $this->facility->publicDescription());
     }
 
     public static function isDemoPath(?string $path): bool

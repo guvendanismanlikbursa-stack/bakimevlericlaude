@@ -2197,7 +2197,7 @@ class OpsController extends Controller
      */
     private function descriptionCoverageNationwide(Request $request): string
     {
-        $sablonIsaretleri = ['ön kayıt profilidir', 'Google Maps verilerinden', 'admin tarafından'];
+        $sablonIsaretleri = ['ön kayıt profilidir', 'Google Maps verilerinden', 'herkese açık kaynaklardan tespit', 'admin tarafından'];
 
         $rows = \App\Models\Facility::whereNull('deleted_at')
             ->get(['id', 'description', 'is_claimed', 'is_broker_managed']);
@@ -2249,7 +2249,7 @@ class OpsController extends Controller
      */
     private function descriptionFixRemainingTemplates(Request $request): string
     {
-        $sablonIsaretleri = ['ön kayıt profilidir', 'Google Maps verilerinden', 'admin tarafından'];
+        $sablonIsaretleri = ['ön kayıt profilidir', 'Google Maps verilerinden', 'herkese açık kaynaklardan tespit', 'admin tarafından'];
 
         $rows = \App\Models\Facility::whereNull('deleted_at')->get(['id', 'description', 'is_claimed', 'is_broker_managed']);
         $hedefIdler = [];
@@ -5106,7 +5106,8 @@ HTML;
             ->where('id', '!=', 6713)
             ->when($ids, fn ($q) => $q->whereIn('id', $ids), fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('description', 'like', '%ön kayıt profilidir%')
-                ->orWhere('description', 'like', '%Google Maps verilerinden%')))
+                ->orWhere('description', 'like', '%Google Maps verilerinden%')
+                ->orWhere('description', 'like', '%herkese açık kaynaklardan tespit%')))
             ->orderBy('id')
             ->limit(max(1, (int) $request->query('limit', 50)))
             ->get();
@@ -5323,7 +5324,7 @@ HTML;
     {
         $cityId = (int) $request->query('city_id', 16);
         $rows = \App\Models\Facility::with('googleReviews')->where('city_id', $cityId)->whereNull('deleted_at')->orderBy('id')->get();
-        $bad = ['ön kayıt', 'on kayit', 'admin tarafından', 'Adres/bölge', 'Telefon bilgisi', 'sahiplenme başvurusu', 'Google Maps verilerinden'];
+        $bad = ['ön kayıt', 'on kayit', 'admin tarafından', 'Adres/bölge', 'Telefon bilgisi', 'sahiplenme başvurusu', 'Google Maps verilerinden', 'herkese açık kaynaklardan tespit'];
         $cls = ['bos' => [], 'sablon' => [], 'uretilmis_temiz' => [], 'uretilmis_yasakli_icerik' => [], 'diger' => []];
         foreach ($rows as $f) {
             $d = trim((string) $f->description);
@@ -5332,7 +5333,7 @@ HTML;
             $tel = $d !== '' && preg_match('/(\+?90[\s-]?)?0?\s?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/', $d);
             $adres = $d !== '' && preg_match('/\b(Sokak|Sk\.|Cadde|Cad\.|Mah\.|Mahallesi|No\s?:)/u', $d);
             if ($d === '') { $k = 'bos'; }
-            elseif (str_contains($d, 'ön kayıt profilidir') || str_contains($d, 'Google Maps verilerinden')) { $k = 'sablon'; }
+            elseif (str_contains($d, 'ön kayıt profilidir') || str_contains($d, 'Google Maps verilerinden') || str_contains($d, 'herkese açık kaynaklardan tespit')) { $k = 'sablon'; }
             elseif (str_contains($d, 'formu') && (str_contains($d, 'fiyat') || str_contains($d, 'Fiyat'))) { $k = ($yasakli || $tel || $adres) ? 'uretilmis_yasakli_icerik' : 'uretilmis_temiz'; }
             else { $k = ($yasakli || $tel || $adres) ? 'uretilmis_yasakli_icerik' : 'diger'; }
             $uygun5 = $f->googleReviews->filter(fn ($r) => (int) $r->rating === 5 && mb_strlen(trim((string) $r->body)) >= 25)->count();

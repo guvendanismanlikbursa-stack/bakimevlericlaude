@@ -424,7 +424,8 @@ class DataExtractorImportService
     private function description(array $item, FacilityCategory $category): string
     {
         $parts = [
-            $category->name.' alanında hizmet verdiği Google Maps verilerinden tespit edilmiştir.',
+            // 28 Ekim 2026: kullanıcının talebi - herkese açık metinlerde "Google Maps / Google Haritalar" asla geçmez.
+            $category->name.' alanında hizmet verdiği herkese açık kaynaklardan tespit edilmiştir.',
         ];
         if (filled($item['email'])) {
             $parts[] = 'E-posta: '.$item['email'];

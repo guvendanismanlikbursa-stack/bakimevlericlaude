@@ -25,7 +25,7 @@
           <div class="p-4">
             <div class="font-black text-gray-950 truncate">{{ $facility->name }}</div>
             <div class="text-xs text-gray-500 mt-0.5">{{ $facility->city->name }} · {{ $facility->district }}</div>
-            <div class="text-amber-700 font-black text-sm mt-2">★ {{ number_format($facility->rating, 1) }}</div>
+            @unless($facility->hidesPatientReviews())<div class="text-amber-700 font-black text-sm mt-2">★ {{ number_format($facility->rating, 1) }}</div>@endunless
           </div>
         </a>
       @endforeach

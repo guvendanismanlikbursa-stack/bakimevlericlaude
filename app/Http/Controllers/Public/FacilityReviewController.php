@@ -27,6 +27,8 @@ class FacilityReviewController extends Controller
             ->acceptsFamilyRequests()
             ->where('slug', $request->route('slug'))
             ->firstOrFail();
+        // 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşlarına hasta değerlendirmesi alınmaz.
+        abort_if($facility->hidesPatientReviews(), 404);
 
         $familyId = session('family_user_id');
         if (! $familyId) {

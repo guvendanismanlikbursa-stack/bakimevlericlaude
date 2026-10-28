@@ -29,7 +29,7 @@
   $galeriAcik = $site->sectionEnabled('galeri') && $gallery->isNotEmpty();
   $yorumlar = $site->sectionEnabled('yorumlar') ? $reviews : collect();
   $haritaVar = $site->sectionEnabled('konum') && $f->lat && $f->lng;
-  $puan = (float) ($f->rating ?: 0);
+  $puan = $f->hidesPatientReviews() ? 0.0 : (float) ($f->rating ?: 0);
   $foto = fn ($img) => facility_asset($img->path);
   $ikinci = $gallery->first(fn ($g) => ! $hero || $g->id !== $hero->id);
   $ucuncu = $gallery->first(fn ($g) => (! $hero || $g->id !== $hero->id) && (! $ikinci || $g->id !== $ikinci->id));
@@ -344,6 +344,8 @@
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body class="{{ ! empty($hareketli) ? 'hrk' : '' }}">
+{{-- 28 Ekim 2026: TTB kılavuzu md. - sağlık kuruluşu sitesinin en başında zorunlu cümle. --}}
+@if($facility->isHealthProvider())<div style="position:relative;z-index:80;padding:8px 12px 0;">@include('themes._shared.partials.hekim-uyari', ['boyut' => 'inherit'])</div>@endif
 @if(! empty($hareketli))<div class="ilerleme" id="ilerleme" aria-hidden="true"></div>@endif
 
 @php

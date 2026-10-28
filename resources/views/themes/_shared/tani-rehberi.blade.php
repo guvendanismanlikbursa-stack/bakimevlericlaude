@@ -89,7 +89,7 @@
             <h3 class="font-black text-gray-950">{{ $facility->name }}</h3>
             <p class="text-sm text-gray-500 mt-1">{{ $facility->city->name }} · {{ $facility->district }}</p>
             <div class="mt-3 flex items-center justify-between text-sm">
-              @if($facility->rating > 0)<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif
+              @if($facility->rating > 0 && ! $facility->hidesPatientReviews())<span class="text-amber-700 font-black">★ {{ number_format($facility->rating, 1) }}</span>@else<span></span>@endif
             </div>
           </a>
         @empty

@@ -7,7 +7,7 @@
   @section('robots_meta', 'noindex,follow')
 @endif
 @section('og_title', $facility->name.' - '.($facility->city->name ?? '').' '.($facility->district ?? ''))
-@section('meta_description', \Illuminate\Support\Str::limit(strip_tags($facility->description), 100).' '.facility_brand_framing($facility, current_brand())['meta_suffix'])
+@section('meta_description', \Illuminate\Support\Str::limit(strip_tags((string) $facility->publicDescription()), 100).' '.facility_brand_framing($facility, current_brand())['meta_suffix'])
 @section('og_image', facility_card_image($facility))
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => [
@@ -18,6 +18,8 @@
 @endsection
 
 @section('content')
+{{-- 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşu / fizyoterapist sayfalarında bilgilendirme uyarısı. --}}
+@if($facility->isHealthProvider())<div class="max-w-6xl mx-auto px-4 pt-4">@include('themes._shared.partials.hekim-uyari', ['metin' => 'Bu sayfa sadece bilgilendirme amaçlı hazırlanmıştır.'])</div>@endif
 @php
   $brand = current_brand();
   $section = $serviceSection;
@@ -67,7 +69,7 @@
            (ve benzer "ön kayit/henuz sahiplenilmedi" ifadeleri) sayfanin
            "isE yaramaz/guvenilmez" hissettirmesine, ailenin formu
            gondermekten vazgecmesine yol aciyordu - kaldirildi. --}}
-      @if($facility->is_featured)
+      @if($facility->is_featured && ! $facility->isHealthProvider())
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
       {{-- 29 Agustos 2026: kullanicinin talebi - anlasmali kurumlarin
@@ -96,7 +98,7 @@
       @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-1 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
       {{-- 18 Eylul 2026: kullanicinin talebi - rakip site kiyasindan gelen
            sosyal kanit rozeti, bkz. Facility::reviewRankLabel() yorumu. --}}
-      @if($rankLabel = $facility->reviewRankLabel())<span class="bg-slate-200 text-slate-800 text-xs font-semibold px-2 py-1 rounded-full">🏆 {{ $rankLabel }}</span>@endif
+      @if(! $facility->hidesPatientReviews() && ($rankLabel = $facility->reviewRankLabel()))<span class="bg-slate-200 text-slate-800 text-xs font-semibold px-2 py-1 rounded-full">🏆 {{ $rankLabel }}</span>@endif
     </div>
     <h1 class="text-3xl md:text-4xl font-black text-balance">{{ $facility->name }}</h1>
     <p class="text-white/80 mt-2">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
@@ -113,7 +115,7 @@
       @elseif($facility->is_broker_managed)
         <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">🤝 Anlaşmalı kurum</span>
       @endif
-      @if($facility->is_featured)
+      @if($facility->is_featured && ! $facility->isHealthProvider())
         <span class="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 text-xs font-black px-2 py-1 rounded-full shadow-sm">⭐ Öne Çıkan Kurum</span>
       @endif
       @if($facility->site_visited_at)
@@ -134,7 +136,7 @@
       @if($ministryBadge = $facility->ministryVerificationBadge())<span class="{{ $ministryBadge['classes'] }} text-xs font-semibold px-2 py-1 rounded-full">{{ $ministryBadge['label'] }}</span>@endif
       {{-- 18 Eylul 2026: kullanicinin talebi - rakip site kiyasindan gelen
            sosyal kanit rozeti, bkz. Facility::reviewRankLabel() yorumu. --}}
-      @if($rankLabel = $facility->reviewRankLabel())<span class="bg-slate-200 text-slate-800 text-xs font-semibold px-2 py-1 rounded-full">🏆 {{ $rankLabel }}</span>@endif
+      @if(! $facility->hidesPatientReviews() && ($rankLabel = $facility->reviewRankLabel()))<span class="bg-slate-200 text-slate-800 text-xs font-semibold px-2 py-1 rounded-full">🏆 {{ $rankLabel }}</span>@endif
     </div>
     <h1 class="text-3xl font-black text-gray-950">{{ $facility->name }}</h1>
     <p class="text-gray-500 mt-1">{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</p>
@@ -267,7 +269,11 @@
         <div class="text-3xl font-black mt-1" style="color: {{ $colors['primary'] }};">{{ round($scoreBase) }}/100</div>
       </div>
       <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-        @if($facility->approved_reviews_avg_rating)
+        @if($facility->hidesPatientReviews())
+          {{-- 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşlarında puan gösterilmez. --}}
+          <div class="text-sm font-black text-gray-500">Değerlendirmeler</div>
+          @if($facility->google_maps_url)<a href="{{ $facility->google_maps_url }}" target="_blank" rel="noopener nofollow" class="block text-base font-black mt-2 underline" style="color: {{ $colors['primary'] }};">Google'da gör →</a>@else<div class="text-lg font-black text-gray-400 mt-2">—</div>@endif
+        @elseif($facility->approved_reviews_avg_rating)
           <div class="text-sm font-black text-gray-500">Yorum puanı</div>
           <div class="text-3xl font-black text-amber-500 mt-1">★ {{ number_format($facility->approved_reviews_avg_rating, 1) }}</div>
         @elseif($facility->rating > 0)
@@ -676,7 +682,7 @@
          FromReviews), ama duz bir <p> icindeki "\n\n" tarayicida gorunmez
          hale geliyordu (HTML bosluklari birlestirir) - hepsi TEK satira
          yapisiyordu. white-space:pre-line satir sonlarini KORUR. --}}
-    <p class="mt-6 text-gray-700 leading-relaxed" style="white-space: pre-line;">{{ $facility->description }}</p>
+    @if(filled($facility->publicDescription()))<p class="mt-6 text-gray-700 leading-relaxed" style="white-space: pre-line;">{{ $facility->publicDescription() }}</p>@endif
 
     <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
       @if($facility->capacity)
@@ -821,11 +827,16 @@
          ayni tarihli yorumlar. Platformun kendi aile yorumlarindan
          (asagidaki "Kurum yorumları" bolumu) BILEREK AYRI ve farkli
          basliklandirilmis - karistirilmamali. --}}
-    @if($facility->googleReviews->isNotEmpty())
+    @if($facility->hidesPatientReviews())
+      {{-- 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşlarında Google yorumları gösterilmez, yalnızca bağlantı. --}}
+      @if($facility->google_maps_url)
+        <a href="{{ $facility->google_maps_url }}" target="_blank" rel="noopener nofollow" class="block mt-10 text-center text-sm font-black text-primary underline">Google'daki yorumları gör →</a>
+      @endif
+    @elseif($facility->googleReviews->isNotEmpty())
       <section class="mt-10 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h2 class="text-xl font-black text-gray-950">🅖 Google'da Yapılan Son Yorumlar</h2>
-          <span class="text-xs text-gray-400">Google Haritalar'dan alınmıştır</span>
+          <span class="text-xs text-gray-400">Google'dan alınmıştır</span>
         </div>
         <div class="space-y-3">
           @foreach($facility->googleReviews as $gReview)
@@ -844,7 +855,7 @@
           @endforeach
         </div>
         @if($facility->google_maps_url)
-          <a href="{{ $facility->google_maps_url }}" target="_blank" rel="noopener nofollow" class="block text-center mt-4 text-sm font-black text-primary hover:underline">Devamını oku (Google Haritalar'da görüntüle) →</a>
+          <a href="{{ $facility->google_maps_url }}" target="_blank" rel="noopener nofollow" class="block text-center mt-4 text-sm font-black text-primary hover:underline">Devamını oku (Google'da görüntüle) →</a>
         @endif
       </section>
     @endif
@@ -902,6 +913,8 @@
         && session('family_user_id')
         && \App\Models\OfferRequest::where('family_user_id', session('family_user_id'))->where('facility_id', $facility->id)->exists();
     @endphp
+    {{-- 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşlarında aile yorumları ve yorum formu yok. --}}
+    @unless($facility->hidesPatientReviews())
     <section class="mt-10 grid lg:grid-cols-[1fr_360px] gap-6">
       <div class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
         <h2 class="text-xl font-black text-gray-950 mb-4">Sitemizdeki Aile Yorumları</h2>
@@ -948,6 +961,7 @@
         @endif
       </div>
     </section>
+    @endunless
 
     <section class="mt-10 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
       <h2 class="text-xl font-black text-gray-950 mb-4">Aile Soruları</h2>
@@ -1435,7 +1449,7 @@
     '@context' => 'https://schema.org',
     '@type' => $schemaType,
     'name' => $facility->name,
-    'description' => filled($facility->description) ? strip_tags($facility->description) : null,
+    'description' => filled($facility->publicDescription()) ? strip_tags($facility->publicDescription()) : null,
     'telephone' => $facility->phone ?: null,
     'image' => facility_card_image($facility),
     'url' => brand_route('facilities.show', ['slug' => $facility->slug]),
@@ -1466,7 +1480,7 @@
   if ($facility->ageGroups->isNotEmpty()) {
     $facilitySchema['knowsAbout'] = $facility->ageGroups->map(fn ($ag) => $ag->label())->values()->all();
   }
-  if ($reviewCount > 0) {
+  if ($reviewCount > 0 && ! $facility->hidesPatientReviews()) {
     $facilitySchema['aggregateRating'] = [
       '@type' => 'AggregateRating',
       'ratingValue' => (float) $facility->approved_reviews_avg_rating,

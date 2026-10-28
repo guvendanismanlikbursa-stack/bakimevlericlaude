@@ -16,8 +16,10 @@
   // one cikardigi is_featured) / Önerilen (sahiplenilmis, digerleri
   // degil). Ön kayitli kurumlar hic rozet almaz.
   $isBrokerManaged = $facility->is_broker_managed;
-  $isFeaturedCard = ! $isBrokerManaged && ($facility->is_featured || $isActiveSubscriberCard);
-  $isRecommendedCard = ! $isBrokerManaged && ! $isFeaturedCard && $facility->is_claimed;
+  // 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşlarında "Öne Çıkan"/"Önerilen" yok, yalnızca "Onaylı".
+  $saglikKarti = $facility->isHealthProvider();
+  $isFeaturedCard = ! $saglikKarti && ! $isBrokerManaged && ($facility->is_featured || $isActiveSubscriberCard);
+  $isRecommendedCard = ! $saglikKarti && ! $isBrokerManaged && ! $isFeaturedCard && $facility->is_claimed;
 @endphp
 {{--
   14 Agustos 2026: kullanicinin talebi - "one cikan" kurumlar gorsel
@@ -71,7 +73,7 @@
            kutu gostermek yerine). --}}
       @php
         $cardRealImageCount = $facility->realImageCount();
-        $cardReviewCount = $facility->totalReviewCount();
+        $cardReviewCount = $facility->hidesPatientReviews() ? 0 : $facility->totalReviewCount();
       @endphp
       @if($cardRealImageCount > 0 || $cardReviewCount > 0)
         <div class="absolute bottom-2 right-2 flex items-center gap-2 bg-gray-950/70 text-white text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm">
@@ -113,7 +115,7 @@
       <p class="text-sm text-gray-500 mb-1 flex items-center gap-1.5 flex-wrap">
         <span>{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</span>
       </p>
-      @php($totalReviewCount = $facility->totalReviewCount())
+      @php($totalReviewCount = $facility->hidesPatientReviews() ? 0 : $facility->totalReviewCount())
       @php($cardDisplayViews = $facility->monthlyDisplayViewsCount())
       @if($cardDisplayViews > 0)
         <p class="text-xs text-gray-500 mb-3 flex items-center gap-1">
@@ -123,10 +125,10 @@
       @else
         <div class="mb-3"></div>
       @endif
-      <p class="text-sm text-gray-600 line-clamp-2 mb-4">{{ $facility->description }}</p>
+      <p class="text-sm text-gray-600 line-clamp-2 mb-4">{{ $facility->publicDescription() }}</p>
       <div class="flex items-center justify-between">
         <span class="flex items-center gap-1.5 flex-wrap">
-          @if($facility->rating > 0)
+          @if($facility->rating > 0 && ! $facility->hidesPatientReviews())
             <span class="text-amber-700 font-black text-sm">★ {{ number_format($facility->rating, 1) }}</span>
             @if($facility->source === 'google_maps_veri_cekici')<span class="text-[10px] text-gray-500 font-semibold -ml-1">(Google)</span>@endif
           @endif

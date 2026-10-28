@@ -7576,9 +7576,9 @@ class PlatformFeatureTest extends TestCase
             'city_id' => $this->city->id, 'phone' => '0533 222 33 44', 'is_published' => true]);
         $ds = \App\Models\ExpertWebsite::forExpert($expert);
         $ds->update(['status' => 'yayinda']);
-        $r = $this->post('/dr/'.$ds->slug.'/iletisim', ['full_name' => 'Hasta Yakını', 'phone' => '05559998877']);
-        $this->assertStringStartsWith('https://wa.me/905332223344?text=', $r->headers->get('Location'));
-        $this->assertTrue(\App\Models\ContactMessage::where('name', 'Hasta Yakını')->exists());
+        // 28 Ekim 2026: doktor sitesinde form kaldırıldı (TTB md. 13) - gönderim reddedilir.
+        $this->post('/dr/'.$ds->slug.'/iletisim', ['full_name' => 'Hasta Yakını', 'phone' => '05559998877'])->assertNotFound();
+        $this->assertFalse(\App\Models\ContactMessage::where('name', 'Hasta Yakını')->exists());
     }
 
     // 23 Ekim 2026: sahiplenilmemiş kurumda menü bölümü kapalı başlar (örnek menü olabilir).
@@ -8582,5 +8582,39 @@ class PlatformFeatureTest extends TestCase
 ", false)->assertDontSee('Sitemap:', false)
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
         $this->get('/site/bakimevleri/')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    // 28 Ekim 2026: TTB kılavuzu - fizyoterapist / fizik tedavi gibi sağlık kuruluşlarında puan,
+    // yorum, alıntı ve "Öne Çıkan" yok, sayfa başında uyarı var; diğer kurumlar etkilenmez.
+    public function test_health_provider_pages_hide_reviews_and_featured_badge(): void
+    {
+        $kategori = FacilityCategory::create(['name' => 'Bireysel Fizyoterapist', 'slug' => 'bireysel-fizyoterapist', 'brand_scope' => 'rehabilitasyon']);
+        \Illuminate\Support\Facades\Cache::forget('saglik-kategori-idleri:v1');
+        $fzt = $this->facility('Fzt Deniz Ak', $kategori, true);
+        $fzt->update(['is_featured' => true, 'rating' => 4.8, 'google_maps_url' => 'https://maps.google.com/?cid=1',
+            'description' => 'Bir hasta yorumunda şunları paylaşmış: "Harika bir terapist."']);
+        \App\Models\FacilityGoogleReview::create(['facility_id' => $fzt->id, 'author_name' => 'Ali Veli', 'rating' => 5, 'body' => 'Çok memnun kaldık gerçekten', 'fetched_at' => now()]);
+        $this->assertTrue($fzt->fresh()->hidesPatientReviews());
+        $this->assertFalse($this->rehabFacilityClaimed->fresh()->hidesPatientReviews());
+
+        $this->get('/site/bakimevleri/kurumlar/'.$fzt->slug)->assertOk()
+            ->assertSee('Bu sayfa sadece bilgilendirme amaçlı hazırlanmıştır.', false)
+            ->assertDontSee('Öne Çıkan Kurum', false)->assertDontSee('Harika bir terapist', false)
+            ->assertDontSee('Çok memnun kaldık gerçekten', false)->assertDontSee('Sitemizdeki Aile Yorumları', false)
+            ->assertDontSee('AggregateRating', false)->assertSee("Google'daki yorumları gör", false);
+
+        $kart = view('themes._shared.partials.facility-card', ['facility' => $fzt->fresh()->load(['category', 'city'])])->render();
+        $this->assertStringNotContainsString('ÖNE ÇIKAN', $kart);
+        $this->assertStringNotContainsString('★ 4.8', $kart);
+        $this->assertStringContainsString('Onaylı', $kart);
+
+        // Ayar ile geri açılabilir.
+        \App\Models\Setting::set('health_reviews_visible', '1');
+        $this->assertFalse($fzt->fresh()->hidesPatientReviews());
+        \App\Models\Setting::set('health_reviews_visible', '0');
+
+        // Sağlık kuruluşu olmayan kurumda değişiklik yok.
+        $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)->assertOk()
+            ->assertDontSee('Bu sayfa sadece bilgilendirme amaçlı hazırlanmıştır.', false)->assertSee('Sitemizdeki Aile Yorumları', false);
     }
 }

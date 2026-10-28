@@ -268,6 +268,39 @@ class Facility extends Model
     }
 
     /**
+     * 28 Ekim 2026: kullanıcının talebi - TTB "Hekimler ile Sağlık Kurum ve Kuruluşlarının Halka
+     * Açık Tanıtım ve Bilgilendirme Faaliyetlerine İlişkin Kılavuz" sağlık kuruluşlarını ve sağlık
+     * meslek mensuplarını (fizyoterapist) da kapsar. Bu türlerde hasta değerlendirmesi, puan,
+     * yorum alıntısı ve "öne çıkan" etiketi gösterilmez; sayfa başında uyarı yer alır.
+     * Özel eğitim merkezleri (MEB) bu kapsamda değildir.
+     */
+    public const SAGLIK_KATEGORI_SLUGLARI = ['fizik-tedavi-ve-rehabilitasyon', 'norolojik-rehabilitasyon-merkezi', 'bireysel-fizyoterapist'];
+
+    public function isHealthProvider(): bool
+    {
+        $idler = \Illuminate\Support\Facades\Cache::remember('saglik-kategori-idleri:v1', now()->addDay(),
+            fn () => FacilityCategory::whereIn('slug', self::SAGLIK_KATEGORI_SLUGLARI)->pluck('id')->map(fn ($id) => (int) $id)->all());
+
+        return in_array((int) $this->facility_category_id, $idler, true);
+    }
+
+    /** Puan/yorum gizli mi - Setting health_reviews_visible = '1' yapılırsa yeniden görünür. */
+    public function hidesPatientReviews(): bool
+    {
+        return $this->isHealthProvider() && Setting::get('health_reviews_visible', '0') !== '1';
+    }
+
+    /** Herkese açık açıklama: sağlık kurumlarında hasta yorumu alıntısı içeren açıklama gösterilmez. */
+    public function publicDescription(): ?string
+    {
+        if ($this->hidesPatientReviews() && preg_match('/yorum|paylaşmış|deneyimini|aktarmış|teşekkür/iu', (string) $this->description)) {
+            return null;
+        }
+
+        return $this->description;
+    }
+
+    /**
      * 29 Agustos 2026: kullanicinin talebi - koguslari cinsiyete gore
      * ayrilan yasli bakim kategorilerinde (huzurevi/yasli bakim evi)
      * bay/bayan icin ayri "yer var mi" gosterilir, diger kategorilerde

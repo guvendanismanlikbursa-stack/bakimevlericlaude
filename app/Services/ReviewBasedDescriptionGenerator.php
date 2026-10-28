@@ -103,7 +103,8 @@ class ReviewBasedDescriptionGenerator
         ];
 
         $puanKaliplari = [
-            'Google Haritalar üzerinde {puanMetni}{yorumSayisi} değerlendirme ile takip edilmektedir.',
+            // 28 Ekim 2026: kullanıcının talebi - herkese açık metinlerde "Google Maps / Google Haritalar" asla geçmez.
+            'Google üzerinde {puanMetni}{yorumSayisi} değerlendirme ile takip edilmektedir.',
             'Kurum, Google\'daki profilinde {puanMetni}{yorumSayisi} yorum almıştır.',
             '{yorumSayisi} aile tarafından Google üzerinden değerlendirilen kurumun {puanMetni2} bulunmaktadır.',
         ];

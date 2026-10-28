@@ -125,6 +125,8 @@
 </style>
 </head>
 <body>
+{{-- 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşu sitesinin en başında zorunlu cümle. --}}
+@if($facility->isHealthProvider())<div style="position:relative;z-index:80;padding:8px 12px 0;">@include('themes._shared.partials.hekim-uyari', ['boyut' => 'inherit'])</div>@endif
 
 @if($isPreview)
   <div class="onizleme">Önizleme — bu site henüz yayında değil. Yalnızca siz görüyorsunuz.</div>

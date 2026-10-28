@@ -171,7 +171,8 @@ class KurumSitesiController extends Controller
         $hero = $gallery->firstWhere('id', $site->hero_image_id)
             ?? $gallery->firstWhere('is_primary', true)
             ?? $gallery->first();
-        $reviews = FacilityWebsite::siteReviews($facility);
+        // 28 Ekim 2026: TTB kılavuzu - sağlık kuruluşu sitelerinde hasta yorumu gösterilmez.
+        $reviews = $facility->hidesPatientReviews() ? collect() : FacilityWebsite::siteReviews($facility);
         $whatsapp = classify_phone_type($facility->phone) === 'mobile' ? normalize_whatsapp_number($facility->phone) : '';
 
         // Profesyonel şablon: paket etkinse, ya da önizlemede ?tasarim=pro ile.
