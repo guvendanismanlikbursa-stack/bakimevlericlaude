@@ -12,6 +12,9 @@ use Illuminate\Support\Str;
 // düzenler. Hasta yorumu hukuki nedenle hiç gösterilmez.
 class ExpertWebsite extends Model
 {
+    // 29 Ekim 2026: demo site linki (WhatsApp ile gönderilen süreli önizleme).
+    use Concerns\HasDemoLink;
+
     public const STATUSES = FacilityWebsite::STATUSES;
 
     public const THEMES = FacilityWebsite::THEMES;
@@ -49,6 +52,7 @@ class ExpertWebsite extends Model
             'expert_id' => 'integer',
             'sections' => 'array',
             'published_at' => 'datetime',
+            'demo_until' => 'datetime',
             'pro_until' => 'date',
             'pro_yayina_aldi' => 'boolean',
             'stats' => 'array',
@@ -199,6 +203,11 @@ class ExpertWebsite extends Model
     public function themeColors(): array
     {
         return self::THEMES[$this->theme] ?? self::THEMES['mavi'];
+    }
+
+    protected function demoPath(): string
+    {
+        return '/dr/';
     }
 
     public function publicUrl(): string

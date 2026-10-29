@@ -777,7 +777,7 @@
 @endif
 
 @if(! empty($hareketliDemo))
-  <div class="onizleme">✨ Yeni hareketli Profesyonel tasarım — deneme önizlemesi (canlı sitelerde henüz kullanılmıyor)</div>
+  <div class="onizleme">✨ Hareketli Profesyonel tasarım önizlemesi</div>
 @elseif($demoPro)
   <div class="onizleme">Profesyonel Site tasarım önizlemesi — paket etkinleşince siteniz bu görünümde yayınlanır.</div>
 @elseif($isPreview)

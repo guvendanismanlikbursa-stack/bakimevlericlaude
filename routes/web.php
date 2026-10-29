@@ -465,6 +465,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/site-satislari/{satis}', [\App\Http\Controllers\Admin\SiteSaleController::class, 'update'])->name('site-sales.update');
         Route::delete('/site-satislari/{satis}', [\App\Http\Controllers\Admin\SiteSaleController::class, 'destroy'])->name('site-sales.destroy');
         Route::get('/doktor-siteleri', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'index'])->name('expert-websites.index');
+        // 29 Ekim 2026: kullanıcının talebi - demo siteyi WhatsApp'tan gönderme (bkz. SiteDemoController).
+        Route::get('/doktor-siteleri/{expert}/demo', [\App\Http\Controllers\Admin\SiteDemoController::class, 'expert'])->name('expert-websites.demo');
+        Route::post('/doktor-siteleri/{expert}/demo/yenile', [\App\Http\Controllers\Admin\SiteDemoController::class, 'renewExpert'])->name('expert-websites.demo.renew');
+        Route::get('/kurum-siteleri/{facility}/demo', [\App\Http\Controllers\Admin\SiteDemoController::class, 'facility'])->name('facility-websites.demo');
+        Route::post('/kurum-siteleri/{facility}/demo/yenile', [\App\Http\Controllers\Admin\SiteDemoController::class, 'renewFacility'])->name('facility-websites.demo.renew');
         Route::post('/doktor-siteleri/{expert}/standart', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'toggleStandard'])->name('expert-websites.toggle-standard');
         Route::post('/doktor-siteleri/{expert}/tasarim', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'setDesign'])->name('expert-websites.design');
         Route::post('/doktor-siteleri/{expert}/profesyonel', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'togglePro'])->name('expert-websites.toggle-pro');

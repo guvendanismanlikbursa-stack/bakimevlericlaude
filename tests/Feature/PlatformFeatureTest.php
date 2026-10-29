@@ -8617,4 +8617,59 @@ class PlatformFeatureTest extends TestCase
         $this->get('/site/bakimevleri/kurumlar/'.$this->rehabFacilityClaimed->slug)->assertOk()
             ->assertDontSee('Bu sayfa sadece bilgilendirme amaçlı hazırlanmıştır.', false)->assertSee('Sitemizdeki Aile Yorumları', false);
     }
+
+    // 29 Ekim 2026: demo site linki - yayında olmayan site, geçerli demo linkiyle
+    // giriş yapmadan açılır; link yenilenince ya da süresi dolunca kapanır.
+    public function test_demo_link_opens_unpublished_sites_and_whatsapp_message(): void
+    {
+        $expert = \App\Models\Expert::create(['name' => 'Demo Doktor', 'slug' => 'demo-doktor', 'title' => 'Dr.', 'branch' => 'Dahiliye', 'branch_label' => 'Dahiliye',
+            'city_id' => $this->city->id, 'phone' => '0533 222 33 44', 'is_published' => true]);
+        $ds = \App\Models\ExpertWebsite::forExpert($expert);
+        $this->get('/dr/'.$ds->slug)->assertNotFound();
+        $this->get('/dr/'.$ds->slug.'?demo=yanlis')->assertNotFound();
+
+        // Admin 3 tasarımı da seçip WhatsApp'a yönlenir.
+        $r = $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/doktor-siteleri/'.$expert->id.'/demo?islem=whatsapp&tasarim[]=standart&tasarim[]=klasik&tasarim[]=hareketli');
+        $hedef = (string) $r->headers->get('Location');
+        $this->assertStringStartsWith('https://wa.me/905332223344?text=', $hedef);
+        $metin = rawurldecode($hedef);
+        $ds->refresh();
+        $this->assertNotEmpty($ds->demo_token);
+        foreach (['standart', 'klasik', 'hareketli'] as $t) {
+            $this->assertStringContainsString('demo='.$ds->demo_token.'&tasarim='.$t, $metin);
+        }
+        $this->assertStringContainsString('3) Profesyonel tasarım (Hareketli)', $metin);
+        // Listeler ve düzenleme sayfalarında demo düğmeleri.
+        $this->get('/admin/doktor-siteleri')->assertOk()->assertSee('/admin/doktor-siteleri/'.$expert->id.'/demo', false)->assertSee('💬 WhatsApp', false);
+        $this->get('/admin/kurum-siteleri')->assertOk()->assertSee('/demo', false);
+        $this->get('/admin/doktorlar/'.$expert->id.'/web-sitesi')->assertOk()->assertSee('Demo gönder', false);
+        $this->get('/admin/kurumlar/'.$this->rehabFacility->id.'/web-sitesi')->assertOk()->assertSee('Demo gönder', false);
+        // Tek tasarım seçilince tek link.
+        $this->get('/admin/doktor-siteleri/'.$expert->id.'/demo?tasarim[]=klasik')->assertOk()
+            ->assertSee('Profesyonel tasarım (Klasik)', false)->assertDontSee('&tasarim=hareketli', false);
+
+        // Giriş yapmamış kişi demo linkiyle açar.
+        $this->flushSession();
+        $this->get('/dr/'.$ds->slug.'?demo='.$ds->demo_token.'&tasarim=hareketli')->assertOk()
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $eski = $ds->demo_token;
+        $ds->demoToken(true);
+        $this->flushSession();
+        $this->get('/dr/'.$ds->slug.'?demo='.$eski)->assertNotFound();
+        $ds->forceFill(['demo_until' => now()->subDay()])->saveQuietly();
+        $this->get('/dr/'.$ds->slug.'?demo='.$ds->demo_token)->assertNotFound();
+
+        // Kurum sitesi: demo linkiyle iç sayfa açılır, form gerçek talep oluşturmaz.
+        $facility = $this->rehabFacility;
+        $facility->update(['is_claimed' => false, 'is_broker_managed' => false, 'phone' => '0532 444 55 66']);
+        $ks = \App\Models\FacilityWebsite::forFacility($facility);
+        $this->get('/siteler/'.$ks->slug)->assertNotFound();
+        $link = $ks->demoUrl('klasik');
+        $this->get(parse_url($link, PHP_URL_PATH).'?'.parse_url($link, PHP_URL_QUERY))->assertOk();
+        $this->get('/siteler/'.$ks->slug.'/iletisim?onizleme=1&tasarim=klasik')->assertOk();
+        $this->post('/siteler/'.$ks->slug.'/iletisim', ['full_name' => 'Demo Bakan', 'phone' => '05551112233'])
+            ->assertRedirect('/siteler/'.$ks->slug.'#iletisim');
+        $this->assertFalse(\App\Models\FacilityInterestLead::where('full_name', 'Demo Bakan')->exists());
+    }
 }

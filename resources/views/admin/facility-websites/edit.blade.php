@@ -14,6 +14,7 @@
     <div style="color:#6b7280;font-size:14px;">{{ $facility->name }} · <a href="{{ route('admin.facilities.edit', $facility) }}" style="text-decoration:underline;">Kurum kaydına dön</a></div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ route('admin.facility-websites.demo', $facility) }}" style="border:2px solid #25d366;color:#166534;font-weight:800;border-radius:12px;padding:9px 16px;text-decoration:none;">💬 Demo gönder</a>
     <a href="{{ url('/siteler/'.$site->slug) }}?onizleme=1" target="_blank" rel="noopener" style="border:2px solid #0d6e6a;color:#0d6e6a;font-weight:800;border-radius:12px;padding:9px 16px;text-decoration:none;">👁 Siteyi önizle</a>
     @unless($site->isPro())<a href="{{ url('/siteler/'.$site->slug) }}?onizleme=1&tasarim=pro" target="_blank" rel="noopener" style="border:2px solid #b08d57;color:#8a6a35;font-weight:800;border-radius:12px;padding:9px 16px;text-decoration:none;">★ Profesyonel tasarımı önizle</a>@endunless
   </div>

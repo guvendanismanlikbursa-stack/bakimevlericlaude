@@ -17,7 +17,8 @@ class DoktorSitesiController extends Controller
     public function show(Request $request)
     {
         $site = $this->findBySlug((string) $request->route('slug'));
-        $preview = (bool) session('admin_id');
+        // 29 Ekim 2026: geçerli demo linkiyle gelen ziyaretçi de önizler (bkz. HasDemoLink).
+        $preview = (bool) session('admin_id') || $site->demoAccess($request);
 
         if (! $site->isLive() && ! $preview) {
             abort(404);

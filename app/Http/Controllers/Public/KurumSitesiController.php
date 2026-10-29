@@ -54,6 +54,10 @@ class KurumSitesiController extends Controller
         if ($request->input('kaynak') === 'iletisim') {
             $geri .= '/iletisim';
         }
+        // 29 Ekim 2026: demo linkiyle bakan kişinin formu gerçek talep oluşturmaz.
+        if (! $site->isLive() && ! $this->isOwnerOrAdmin($site)) {
+            return redirect($geri.'#iletisim')->with('kurum_sitesi_basarili', 'Bu bir demo sitedir; iletişim formu site yayına alınınca çalışır.');
+        }
 
         return $this->handleContact($request, $site, $notifier, $geri);
     }
@@ -149,6 +153,12 @@ class KurumSitesiController extends Controller
     }
 
     private function canPreview(FacilityWebsite $site): bool
+    {
+        // 29 Ekim 2026: geçerli demo linkiyle gelen ziyaretçi de önizler (bkz. HasDemoLink).
+        return $this->isOwnerOrAdmin($site) || $site->demoAccess(request());
+    }
+
+    private function isOwnerOrAdmin(FacilityWebsite $site): bool
     {
         if (session('admin_id')) {
             return true;

@@ -109,6 +109,18 @@
             <button type="submit" name="tasarim" value="hareketli" style="border:0;border-left:1px solid #ddd6fe;cursor:pointer;font-weight:800;font-size:13px;padding:5px 10px;{{ $secili === 'hareketli' ? 'background:#6d28d9;color:#fff;' : 'background:#fff;color:#6b7280;' }}">{{ $secili === 'hareketli' ? '✓ ' : '' }}✨ Hareketli</button>
           </form>
         @endif
+        {{-- 29 Ekim 2026: kullanıcının talebi - demo siteyi WhatsApp'tan gönder; 3 tasarımdan istenenler tek mesajda. --}}
+        @php $cepVar = classify_phone_type($f->phone) === 'mobile'; @endphp
+        <form method="GET" action="{{ route('admin.facility-websites.demo', $f->id) }}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin:0;border:1.5px solid #86efac;border-radius:10px;padding:3px 6px;background:#f0fdf4;">
+          <span style="font-size:12px;font-weight:800;color:#166534;">Demo:</span>
+          <label style="font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:2px;"><input type="checkbox" name="tasarim[]" value="standart" checked>Standart</label>
+          <label style="font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:2px;"><input type="checkbox" name="tasarim[]" value="klasik" checked>Klasik</label>
+          <label style="font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:2px;"><input type="checkbox" name="tasarim[]" value="hareketli" checked>Hareketli</label>
+          @if($cepVar)
+            <button type="submit" name="islem" value="whatsapp" style="border:0;border-radius:8px;cursor:pointer;font-weight:800;font-size:12.5px;padding:5px 9px;background:#25d366;color:#fff;">💬 WhatsApp</button>
+          @endif
+          <button type="submit" name="islem" value="link" style="border:1px solid #bbf7d0;border-radius:8px;cursor:pointer;font-weight:800;font-size:12.5px;padding:5px 9px;background:#fff;color:#166534;">🔗 Link</button>
+        </form>
         <a href="{{ route('admin.facility-websites.edit', $f->id) }}" style="{{ $btn }}border-color:#0d6e6a;color:#0d6e6a;">Düzenle</a>
         <a href="{{ route('admin.site-sales.create', ['tur' => 'kurum', 'id' => $f->id, 'plan' => $proAcik ? 'profesyonel' : 'standart']) }}" style="{{ $btn }}">💰 Satış</a>
         @unless($proAcik)

@@ -11,6 +11,9 @@ use Illuminate\Support\Str;
 // kurum kaydından okunur; burada yalnızca siteye özel alanlar var.
 class FacilityWebsite extends Model
 {
+    // 29 Ekim 2026: demo site linki (WhatsApp ile gönderilen süreli önizleme).
+    use Concerns\HasDemoLink;
+
     public const STATUSES = ['taslak' => 'Taslak (yayında değil)', 'yayinda' => 'Yayında'];
 
     // Kurumun ve adminin değiştirebildiği alanlar (değişiklik geçmişine yazılır).
@@ -69,6 +72,7 @@ class FacilityWebsite extends Model
             'hero_image_id' => 'integer',
             'sections' => 'array',
             'published_at' => 'datetime',
+            'demo_until' => 'datetime',
             'pro_until' => 'date',
             'pro_yayina_aldi' => 'boolean',
             'stats' => 'array',
@@ -287,6 +291,11 @@ class FacilityWebsite extends Model
      * Sitenin herkese açık adresi: alan adı varsa o, yoksa
      * bakimevleri.com/siteler/{slug} (site her zaman ana markada yayınlanır).
      */
+    protected function demoPath(): string
+    {
+        return '/siteler/';
+    }
+
     public function publicUrl(): string
     {
         if ($this->custom_domain) {
