@@ -115,9 +115,45 @@
       <p class="text-sm text-gray-500 mb-1 flex items-center gap-1.5 flex-wrap">
         <span>{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</span>
       </p>
-      {{-- 30 Ekim 2026: kullanıcının talebi - çalışma saatleri kartta tek satır özet. --}}
+      {{-- 30 Ekim 2026: kullanıcının talebi - çalışma saatleri kartta belirgin bir kutuda;
+           "Şu an açık/kapalı" etiketi tarayıcıda Türkiye saatiyle hesaplanır (önbellekte de doğru kalır). --}}
       @if($kartSaatOzeti = $facility->openingHoursSummary())
-        <p class="text-xs text-gray-600 mb-1 flex items-start gap-1.5" style="line-height:1.4;"><span aria-hidden="true">🕒</span><span>{{ $kartSaatOzeti }}</span></p>
+        <div class="js-kart-saat" data-saatler="{{ json_encode(array_values($facility->openingHoursRows()), JSON_UNESCAPED_UNICODE) }}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#ecfeff;border:1.5px solid #67e8f9;border-radius:10px;padding:7px 10px;margin:6px 0 8px;line-height:1.35;">
+          <span aria-hidden="true" style="font-size:16px;">🕒</span>
+          <span style="flex:1;min-width:0;font-size:13px;font-weight:800;color:#0e4f5c;">{{ $kartSaatOzeti }}</span>
+          <span class="js-kart-saat-durum" style="display:none;font-size:11px;font-weight:900;padding:2px 8px;border-radius:999px;white-space:nowrap;"></span>
+        </div>
+        @once
+          <script>
+            (function () {
+              function isle() {
+                var simdi;
+                try { simdi = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' })); } catch (e) { simdi = new Date(); }
+                var bugun = (simdi.getDay() + 6) % 7, dakika = simdi.getHours() * 60 + simdi.getMinutes();
+                document.querySelectorAll('.js-kart-saat:not([data-islendi])').forEach(function (k) {
+                  k.setAttribute('data-islendi', '1');
+                  try {
+                    var saat = JSON.parse(k.getAttribute('data-saatler'))[bugun] || '', acik = saat === '24 saat açık';
+                    (saat.match(/\d{1,2}:\d{2}–\d{1,2}:\d{2}/g) || []).forEach(function (a) {
+                      var p = a.split('–').map(function (x) { var s = x.split(':'); return +s[0] * 60 + +s[1]; });
+                      if (p[1] <= p[0]) p[1] += 1440;
+                      if (dakika >= p[0] && dakika < p[1]) acik = true;
+                    });
+                    var e = k.querySelector('.js-kart-saat-durum');
+                    e.textContent = acik ? '● Şu an açık' : '● Şu an kapalı';
+                    e.style.background = acik ? '#16a34a' : '#fee2e2';
+                    e.style.color = acik ? '#ffffff' : '#991b1b';
+                    e.style.display = 'inline-block';
+                  } catch (e) {}
+                });
+              }
+              if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', isle); else isle();
+              // Sonradan (filtre/sayfalama ile) yüklenen kartlar için.
+              var zaman;
+              new MutationObserver(function () { clearTimeout(zaman); zaman = setTimeout(isle, 150); }).observe(document.documentElement, { childList: true, subtree: true });
+            })();
+          </script>
+        @endonce
       @endif
       @php($totalReviewCount = $facility->hidesPatientReviews() ? 0 : $facility->totalReviewCount())
       @php($cardDisplayViews = $facility->monthlyDisplayViewsCount())
