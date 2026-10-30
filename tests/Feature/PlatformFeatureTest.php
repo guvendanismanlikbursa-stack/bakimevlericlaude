@@ -8832,4 +8832,26 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->get('/dr/'.$ds->slug.'?demo='.$ds->demo_token.'&tasarim=klasik')->assertOk()->assertSee('Paketleri incele', false);
         $this->get('/dr/'.$ds->slug.'?demo='.$ds->demo_token.'&tasarim=standart')->assertOk()->assertSee('Paketleri incele', false);
     }
+
+    // 30 Ekim 2026: çalışma saatleri kartta özet, detay sayfasında tablo olarak görünür.
+    public function test_opening_hours_on_card_and_detail_page(): void
+    {
+        $f = $this->facilityUser->facility;
+        $kart = fn () => view('themes._shared.partials.facility-card', ['facility' => $f->fresh()->load(['category', 'city'])])->render();
+        $this->assertStringNotContainsString('🕒', $kart());
+        $this->get('/site/bakimevleri/kurumlar/'.$f->slug)->assertOk()->assertDontSee('Çalışma saatleri', false);
+
+        $saat = ['Pazartesi' => '08:30 - 17:30', 'Salı' => '08:30 - 17:30', 'Çarşamba' => '08:30 - 17:30', 'Perşembe' => '08:30 - 17:30',
+            'Cuma' => '08:30 - 17:30', 'Cumartesi' => '09:00 - 12:00,13:00 - 16:00', 'Pazar' => 'Kapalı'];
+        $f->update(['opening_hours' => $saat, 'opening_hours_fetched_at' => now()]);
+        $this->assertSame('Pzt–Cum 08:30–17:30 · Cmt 09:00–12:00, 13:00–16:00 · Paz Kapalı', $f->fresh()->openingHoursSummary());
+        $this->assertStringContainsString('Pzt–Cum 08:30–17:30', $kart());
+        $this->get('/site/bakimevleri/kurumlar/'.$f->slug)->assertOk()->assertSee('Çalışma saatleri', false)->assertSee('Cumartesi', false);
+
+        $f->update(['opening_hours' => array_fill_keys(\App\Models\Facility::GUNLER, '24 saat açık')]);
+        $this->assertSame('7 gün 24 saat açık', $f->fresh()->openingHoursSummary());
+        // Hepsi kapalı görünen kayıt hatalı sayılır, gösterilmez.
+        $f->update(['opening_hours' => array_fill_keys(\App\Models\Facility::GUNLER, 'Kapalı')]);
+        $this->assertNull($f->fresh()->openingHoursSummary());
+    }
 }

@@ -115,6 +115,10 @@
       <p class="text-sm text-gray-500 mb-1 flex items-center gap-1.5 flex-wrap">
         <span>{{ $facility->city->name }} · {{ $facility->district }} · {{ $facility->category->name }}</span>
       </p>
+      {{-- 30 Ekim 2026: kullanıcının talebi - çalışma saatleri kartta tek satır özet. --}}
+      @if($kartSaatOzeti = $facility->openingHoursSummary())
+        <p class="text-xs text-gray-600 mb-1 flex items-start gap-1.5" style="line-height:1.4;"><span aria-hidden="true">🕒</span><span>{{ $kartSaatOzeti }}</span></p>
+      @endif
       @php($totalReviewCount = $facility->hidesPatientReviews() ? 0 : $facility->totalReviewCount())
       @php($cardDisplayViews = $facility->monthlyDisplayViewsCount())
       @if($cardDisplayViews > 0)

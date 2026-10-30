@@ -561,6 +561,54 @@
       </div>
     </div>
 
+    {{-- 30 Ekim 2026: kullanıcının talebi - çalışma saatleri. Bugünün satırı ve
+         "şu an açık/kapalı" bilgisi tarayıcıda (Türkiye saatiyle) hesaplanır;
+         sayfa önbelleğe alınsa bile doğru kalır. --}}
+    @if($saatSatirlari = $facility->openingHoursRows())
+      <div class="mt-6 bg-white border border-gray-100 rounded-xl p-5 shadow-sm" id="calisma-saatleri">
+        <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <h3 class="font-black text-gray-950">🕒 Çalışma saatleri</h3>
+          <span class="js-saat-durum text-xs font-black px-2.5 py-1 rounded-full" style="display:none;"></span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          @foreach($saatSatirlari as $gun => $saat)
+            <tr class="js-saat-satir" data-gun="{{ $loop->index }}" data-saat="{{ $saat }}" style="border-top:1px solid #f3f4f6;">
+              <td style="padding:7px 8px;font-weight:700;color:#374151;">{{ $gun }}</td>
+              <td style="padding:7px 8px;text-align:right;color:{{ $saat === 'Kapalı' ? '#9ca3af' : '#111827' }};font-weight:600;">{{ $saat }}</td>
+            </tr>
+          @endforeach
+        </table>
+        <p class="mt-3 text-xs text-gray-500">Saatler değişebilir; ziyaretten önce kurumu arayarak teyit etmenizi öneririz.</p>
+      </div>
+      <script>
+        (function () {
+          try {
+            var simdi = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+            var bugun = (simdi.getDay() + 6) % 7;
+            var dakika = simdi.getHours() * 60 + simdi.getMinutes();
+            var acik = false, satir = document.querySelector('.js-saat-satir[data-gun="' + bugun + '"]');
+            if (!satir) return;
+            satir.style.background = '#f0fdfa';
+            satir.cells[0].textContent += ' (bugün)';
+            var saat = satir.getAttribute('data-saat');
+            if (saat === '24 saat açık') { acik = true; }
+            else {
+              (saat.match(/\d{1,2}:\d{2}–\d{1,2}:\d{2}/g) || []).forEach(function (a) {
+                var p = a.split('–').map(function (x) { var s = x.split(':'); return +s[0] * 60 + +s[1]; });
+                if (p[1] <= p[0]) p[1] += 1440;
+                if (dakika >= p[0] && dakika < p[1]) acik = true;
+              });
+            }
+            var etiket = document.querySelector('.js-saat-durum');
+            etiket.textContent = acik ? '● Şu an açık' : '● Şu an kapalı';
+            etiket.style.background = acik ? '#dcfce7' : '#fee2e2';
+            etiket.style.color = acik ? '#166534' : '#991b1b';
+            etiket.style.display = 'inline-block';
+          } catch (e) {}
+        })();
+      </script>
+    @endif
+
     @if($facility->hasPreciseLocation())
       {{-- 17 Agustos 2026: kullanicinin talebi - Google Haritalar konumu.
            SADECE gercek adresten geocode edilmis kurumlarda gosterilir
