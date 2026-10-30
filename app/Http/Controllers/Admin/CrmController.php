@@ -50,12 +50,23 @@ class CrmController extends Controller
 
     public const REHBER_ANAHTAR = 'crm_doktor_rehber';
 
-    /** 30 Ekim 2026: kullanıcının talebi - doktor görüşme rehberi admin tarafından düzenlenir. */
-    public static function rehberMetni(): string
-    {
-        $kayitli = trim((string) \App\Models\Setting::get(self::REHBER_ANAHTAR, ''));
+    public const KURUM_REHBER_ANAHTAR = 'crm_kurum_rehber';
 
-        return $kayitli !== '' ? $kayitli : self::varsayilanRehber();
+    /**
+     * 30 Ekim 2026: kullanıcının talebi - doktor ve kurum görüşme rehberleri admin
+     * tarafından düzenlenir; kayıt yoksa ilk (varsayılan) metin gösterilir.
+     */
+    public static function rehberMetni(string $tur = 'doktor'): string
+    {
+        $kayitli = trim((string) \App\Models\Setting::get($tur === 'kurum' ? self::KURUM_REHBER_ANAHTAR : self::REHBER_ANAHTAR, ''));
+
+        return $kayitli !== '' ? $kayitli : ($tur === 'kurum' ? self::varsayilanKurumRehberi() : self::varsayilanRehber());
+    }
+
+    /** Kurum rehberinin ilk hali (kullanıcının metni, 30 Ekim 2026 düzeltmeleriyle). */
+    public static function varsayilanKurumRehberi(): string
+    {
+        return trim((string) @file_get_contents(resource_path('crm/kurum_rehber.txt')));
     }
 
     public static function varsayilanRehber(): string
@@ -99,14 +110,15 @@ REHBER;
 
     public function saveGuide(Request $request)
     {
+        $anahtar = $request->input('tur') === 'kurum' ? self::KURUM_REHBER_ANAHTAR : self::REHBER_ANAHTAR;
         if ($request->boolean('varsayilan')) {
-            \App\Models\Setting::set(self::REHBER_ANAHTAR, '');
+            \App\Models\Setting::set($anahtar, '');
             log_admin_event('crm_rehber_sifirlandi');
 
             return back()->with('success', 'Görüşme rehberi ilk haline döndürüldü.')->with('rehber_kaydedildi', true);
         }
         $data = $request->validate(['rehber' => 'required|string|max:20000'], ['rehber.required' => 'Rehber boş olamaz.']);
-        \App\Models\Setting::set(self::REHBER_ANAHTAR, str_replace("\r\n", "\n", $data['rehber']));
+        \App\Models\Setting::set($anahtar, str_replace("\r\n", "\n", $data['rehber']));
         log_admin_event('crm_rehber_guncellendi');
 
         return back()->with('success', 'Görüşme rehberi kaydedildi.')->with('rehber_kaydedildi', true);

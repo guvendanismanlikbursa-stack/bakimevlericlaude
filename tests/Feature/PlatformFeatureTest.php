@@ -8788,7 +8788,15 @@ class PlatformFeatureTest extends TestCase
         $this->get('/admin/crm/doktorlar')->assertDontSee('<script>alert(1)</script>', false);
         $this->post(route('admin.crm.guide'), ['varsayilan' => '1'])->assertRedirect();
         $this->get('/admin/crm/doktorlar')->assertSee('Doktortakvimi', false);
-        $this->get('/admin/crm')->assertDontSee('Görüşme rehberi', false);
+        // Kurum rehberi: ayrı metin, sağlık kuruluşu uyarısı, ayrı kaydedilir.
+        $this->get('/admin/crm')->assertSee('kurum yöneticisiyle konuşurken', false)->assertSee('İlk 15 saniye', false)->assertDontSee('Doktortakvimi', false);
+        $this->get('/admin/crm?category=bireysel-fizyoterapist')->assertSee('bu kurumlara üyelik teklif edilmez', false);
+        $this->post(route('admin.crm.guide'), ['tur' => 'kurum', 'rehber' => "## Kurum Özel
+Metin {standart_fiyat}"])->assertRedirect();
+        $this->get('/admin/crm')->assertSee('Kurum Özel', false)->assertDontSee('İlk 15 saniye', false);
+        $this->get('/admin/crm/doktorlar')->assertDontSee('Kurum Özel', false);
+        $this->post(route('admin.crm.guide'), ['tur' => 'kurum', 'varsayilan' => '1'])->assertRedirect();
+        $this->get('/admin/crm')->assertSee('İlk 15 saniye', false);
         $this->post(route('admin.crm.doctors.store-note', $e), ['status' => 'interested', 'package_interest' => 'standart_site'])->assertRedirect();
         $this->assertSame('interested', $e->fresh()->marketing_status);
         $this->assertSame($this->admin->id, (int) \App\Models\ExpertMarketingNote::where('expert_id', $e->id)->value('admin_id'));

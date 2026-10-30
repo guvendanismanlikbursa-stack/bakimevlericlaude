@@ -41,7 +41,11 @@
 @if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:14px;">{{ session('success') }}</div>@endif
 @if($errors->any())<div style="background:#fef2f2;color:#991b1b;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:14px;">{{ $errors->first() }}</div>@endif
 
-@if($tur === 'doktor')@include('admin.crm._doktor_rehber')@endif
+@include('admin.crm._rehber', ['tur' => $tur])
+{{-- 30 Ekim 2026: sağlık kuruluşu kategorisi seçiliyse üyelik teklif edilmez uyarısı. --}}
+@if($tur === 'kurum' && in_array(request('category'), \App\Models\Facility::SAGLIK_KATEGORI_SLUGLARI, true))
+  <div style="background:#fef2f2;border:1.5px solid #fca5a5;color:#991b1b;border-radius:12px;padding:12px 16px;font-weight:800;margin-bottom:14px;">⚠️ Sağlık kuruluşu kategorisi: bu kurumlara üyelik teklif edilmez (avukat görüşü bekleniyor). Yalnızca bilgi doğrulama görüşmesi yapın.</div>
+@endif
 
 <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
   <div class="crm-ozet"><b>{{ $ozet['bugun_randevu'] }}</b><span>📅 Bugün randevulu</span></div>
@@ -161,6 +165,7 @@
         @if(! $doktor)
           @if($k->is_broker_managed)<span class="crm-rozet" style="background:#dbeafe;color:#1e40af;">Anlaşmalı</span>@elseif($k->is_claimed)<span class="crm-rozet" style="background:#dcfce7;color:#166534;">Sahiplenilmiş</span>@else<span class="crm-rozet">Ön kayıtlı</span>@endif
           @if($k->is_subscribed)<span class="crm-rozet" style="background:#fef3c7;color:#92400e;">Abone / üye</span>@endif
+          @if($k->isHealthProvider())<span class="crm-rozet" style="background:#fee2e2;color:#991b1b;">Sağlık kuruluşu · üyelik teklif edilmez</span>@endif
           @if(! $k->is_published)<span class="crm-rozet" style="background:#fee2e2;color:#991b1b;">Yayında değil</span>@endif
         @else
           @if(! $k->is_published)<span class="crm-rozet" style="background:#fee2e2;color:#991b1b;">Yayında değil</span>@endif

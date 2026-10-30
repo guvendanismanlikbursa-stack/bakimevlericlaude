@@ -1,0 +1,79 @@
+## Önce bilin
+! Fizik Tedavi, Bireysel Fizyoterapist ve Nörolojik Rehabilitasyon (sağlık kuruluşları) için üyelik TEKLİF EDİLMEZ; avukat görüşü bekleniyor. Bu kurumlarla yalnızca bilgi doğrulama görüşmesi yapın.
+Amaç kuruma sadece üyelik satmak değil; yöneticinin bakimevleri.com'u yeni ailelere ulaşmak için ek bir kanal olarak görmesini sağlamak.
+- **Güven:** Şeffaf bilgi ver, gerçek olmayan başarı iddiasından kaçın.
+- **İhtiyaç:** Kurumun öğrenci kazanma ve görünürlük ihtiyacını öğren.
+- **Mantık:** Ücretsiz ve ücretli üyelik farkını açıkla.
+- **Karar:** Net bir sonraki adım öner.
+! Altın kural: İhtiyacı öğrenmeden fiyat söyleme. Fiyatı söyledikten sonra da yöneticinin hangi faydaya önem verdiğini anlamaya çalış.
+
+## 1 · İlk 15 saniye
+"Merhaba, iyi günler. bakimevleri.com'dan arıyorum. Anaokulu ve kreş arayan ailelerin kurumları inceleyebildiği bir platformumuz var. Kurumunuzun da bu platformda yer almasıyla ilgili görüşmek istiyorum. Yetkili kişiyle mi görüşüyorum?"
+Yetkiliyse: "Memnun oldum. Uzun bir tanıtım yapmayacağım, sistemin kurumunuza nasıl katkı sağlayabileceğini kısaca anlatmak istiyorum. Bir dakikanızı ayırabilir misiniz?"
+
+## 2 · İhtiyacı ortaya çıkar
+"Kurumunuz şu anda yeni öğrencilere ulaşmak için hangi kanalları daha çok kullanıyor? Tavsiye, sosyal medya, Google aramaları ya da farklı kanallar?"
+- **Yeni öğrenci istiyorsa:** "O zaman sizin için önemli olan, kurumunuzu henüz tanımayan ailelerin de sizi keşfedebileceği kanallar."
+- **Öğrencisi yeterliyse:** "Gelecek kayıt dönemleri için alternatif başvuru kanallarınızı güçlendirmek yine de önemli olabilir mi?"
+- **Zaten reklam veriyorsa:** "Mevcut reklamlarınızın yerine geçmiyoruz; ailelerin kurum araştırdığı farklı bir platformda da yer alırsınız. İsterseniz kurumunuza ait bir internet sitesi de hazırlıyoruz; kurumunuzun adıyla arandığınızda çıkan bir site daha olur."
+! Bu aşamada ikna etmeye çalışma; önce gerçekten bir ihtiyaç olup olmadığını anla.
+
+## 3 · Platformu tanıt
+"bakimevleri.com, ailelerin çocuk bakım ve eğitim kurumlarını araştırıp kendilerine uygun seçenekleri değerlendirebildiği bir platform. Aynı veri tabanıyla bakimevibul.com ve bakimeviara.com'da da yayındayız. Kurumunuzun temel bilgileri ücretsiz profilde yayınlanıyor. Ücretli üyelikte telefon ve WhatsApp düğmeleriniz açılıyor, kurum panelinizden profilinizi yönetiyorsunuz ve paketinize göre tanıtım imkânları ekleniyor."
+Ardından sor: "Sizin için en faydalı taraf hangisi olur: yeni ailelere ulaşmak mı, internetteki görünürlüğünüz mü, yoksa ailelerin size doğrudan ulaşması mı?"
+
+## 4 · Ücretsiz ve ücretli farkı
+- **Ücretsiz profil:** Temel bilgiler yayınlanır, aileler profili inceleyebilir. Telefon yerine bilgi talep formu görünür.
+- **Ekonomik:** Telefon ve WhatsApp düğmeleri, kurum paneli, doğrulanmış üye rozeti, 10 fotoğraf, aile talepleri doğrudan panelinize.
+- **Standart:** Ekonomik'e ek olarak sınırsız fotoğraf, öne çıkan kurum kartı, kurumunuza özel internet sitesi (alan adı, barındırma, güvenlik sertifikası dahil), aylık rapor.
+- **Premium:** Standart'a ek olarak tanıtım videosu, il/ilçe sayfalarında vitrin ve üst sıra, 360° sanal tur, kişisel temsilci.
+! 360° sanal tur henüz sitede gösterilemiyor; Premium satmadan önce admin'e danışın.
+"Ücretli üyeliğin farkı, ailelerin size doğrudan ulaşabilmesi ve profilinizin daha kapsamlı yönetilmesi. Önemli olan bu imkânların kurumunuza uygun olup olmadığı."
+
+## 5 · Fiyat (önce en üst paket)
+"Üç üyelik seçeneğimiz var. **Premium** yıllık {premium_fiyat}: vitrin yeri, kendi siteniz, video ve sanal tur. **Standart** yıllık {standart_fiyat}: öne çıkan kart ve kurumunuza özel internet sitesi; kurumların çoğuna en uygun olan bu. **Ekonomik** yıllık {ekonomik_fiyat}: telefon, WhatsApp ve panel."
+"Sizin için önemli olan dijital görünürlük mü, yoksa ailelerin güvenini kazanacak daha kapsamlı bir tanıtım mı?"
+! Fiyatı söyledikten sonra sus ve dinle. Hemen indirim yapma; önce gerçek itirazı öğren.
+
+## 6 · Demo site ve teklif sayfası
+"Kurumunuzun bilgileriyle bir internet sitesi örneği hazırladık. WhatsApp'tan göndermeme izin verir misiniz?"
+! İzin alınmadan link gönderilmez. İzin verirse kartın altındaki "Demo site gönder".
+"Ayrıca kurumunuzun platformdaki son 30 günlük gerçek görüntülenme rakamlarını gösteren bir sayfa da paylaşabilirim."
+! Kartın altındaki "Teklif sayfası" düğmesi: kurumun kendi gerçek rakamları. Uydurma ziyaretçi sayısı söylemenize gerek kalmaz.
+
+## 7 · İtirazlar
+- **"Müşteri getireceğiniz belli değil":** "Haklısınız, kaç öğrenci kazandıracağını bugün garanti etmem doğru olmaz. Sunduğumuz şey görünürlüğünüze ek bir kanal ve ailelerin size doğrudan ulaşabilmesi." Sor: "Yeni ailelere ulaşmak için alternatif bir kanala ihtiyacınız var mı?"
+- **"Yeterince öğrencimiz var":** "Bu güzel. O zaman hemen yeni öğrenci kazanmanız gerektiğini söylemem doğru olmaz. Gelecek kayıt dönemleri için görünürlüğünüzü güçlendirmeye ne dersiniz?" İlgilenmiyorsa ücretsiz profili öner.
+- **"Ücretsiz profil yeterli":** "Temel bilgileriniz için uygun. Ücretli üyeliğin farkı doğrudan telefon ve WhatsApp, kapsamlı profil, isterseniz kendi siteniz. İhtiyaç duymuyorsanız ücretsiz devam edebilirsiniz."
+- **"Ücret çok yüksek":** "Anlıyorum. Önce hangi özellikten yararlanacağınızı netleştirelim; karşılığını anlamlı bulmazsanız almak zorunda değilsiniz." Sor: "Sizi düşündüren ücret mi, yoksa katkının henüz net olmaması mı?" Değer için: "Tek bir öğrencinin yıllık ücreti bile çoğu zaman üyelik bedelini karşılar."
+- **"Sitemiz ve sosyal medyamız var":** "Bunların yerine geçmiyoruz; sizi daha önce tanımayan ailelerin sizi farklı bir yerde keşfetmesini sağlıyoruz."
+- **"Bu siteyi duymadım":** "Haklısınız. Biz Şehir Hastanesi'nin batı girişindeki ofisimizden hasta bakım ve danışmanlık hizmeti veren Güven Bakım Hizmetleri'yiz; bakimevleri.com, bakimevibul.com ve bakimeviara.com platformlarımız. İsterseniz önce profilinizin nasıl göründüğüne bakın, kararınızı sonra verin."
+- **"Kayıt garantisi veriyor musunuz?":** "Hayır. Kayıt kararı ailenin ihtiyacına, fiyata, konuma ve birçok etkene bağlı. Biz kurumunuzun tanınmasını ve ailelerin size kolay ulaşmasını sağlıyoruz."
+- **"Düşüneyim":** "Elbette. Doğru bilgi verebilmem için soruyorum: Kararınızı zorlaştıran fiyat mı, platformun ulaşma kapasitesi mi, yoksa özellikler mi?" Takip için gün ve saat alın.
+- **"Bütçemiz yok":** "Anlıyorum, zor bir dönemden geçiyoruz. Ücretsiz profilinizle devam edebilir, bütçeniz uygun olduğunda tekrar değerlendirebiliriz. Yeni kayıt dönemi yaklaşırken tekrar görüşelim mi?"
+- **"Google'dan zaten müşteri geliyor":** "Bu iyi bir avantaj. Çalışan bir kanalı değiştirmiyoruz, erişebileceğiniz alternatifleri artırıyoruz."
+- **"Kontenjanımız dolu":** "O zaman şu an acil ihtiyacınız olmayabilir. Gelecek kayıt dönemi için değerlendirmeye ne dersiniz? İhtiyacınız yoksa daha sonra görüşebiliriz."
+- **"Yönetimden izin almam gerekiyor":** "Tabii. Karar vericiye sunmanız için ücretleri ve özellikleri kısa ve net paylaşabiliriz." Sor: "Kararı kimle birlikte veriyorsunuz, ona hangi bilgileri iletelim?"
+- **"Sonra arayın":** "Elbette. Önümüzdeki günlerde mi, yoksa kayıt dönemi yaklaşırken mi aramam daha uygun olur?" Belirli gün ve saat alın.
+- **"Başka platformlara üyeyiz, faydasını görmedik":** "Daha önce fayda görmediğiniz bir hizmete yeniden bütçe ayırmak istememeniz normal." Sor: "Sizi memnun etmeyen ziyaretçi eksikliği miydi, iletişim alamamak mı, yoksa sonuçları ölçememek mi?" Rakipleri kötülemeyin.
+- **"Listeden çıkarın":** "Elbette, hemen işleme alıyorum." Durumu "Platformdan Kaldırılmasını İstiyor" seçin.
+
+## 8 · Kapanış
+- **Seçenek sun:** "Konuştuklarımıza göre kurumunuz için Standart üyelik en uygunu görünüyor: hem öne çıkan kart hem kendi siteniz. Standart mı, yoksa şimdilik Ekonomik mi daha uygun olur?"
+- **İhtiyaca bağla:** "Sizin için en önemli konu yeni ailelerin sizi keşfetmesi ve doğrudan ulaşabilmesi. Üyelik bu amaca hizmet ediyor; süreci başlatalım mı?"
+- **Son itirazı sor:** "Aklınıza takılan bir konu var mı? Yoksa üyelik işlemlerine geçelim mi?"
+Kabul ederse: "Memnun oldum. Üyelik için gerekli bilgileri ve ödeme sürecini netleştirelim."
+Kararsızsa: "Sizi durduran ücret mi, katkı mı, yoksa şu an ihtiyacınızın olmaması mı?" Hâlâ istemiyorsa baskı yapmayın; takip zamanı belirleyin.
+! Sonucu not formuna işleyin: durum, görüşülen kişi, tekrar aranacak zaman.
+
+## Yapılmayacaklar
+- Kanıtlanmamış ziyaretçi ya da müşteri sayısı söylemek, "kesin öğrenci kazandırırız" demek.
+- Ücreti gizlemek ya da sonradan ortaya çıkarmak.
+- Sahte indirim, süre kısıtı, "bugün 5 kurum katıldı" gibi sahte aciliyet.
+- "Hastane adına" ya da "hastanemiz" demek.
+- Google sıralaması sözü vermek.
+- İhtiyacı olmadığını söyleyene baskıyı sürdürmek; ücretsiz profili kötü göstermek.
+- İzin almadan link göndermek.
+
+## Sonuçları ölçme
+Her görüşmenin sonucu CRM'e işlenir: kaç kurum arandı, kaç yetkiliyle görüşüldü, kaçı ilgilendi, kaçına fiyat anlatıldı, kaçı üye oldu, reddedenlerin en sık gerekçesi. En iyi sonuç veren giriş cümlesini ve kapanışı bu verilere göre geliştirin.

@@ -1,14 +1,23 @@
-{{-- 30 Ekim 2026: kullanıcının talebi - doktor görüşme rehberi; yalnızca admin CRM'inde
+{{-- 30 Ekim 2026: kullanıcının talebi - doktor ve kurum görüşme rehberi ($tur); yalnızca admin CRM'inde
      (pazarlamacı paneline eklenmedi). Metni admin "Düzenle" ile kendisi değiştirir
      (Setting crm_doktor_rehber, boşsa CrmController::varsayilanRehber()).
      Biçim: "## " kutu başlığı, "! " uyarı notu, "- " madde, **kalın**;
-     {temel_fiyat} ve {aylik_fiyat} paket fiyatından doldurulur. --}}
+     Doktor: {temel_fiyat}, {aylik_fiyat} (hekim paketleri). Kurum: {ekonomik_fiyat}, {standart_fiyat},
+     {premium_fiyat} (üyelik paketleri). --}}
 @php
+  $tur = $tur ?? 'doktor';
+  $paketFiyat = function (string $ad) {
+      $p = \App\Models\SubscriptionPackage::where('kind', 'membership')->where('is_active', true)->where('name', $ad)->value('price');
+
+      return $p ? number_format((float) $p, 0, ',', '.').' ₺' : '';
+  };
   $temelFiyat = \App\Http\Controllers\Public\HekimPaketController::fiyat('temel');
   $temelSayi = (int) preg_replace('/\D+/', '', explode('₺', $temelFiyat)[0]);
   $aylik = $temelSayi > 0 ? number_format((int) ceil($temelSayi / 12 / 50) * 50, 0, ',', '.').' ₺' : '';
-  $hamMetin = \App\Http\Controllers\Admin\CrmController::rehberMetni();
-  $metin = strtr($hamMetin, ['{temel_fiyat}' => $temelFiyat, '{aylik_fiyat}' => $aylik]);
+  $hamMetin = \App\Http\Controllers\Admin\CrmController::rehberMetni($tur);
+  $metin = strtr($hamMetin, $tur === 'kurum'
+      ? ['{ekonomik_fiyat}' => $paketFiyat('Ekonomik Üyelik'), '{standart_fiyat}' => $paketFiyat('Standart Üyelik'), '{premium_fiyat}' => $paketFiyat('Premium Üyelik')]
+      : ['{temel_fiyat}' => $temelFiyat, '{aylik_fiyat}' => $aylik]);
   $kalin = fn ($s) => preg_replace('/\*\*(.+?)\*\*/u', '<b>$1</b>', e($s));
   // Satırları kutulara ayır.
   $kutular = [];
@@ -31,7 +40,7 @@
   $not = 'display:block;font-size:12.5px;color:#92400e;margin-top:4px;font-weight:700;';
 @endphp
 <details style="background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:14px 16px;margin-bottom:14px;border:1.5px solid #cfe7e4;" @if($errors->has('rehber') || session('rehber_kaydedildi')) open @endif>
-  <summary style="cursor:pointer;font-weight:900;font-size:15px;color:#0d6e6a;">📋 Görüşme rehberi — doktorla konuşurken açık tutun</summary>
+  <summary style="cursor:pointer;font-weight:900;font-size:15px;color:#0d6e6a;">📋 Görüşme rehberi — {{ $tur === 'kurum' ? 'kurum yöneticisiyle' : 'doktorla' }} konuşurken açık tutun</summary>
   <div style="display:grid;gap:10px;margin-top:12px;">
     @foreach($kutular as $kutu)
       <div style="{{ $adim }}">
@@ -52,9 +61,10 @@
       <summary style="cursor:pointer;font-size:13.5px;font-weight:900;color:#374151;">✏️ Rehberi düzenle</summary>
       <form method="POST" action="{{ route('admin.crm.guide') }}" style="margin-top:10px;display:grid;gap:8px;">
         @csrf
+        <input type="hidden" name="tur" value="{{ $tur }}">
         <div style="font-size:12.5px;color:#4b5563;background:#f3f4f6;border-radius:10px;padding:10px 12px;line-height:1.6;">
           <b>Yazım kuralları:</b> <code>## Başlık</code> yeni kutu açar · <code>! metin</code> sarı uyarı notu · <code>- metin</code> madde · <code>**kalın**</code> kalın yazı ·
-          <code>{temel_fiyat}</code> ve <code>{aylik_fiyat}</code> paket fiyatından kendiliğinden dolar.
+          @if($tur === 'kurum')<code>{ekonomik_fiyat}</code>, <code>{standart_fiyat}</code>, <code>{premium_fiyat}</code> üyelik paketlerinin güncel fiyatından kendiliğinden dolar.@else<code>{temel_fiyat}</code> ve <code>{aylik_fiyat}</code> paket fiyatından kendiliğinden dolar.@endif
         </div>
         <textarea name="rehber" rows="22" style="width:100%;border:1.5px solid #d6dde0;border-radius:10px;padding:10px 12px;font:13.5px/1.55 ui-monospace,Consolas,monospace;color:#111827;">{{ old('rehber', $hamMetin) }}</textarea>
         @error('rehber')<div style="color:#b91c1c;font-size:13px;font-weight:700;">{{ $message }}</div>@enderror
