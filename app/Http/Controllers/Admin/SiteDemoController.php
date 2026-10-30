@@ -45,6 +45,20 @@ class SiteDemoController extends Controller
         return back()->with('success', 'Yeni demo linki oluşturuldu; eski link artık açılmaz.');
     }
 
+    /** 30 Ekim 2026: hekim site paketlerinin (Temel / Profesyonel / Prestij) fiyatları. */
+    public function savePackagePrices(Request $request)
+    {
+        $data = $request->validate(['fiyat' => 'required|array', 'fiyat.*' => 'required|string|max:60']);
+        foreach (array_keys(\App\Http\Controllers\Public\HekimPaketController::PAKETLER) as $paket) {
+            if (isset($data['fiyat'][$paket])) {
+                \App\Models\Setting::set('hekim_paket_fiyat_'.$paket, trim($data['fiyat'][$paket]));
+            }
+        }
+        log_admin_event('hekim_paket_fiyat', null, $data['fiyat']);
+
+        return back()->with('success', 'Hekim paket fiyatları kaydedildi.');
+    }
+
     private function handle(Request $request, Model $site, Model $kayit, string $tur)
     {
         $tumu = array_keys(ExpertWebsite::DEMO_TASARIMLAR);
@@ -57,7 +71,7 @@ class SiteDemoController extends Controller
             $linkler[$t] = $site->demoUrl($t);
         }
         $ad = $tur === 'doktor' ? $site->fullName() : $kayit->name;
-        $mesaj = $this->message($ad, $linkler, $site->demo_until, $tur);
+        $mesaj = $this->message($ad, $linkler, $site->demo_until, $tur, $site);
         $wa = classify_phone_type($kayit->phone) === 'mobile' ? normalize_whatsapp_number($kayit->phone) : '';
         $waLink = $wa ? 'https://wa.me/'.$wa.'?text='.rawurlencode($mesaj) : '';
 
@@ -82,7 +96,7 @@ class SiteDemoController extends Controller
         ]);
     }
 
-    private function message(string $ad, array $linkler, $bitis, string $tur): string
+    private function message(string $ad, array $linkler, $bitis, string $tur, ?Model $site = null): string
     {
         $tek = count($linkler) === 1;
         // 30 Ekim 2026: kullanıcının talebi - link yalnızca telefonda görüşülüp izin alındıktan sonra
@@ -95,6 +109,11 @@ class SiteDemoController extends Controller
             $satirlar[] = '';
         }
         $satirlar[] = ($tek ? 'Bağlantı ' : 'Bağlantılar ').$bitis->format('d.m.Y').' tarihine kadar açıktır. Beğendiğiniz tasarımı bu numaradan bize yazabilirsiniz.';
+        if ($tur === 'doktor' && $site !== null) {
+            $satirlar[] = '';
+            $satirlar[] = 'Paketler ve fiyatlar:';
+            $satirlar[] = $site->paketSayfasiUrl();
+        }
         $satirlar[] = 'bakimevleri.com';
 
         return implode("\n", $satirlar);

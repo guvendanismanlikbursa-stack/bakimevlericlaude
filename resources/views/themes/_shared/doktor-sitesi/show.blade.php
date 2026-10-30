@@ -109,7 +109,7 @@
 <body>
 
 @if($isPreview)
-  <div class="onizleme">Önizleme — bu site henüz yayında değil. Yalnızca siz görüyorsunuz.</div>
+  <div class="onizleme">Önizleme — bu site henüz yayında değil. @if(isset($site) && ! $site->isLive() && $site->demo_token)<a href="{{ $site->paketSayfasiUrl() }}" style="color:inherit;font-weight:900;text-decoration:underline;margin-left:8px;white-space:nowrap;">Paketleri incele →</a>@endif</div>
 @endif
 
 @include('themes._shared.partials.hekim-uyari', ['boyut' => 'inherit'])

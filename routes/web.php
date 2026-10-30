@@ -142,6 +142,8 @@ $siteRoutes = function () {
     Route::post('/toplu-teklif-talebi', [OfferRequestController::class, 'storeBulk'])->middleware('throttle:public-form')->name('offer-requests.store-bulk');
     // 23 Ekim 2026: kullanıcının talebi - kurumun internet sitesi (bkz. KurumSitesiController).
     // 23 Ekim 2026: kullanıcının talebi - doktorun internet sitesi (bkz. DoktorSitesiController).
+    // 30 Ekim 2026: kullanıcının talebi - hekim internet sitesi paketleri (bkz. HekimPaketController).
+    Route::get('/hekim-site-paketleri', [\App\Http\Controllers\Public\HekimPaketController::class, 'show'])->middleware('throttle:public-browse')->name('hekim-paketleri');
     Route::get('/dr/{slug}', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'show'])->middleware('throttle:public-browse')->name('doktor-sitesi.show');
     Route::post('/dr/{slug}/olay', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'event'])->middleware('throttle:public-browse')->name('doktor-sitesi.olay');
     Route::post('/dr/{slug}/iletisim', [\App\Http\Controllers\Public\DoktorSitesiController::class, 'contact'])->middleware('throttle:public-form')->name('doktor-sitesi.iletisim');
@@ -468,6 +470,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/site-satislari/{satis}', [\App\Http\Controllers\Admin\SiteSaleController::class, 'destroy'])->name('site-sales.destroy');
         Route::get('/doktor-siteleri', [\App\Http\Controllers\Admin\ExpertWebsiteController::class, 'index'])->name('expert-websites.index');
         // 29 Ekim 2026: kullanıcının talebi - demo siteyi WhatsApp'tan gönderme (bkz. SiteDemoController).
+        Route::post('/doktor-siteleri/paket-fiyatlari', [\App\Http\Controllers\Admin\SiteDemoController::class, 'savePackagePrices'])->name('expert-websites.package-prices');
         Route::get('/doktor-siteleri/{expert}/demo', [\App\Http\Controllers\Admin\SiteDemoController::class, 'expert'])->name('expert-websites.demo');
         Route::post('/doktor-siteleri/{expert}/demo/yenile', [\App\Http\Controllers\Admin\SiteDemoController::class, 'renewExpert'])->name('expert-websites.demo.renew');
         Route::get('/kurum-siteleri/{facility}/demo', [\App\Http\Controllers\Admin\SiteDemoController::class, 'facility'])->name('facility-websites.demo');

@@ -210,6 +210,14 @@ class ExpertWebsite extends Model
         return '/dr/';
     }
 
+    /** 30 Ekim 2026: hekim paket sayfası; demo anahtarıyla paket örnekleri doktorun kendi sitesinde açılır. */
+    public function paketSayfasiUrl(): string
+    {
+        $taban = app()->environment('local', 'testing') ? url('/hekim-site-paketleri') : 'https://bakimevleri.com/hekim-site-paketleri';
+
+        return $taban.'?d='.$this->slug.'&k='.$this->demoToken();
+    }
+
     public function publicUrl(): string
     {
         if ($this->custom_domain) {

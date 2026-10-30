@@ -585,11 +585,11 @@
   </div>
 @endif
 @if(! empty($hareketliDemo))
-  <div class="onizleme">✨ Hareketli Profesyonel tasarım önizlemesi</div>
+  <div class="onizleme">✨ Hareketli Profesyonel tasarım önizlemesi @if(isset($site) && ! $site->isLive() && $site->demo_token)<a href="{{ $site->paketSayfasiUrl() }}" style="color:inherit;font-weight:900;text-decoration:underline;margin-left:8px;white-space:nowrap;">Paketleri incele →</a>@endif</div>
 @elseif($demoPro)
-  <div class="onizleme">Profesyonel Site tasarım önizlemesi — paket etkinleşince site bu görünümde yayınlanır.</div>
+  <div class="onizleme">Profesyonel Site tasarım önizlemesi — paket etkinleşince site bu görünümde yayınlanır. @if(isset($site) && ! $site->isLive() && $site->demo_token)<a href="{{ $site->paketSayfasiUrl() }}" style="color:inherit;font-weight:900;text-decoration:underline;margin-left:8px;white-space:nowrap;">Paketleri incele →</a>@endif</div>
 @elseif($isPreview)
-  <div class="onizleme">Önizleme — bu site henüz yayında değil.</div>
+  <div class="onizleme">Önizleme — bu site henüz yayında değil. @if(isset($site) && ! $site->isLive() && $site->demo_token)<a href="{{ $site->paketSayfasiUrl() }}" style="color:inherit;font-weight:900;text-decoration:underline;margin-left:8px;white-space:nowrap;">Paketleri incele →</a>@endif</div>
 @endif
 
 <script>

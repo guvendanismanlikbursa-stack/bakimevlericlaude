@@ -19,6 +19,16 @@
   <span data-live-count style="display:inline-block;background:#111827;color:#fff;border-radius:9999px;font-size:13px;font-weight:700;padding:3px 12px;">{{ number_format($experts->total(), 0, ',', '.') }} doktor bulundu</span>
 </div>
 <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">Doktor siteleri yalnızca buradan yönetilir. Hukuki nedenle sitelerde hasta yorumu yer almaz.</p>
+{{-- 30 Ekim 2026: kullanıcının talebi - hekim site paketlerinin fiyatları ve paket sayfası. --}}
+<form method="POST" action="{{ route('admin.expert-websites.package-prices') }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fffdf8;border:1.5px solid #e9d3ab;border-radius:12px;padding:10px 12px;margin-bottom:16px;">
+  @csrf
+  <span style="font-size:13px;font-weight:900;color:#8a6a35;">Paket fiyatları:</span>
+  @foreach(\App\Http\Controllers\Public\HekimPaketController::PAKETLER as $pk => $pd)
+    <label style="font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:4px;">{{ $pd['ikon'] }} {{ $pd['ad'] }} <input name="fiyat[{{ $pk }}]" value="{{ \App\Http\Controllers\Public\HekimPaketController::fiyat($pk) }}" maxlength="60" style="border:1px solid #d1d5db;border-radius:8px;padding:5px 8px;font-size:13px;width:130px;"></label>
+  @endforeach
+  <button type="submit" style="{{ $btn }}">Kaydet</button>
+  <a href="{{ route('hekim-paketleri') }}" target="_blank" rel="noopener" style="{{ $btn }}border-color:#b08d57;color:#8a6a35;">👁 Paket sayfasını gör</a>
+</form>
 @if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:10px 14px;font-weight:700;margin-bottom:12px;">{{ session('success') }}</div>@endif
 
 <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:16px;">

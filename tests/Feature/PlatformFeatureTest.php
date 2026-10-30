@@ -8784,4 +8784,33 @@ class PlatformFeatureTest extends TestCase
         $this->get('/admin/crm/doktorlar?group=interested')->assertOk()->assertSee('Crm Doktor', false)->assertSee('🛡️', false);
         $this->get(route('admin.marketers.conversations', ['tur' => 'doktor']))->assertOk()->assertSee('Admin', false);
     }
+
+    // 30 Ekim 2026: hekim site paketleri sayfası, admin fiyatları, demo bağlantıları.
+    public function test_doctor_package_page_prices_and_demo_links(): void
+    {
+        $this->get('/hekim-site-paketleri')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+            ->assertSee('En çok tercih edilen', false)->assertSee('12.900 ₺ / yıl', false)->assertSee('21.900 ₺ / yıl', false)
+            ->assertSee('ücretsiz ve alfabetiktir', false)->assertDontSee('Kendi sitemde gör', false)->assertDontSee('KDV', false);
+
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/doktor-siteleri')->assertOk()->assertSee('Paket fiyatları', false);
+        $this->post(route('admin.expert-websites.package-prices'), ['fiyat' => ['temel' => '5.900 ₺ / yıl', 'profesyonel' => '11.900 ₺ / yıl', 'prestij' => '19.900 ₺ / yıl']])->assertRedirect();
+        $this->assertSame('11.900 ₺ / yıl', \App\Http\Controllers\Public\HekimPaketController::fiyat('profesyonel'));
+
+        $e = \App\Models\Expert::create(['name' => 'Paket Doktor', 'slug' => 'paket-doktor', 'title' => 'Dr.', 'branch' => 'Dahiliye', 'branch_label' => 'Dahiliye',
+            'city_id' => $this->city->id, 'phone' => '0533 444 55 77', 'is_published' => true]);
+        $r = $this->get('/admin/doktor-siteleri/'.$e->id.'/demo?islem=whatsapp');
+        $metin = rawurldecode((string) $r->headers->get('Location'));
+        $this->assertStringContainsString('Az önce telefonda görüştüğümüz gibi', $metin);
+        $this->assertStringContainsString('Paketler ve fiyatlar:', $metin);
+        $ds = \App\Models\ExpertWebsite::where('expert_id', $e->id)->first();
+        $this->assertStringContainsString('hekim-site-paketleri?d='.$ds->slug.'&k='.$ds->demo_token, $metin);
+        $this->flushSession();
+
+        // Demodan gelen doktor: kişisel karşılama + her paketi kendi sitesinde görür; demo şeridinde paket bağlantısı.
+        $this->get('/hekim-site-paketleri?d='.$ds->slug.'&k='.$ds->demo_token)->assertOk()->assertSee('Dr. Paket Doktor', false)
+            ->assertSee('Kendi sitemde gör', false)->assertSee('demo='.$ds->demo_token.'&amp;tasarim=hareketli', false)->assertSee('11.900 ₺ / yıl', false);
+        $this->get('/hekim-site-paketleri?d='.$ds->slug.'&k=yanlis')->assertOk()->assertDontSee('Kendi sitemde gör', false);
+        $this->get('/dr/'.$ds->slug.'?demo='.$ds->demo_token.'&tasarim=klasik')->assertOk()->assertSee('Paketleri incele', false);
+        $this->get('/dr/'.$ds->slug.'?demo='.$ds->demo_token.'&tasarim=standart')->assertOk()->assertSee('Paketleri incele', false);
+    }
 }
