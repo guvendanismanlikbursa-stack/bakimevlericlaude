@@ -117,7 +117,7 @@
           <label style="font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:2px;"><input type="checkbox" name="tasarim[]" value="klasik" checked>Klasik</label>
           <label style="font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:2px;"><input type="checkbox" name="tasarim[]" value="hareketli" checked>Hareketli</label>
           @if($cepVar)
-            <button type="submit" name="islem" value="whatsapp" style="border:0;border-radius:8px;cursor:pointer;font-weight:800;font-size:12.5px;padding:5px 9px;background:#25d366;color:#fff;">💬 WhatsApp</button>
+            <button type="submit" name="islem" value="whatsapp" onclick="return confirm('Bu kişiyle önce telefonda görüşüp link göndermek için izin aldınız mı?')" style="border:0;border-radius:8px;cursor:pointer;font-weight:800;font-size:12.5px;padding:5px 9px;background:#25d366;color:#fff;">💬 WhatsApp</button>
           @endif
           <button type="submit" name="islem" value="link" style="border:1px solid #bbf7d0;border-radius:8px;cursor:pointer;font-weight:800;font-size:12.5px;padding:5px 9px;background:#fff;color:#166534;">🔗 Link</button>
         </form>

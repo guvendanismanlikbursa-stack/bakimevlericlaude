@@ -13,6 +13,9 @@
 
   @if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:16px;">{{ session('success') }}</div>@endif
 
+  {{-- 30 Ekim 2026: kullanıcının talebi - habersiz link gönderilmez. --}}
+  <div style="background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:16px;">⚠️ Önce telefonla görüşüp izin alın, linki sonra gönderin. Tanımadığı numaradan habersiz gelen link dolandırıcılık sanılabilir.</div>
+
   <form method="GET" action="{{ $formAdresi }}" style="background:#fff;border-radius:16px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:16px;">
     <div style="font-weight:800;margin-bottom:8px;">Gönderilecek tasarımlar</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:14px;">
@@ -23,7 +26,7 @@
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
       <button type="submit" name="islem" value="link" style="{{ $btn }}">🔄 Seçimi uygula</button>
       @if($waLink)
-        <button type="submit" name="islem" value="whatsapp" formtarget="_blank" style="{{ $btn }}background:#25d366;border-color:#25d366;color:#fff;">💬 WhatsApp'tan gönder ({{ $telefon }})</button>
+        <button type="submit" name="islem" value="whatsapp" formtarget="_blank" onclick="return confirm('Bu kişiyle önce telefonda görüşüp link göndermek için izin aldınız mı?')" style="{{ $btn }}background:#25d366;border-color:#25d366;color:#fff;">💬 WhatsApp'tan gönder ({{ $telefon }})</button>
       @else
         <span style="align-self:center;color:#b45309;font-weight:700;font-size:14px;">Kayıtta cep numarası yok ({{ $telefon ?: 'telefon boş' }}) — mesajı kopyalayıp kendiniz gönderin.</span>
       @endif

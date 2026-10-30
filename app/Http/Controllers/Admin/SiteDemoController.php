@@ -85,7 +85,9 @@ class SiteDemoController extends Controller
     private function message(string $ad, array $linkler, $bitis, string $tur): string
     {
         $tek = count($linkler) === 1;
-        $satirlar = ['Merhaba,', '', $ad.' için hazırladığımız internet sitesi '.($tek ? 'örneğini aşağıdaki bağlantıdan' : 'örneklerini aşağıdaki bağlantılardan').' inceleyebilirsiniz:', ''];
+        // 30 Ekim 2026: kullanıcının talebi - link yalnızca telefonda görüşülüp izin alındıktan sonra
+        // gönderilir (habersiz link dolandırıcılık sanılır); mesaj bu görüşmeye atıfla başlar.
+        $satirlar = ['Merhaba,', '', 'Az önce telefonda görüştüğümüz gibi, bakimevleri.com olarak '.$ad.' için hazırladığımız internet sitesi '.($tek ? 'örneğini aşağıdaki bağlantıdan' : 'örneklerini aşağıdaki bağlantılardan').' inceleyebilirsiniz:', ''];
         $i = 1;
         foreach ($linkler as $t => $link) {
             $satirlar[] = ($tek ? '' : $i++.') ').ExpertWebsite::DEMO_TASARIMLAR[$t].':';
