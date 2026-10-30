@@ -110,7 +110,7 @@
       </select>
     </div>
     <div>
-      <label class="text-sm font-semibold block mb-1">Web adresi</label>
+      <label class="text-sm font-semibold block mb-1">İnternet sitesi</label>
       <input type="text" name="website_url" value="{{ old('website_url', $expert->website_url) }}" placeholder="https://..." class="border rounded-lg px-3 py-2 w-full text-sm">
     </div>
   </div>

@@ -268,6 +268,17 @@ class FacilityController extends Controller
             }
         }
 
+        $facility = new Facility;
+        // 30 Ekim 2026: internet sitesi adresi girilip durum boş bırakıldıysa "var" sayılır.
+        if (filled($data['website_url'] ?? null) && ! filled($data['website_status'] ?? null)) {
+            $data['website_status'] = 'var';
+        }
+        if (array_key_exists('website_url', $data) && filled($data['website_url'] ?? null) && ! preg_match('#^https?://#i', $data['website_url'])) {
+            $data['website_url'] = 'https://'.ltrim($data['website_url'], '/');
+        }
+        if (array_key_exists('website_status', $data) && (($data['website_status'] ?? null) !== $facility->website_status || ($data['website_url'] ?? null) !== $facility->website_url)) {
+            $data['website_checked_at'] = now();
+        }
         $facility = Facility::create($data);
 
         $this->storeUploadedImages($request, $facility);
@@ -367,6 +378,16 @@ class FacilityController extends Controller
         // kuyrugunu belirliyor (bkz. helpers.php classify_phone_type()),
         // once sadece toplu "Veri Denetimi" taramasiyla duzeltiliyordu.
         $data['phone_type'] = classify_phone_type($data['phone'] ?? null);
+        // 30 Ekim 2026: internet sitesi adresi girilip durum boş bırakıldıysa "var" sayılır.
+        if (filled($data['website_url'] ?? null) && ! filled($data['website_status'] ?? null)) {
+            $data['website_status'] = 'var';
+        }
+        if (array_key_exists('website_url', $data) && filled($data['website_url'] ?? null) && ! preg_match('#^https?://#i', $data['website_url'])) {
+            $data['website_url'] = 'https://'.ltrim($data['website_url'], '/');
+        }
+        if (array_key_exists('website_status', $data) && (($data['website_status'] ?? null) !== $facility->website_status || ($data['website_url'] ?? null) !== $facility->website_url)) {
+            $data['website_checked_at'] = now();
+        }
 
         // 1 Eylul 2026: kullanicinin bildirdigi denetimde bulunan gercek
         // hata - "Boş Yer Durumu" SADECE kurumun kendi panelinden
@@ -1293,6 +1314,9 @@ class FacilityController extends Controller
             'vacancy_male' => 'nullable|in:0,1',
             'vacancy_female' => 'nullable|in:0,1',
             'vacancy_general' => 'nullable|in:0,1',
+            // 30 Ekim 2026: kullanıcının talebi - kurumun kendi internet sitesi.
+            'website_status' => 'nullable|in:yok,sosyal,rehber,var',
+            'website_url' => 'nullable|string|max:500',
         ]);
     }
 

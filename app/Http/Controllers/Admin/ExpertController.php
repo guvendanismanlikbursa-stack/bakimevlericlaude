@@ -189,6 +189,13 @@ class ExpertController extends Controller
             'website_status' => 'nullable|in:yok,sosyal,rehber,var',
             'website_url' => 'nullable|string|max:500',
         ]);
+        // 30 Ekim 2026: internet sitesi adresi girilip durum boş bırakıldıysa "var" sayılır.
+        if (filled($data['website_url'] ?? null) && ! filled($data['website_status'] ?? null)) {
+            $data['website_status'] = 'var';
+        }
+        if (filled($data['website_url'] ?? null) && ! preg_match('#^https?://#i', $data['website_url'])) {
+            $data['website_url'] = 'https://'.ltrim($data['website_url'], '/');
+        }
         if (array_key_exists('website_status', $data)) {
             $data['website_checked_at'] = now();
         }

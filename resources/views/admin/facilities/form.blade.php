@@ -264,6 +264,24 @@
     <input type="text" name="phone" value="{{ old('phone', $facility->phone) }}" class="border rounded-lg px-3 py-2 w-full mt-1">
   </div>
 
+  {{-- 30 Ekim 2026: kullanıcının talebi - kurumun kendi internet sitesi kayıt kartından girilebilsin. --}}
+  <div>
+    <label class="text-sm font-medium">İnternet sitesi</label>
+    <input type="text" name="website_url" value="{{ old('website_url', $facility->website_url) }}" placeholder="https://..." class="border rounded-lg px-3 py-2 w-full mt-1">
+    @error('website_url')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+  </div>
+
+  <div>
+    <label class="text-sm font-medium">İnternet sitesi durumu</label>
+    <select name="website_status" class="border rounded-lg px-3 py-2 w-full mt-1">
+      <option value="">Bilinmiyor</option>
+      @foreach(\App\Models\Facility::WEBSITE_STATUSES as $key => $label)
+        <option value="{{ $key }}" @selected(old('website_status', $facility->website_status) === $key)>{{ $label }}</option>
+      @endforeach
+    </select>
+    <p class="text-xs text-gray-500 mt-1">Adres yazıp durumu boş bırakırsanız "var" olarak kaydedilir.</p>
+  </div>
+
   <div class="md:col-span-2">
     <label class="text-sm font-medium">Adres</label>
     <input type="text" id="facility-form-address" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">

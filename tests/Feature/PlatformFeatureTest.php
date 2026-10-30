@@ -8672,4 +8672,16 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect('/siteler/'.$ks->slug.'#iletisim');
         $this->assertFalse(\App\Models\FacilityInterestLead::where('full_name', 'Demo Bakan')->exists());
     }
+
+    // 30 Ekim 2026: kurum kayıt kartında internet sitesi alanı.
+    public function test_admin_can_set_facility_website_url(): void
+    {
+        $f = $this->rehabFacility;
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurumlar/'.$f->id.'/edit')->assertOk()->assertSee('name="website_url"', false);
+        $this->put('/admin/kurumlar/'.$f->id, $this->adminFacilityUpdatePayload($f, ['website_url' => 'ornekkurum.com', 'website_status' => '']))->assertRedirect();
+        $f->refresh();
+        $this->assertSame('https://ornekkurum.com', $f->website_url);
+        $this->assertSame('var', $f->website_status);
+        $this->assertNotNull($f->website_checked_at);
+    }
 }
