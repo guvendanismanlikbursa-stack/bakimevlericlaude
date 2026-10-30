@@ -8778,6 +8778,8 @@ class PlatformFeatureTest extends TestCase
         $e = \App\Models\Expert::create(['name' => 'Crm Doktor', 'slug' => 'crm-doktor', 'title' => 'Dr.', 'branch' => 'Dahiliye', 'branch_label' => 'Dahiliye',
             'city_id' => $this->city->id, 'phone' => '0533 444 55 66', 'is_published' => true]);
         $this->get('/admin/crm/doktorlar')->assertOk()->assertSee('Dr. Crm Doktor', false)->assertSee('İlgilendiği paket', false);
+        $this->get('/admin/crm/doktorlar')->assertSee('Görüşme rehberi', false)->assertSee('yani ayda 600 liraya yakın', false);
+        $this->get('/admin/crm')->assertDontSee('Görüşme rehberi', false);
         $this->post(route('admin.crm.doctors.store-note', $e), ['status' => 'interested', 'package_interest' => 'standart_site'])->assertRedirect();
         $this->assertSame('interested', $e->fresh()->marketing_status);
         $this->assertSame($this->admin->id, (int) \App\Models\ExpertMarketingNote::where('expert_id', $e->id)->value('admin_id'));

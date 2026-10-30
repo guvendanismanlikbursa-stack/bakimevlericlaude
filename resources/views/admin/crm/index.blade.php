@@ -41,6 +41,8 @@
 @if(session('success'))<div style="background:#ecfdf5;color:#065f46;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:14px;">{{ session('success') }}</div>@endif
 @if($errors->any())<div style="background:#fef2f2;color:#991b1b;border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:14px;">{{ $errors->first() }}</div>@endif
 
+@if($tur === 'doktor')@include('admin.crm._doktor_rehber')@endif
+
 <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
   <div class="crm-ozet"><b>{{ $ozet['bugun_randevu'] }}</b><span>📅 Bugün randevulu</span></div>
   <div class="crm-ozet"><b style="color:{{ $ozet['geciken_randevu'] ? '#b45309' : '#111827' }}">{{ $ozet['geciken_randevu'] }}</b><span>⏰ Saati geçmiş randevu</span></div>
