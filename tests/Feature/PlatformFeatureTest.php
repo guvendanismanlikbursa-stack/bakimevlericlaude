@@ -8736,4 +8736,52 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('https://drsite.com', \App\Models\ExpertWebsite::liveUrlMap()[$expert->id]);
         $this->assertSame('drsite.com', \App\Models\ExpertWebsite::displayAddress('https://drsite.com'));
     }
+
+    // 30 Ekim 2026: adminin ayrıntılı CRM'i - pazarlamacıyla aynı notlar, kapsam/arama/kim filtresi.
+    public function test_admin_crm_lists_calls_and_shares_notes_with_marketers(): void
+    {
+        $marketer = \App\Models\Marketer::create(['name' => 'Pazarlamaci K', 'phone' => '05559998855', 'password' => Hash::make('x'), 'is_active' => true]);
+        $f = $this->rehabFacility;
+        $f->update(['is_claimed' => false, 'is_broker_managed' => false, 'is_subscribed' => false, 'phone' => '0532 777 88 99', 'phone_type' => 'mobile']);
+        $f->refresh();
+        $admin = ['admin_id' => $this->admin->id];
+
+        $this->withSession($admin)->get('/admin/crm')->assertOk()->assertSee($f->name, false)->assertSee('💬 WhatsApp', false)
+            ->assertSee('Hiç aranmadı', false)->assertSee('CRM — Arama Listem', false);
+        $this->get('/admin/crm?ara=7778899')->assertOk()->assertSee($f->name, false);
+        $this->get('/admin/crm?ara=boyle-bir-kurum-yok')->assertOk()->assertDontSee('id="k'.$f->id.'"', false);
+
+        // Admin notu: admin_id dolu, marketer_id boş; kayıt durumu güncellenir.
+        $this->post(route('admin.crm.store-note', $f), ['status' => 'price_requested', 'note' => 'Admin aradı, fiyat istedi', 'contact_name' => 'Müdür Ali', 'contact_role' => 'mudur',
+            'callback_at' => now()->addDay()->format('Y-m-d H:i')])->assertRedirect();
+        $not = \App\Models\FacilityMarketingNote::where('facility_id', $f->id)->latest('id')->first();
+        $this->assertSame($this->admin->id, (int) $not->admin_id);
+        $this->assertNull($not->marketer_id);
+        $this->assertSame('price_requested', $f->fresh()->marketing_status);
+        $this->get('/admin/crm?group=price_requested&kim=ben')->assertOk()->assertSee($f->name, false)->assertSee('Admin aradı, fiyat istedi', false);
+        $this->get('/admin/crm?kim=hic')->assertOk()->assertDontSee('id="k'.$f->id.'"', false);
+        // Randevuyu kapat.
+        $this->post(route('admin.crm.store-note', $f), ['status' => 'called', 'randevu_kapat' => '1'])->assertRedirect();
+        $this->assertNull($f->fresh()->marketing_callback_at);
+        $this->flushSession();
+
+        // Pazarlamacı ekranı eskisi gibi çalışır ve adminin notunu görür.
+        $this->withSession(['marketer_id' => $marketer->id])->get('/pazarlamaci/crm?group=all')->assertOk()->assertSee('Admin aradı, fiyat istedi', false);
+        $this->flushSession();
+
+        // Kapsam: sahiplenilmiş kurum ön kayıtlı listesinde yok, "Sahiplenilmiş"te var.
+        $f->update(['is_claimed' => true]);
+        $this->withSession($admin)->get('/admin/crm?group=all')->assertOk()->assertDontSee('id="k'.$f->id.'"', false);
+        $this->get('/admin/crm?group=all&musteri=sahipli')->assertOk()->assertSee('id="k'.$f->id.'"', false);
+
+        // Doktorlar.
+        $e = \App\Models\Expert::create(['name' => 'Crm Doktor', 'slug' => 'crm-doktor', 'title' => 'Dr.', 'branch' => 'Dahiliye', 'branch_label' => 'Dahiliye',
+            'city_id' => $this->city->id, 'phone' => '0533 444 55 66', 'is_published' => true]);
+        $this->get('/admin/crm/doktorlar')->assertOk()->assertSee('Dr. Crm Doktor', false)->assertSee('İlgilendiği paket', false);
+        $this->post(route('admin.crm.doctors.store-note', $e), ['status' => 'interested', 'package_interest' => 'standart_site'])->assertRedirect();
+        $this->assertSame('interested', $e->fresh()->marketing_status);
+        $this->assertSame($this->admin->id, (int) \App\Models\ExpertMarketingNote::where('expert_id', $e->id)->value('admin_id'));
+        $this->get('/admin/crm/doktorlar?group=interested')->assertOk()->assertSee('Crm Doktor', false)->assertSee('🛡️', false);
+        $this->get(route('admin.marketers.conversations', ['tur' => 'doktor']))->assertOk()->assertSee('Admin', false);
+    }
 }

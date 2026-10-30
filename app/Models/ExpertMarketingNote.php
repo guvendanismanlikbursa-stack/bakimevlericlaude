@@ -41,4 +41,10 @@ class ExpertMarketingNote extends Model
     {
         return $this->belongsTo(Marketer::class)->withTrashed();
     }
+
+    /** 30 Ekim 2026: admin CRM'inden yazılan not (marketer_id boş, admin_id dolu). */
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class);
+    }
 }

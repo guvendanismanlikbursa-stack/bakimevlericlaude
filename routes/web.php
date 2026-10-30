@@ -726,6 +726,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/pazarlamacilar/{marketer}', [\App\Http\Controllers\Admin\MarketerController::class, 'destroy'])->name('marketers.destroy');
         Route::get('/pazarlamaci-gorusmeleri', [\App\Http\Controllers\Admin\MarketerController::class, 'conversations'])->name('marketers.conversations');
         Route::get('/pazarlamaci-hunisi', [\App\Http\Controllers\Admin\MarketerController::class, 'funnel'])->name('marketers.funnel');
+        // 30 Ekim 2026: kullanıcının talebi - adminin kendi ayrıntılı CRM'i (bkz. Admin\CrmController).
+        Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'index'])->name('crm.index');
+        Route::get('/crm/doktorlar', [\App\Http\Controllers\Admin\CrmController::class, 'doctors'])->name('crm.doctors');
+        Route::post('/crm/kurum/{facility}/not', [\App\Http\Controllers\Admin\CrmController::class, 'storeNote'])->name('crm.store-note');
+        Route::get('/crm/kurum/{facility}/teklif-sayfasi', [\App\Http\Controllers\Admin\CrmController::class, 'offerPage'])->name('crm.offer-page');
+        Route::post('/crm/doktor/{expert}/not', [\App\Http\Controllers\Admin\CrmController::class, 'storeDoctorNote'])->name('crm.doctors.store-note');
 
         Route::get('/bildirimler', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/bildirimler/{notification}/okundu', [\App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');

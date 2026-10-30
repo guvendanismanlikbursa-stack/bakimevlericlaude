@@ -62,7 +62,7 @@
           @else
             <span class="text-gray-300 font-bold">(silinmiş kurum)</span>
           @endif
-          <div class="text-xs text-gray-500 mt-0.5">{{ $note->created_at->format('d.m.Y H:i') }} · {{ $note->marketer?->name ?? '—' }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">{{ $note->created_at->format('d.m.Y H:i') }} · {{ $note->marketer?->name ?? ($note->admin_id ? 'Admin' : '—') }}</div>
         </div>
         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">{{ $statusLabels[$note->status] ?? $note->status }}</span>
       </div>
