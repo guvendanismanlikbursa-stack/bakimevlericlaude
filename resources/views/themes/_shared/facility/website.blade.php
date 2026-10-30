@@ -18,6 +18,17 @@
       <div style="font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#15803d;">✓ Siteniz yayında</div>
       <div style="font-size:20px;font-weight:900;color:#111827;margin-top:4px;word-break:break-all;"><a href="{{ $site->publicUrl() }}" target="_blank" rel="noopener" style="color:#0d6e6a;">{{ $site->publicUrl() }}</a></div>
       <p style="color:#4b5563;margin:8px 0 0;">Aşağıdan yaptığınız değişiklikler sitenize hemen yansır. Fotoğraf, hizmet, menü ve telefon bilgileri <a href="{{ brand_route('facility.profile.edit') }}" style="color:#0d6e6a;font-weight:700;">profil sayfanızdan</a> güncellenir.</p>
+      {{-- 30 Ekim 2026: kullanıcının talebi - kurum kendi alan adını sitesine bağlar. --}}
+      <form method="POST" action="{{ brand_route('facility.website.domain') }}" style="margin:14px 0 0;padding:14px;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb;">
+        @csrf @method('PUT')
+        <label for="kp-domain" style="display:block;font-weight:800;color:#111827;margin-bottom:4px;">Alan adınız</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input id="kp-domain" name="custom_domain" value="{{ old('custom_domain', $site->custom_domain) }}" maxlength="190" placeholder="gunesbakimevi.com" style="flex:1;min-width:200px;border:1.5px solid #d6dde0;border-radius:10px;padding:10px 12px;font:inherit;background:#fff;">
+          <button type="submit" style="background:#0d6e6a;color:#fff;font-weight:800;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;">Kaydet</button>
+        </div>
+        @error('custom_domain')<div style="color:#b91c1c;font-size:13px;margin-top:6px;font-weight:700;">{{ $message }}</div>@enderror
+        <div style="font-size:12.5px;color:#6b7280;margin-top:6px;">Alan adı sitenize bağlandığında ziyaretçiler sitenizi bu adresle görür; kurum kartınızda ve sayfanızda da bu adres yazar. Kaydetmeden önce adresin sitenize bağlı olduğu kontrol edilir. Boş bırakıp kaydederseniz alan adı kaldırılır.</div>
+      </form>
     @elseif($hasSitePackage)
       <div style="font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#b45309;">Siteniz hazırlanıyor</div>
       <p style="color:#374151;margin:8px 0 0;">Üyeliğiniz internet sitesini kapsıyor. Ekibimiz sitenizi kontrol edip yayına alacak. Bu sırada aşağıdan başlığınızı ve yazılarınızı düzenleyebilir, önizleyebilirsiniz.</p>

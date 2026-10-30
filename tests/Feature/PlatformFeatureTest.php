@@ -8269,7 +8269,7 @@ class PlatformFeatureTest extends TestCase
             ->assertRedirect('/siteler/isik-yuva?onizleme=1&tasarim=hareketli');
         $h = $this->withSession($admin)->get('/siteler/isik-yuva?onizleme=1&tasarim=hareketli')->assertOk()
             ->assertSee('class="hrk"', false)->assertSee('class="aurora"', false)->assertSee('id="ilerleme"', false)
-            ->assertSee('Yeni hareketli Profesyonel tasarım', false)->assertSee('hakkimizda?onizleme=1&amp;tasarim=hareketli', false)
+            ->assertSee('Hareketli Profesyonel tasarım önizlemesi', false)->assertSee('hakkimizda?onizleme=1&amp;tasarim=hareketli', false)
             ->assertSee('noindex,nofollow', false)->getContent();
         $this->withSession($admin)->get('/siteler/isik-yuva/hakkimizda?onizleme=1&tasarim=hareketli')->assertOk()->assertSee('class="hrk"', false);
         $this->withSession($admin)->get(route('admin.facility-websites.index'))->assertOk()->assertSee('Hareketli önizle', false);
@@ -8295,7 +8295,7 @@ class PlatformFeatureTest extends TestCase
 
         // Admin hareketliyi seçer: ziyaretçi hareketli görür, önizleme bandı yok; ?tasarim=pro önizlemesi klasiği gösterir.
         $site->update(['pro_tasarim' => 'hareketli']);
-        $this->get('/siteler/secim-yuva')->assertOk()->assertSee('class="hrk"', false)->assertDontSee('Yeni hareketli Profesyonel tasarım', false)
+        $this->get('/siteler/secim-yuva')->assertOk()->assertSee('class="hrk"', false)->assertDontSee('Hareketli Profesyonel tasarım önizlemesi', false)
             ->assertSee('index,follow', false);
         $this->get('/siteler/secim-yuva/hakkimizda')->assertOk()->assertSee('class="hrk"', false);
         $this->withSession($admin)->get('/siteler/secim-yuva?onizleme=1&tasarim=klasik')->assertOk()->assertDontSee('class="hrk"', false);
@@ -8683,5 +8683,57 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('https://ornekkurum.com', $f->website_url);
         $this->assertSame('var', $f->website_status);
         $this->assertNotNull($f->website_checked_at);
+    }
+
+    // 30 Ekim 2026: site satışı yapılmış (yayındaki) kurum/doktor sitesi kartlarda görünür;
+    // kurum alan adını panelden bağlar, alan adı sunucumuza bağlı değilse kaydedilmez.
+    public function test_live_site_address_on_cards_and_panel_domain_verification(): void
+    {
+        $facility = $this->facilityUser->facility;
+        $site = \App\Models\FacilityWebsite::forFacility($facility);
+        $kart = fn () => view('themes._shared.partials.facility-card', ['facility' => $facility->fresh()->load(['category', 'city'])])->render();
+        $this->assertStringNotContainsString('🌐', $kart());
+        $site->update(['status' => 'yayinda']);
+        $this->assertStringContainsString('🌐 '.\App\Models\FacilityWebsite::displayAddress($site->publicUrl()), $kart());
+
+        // Doğrulama adresi bu uygulamanın imzasını döndürür.
+        $kod = str_repeat('a1', 10);
+        $this->get('/alan-adi-dogrulama/'.$kod)->assertOk()->assertSee(\App\Http\Controllers\Public\AlanAdiDogrulamaController::imza($kod), false);
+
+        $panel = ['facility_user_id' => $this->facilityUser->id];
+        $this->withSession($panel)->get('/site/bakimeviara/kurum-panel/web-sitem')->assertOk()->assertSee('Alan adınız', false);
+
+        // Bağlı olmayan alan adı reddedilir.
+        \Illuminate\Support\Facades\Http::fake(['https://bagsiz.com/*' => \Illuminate\Support\Facades\Http::response('baska site', 200)]);
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem/alan-adi', ['custom_domain' => 'https://www.bagsiz.com/'])
+            ->assertSessionHasErrors('custom_domain');
+        $this->assertNull($site->fresh()->custom_domain);
+        // Platform alan adı reddedilir.
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem/alan-adi', ['custom_domain' => 'bakimevleri.com'])
+            ->assertSessionHasErrors('custom_domain');
+
+        // Bağlı alan adı kaydedilir, kartta görünür.
+        \Illuminate\Support\Facades\Http::fake(['https://gunesbakim.com/*' => fn ($istek) => \Illuminate\Support\Facades\Http::response(
+            \App\Http\Controllers\Public\AlanAdiDogrulamaController::imza(basename(parse_url($istek->url(), PHP_URL_PATH))), 200)]);
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem/alan-adi', ['custom_domain' => 'GunesBakim.com'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('gunesbakim.com', $site->fresh()->custom_domain);
+        $this->assertStringContainsString('🌐 gunesbakim.com', $kart());
+        // Boş gönderince kaldırılır.
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem/alan-adi', ['custom_domain' => '']);
+        $this->assertNull($site->fresh()->custom_domain);
+
+        // Yayında olmayan sitede panelden alan adı girilemez.
+        $site->update(['status' => 'taslak']);
+        $this->withSession($panel)->put('/site/bakimeviara/kurum-panel/web-sitem/alan-adi', ['custom_domain' => 'gunesbakim.com'])->assertForbidden();
+        $this->assertStringNotContainsString('🌐', $kart());
+
+        // Doktor sayfası: yayındaki sitenin adresi yazar.
+        $expert = \App\Models\Expert::create(['name' => 'Site Doktor', 'slug' => 'site-doktor', 'title' => 'Dr.', 'branch' => 'Dahiliye', 'branch_label' => 'Dahiliye',
+            'city_id' => $this->city->id, 'phone' => '0533 222 33 44', 'is_published' => true]);
+        $ds = \App\Models\ExpertWebsite::forExpert($expert);
+        $ds->update(['status' => 'yayinda', 'custom_domain' => 'drsite.com']);
+        $this->assertSame('https://drsite.com', \App\Models\ExpertWebsite::liveUrlMap()[$expert->id]);
+        $this->assertSame('drsite.com', \App\Models\ExpertWebsite::displayAddress('https://drsite.com'));
     }
 }

@@ -17,7 +17,7 @@ use Illuminate\Http\Request;
 // sayfaya döner (küçük resim uçları gibi gereken adresler hariç).
 class ServeFacilityWebsiteDomain
 {
-    private const GECIS = ['kucuk-resim/*', 'storage/*', 'build/*', 'up', '_ops/*', '_internal/*'];
+    private const GECIS = ['kucuk-resim/*', 'storage/*', 'build/*', 'up', '_ops/*', '_internal/*', 'alan-adi-dogrulama/*'];
 
     public function handle(Request $request, Closure $next)
     {

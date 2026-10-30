@@ -343,6 +343,8 @@ $siteRoutes = function () {
             // 23 Ekim 2026: kullanıcının talebi - "Web Sitem" (kurum sitesi düzenleme).
             Route::get('/web-sitem', [\App\Http\Controllers\Facility\WebsiteController::class, 'index'])->name('website.index');
             Route::put('/web-sitem', [\App\Http\Controllers\Facility\WebsiteController::class, 'update'])->middleware('throttle:public-sensitive')->name('website.update');
+            // 30 Ekim 2026: yayındaki sitesine kurum kendi alan adını bağlar (bağlı olduğu doğrulanarak).
+            Route::put('/web-sitem/alan-adi', [\App\Http\Controllers\Facility\WebsiteController::class, 'domain'])->middleware('throttle:public-sensitive')->name('website.domain');
             Route::get('/paketler', [FacilitySubscriptionController::class, 'index'])->name('packages.index');
             Route::post('/paketler/{package}', [FacilitySubscriptionController::class, 'store'])->middleware('throttle:public-sensitive')->name('packages.store');
 
@@ -755,3 +757,12 @@ Route::prefix('pazarlamaci')->name('marketer.')->group(function () {
         Route::get('/crm/{facility}/teklif-sayfasi', [\App\Http\Controllers\Marketer\CrmController::class, 'offerPage'])->name('crm.offer-page');
     });
 });
+
+// 30 Ekim 2026: kullanıcının talebi - kurumun yazdığı alan adının sunucumuza bağlı
+// olduğunu doğrulamak için (bkz. AlanAdiDogrulamaController). Henüz tanımlanmamış
+// alan adından gelebileceği için marka çözümlemesi uygulanmaz.
+Route::get('/alan-adi-dogrulama/{kod}', [\App\Http\Controllers\Public\AlanAdiDogrulamaController::class, 'show'])
+    ->where('kod', '[A-Za-z0-9]{16,64}')
+    ->withoutMiddleware([\App\Http\Middleware\ResolveBrand::class])
+    ->middleware('throttle:public-browse')
+    ->name('alan-adi-dogrulama');

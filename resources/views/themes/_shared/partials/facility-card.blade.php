@@ -147,6 +147,12 @@
       </div>
     </div>
   </a>
+  {{-- 30 Ekim 2026: kullanıcının talebi - site satışı yapılmış (yayındaki) kurumun sitesi. --}}
+  @if($kartSiteAdresi = \App\Models\FacilityWebsite::liveUrlMap()[(int) $facility->id] ?? null)
+    <div class="px-4 pb-2">
+      <a href="{{ $kartSiteAdresi }}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0d6e6a;text-decoration:none;word-break:break-all;">🌐 {{ \App\Models\FacilityWebsite::displayAddress($kartSiteAdresi) }}</a>
+    </div>
+  @endif
   {{-- 4 Eylul 2026: kullanicinin acik talebi - anlaşmalı kurumlar sadece
        gorsel olarak degil, AILEYI GERCEKTEN TEKLIF ISTEMEYE tesvik edecek
        sekilde one cikmali. Buyuk, tek basina, ikonlu bir birincil CTA -

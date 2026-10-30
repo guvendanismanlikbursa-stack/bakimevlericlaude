@@ -47,6 +47,10 @@
             @if($expert->address)
               <div class="bg-white rounded-lg px-3 py-2 border border-gray-100"><span class="text-gray-400 text-xs block">Adres</span><span class="font-bold text-gray-800">{{ $expert->address }}</span></div>
             @endif
+            {{-- 30 Ekim 2026: kullanıcının talebi - site satışı yapılmış (yayındaki) doktorun sitesi. --}}
+            @if($doktorSiteAdresi = \App\Models\ExpertWebsite::liveUrlMap()[(int) $expert->id] ?? null)
+              <div class="bg-white rounded-lg px-3 py-2 border border-gray-100"><span class="text-gray-400 text-xs block">İnternet sitesi</span><a href="{{ $doktorSiteAdresi }}" target="_blank" rel="noopener" class="font-bold" style="color:#0d6e6a;word-break:break-all;">{{ \App\Models\ExpertWebsite::displayAddress($doktorSiteAdresi) }}</a></div>
+            @endif
           </div>
 
           @if($expert->phone)

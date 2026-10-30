@@ -583,7 +583,7 @@
     @php $kurumSitesi = \App\Models\FacilityWebsite::where('facility_id', $facility->id)->where('status', 'yayinda')->first(); @endphp
     @if($kurumSitesi)
       <a href="{{ $kurumSitesi->publicUrl() }}" target="_blank" rel="noopener" class="mt-6 flex items-center justify-between gap-3 rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition" style="border-color: {{ $colors['primary'] }}; text-decoration:none;">
-        <span><span class="block text-xs font-black uppercase tracking-wider" style="color: {{ $colors['primary'] }};">Kurumun web sitesi</span><span class="block font-black text-gray-950 mt-1">{{ $facility->name }} — resmi sitesini ziyaret edin</span></span>
+        <span><span class="block text-xs font-black uppercase tracking-wider" style="color: {{ $colors['primary'] }};">Kurumun web sitesi</span><span class="block font-black text-gray-950 mt-1">{{ $facility->name }} — resmi sitesini ziyaret edin</span><span class="block text-sm font-bold mt-1" style="color: {{ $colors['primary'] }}; word-break: break-all;">{{ \App\Models\FacilityWebsite::displayAddress($kurumSitesi->publicUrl()) }}</span></span>
         <span class="text-2xl" aria-hidden="true">🌐</span>
       </a>
     @endif

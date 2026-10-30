@@ -12,7 +12,8 @@ use Illuminate\Validation\Rule;
 // Sitesi olmayan kurum, kendi bilgilerinden hazırlanmış sitesinin
 // önizlemesini görür; sitesi olan kurum "ikinci siteniz" teşvikini görür.
 // Kurum başlık, alt yazı, hakkımızda, öne çıkan fotoğraf, renk ve görünen
-// bölümleri kendisi düzenler. Yayına alma ve alan adı yalnızca admin'dedir.
+// bölümleri kendisi düzenler. Yayına alma yalnızca admin'dedir; alan adını
+// (30 Ekim 2026'dan beri) yayındaki sitesine kurum da bağlayabilir.
 class WebsiteController extends Controller
 {
     public function index()
@@ -43,6 +44,43 @@ class WebsiteController extends Controller
 
         return redirect(brand_route('facility.website.index'))
             ->with('success', $changed ? 'Siteniz güncellendi.' : 'Değişiklik yapılmadı.');
+    }
+
+    /**
+     * 30 Ekim 2026: kullanıcının talebi - site satışı yapılmış (yayındaki) kurum kendi
+     * alan adını yazar. Alan adı sunucumuza bağlı ve sertifikası hazır değilse
+     * kaydedilmez (yoksa site çalışmayan adrese yönlenirdi). Boş gönderilirse kaldırılır.
+     */
+    public function domain(Request $request)
+    {
+        $user = FacilityUser::findOrFail(session('facility_user_id'));
+        $site = FacilityWebsite::forFacility($user->facility);
+        abort_unless($site->isLive(), 403);
+        $request->validate(['custom_domain' => 'nullable|string|max:190']);
+        $domain = FacilityWebsite::normalizeDomain($request->input('custom_domain'));
+        $geri = redirect(brand_route('facility.website.index'));
+
+        if (! $domain) {
+            if ($site->custom_domain) {
+                $site->update(['custom_domain' => null]);
+            }
+
+            return $geri->with('success', 'Alan adı kaldırıldı; siteniz platform adresinden yayında.');
+        }
+        if ($domain === $site->custom_domain) {
+            return $geri->with('success', 'Değişiklik yapılmadı.');
+        }
+        if ($hata = FacilityWebsite::domainError($domain, $site->id)) {
+            return $geri->withErrors(['custom_domain' => $hata])->withInput();
+        }
+        if (! \App\Http\Controllers\Public\AlanAdiDogrulamaController::bizeBagli($domain)) {
+            \Illuminate\Support\Facades\Log::info('Kurum alan adı doğrulanamadı', ['facility_id' => $site->facility_id, 'domain' => $domain]);
+
+            return $geri->withErrors(['custom_domain' => 'Bu alan adı henüz sitenize bağlanmamış. Alan adınızın sitenize yönlendirilmesi ve güvenlik sertifikası için bize yazın; bağlantı tamamlanınca buradan tekrar kaydedebilirsiniz.'])->withInput();
+        }
+        $site->update(['custom_domain' => $domain]);
+
+        return $geri->with('success', 'Alan adınız kaydedildi: '.$domain);
     }
 
     /**

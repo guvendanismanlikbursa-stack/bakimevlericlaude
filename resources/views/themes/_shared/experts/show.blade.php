@@ -45,7 +45,7 @@
         {{-- 28 Ekim 2026: puan/yorumlar gizliyken yalnızca Google'a bağlantı (bkz. doctor_reviews_visible). --}}
         @if(! doctor_reviews_visible() && $e->google_maps_url)<a href="{{ $e->google_maps_url }}" target="_blank" rel="noopener nofollow" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0d6e6a;font-weight:800;border:1.5px solid #d5ebe8;border-radius:12px;padding:10px 16px;text-decoration:none;">💬 Google'daki yorumları gör</a>@endif
         @if($harita)<a href="{{ $harita }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0f172a;font-weight:800;border:1.5px solid #d5ebe8;border-radius:12px;padding:10px 16px;text-decoration:none;">📍 Yol tarifi</a>@endif
-        @if($siteAdresi)<a href="{{ $siteAdresi }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0d6e6a;font-weight:800;border:1.5px solid #0d9488;border-radius:12px;padding:10px 16px;text-decoration:none;">🌐 Web sitesi</a>@endif
+        @if($siteAdresi)<a href="{{ $siteAdresi }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0d6e6a;font-weight:800;border:1.5px solid #0d9488;border-radius:12px;padding:10px 16px;text-decoration:none;word-break:break-all;">🌐 {{ \App\Models\ExpertWebsite::displayAddress($siteAdresi) }}</a>@endif
       </div>
     </div>
   </div>

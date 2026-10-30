@@ -324,8 +324,12 @@ class ExpertWebsite extends Model
 
     protected static function booted(): void
     {
-        static::saved(fn () => Cache::forget('expert_website_domains'));
-        static::deleted(fn () => Cache::forget('expert_website_domains'));
+        $onbellekSil = function () {
+            Cache::forget('expert_website_domains');
+            Cache::forget('expert_website_urls');
+        };
+        static::saved($onbellekSil);
+        static::deleted($onbellekSil);
     }
 
     /**
@@ -333,6 +337,24 @@ class ExpertWebsite extends Model
      *
      * @return array<string, int>
      */
+    /**
+     * 30 Ekim 2026: kullanıcının talebi - site satışı yapılmış (yayındaki) kurum / doktorun
+     * sitesi kartlarda ziyaretçiye gösterilir. Kayıt id => site adresi (önbellekli).
+     *
+     * @return array<int, string>
+     */
+    public static function liveUrlMap(): array
+    {
+        return Cache::remember('expert_website_urls', 300, fn () => static::where('status', 'yayinda')->get()
+            ->mapWithKeys(fn ($s) => [(int) $s->expert_id => $s->publicUrl()])->all());
+    }
+
+    /** Adresin ziyaretçiye gösterilen kısa hali (https:// olmadan). */
+    public static function displayAddress(string $url): string
+    {
+        return preg_replace('#^https?://(www\.)?#', '', rtrim($url, '/'));
+    }
+
     public static function liveDomainMap(): array
     {
         return Cache::remember('expert_website_domains', 300, fn () => static::where('status', 'yayinda')

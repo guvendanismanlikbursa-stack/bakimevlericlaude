@@ -117,6 +117,23 @@ class FacilityWebsite extends Model
         return $slug;
     }
 
+    /** 30 Ekim 2026: alan adı kuralları (kurum paneli). Hata yoksa null. */
+    public static function domainError(string $domain, int $siteId): ?string
+    {
+        $platform = collect(config('brands.brands', []))->pluck('domains')->flatten()->map(fn ($d) => strtolower((string) $d))->all();
+        if (in_array($domain, $platform, true)) {
+            return 'Platformun kendi alan adları kurum sitesine verilemez.';
+        }
+        if (! preg_match('/^(?:[a-z0-9-]+\.)+[a-z]{2,}$/', $domain)) {
+            return 'Alan adı geçersiz (ör. gunesbakimevi.com).';
+        }
+        if (ExpertWebsite::domainTaken($domain, 'facility', $siteId)) {
+            return 'Bu alan adı başka bir kurum ya da doktor sitesinde kullanılıyor.';
+        }
+
+        return null;
+    }
+
     public static function normalizeDomain(?string $domain): ?string
     {
         $d = strtolower(trim((string) $domain));
@@ -487,8 +504,12 @@ class FacilityWebsite extends Model
 
     protected static function booted(): void
     {
-        static::saved(fn () => Cache::forget('facility_website_domains'));
-        static::deleted(fn () => Cache::forget('facility_website_domains'));
+        $onbellekSil = function () {
+            Cache::forget('facility_website_domains');
+            Cache::forget('facility_website_urls');
+        };
+        static::saved($onbellekSil);
+        static::deleted($onbellekSil);
     }
 
     /**
@@ -496,6 +517,24 @@ class FacilityWebsite extends Model
      *
      * @return array<string, int>
      */
+    /**
+     * 30 Ekim 2026: kullanıcının talebi - site satışı yapılmış (yayındaki) kurum / doktorun
+     * sitesi kartlarda ziyaretçiye gösterilir. Kayıt id => site adresi (önbellekli).
+     *
+     * @return array<int, string>
+     */
+    public static function liveUrlMap(): array
+    {
+        return Cache::remember('facility_website_urls', 300, fn () => static::where('status', 'yayinda')->get()
+            ->mapWithKeys(fn ($s) => [(int) $s->facility_id => $s->publicUrl()])->all());
+    }
+
+    /** Adresin ziyaretçiye gösterilen kısa hali (https:// olmadan). */
+    public static function displayAddress(string $url): string
+    {
+        return preg_replace('#^https?://(www\.)?#', '', rtrim($url, '/'));
+    }
+
     public static function liveDomainMap(): array
     {
         return Cache::remember('facility_website_domains', 300, fn () => static::where('status', 'yayinda')
