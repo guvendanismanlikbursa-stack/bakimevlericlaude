@@ -46,6 +46,72 @@ class CrmController extends Controller
         'eski_gorusme' => 'En uzun süredir aranmayan',
     ];
 
+    // ---------------------------------------------------------------- Görüşme rehberi
+
+    public const REHBER_ANAHTAR = 'crm_doktor_rehber';
+
+    /** 30 Ekim 2026: kullanıcının talebi - doktor görüşme rehberi admin tarafından düzenlenir. */
+    public static function rehberMetni(): string
+    {
+        $kayitli = trim((string) \App\Models\Setting::get(self::REHBER_ANAHTAR, ''));
+
+        return $kayitli !== '' ? $kayitli : self::varsayilanRehber();
+    }
+
+    public static function varsayilanRehber(): string
+    {
+        return <<<'REHBER'
+## 1 · Giriş
+"Merhaba Hocam, ben Güven, bakimevleri.com'dan arıyorum. Bursa'da hasta bakım hizmeti veren bir firmayız, ofisimiz Şehir Hastanesi'nin batı girişinde. Müsaitseniz 2 dakikanızı rica edeceğim; uygun değilse sizi ne zaman arayayım?"
+! "Hastane adına" ya da "hastanemiz" demeyin.
+
+## 2 · Rehberdeki yeri (ücretsiz)
+"bakimevleri.com, bakimevibul.com ve bakimeviara.com'da aileler için bir hekim rehberi var. Profiliniz burada ücretsiz yer alıyor: adresiniz, branşınız, telefonunuz. Sıralama alfabetik, yorum ve puan yok; TTB kılavuzunu esas alarak hazırladık. Bilgileriniz doğru mu, bir kontrol etmek istedik."
+
+## 3 · Soru
+"Muayenehaneniz bu adreste mi? Şu an kendinize ait bir internet siteniz var mı?"
+! Cevabı not formundaki "Web sitesi var mı?" kutusuna işaretleyin.
+
+## 4 · Teklif (sitesi yoksa / sadece rehber veya Instagram varsa)
+"Hekimler için kendi alan adınızla, TTB kurallarına uygun, sade internet siteleri de hazırlıyoruz. Alan adı, barındırma ve güvenlik sertifikası dahil. Sizin bilgilerinizle üç farklı tasarımda örneğini hazırladık bile. WhatsApp'tan göndermeme izin verir misiniz? Siteyi almasanız da rehberdeki yeriniz ücretsiz olarak devam eder."
+! İzin alınmadan link gönderilmez. İzin verirse kartın altındaki "Demo site gönder".
+
+## İyilik Hareketi (yalnızca gerçekten yapılıyorsa)
+"Bu işten elde ettiğimiz gelirin bir kısmı, platformumuzdaki İyilik Hareketi kapsamında ihtiyaç sahibi yaşlı ve çocukların bakımına gidiyor."
+
+## 5 · Kapanış
+"Örnekleri bugün gönderiyorum. Perşembe günü sizi arayıp beğendiğiniz tasarımı sorsam uygun olur mu, hangi saat iyi?"
+! İlk görüşmede sipariş istenmez. Verdiği gün/saati "Ne zaman tekrar aranacak" alanına yazın.
+
+## İtirazlara cevap
+- **"Doktortakvimi'nde varım":** "Orada sizin adınıza bir sayfa var, ama alan adı sizin değil. Kendi adınızla bir adres, Google'da adınız arandığında en üstte sizin sitenizin çıkmasını sağlar."
+- **"Hastanede çalışıyorum":** "Hastanenin sitesinde sayfanız varsa ona ihtiyaç duymayabilirsiniz; muayenehaneniz yoksa sizi oyalamayayım." Kibarca kapatın.
+- **"Sitem var":** "Çok güzel. O zaman sadece rehberdeki bilgilerinizi kontrol edelim." Sitesini CRM'e işleyin.
+- **"Pahalı":** "Temel paketimiz yıllık {temel_fiyat}, yani ayda yaklaşık {aylik_fiyat}. Alan adı ve barındırma dahil."
+- **"TTB'den sorun olur mu?":** "Sitede yorum, puan ve reklam yok; kılavuzun istediği zorunlu cümle sayfanın en üstünde duruyor."
+- **"Listeden çıkarın":** "Elbette, hemen işleme alıyorum." Durumu "Platformdan Kaldırılmasını İstiyor" seçin.
+- **Sekreter:** "Hocaya ileteceğiniz kısa bir bilgi; hangi gün ve saatte aramam uygun olur?"
+
+## Söylenmeyecekler
+! "Seçkin hekimler", "bugün 5 hekim sipariş verdi" gibi doğrulanamayan ifadeler, 7/24 destek sözü, paket sayfasında olmayan bir özellik.
+REHBER;
+    }
+
+    public function saveGuide(Request $request)
+    {
+        if ($request->boolean('varsayilan')) {
+            \App\Models\Setting::set(self::REHBER_ANAHTAR, '');
+            log_admin_event('crm_rehber_sifirlandi');
+
+            return back()->with('success', 'Görüşme rehberi ilk haline döndürüldü.')->with('rehber_kaydedildi', true);
+        }
+        $data = $request->validate(['rehber' => 'required|string|max:20000'], ['rehber.required' => 'Rehber boş olamaz.']);
+        \App\Models\Setting::set(self::REHBER_ANAHTAR, str_replace("\r\n", "\n", $data['rehber']));
+        log_admin_event('crm_rehber_guncellendi');
+
+        return back()->with('success', 'Görüşme rehberi kaydedildi.')->with('rehber_kaydedildi', true);
+    }
+
     // ---------------------------------------------------------------- Kurumlar
 
     private function facilityQuery(Request $r)

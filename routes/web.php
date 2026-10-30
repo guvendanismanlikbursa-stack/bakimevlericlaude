@@ -732,6 +732,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // 30 Ekim 2026: kullanıcının talebi - adminin kendi ayrıntılı CRM'i (bkz. Admin\CrmController).
         Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'index'])->name('crm.index');
         Route::get('/crm/doktorlar', [\App\Http\Controllers\Admin\CrmController::class, 'doctors'])->name('crm.doctors');
+        Route::post('/crm/rehber', [\App\Http\Controllers\Admin\CrmController::class, 'saveGuide'])->name('crm.guide');
         Route::post('/crm/kurum/{facility}/not', [\App\Http\Controllers\Admin\CrmController::class, 'storeNote'])->name('crm.store-note');
         Route::get('/crm/kurum/{facility}/teklif-sayfasi', [\App\Http\Controllers\Admin\CrmController::class, 'offerPage'])->name('crm.offer-page');
         Route::post('/crm/doktor/{expert}/not', [\App\Http\Controllers\Admin\CrmController::class, 'storeDoctorNote'])->name('crm.doctors.store-note');
