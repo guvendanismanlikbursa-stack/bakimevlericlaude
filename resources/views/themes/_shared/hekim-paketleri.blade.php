@@ -60,19 +60,22 @@
 @php
   $varMi = fn ($paket, $alt) => array_search($paket, array_keys($paketler)) >= array_search($alt, array_keys($paketler));
   $waLink = fn ($paket) => $wa ? 'https://wa.me/'.$wa.'?text='.rawurlencode('Merhaba, hekim internet sitesi "'.$paket.'" paketi hakkında bilgi almak istiyorum.'.($site ? ' ('.$site->fullName().')' : '')) : null;
+  // 31 Ekim 2026: kullanıcının talebi - paketler ek iş gücü çıkarmayacak şekilde sadeleştirildi:
+  // aylık rapor ve telefon desteği kaldırıldı, güncellemeler yıllık hakka bağlandı,
+  // "rakamlar" (sağlık reklamı riski) satış vaadinden çıkarıldı.
   $ozellikler = [
       ['Kendi alan adınız ve güvenlik sertifikası (https)', 'temel'],
       ['Unvan, branş, adres, muayene saatleri, telefon ve WhatsApp', 'temel'],
       ['Telefonda kusursuz görünüm', 'temel'],
+      ['Adres, telefon ve muayene saati değişikliği her zaman ücretsiz', 'temel'],
       ['Çok bölümlü profesyonel tasarım', 'profesyonel'],
       ['Logo, kendi renginiz ve yazı stiliniz', 'profesyonel'],
-      ['Sık sorulan sorular, duyurular, video ve rakamlar', 'profesyonel'],
-      ['Aylık ziyaret ve WhatsApp / arama raporu', 'profesyonel'],
+      ['Sık sorulan sorular, duyurular ve tanıtım videosu', 'profesyonel'],
       ['Kaydırınca canlanan hareketli tasarım', 'prestij'],
-      ['Öncelikli destek', 'prestij'],
+      ['Değişiklikleriniz öncelikli, aynı iş günü yapılır', 'prestij'],
   ];
-  $guncelleme = ['temel' => 'Yılda 4 kez', 'profesyonel' => 'Ayda 1 kez', 'prestij' => 'Ayda 2 kez'];
-  $destek = ['temel' => 'WhatsApp · mesai saatleri', 'profesyonel' => 'WhatsApp ve telefon · mesai saatleri', 'prestij' => 'Öncelikli WhatsApp ve telefon'];
+  $guncelleme = ['temel' => 'Yılda 2 içerik değişikliği', 'profesyonel' => 'Yılda 6 içerik değişikliği', 'prestij' => 'Yılda 12 içerik değişikliği'];
+  $destek = ['temel' => 'WhatsApp · mesai saatleri', 'profesyonel' => 'WhatsApp · mesai saatleri', 'prestij' => 'WhatsApp · öncelikli'];
 @endphp
 
 <header class="ust">
@@ -99,7 +102,7 @@
             @php $var = $varMi($key, $gerekli); @endphp
             <li class="{{ $var ? '' : 'yok' }}"><span class="i">{{ $var ? '✓' : '–' }}</span><span>{{ $metin }}</span></li>
           @endforeach
-          <li><span class="i">↻</span><span>Bilgi güncelleme: <b>{{ $guncelleme[$key] }}</b></span></li>
+          <li><span class="i">↻</span><span><b>{{ $guncelleme[$key] }}</b></span></li>
           <li><span class="i">☎</span><span>Destek: <b>{{ $destek[$key] }}</b></span></li>
         </ul>
         <div class="dugmeler">
@@ -121,7 +124,7 @@
           @foreach($ozellikler as [$metin, $gerekli])
             <tr><td>{{ $metin }}</td>@foreach($paketler as $key => $p)<td class="{{ $key === 'profesyonel' ? 'orta' : '' }}">{!! $varMi($key, $gerekli) ? '<b style="color:#0d6e6a">✓</b>' : '<span style="color:#c0c4cb">–</span>' !!}</td>@endforeach</tr>
           @endforeach
-          <tr><td>Bilgi güncelleme</td>@foreach($paketler as $key => $p)<td class="{{ $key === 'profesyonel' ? 'orta' : '' }}">{{ $guncelleme[$key] }}</td>@endforeach</tr>
+          <tr><td>İçerik değişikliği</td>@foreach($paketler as $key => $p)<td class="{{ $key === 'profesyonel' ? 'orta' : '' }}">{{ $guncelleme[$key] }}</td>@endforeach</tr>
           <tr><td>Destek</td>@foreach($paketler as $key => $p)<td class="{{ $key === 'profesyonel' ? 'orta' : '' }}">{{ $destek[$key] }}</td>@endforeach</tr>
         </tbody>
       </table>
@@ -141,7 +144,8 @@
   <section class="blok sss">
     <h3>Sık sorulan sorular</h3>
     <details><summary>Alan adını kim alıyor?</summary><p>Alan adı (ör. drayseyilmaz.com) paket ücretine dahildir; sizin adınıza biz alır ve sitenize bağlarız. Halihazırda bir alan adınız varsa onu kullanabiliriz.</p></details>
-    <details><summary>Bilgilerimi nasıl güncelleyeceğim?</summary><p>Değişikliği WhatsApp'tan iletmeniz yeterli; paketinizdeki güncelleme sıklığına göre biz yaparız.</p></details>
+    <details><summary>Bilgilerimi nasıl güncelleyeceğim?</summary><p>Değişikliği WhatsApp'tan iletmeniz yeterli, biz yaparız. Adres, telefon ve muayene saati değişiklikleri her pakette sınırsız ve ücretsizdir. Metin, fotoğraf, sık sorulan soru veya duyuru gibi içerik değişiklikleri paketinizdeki yıllık hak kadar yapılır; bir mesajda birden fazla değişiklik iletebilirsiniz.</p></details>
+    <details><summary>Ziyaretçi sayısı veya hasta garantisi var mı?</summary><p>Hayır. Siteniz, sizi arayan hastanın doğru bilgiye ulaşması içindir; ziyaretçi, arama veya hasta sayısı taahhüt edilmez.</p></details>
     <details><summary>Sitede hasta yorumu neden yok?</summary><p>Türk Tabipleri Birliği'nin tanıtım kılavuzu hasta beyanı ve yorumlarıyla tanıtımı yasaklar. Siteniz bu kurala uygun hazırlanır.</p></details>
   </section>
 </main>
