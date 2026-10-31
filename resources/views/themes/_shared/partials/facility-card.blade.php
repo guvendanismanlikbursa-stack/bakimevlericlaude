@@ -118,10 +118,9 @@
       {{-- 30 Ekim 2026: kullanıcının talebi - çalışma saatleri kartta belirgin bir kutuda;
            "Şu an açık/kapalı" etiketi tarayıcıda Türkiye saatiyle hesaplanır (önbellekte de doğru kalır). --}}
       @if($kartSaatOzeti = $facility->openingHoursSummary())
-        <div class="js-kart-saat" data-saatler="{{ json_encode(array_values($facility->openingHoursRows()), JSON_UNESCAPED_UNICODE) }}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#ecfeff;border:1.5px solid #67e8f9;border-radius:10px;padding:7px 10px;margin:6px 0 8px;line-height:1.35;">
-          <span aria-hidden="true" style="font-size:16px;">🕒</span>
-          <span style="flex:1;min-width:0;font-size:13px;font-weight:800;color:#0e4f5c;">{{ $kartSaatOzeti }}</span>
-          <span class="js-kart-saat-durum" style="display:none;font-size:11px;font-weight:900;padding:2px 8px;border-radius:999px;white-space:nowrap;"></span>
+        <div class="js-kart-saat" data-saatler="{{ json_encode(array_values($facility->openingHoursRows()), JSON_UNESCAPED_UNICODE) }}" style="background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:4px 8px;margin:4px 0 6px;font-size:12px;line-height:1.5;font-weight:800;color:#0e4f5c;">
+          {{-- 31 Ekim 2026: kullanıcının talebi - kutu çok yer kaplıyordu; tek akışta, en fazla 2 satır. --}}
+          <span class="js-kart-saat-durum" style="display:none;font-size:10.5px;font-weight:900;padding:0 7px;border-radius:999px;white-space:nowrap;margin-right:5px;"></span><span aria-hidden="true">🕒</span> {{ $kartSaatOzeti }}
         </div>
         @once
           <script>
