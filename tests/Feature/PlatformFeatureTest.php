@@ -8854,4 +8854,15 @@ Metin {standart_fiyat}"])->assertRedirect();
         $f->update(['opening_hours' => array_fill_keys(\App\Models\Facility::GUNLER, 'Kapalı')]);
         $this->assertNull($f->fresh()->openingHoursSummary());
     }
+
+    // 31 Ekim 2026: kalıcı silinen mükerrer kurumun eski adresi yayındaki kuruma 301 ile yönlenir.
+    public function test_deleted_duplicate_slug_redirects_to_live_facility(): void
+    {
+        $f = $this->facilityUser->facility;
+        $this->get('/site/bakimevleri/kurumlar/silinen-kopya-kurum')->assertNotFound();
+        \Illuminate\Support\Facades\DB::table('facility_slug_redirects')->insert(['old_slug' => 'silinen-kopya-kurum', 'facility_id' => $f->id, 'created_at' => now(), 'updated_at' => now()]);
+        $yanit = $this->get('/site/bakimevleri/kurumlar/silinen-kopya-kurum');
+        $yanit->assertStatus(301);
+        $this->assertStringEndsWith('/kurumlar/'.$f->slug, $yanit->headers->get('Location'));
+    }
 }

@@ -232,6 +232,12 @@ class FacilityController extends Controller
                 return redirect(brand_route('facilities.show', ['slug' => $redirectTarget->slug]), 301);
             }
 
+            // 31 Ekim 2026: kalıcı silinen mükerrer kayıtların adresleri yayındaki kuruma yönlenir.
+            $yonlendirmeId = \Illuminate\Support\Facades\DB::table('facility_slug_redirects')->where('old_slug', $slug)->value('facility_id');
+            if ($yonlendirmeId && ($yonlendirmeHedefi = (clone $baseQuery)->whereKey($yonlendirmeId)->first())) {
+                return redirect(brand_route('facilities.show', ['slug' => $yonlendirmeHedefi->slug]), 301);
+            }
+
             abort(404);
         }
 
