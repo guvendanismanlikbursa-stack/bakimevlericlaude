@@ -50,30 +50,9 @@
      14 Ekim 2026: kullanıcının talebi - "yazıyı kaldır, ikonu iletişim
      ikonu boyutuna getir". Artık #js-chat-toggle (support-chat-widget.blade.php)
      ile BİREBİR AYNI ölçüde (56x56px, yuvarlak) - sadece ikon, metin yok. --}}
-<div id="js-pusula-backdrop"></div>
-
-<a
-  href="{{ brand_route('care-advisor.form') }}"
-  id="js-pusula-toggle"
-  aria-label="Pusula"
-  style="background: {{ $brand['primary_color'] }};"
->
-  <span class="js-pusula-toggle-icon">🧭</span>
-</a>
-
-<div id="js-pusula-panel" role="dialog" aria-modal="true" aria-label="Pusula">
-  <div class="js-pusula-handle"></div>
-  <div class="js-pusula-header">
-    <span class="js-pusula-header-title" style="color: {{ $brand['primary_color'] }};">🧭 Pusula</span>
-    <button type="button" id="js-pusula-close" aria-label="Kapat">
-      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
-    </button>
-  </div>
-  <div id="js-pusula-body" class="js-pusula-body">
-    <p class="text-sm text-gray-500 text-center py-6">Yükleniyor…</p>
-  </div>
-</div>
-
+{{-- 1 Kasım 2026: kullanıcının bildirdiği hata - stil kuralları panelden SONRA geldiği için sayfa
+     yüklenirken panel bir an stilsiz çiziliyor, ardından kapanma animasyonuyla kayboluyordu
+     ("form açılıp kapanıyor"). Stil artık panelden önce; panel ilk çizimde bile gizli. --}}
 <style>
   {{-- 14 Ekim 2026: kullanıcının talebi - #js-chat-toggle (canlı destek
        balonu) ile BİREBİR AYNI boyut: 56x56px (w-14 h-14), yuvarlak,
@@ -155,6 +134,31 @@
     .js-pusula-header { padding-top: .5rem; }
   }
 </style>
+
+<div id="js-pusula-backdrop"></div>
+
+<a
+  href="{{ brand_route('care-advisor.form') }}"
+  id="js-pusula-toggle"
+  aria-label="Pusula"
+  style="background: {{ $brand['primary_color'] }};"
+>
+  <span class="js-pusula-toggle-icon">🧭</span>
+</a>
+
+<div id="js-pusula-panel" role="dialog" aria-modal="true" aria-label="Pusula">
+  <div class="js-pusula-handle"></div>
+  <div class="js-pusula-header">
+    <span class="js-pusula-header-title" style="color: {{ $brand['primary_color'] }};">🧭 Pusula</span>
+    <button type="button" id="js-pusula-close" aria-label="Kapat">
+      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
+    </button>
+  </div>
+  <div id="js-pusula-body" class="js-pusula-body">
+    <p class="text-sm text-gray-500 text-center py-6">Yükleniyor…</p>
+  </div>
+</div>
+
 
 <script>
 (function () {
