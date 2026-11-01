@@ -163,6 +163,82 @@ class TrafikAnaliz
         return $sonuc;
     }
 
+    /**
+     * 1 Kasım 2026: bot gözcüsü için - bir günün sayfa isteklerini ağ (/24, IPv6 /64) bazında özetler.
+     * Google ve Bing hariç. Dönen: [ag => ['istek','supheli','bot','insan','engellenen','ip','markalar','ua','ornek_ip']].
+     */
+    public static function aglar(string $tarih): array
+    {
+        $gun = \Illuminate\Support\Carbon::parse($tarih)->format('d/M/Y');
+        $ipler = [];   // [ip] => ['tarayici'=>n,'bot'=>n,'engel'=>n,'marka'=>[..],'ua'=>..]
+        $varlik = [];  // [ip] => true
+        $goruldu = [];
+        foreach (self::dosyalar() as $dosya => $sabitMarka) {
+            $gz = str_ends_with($dosya, '.gz');
+            $fh = $gz ? @gzopen($dosya, 'r') : @fopen($dosya, 'r');
+            if (! $fh) {
+                continue;
+            }
+            while (($satir = $gz ? gzgets($fh) : fgets($fh)) !== false) {
+                if (! str_contains($satir, $gun) || ! preg_match('#^"?(\S+) \S+ \S+ \[[^\]]+\] "(GET|HEAD) (\S+)[^"]*" (\d{3}) \S+ "([^"]*)" "([^"]*)"(?: "([^"]*)")?#', $satir, $m)) {
+                    continue;
+                }
+                $iz = md5($satir);
+                if (isset($goruldu[$iz])) {
+                    continue;
+                }
+                $goruldu[$iz] = true;
+                $ip = trim($m[1], '"');
+                if (preg_match('#^/(build|storage|kucuk-resim|images)/|\.(css|js|webp|png|jpe?g|gif|svg|ico|woff2?|ttf)(\?|$)#i', $m[3])) {
+                    $varlik[$ip] = true;
+                    continue;
+                }
+                if (preg_match('#^/(\.well-known|_ops|_internal|up$|admin|kurum-panel|pazarlamaci|aile/panel|aile/bildirimler|aile/mesajlar|site/[a-z]+/(admin|kurum-panel))|\.(map|txt|xml|json|mp4)(\?|$)#i', $m[3])) {
+                    continue;
+                }
+                $tur = self::tur($m[6]);
+                if (in_array($tur, ['googlebot', 'bing', 'yz'], true)) {
+                    continue;
+                }
+                $x = &$ipler[$ip];
+                $x[$tur === 'tarayici' ? 'tarayici' : 'bot'] = ($x[$tur === 'tarayici' ? 'tarayici' : 'bot'] ?? 0) + 1;
+                if (in_array($m[4], ['403', '429'], true)) {
+                    $x['engel'] = ($x['engel'] ?? 0) + 1;
+                }
+                $marka = $sabitMarka ?? self::markaBul($m[7] ?? '') ?? self::markaBul($m[5]) ?? 'bakimevleri';
+                $x['marka'][$marka] = true;
+                $x['ua'] ??= $m[6];
+                unset($x);
+            }
+            $gz ? gzclose($fh) : fclose($fh);
+        }
+        $aglar = [];
+        foreach ($ipler as $ip => $x) {
+            $ag = \App\Http\Middleware\BotKalkani::ag($ip);
+            $a = &$aglar[$ag];
+            $a ??= ['istek' => 0, 'supheli' => 0, 'bot' => 0, 'insan' => 0, 'engellenen' => 0, 'ip' => 0, 'markalar' => [], 'ua' => '', 'ornek_ip' => $ip, '_enCok' => 0];
+            $tar = $x['tarayici'] ?? 0;
+            $bot = $x['bot'] ?? 0;
+            isset($varlik[$ip]) ? $a['insan'] += $tar : $a['supheli'] += $tar;
+            $a['bot'] += $bot;
+            $a['istek'] += $tar + $bot;
+            $a['engellenen'] += $x['engel'] ?? 0;
+            $a['ip']++;
+            $a['markalar'] = array_values(array_unique(array_merge($a['markalar'], array_keys($x['marka'] ?? []))));
+            if ($tar + $bot > $a['_enCok']) {
+                $a['_enCok'] = $tar + $bot;
+                $a['ua'] = (string) ($x['ua'] ?? '');
+                $a['ornek_ip'] = $ip;
+            }
+            unset($a);
+        }
+        foreach ($aglar as &$a) {
+            unset($a['_enCok']);
+        }
+
+        return $aglar;
+    }
+
     public static function tur(string $ua): string
     {
         return match (true) {

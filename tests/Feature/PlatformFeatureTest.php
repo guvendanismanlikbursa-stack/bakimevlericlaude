@@ -8907,4 +8907,56 @@ Metin {standart_fiyat}"])->assertRedirect();
     {
         return $this->withSession(['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name]);
     }
+
+    // 1 Kasım 2026: bot gözcüsü - şüpheli ağ kaydı, firma uyarısı (bir kez), panelden engelle/kaldır, korumalı ağ.
+    public function test_bot_gozcu_uyari_ve_panelden_engelleme(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Http::fake([
+            'stat.ripe.net/data/network-info/*' => \Illuminate\Support\Facades\Http::response(['data' => ['asns' => ['64500'], 'prefix' => '203.0.113.0/24']]),
+            'stat.ripe.net/data/as-overview/*' => \Illuminate\Support\Facades\Http::response(['data' => ['holder' => 'Ornek Sunucu Ltd']]),
+            'stat.ripe.net/data/announced-prefixes/*' => \Illuminate\Support\Facades\Http::response(['data' => ['prefixes' => [['prefix' => '203.0.113.0/24'], ['prefix' => '203.0.113.128/25'], ['prefix' => '2001:db8::/32']]]]),
+        ]);
+        $klasor = storage_path('framework/testing/gozcu-'.uniqid());
+        @mkdir($klasor, 0777, true);
+        $gun = now()->format('d/M/Y:H:i:s O');
+        $satirlar = '';
+        for ($i = 0; $i < 1700; $i++) {
+            $satirlar .= '203.0.113.'.($i % 40).' - - ['.$gun.'] "GET /kurumlar?page='.$i.' HTTP/1.1" 200 1000 "-" "Mozilla/5.0 (Windows NT 10.0) Chrome/124.0" "bakimevibul.com"'."\n";
+        }
+        $satirlar .= '198.51.100.5 - - ['.$gun.'] "GET / HTTP/1.1" 200 1000 "-" "Mozilla/5.0 Chrome/124.0" "bakimevleri.com"'."\n";
+        file_put_contents($klasor.'/yedek.bakimevleri.com.access_log', $satirlar);
+        \App\Support\TrafikAnaliz::$klasor = $klasor;
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $this->artisan('platform:bot-gozcu')->assertSuccessful();
+        $this->assertSame(1700, (int) \Illuminate\Support\Facades\DB::table('supheli_aglar')->where('ag', '203.0.113.0/24')->value('supheli'));
+        $this->assertSame('Ornek Sunucu Ltd', \Illuminate\Support\Facades\DB::table('supheli_aglar')->where('ag', '203.0.113.0/24')->value('firma'));
+        $this->assertSame(1, \App\Models\PlatformNotification::where('type', 'bot_alarm')->where('notifiable_id', $this->admin->id)->count());
+        // ikinci çalıştırmada aynı uyarı tekrar gönderilmez
+        $this->artisan('platform:bot-gozcu')->assertSuccessful();
+        $this->assertSame(1, \App\Models\PlatformNotification::where('type', 'bot_alarm')->where('notifiable_id', $this->admin->id)->count());
+
+        $oturum = ['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name];
+        $this->withSession($oturum)->get('/admin/site-istatistikleri')->assertOk()->assertSee('Şüpheli Ağlar')->assertSee('Ornek Sunucu Ltd')->assertSee('Engelle');
+        // panelden engelle -> kalkan hemen engeller
+        $this->withSession($oturum)->post('/admin/bot-engel', ['asn' => 64500, 'firma' => 'Ornek Sunucu Ltd'])->assertRedirect();
+        $this->assertSame([[3405803776, 3405804031]], json_decode(\Illuminate\Support\Facades\DB::table('engelli_aglar')->value('v4'), true));
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.77'])->get('/site/bakimevibul/')->assertStatus(403);
+        $this->withSession($oturum)->get('/admin/site-istatistikleri')->assertSee('Engelli ✓')->assertSee('Kaldır');
+        // kaldır -> erişim geri açılır
+        $id = \Illuminate\Support\Facades\DB::table('engelli_aglar')->value('id');
+        $this->withSession($oturum)->post('/admin/bot-engel/'.$id.'/kaldir')->assertRedirect();
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.77'])->get('/site/bakimevibul/')->assertOk();
+        // korumalı ağ (Türk Telekom) engellenemez
+        $this->withSession($oturum)->post('/admin/bot-engel', ['sorgu' => 'AS9121'])->assertSessionHas('error');
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('engelli_aglar')->where('asn', 9121)->count());
+        // kalıcı listedeki firma için "engelle" uyarısı gönderilmez
+        \Illuminate\Support\Facades\DB::table('bot_alarmlari')->delete();
+        \App\Models\PlatformNotification::where('type', 'bot_alarm')->delete();
+        config(['bot_kalkani.engelli_aglar' => [['ad' => 'Ornek (AS64500)', 'v4' => [], 'v6' => []]]]);
+        $this->artisan('platform:bot-gozcu')->assertSuccessful();
+        $this->assertSame(0, \App\Models\PlatformNotification::where('type', 'bot_alarm')->count());
+        \App\Support\TrafikAnaliz::$klasor = null;
+    }
 }

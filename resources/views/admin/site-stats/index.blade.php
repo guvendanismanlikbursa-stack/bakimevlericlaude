@@ -35,6 +35,94 @@
   @endforeach
 </div>
 
+{{-- 1 Kasım 2026: saatlik bot gözcüsü - bugünkü şüpheli ağlar, tek dokunuşla engelleme (mobil dahil). --}}
+@php $btn = 'display:inline-block;border:0;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;'; @endphp
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10" id="supheli-aglar">
+  <h2 class="font-bold text-lg">🔎 Şüpheli Ağlar — Bugün</h2>
+  <p style="font-size:12.5px;color:#6b7280;margin:6px 0 12px;line-height:1.55;">
+    Saatte bir güncellenir{{ $gozcuSon ? ' (son: '.\Illuminate\Support\Carbon::parse($gozcuSon)->format('H:i').')' : '' }}. Firmalar, sitemizden en çok sayfa isteyen sunucu sahipleridir.
+    <b>Şüpheli</b>: tarayıcı taklidi yapan, <b>Bot</b>: kendini bot olarak tanıtan istekler. <b>Gerçek kişi</b> sütunu yüksekse engellemeyin; gerçek aileler o ağdan geliyordur.
+    Olağan dışı durumda size e-posta ve bildirim gelir.
+  </p>
+  @if($supheliFirmalar->isEmpty())
+    <p style="font-size:14px;color:#9ca3af;">Bugün şüpheli yoğunluk yok (ya da gözcü henüz çalışmadı).</p>
+  @else
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;min-width:760px;">
+        <thead><tr>
+          @foreach(['Firma (AS)', 'Şüpheli', 'Bot', 'Gerçek kişi', 'Farklı IP', 'Engellenen', ''] as $b)
+            <th style="padding:8px 10px;text-align:{{ $loop->first ? 'left' : 'right' }};font-size:12px;color:#6b7280;font-weight:800;border-bottom:1px solid #e5e7eb;white-space:nowrap;">{{ $b }}</th>
+          @endforeach
+        </tr></thead>
+        <tbody>
+          @foreach($supheliFirmalar as $f)
+            <tr>
+              <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13.5px;">
+                <b>{{ $f->firma ?: 'Bilinmeyen firma' }}</b> <span style="color:#9ca3af;">{{ $f->asn ? 'AS'.$f->asn : $f->ag }}</span>
+                <div style="font-size:11.5px;color:#9ca3af;">{{ $f->ag_sayisi }} ağ · {{ collect(explode(',', (string) $f->markalar))->filter()->unique()->map(fn ($m) => $m.'.com')->join(', ') }}</div>
+              </td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:800;color:#b45309;">{{ number_format($f->supheli, 0, ',', '.') }}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;">{{ number_format($f->bot, 0, ',', '.') }}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;color:#15803d;font-weight:700;">{{ number_format($f->insan, 0, ',', '.') }}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;">{{ number_format($f->ip, 0, ',', '.') }}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;color:#b91c1c;">{{ number_format($f->engellenen, 0, ',', '.') }}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;">
+                @if($f->engelli)
+                  <span style="{{ $btn }}background:#dcfce7;color:#166534;cursor:default;">Engelli ✓</span>
+                @elseif($f->korumali)
+                  <span style="{{ $btn }}background:#f3f4f6;color:#6b7280;cursor:default;" title="{{ $f->korumali }}">Korumalı</span>
+                @else
+                  <form method="POST" action="{{ route('admin.bot-engel.store') }}" style="display:inline;" onsubmit="return confirm(@js(($f->firma ?: 'Bu ağ').' engellensin mi?'.($f->insan > ($f->supheli + $f->bot) * 0.2 ? ' DİKKAT: bu ağdan gerçek kişiler de geliyor.' : '')))">
+                    @csrf
+                    @if($f->asn)<input type="hidden" name="asn" value="{{ $f->asn }}">@else<input type="hidden" name="ag" value="{{ $f->ag }}">@endif
+                    <input type="hidden" name="firma" value="{{ $f->firma }}">
+                    <button type="submit" style="{{ $btn }}background:#dc2626;color:#fff;">Engelle</button>
+                  </form>
+                @endif
+              </td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+  @endif
+</div>
+
+{{-- 1 Kasım 2026: engelli ağ listesi - panelden eklenenler kaldırılabilir; elle IP / AS numarasıyla engelleme. --}}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10" id="engelli-aglar">
+  <h2 class="font-bold text-lg">⛔ Engelli Ağlar</h2>
+  <form method="POST" action="{{ route('admin.bot-engel.store') }}" style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px;" onsubmit="return confirm('Bu ağı sahibi olan firmanın bütün sunucularıyla birlikte engellemek istiyor musunuz?')">
+    @csrf
+    <input name="sorgu" required placeholder="IP adresi veya AS numarası (ör. 185.216.75.10 / AS51167)" style="flex:1 1 240px;min-width:0;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:14px;">
+    <button type="submit" style="{{ $btn }}background:#dc2626;color:#fff;">Engelle</button>
+  </form>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;min-width:560px;">
+      <tbody>
+        @foreach((array) config('bot_kalkani.engelli_aglar', []) as $g)
+          <tr>
+            <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13.5px;font-weight:700;">{{ $g['ad'] }}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12.5px;color:#6b7280;">{{ count($g['v4'] ?? []) }} adres bloğu · kalıcı liste (1 Kasım 2026)</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;"><span style="{{ $btn }}background:#f3f4f6;color:#6b7280;cursor:default;">Kalıcı</span></td>
+          </tr>
+        @endforeach
+        @foreach($engelliListe as $e)
+          <tr>
+            <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13.5px;font-weight:700;">{{ $e->firma }}{{ $e->asn ? ' (AS'.$e->asn.')' : '' }}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12.5px;color:#6b7280;">{{ count(json_decode((string) $e->v4, true) ?: []) }} adres bloğu · {{ $e->ekleyen }} · {{ \Illuminate\Support\Carbon::parse($e->created_at)->format('d.m.Y H:i') }}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;">
+              <form method="POST" action="{{ route('admin.bot-engel.destroy', $e->id) }}" style="display:inline;" onsubmit="return confirm(@js($e->firma.' için engel kaldırılsın mı?'))">
+                @csrf
+                <button type="submit" style="{{ $btn }}background:#f3f4f6;color:#374151;border:1px solid #d1d5db;">Kaldır</button>
+              </form>
+            </td>
+          </tr>
+        @endforeach
+      </tbody>
+    </table>
+  </div>
+</div>
+
 {{-- 1 Kasım 2026: bot kalkanının engelledikleri (son 7 gün). --}}
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10" id="engellenen-botlar">
   <h2 class="font-bold text-lg">🛡 Engellenen Botlar — Son 7 Gün</h2>

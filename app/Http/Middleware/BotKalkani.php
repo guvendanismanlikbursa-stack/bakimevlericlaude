@@ -78,7 +78,7 @@ class BotKalkani
     {
         $v4 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? ip2long($ip) : null;
         $ikili = $v4 === null ? @inet_pton($ip) : null;
-        foreach ((array) config('bot_kalkani.engelli_aglar', []) as $grup) {
+        foreach (array_merge((array) config('bot_kalkani.engelli_aglar', []), \App\Support\BotGozcu::dbListesi()) as $grup) {
             if ($v4 !== null) {
                 foreach ($grup['v4'] ?? [] as [$bas, $son]) {
                     if ($v4 >= $bas && $v4 <= $son) {

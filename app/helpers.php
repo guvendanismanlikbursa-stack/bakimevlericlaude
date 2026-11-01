@@ -597,6 +597,7 @@ if (! function_exists('notification_preference_groups')) {
                 ]],
                 // 18 Ekim 2026: kullanıcının talebi - yeni aile üyeliği bildirimi.
                 'families' => ['label' => 'Yeni aile üye olduğunda', 'types' => ['family_registered']],
+                'bot_alarm' => ['label' => 'Olağan dışı bot trafiği / şüpheli bot saldırısı', 'types' => ['bot_alarm']],
                 // 18 Ekim 2026: kullanıcının talebi - sahipli kurum hareketleri.
                 'owner_activity' => ['label' => 'Sahipli kurumlardaki her harekette (anlık: talep, mesaj, teklif, ziyaret, soru)', 'types' => ['owner_activity']],
                 'owner_digest' => ['label' => 'Sahipli kurumlar günlük özeti (her sabah)', 'types' => ['owner_daily_digest']],
@@ -674,6 +675,8 @@ if (! function_exists('notification_action_url')) {
                 'job_application_submitted' => route('admin.job-applications.index'),
                 'review_submitted' => route('admin.reviews.index', ['status' => 'pending']),
                 'family_registered' => route('admin.users.families'),
+                // 1 Kasım 2026: bot uyarısı - şüpheli ağlar ve engelleme düğmeleri.
+                'bot_alarm' => route('admin.site-stats.index').'#supheli-aglar',
                 'owner_activity' => isset($data['offer_request_id'])
                     ? route('admin.offer-requests.messages', $data['offer_request_id'])
                     : (isset($data['facility_id']) ? route('admin.facilities.edit', $data['facility_id']) : null),

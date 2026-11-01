@@ -123,6 +123,13 @@ ScheduledJobMonitor::attach(
     90
 );
 
+// 1 Kasım 2026: kullanıcının talebi - anormal bot trafiğinde adminlere e-posta + bildirim (bkz. App\Support\BotGozcu).
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:bot-gozcu')->hourlyAt(27)->withoutOverlapping(30),
+    'platform:bot-gozcu',
+    90
+);
+
 ScheduledJobMonitor::attach(
     Schedule::command('platform:boost-facility-views')->hourly(),
     'platform:boost-facility-views',

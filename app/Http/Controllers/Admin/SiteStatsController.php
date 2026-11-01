@@ -52,6 +52,28 @@ class SiteStatsController extends Controller
                 ? (int) \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('tarih', $today)->where('marka', $slug)->sum('sayi') : 0;
         }
         $gercekBaslangic = SiteVisit::where('real_count', '>', 0)->min('visit_date');
+        // 1 Kasım 2026: saatlik bot gözcüsünün bugünkü şüpheli ağları (firma bazında) ve engel listesi.
+        $supheliFirmalar = collect();
+        $engelliListe = collect();
+        $gozcuSon = null;
+        if (\Illuminate\Support\Facades\Schema::hasTable('supheli_aglar')) {
+            $satirlar = \Illuminate\Support\Facades\DB::table('supheli_aglar')->where('tarih', $today)->get();
+            $gozcuSon = $satirlar->max('updated_at');
+            $engelliAsn = \Illuminate\Support\Facades\DB::table('engelli_aglar')->where('aktif', true)->whereNotNull('asn')->pluck('asn')->map(fn ($a) => (int) $a)->all();
+            $kalici = collect((array) config('bot_kalkani.engelli_aglar', []))->pluck('ad')->implode(' ');
+            $supheliFirmalar = $satirlar->groupBy(fn ($r) => $r->asn ? 'AS'.$r->asn : 'ag:'.$r->ag)->map(function ($g, $k) use ($engelliAsn, $kalici) {
+                $asn = $g->first()->asn ? (int) $g->first()->asn : null;
+
+                return (object) [
+                    'anahtar' => $k, 'asn' => $asn, 'firma' => $g->first()->firma, 'ag' => $g->first()->ag, 'ag_sayisi' => $g->count(),
+                    'supheli' => $g->sum('supheli'), 'bot' => $g->sum('bot'), 'insan' => $g->sum('insan'), 'engellenen' => $g->sum('engellenen'),
+                    'ip' => $g->sum('ip_sayisi'), 'markalar' => $g->pluck('markalar')->implode(','), 'ua' => $g->sortByDesc('istek')->first()->ornek_ua,
+                    'korumali' => $asn ? (\App\Support\BotGozcu::KORUMALI[$asn] ?? null) : null,
+                    'engelli' => $asn && (in_array($asn, $engelliAsn, true) || str_contains($kalici, '(AS'.$asn.')')),
+                ];
+            })->sortByDesc(fn ($f) => $f->supheli + $f->bot)->values()->take(25);
+            $engelliListe = \Illuminate\Support\Facades\DB::table('engelli_aglar')->where('aktif', true)->orderByDesc('id')->get();
+        }
         // 1 Kasım 2026: engellenen botlar (son 7 gün) - saldırılar görünür kalsın.
         $botEngel = \Illuminate\Support\Facades\Schema::hasTable('bot_engel_kayitlari')
             ? \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('tarih', '>=', $last7)
@@ -120,7 +142,7 @@ class SiteStatsController extends Controller
         return view('admin.site-stats.index', compact(
             'brands', 'visitStats', 'dailySeries', 'families', 'cityCounts', 'totalFamilies', 'withLocation', 'verifiedCount',
             'donemler', 'donem', 'trafik', 'trafikBaslangic', 'trafikGunluk', 'donemBas', 'donemSon',
-            'gercekBaslangic', 'botEngel', 'botEngelGunluk'
+            'gercekBaslangic', 'botEngel', 'botEngelGunluk', 'supheliFirmalar', 'engelliListe', 'gozcuSon'
         ));
     }
 

@@ -705,6 +705,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/satis-firsatlari', [\App\Http\Controllers\Admin\SalesOpportunitiesController::class, 'index'])->name('sales-opportunities.index');
 
+        // 1 Kasım 2026: bot engelleme (Site İstatistikleri sayfasından, mobil dahil).
+        Route::post('/bot-engel', [\App\Http\Controllers\Admin\BotEngelController::class, 'store'])->name('bot-engel.store');
+        Route::post('/bot-engel/{id}/kaldir', [\App\Http\Controllers\Admin\BotEngelController::class, 'destroy'])->whereNumber('id')->name('bot-engel.destroy');
+
         Route::get('/veri-denetimi', [\App\Http\Controllers\Admin\DataQualityController::class, 'index'])->name('data-quality.index');
         Route::post('/veri-denetimi/kategori-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixMiscategory'])->name('data-quality.fix-miscategory');
         Route::post('/veri-denetimi/telefon-duzelt', [\App\Http\Controllers\Admin\DataQualityController::class, 'fixPhoneType'])->name('data-quality.fix-phone-type');
