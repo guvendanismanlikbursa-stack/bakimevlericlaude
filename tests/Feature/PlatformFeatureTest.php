@@ -8865,4 +8865,46 @@ Metin {standart_fiyat}"])->assertRedirect();
         $yanit->assertStatus(301);
         $this->assertStringEndsWith('/kurumlar/'.$f->slug, $yanit->headers->get('Location'));
     }
+
+    // 1 Kasım 2026: bot kalkanı - engelli ağ 403, hız sınırı 429, Googlebot serbest, engeller kayda geçer.
+    public function test_bot_kalkani_engelli_ag_ve_hiz_siniri(): void
+    {
+        config(['bot_kalkani' => array_merge(require config_path('bot_kalkani.php'), ['ip_siniri' => 3, 'ag_siniri' => 100])]);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->withServerVariables(['REMOTE_ADDR' => '185.216.75.10'])->get('/site/bakimevibul/')->assertStatus(403);
+        $this->assertSame(1, (int) \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('neden', 'liste')->sum('sayi'));
+        $this->assertNotNull(\App\Http\Middleware\BotKalkani::engelliAg('2a02:c206:1234::1'));
+        $this->assertNull(\App\Http\Middleware\BotKalkani::engelliAg('88.230.1.1'));
+
+        $ip = ['REMOTE_ADDR' => '88.230.1.1'];
+        for ($i = 0; $i < 3; $i++) {
+            $this->withServerVariables($ip)->get('/site/bakimevibul/')->assertOk();
+        }
+        $this->withServerVariables($ip)->get('/site/bakimevibul/')->assertStatus(429);
+        $this->withServerVariables($ip)->get('/site/bakimevibul/')->assertStatus(429);
+        $this->assertSame(2, (int) \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('anahtar', '88.230.1.1')->sum('sayi'));
+        // aynı IP'den Googlebot kimliğiyle gelen istek sınırlanmaz
+        $this->withServerVariables($ip)->withHeader('User-Agent', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')->get('/site/bakimevibul/')->assertOk();
+        // admin sayfası engelleri gösterir
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->actingAsAdminForStats()->get('/admin/site-istatistikleri')->assertOk()->assertSee('Engellenen Botlar')->assertSee('88.230.1.1');
+    }
+
+    // 1 Kasım 2026: gerçek ziyaretçi sayacı ayrı tutulur; bot dahil sayaç korunur.
+    public function test_gercek_ziyaretci_sayaci(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/site/bakimevibul/')->assertOk()->assertSee('bakimevibul\/ziyaret', false);
+        $this->post('/site/bakimevibul/ziyaret')->assertNoContent();
+        $this->withHeader('User-Agent', 'python-requests/2.31')->post('/site/bakimevibul/ziyaret')->assertNoContent();
+        $satir = \App\Models\SiteVisit::where('brand', 'bakimevibul')->whereDate('visit_date', now()->toDateString())->first();
+        $this->assertSame(1, (int) $satir->real_count);
+        $this->assertGreaterThanOrEqual(1, (int) $satir->count);
+        $this->actingAsAdminForStats()->get('/admin/site-istatistikleri')->assertOk()->assertSee('Gerçek ziyaretçi')->assertSee('bot dahil');
+    }
+
+    private function actingAsAdminForStats()
+    {
+        return $this->withSession(['admin_id' => $this->admin->id, 'admin_name' => $this->admin->name]);
+    }
 }

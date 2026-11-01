@@ -118,6 +118,14 @@ $siteRoutes = function () {
     // URL ile erisilir) - kullanici onaylamadan public hale getirilmeyecek.
     Route::get('/uzmanlar', [\App\Http\Controllers\Public\ExpertController::class, 'index'])->middleware('throttle:public-browse')->name('experts.index');
     Route::post('/uzmanlar/olay', [\App\Http\Controllers\Public\ExpertController::class, 'cardEvent'])->middleware('throttle:public-browse')->name('experts.card-event');
+    // 1 Kasım 2026: gerçek ziyaretçi sayacı - sayfadaki küçük betik günde bir kez çağırır; yalnızca sayfa metnini çeken botlar çağırmaz.
+    Route::post('/ziyaret', function (\Illuminate\Http\Request $request) {
+        if (app()->bound('currentBrand') && ! preg_match('/bot|crawl|spider|headless|python|curl|wget|scrapy|lighthouse|phantom|selenium/i', (string) $request->userAgent())) {
+            \App\Models\SiteVisit::recordRealVisit(app('currentBrand')['slug']);
+        }
+
+        return response()->noContent();
+    })->middleware('throttle:public-browse')->name('site-visit.beacon');
     // 25 Ekim 2026: Doktorlar bölümü arama motoru sayfaları - il / ilçe / branş açılışları ve doktor profili.
     Route::get('/uzmanlar/{il}/{a?}/{b?}', [\App\Http\Controllers\Public\ExpertSeoController::class, 'liste'])->where(['il' => '[a-z0-9-]+', 'a' => '[a-z0-9-]+', 'b' => '[a-z0-9-]+'])->middleware('throttle:public-browse')->name('experts.landing');
     Route::get('/doktor/{slug}', [\App\Http\Controllers\Public\ExpertSeoController::class, 'doktor'])->where('slug', '[A-Za-z0-9-]+')->middleware('throttle:public-browse')->name('experts.show');
@@ -398,7 +406,7 @@ Route::post('/_internal/ayar-onbellek-temizle', [\App\Http\Controllers\Internal\
 // goruntulerken bile admin'in cikabilmesi gerekiyor.
 Route::post('/impersonation/dur', [\App\Http\Controllers\Public\ImpersonationController::class, 'stop'])->name('impersonation.stop');
 
-Route::middleware('track.visit')->group($siteRoutes);
+Route::middleware(['bot.kalkan', 'track.visit'])->group($siteRoutes);
 
 // 2) Localhost test modu: /site/{brand}/... ayni route'lari "brand." on ekiyle uretir
 // 24 Agustos 2026: kullanicinin bildirdigi gercek hata - bu route grubu
@@ -411,7 +419,7 @@ Route::middleware('track.visit')->group($siteRoutes);
 // savunma amacli sadece local/testing'de acik birakildi - production'da
 // bu prefix artik 404 doner, Google zamanla bu URL'leri dizin disi birakir.
 if (app()->environment(['local', 'testing'])) {
-    Route::prefix('site/{brand}')->name('brand.')->middleware('track.visit')->group($siteRoutes);
+    Route::prefix('site/{brand}')->name('brand.')->middleware(['bot.kalkan', 'track.visit'])->group($siteRoutes);
 } else {
     // 25 Agustos 2026: kullanicinin bildirdigi gercek hata - bir onceki
     // duzeltme (yukarida) bu prefix'i production'da 404'e cevirmisti, ama

@@ -36,7 +36,31 @@ class SiteStatsController extends Controller
                 'last_365_days' => (int) SiteVisit::where('brand', $slug)->where('visit_date', '>=', $last365)->sum('count'),
                 'all_time' => (int) SiteVisit::where('brand', $slug)->sum('count'),
             ];
+            // 1 Kasım 2026: gerçek ziyaretçi (betiği çalıştıran tarayıcı) sayıları; bot dahil sayılar yukarıda korunur.
+            foreach (['today' => $today, 'last_7_days' => $last7, 'last_30_days' => $last30, 'last_90_days' => $last90, 'last_180_days' => $last180, 'last_365_days' => $last365, 'all_time' => null] as $k => $bas) {
+                $q = SiteVisit::where('brand', $slug);
+                if ($bas) {
+                    $q->where('visit_date', '>=', $bas);
+                }
+                $visitStats[$slug]['real'][$k] = (int) $q->sum('real_count');
+            }
+            // Olağan dışı bot yoğunluğu: bugünkü bot dahil giriş, önceki 7 günün ortalamasının 2 katını geçerse.
+            $onceki = SiteVisit::where('brand', $slug)->whereBetween('visit_date', [now()->subDays(7)->toDateString(), now()->subDay()->toDateString()])->pluck('count');
+            $ort = $onceki->count() ? $onceki->avg() : 0;
+            $visitStats[$slug]['kat'] = $ort > 0 ? round($visitStats[$slug]['today'] / $ort, 1) : null;
+            $visitStats[$slug]['engel_bugun'] = \Illuminate\Support\Facades\Schema::hasTable('bot_engel_kayitlari')
+                ? (int) \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('tarih', $today)->where('marka', $slug)->sum('sayi') : 0;
         }
+        $gercekBaslangic = SiteVisit::where('real_count', '>', 0)->min('visit_date');
+        // 1 Kasım 2026: engellenen botlar (son 7 gün) - saldırılar görünür kalsın.
+        $botEngel = \Illuminate\Support\Facades\Schema::hasTable('bot_engel_kayitlari')
+            ? \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('tarih', '>=', $last7)
+                ->selectRaw('anahtar, neden, sum(sayi) as sayi, max(son_gorulme) as son, min(tarih) as ilk, group_concat(distinct marka) as markalar')
+                ->groupBy('anahtar', 'neden')->orderByDesc('sayi')->limit(40)->get()
+            : collect();
+        $botEngelGunluk = \Illuminate\Support\Facades\Schema::hasTable('bot_engel_kayitlari')
+            ? \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('tarih', '>=', $last7)->selectRaw('tarih, sum(sayi) as sayi')->groupBy('tarih')->orderBy('tarih')->pluck('sayi', 'tarih')
+            : collect();
 
         // 5 Ekim 2026: kullanicinin talebi - trend grafiginde 90 gunluk secenek
         // de olsun, bu yuzden sorgu artik 90 gune cikti (30/7/1 gorunumler
@@ -95,7 +119,8 @@ class SiteStatsController extends Controller
 
         return view('admin.site-stats.index', compact(
             'brands', 'visitStats', 'dailySeries', 'families', 'cityCounts', 'totalFamilies', 'withLocation', 'verifiedCount',
-            'donemler', 'donem', 'trafik', 'trafikBaslangic', 'trafikGunluk', 'donemBas', 'donemSon'
+            'donemler', 'donem', 'trafik', 'trafikBaslangic', 'trafikGunluk', 'donemBas', 'donemSon',
+            'gercekBaslangic', 'botEngel', 'botEngelGunluk'
         ));
     }
 

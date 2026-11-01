@@ -7,7 +7,7 @@ use Illuminate\Database\QueryException;
 
 class SiteVisit extends Model
 {
-    protected $fillable = ['brand', 'visit_date', 'count'];
+    protected $fillable = ['brand', 'visit_date', 'count', 'real_count'];
 
     protected function casts(): array
     {
@@ -19,6 +19,27 @@ class SiteVisit extends Model
      * ziyaretiyse satiri olusturur. (brand, visit_date) unique oldugu icin
      * ayni gun/marka icin tablo tek satirda kalir.
      */
+    /**
+     * 1 Kasım 2026: gerçek ziyaretçi (sayfadaki betiği çalıştıran tarayıcı) sayacını 1 artırır.
+     * Bot dahil eski sayaç (count) olduğu gibi tutulmaya devam eder.
+     */
+    public static function recordRealVisit(string $brand): void
+    {
+        try {
+            $today = now()->toDateString();
+            if (static::where('brand', $brand)->whereDate('visit_date', $today)->increment('real_count')) {
+                return;
+            }
+            try {
+                static::create(['brand' => $brand, 'visit_date' => $today, 'count' => 0, 'real_count' => 1]);
+            } catch (QueryException $e) {
+                static::where('brand', $brand)->whereDate('visit_date', $today)->increment('real_count');
+            }
+        } catch (\Throwable $e) {
+            // ikincil sayaç; sessizce geç
+        }
+    }
+
     public static function recordVisit(string $brand): void
     {
         // 6 Eylul 2026: kullanicinin tekrar bildirdigi "Too many connections"

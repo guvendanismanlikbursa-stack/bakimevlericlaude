@@ -642,6 +642,18 @@ if (new URLSearchParams(window.location.search).has('page')) {
   });
 })();
 </script>
+{{-- 1 Kasım 2026: gerçek ziyaretçi sayacı - tarayıcı başına günde bir kez (botlar betik çalıştırmadığı için sayılmaz). --}}
+<script>
+(function () {
+  try {
+    var k = 'gz:{{ app()->bound('currentBrand') ? app('currentBrand')['slug'] : '' }}:' + new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(k)) return;
+    localStorage.setItem(k, '1');
+    var u = @json(brand_route('site-visit.beacon'));
+    if (navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u, { method: 'POST', keepalive: true });
+  } catch (e) {}
+})();
+</script>
 
 </body>
 </html>

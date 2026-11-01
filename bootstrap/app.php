@@ -26,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'facility.auth' => \App\Http\Middleware\FacilityUserAuth::class,
             'marketer.auth' => \App\Http\Middleware\MarketerAuth::class,
             'track.visit' => \App\Http\Middleware\TrackSiteVisit::class,
+            // 1 Kasım 2026: veri kazıyan botlara karşı kalkan (bkz. config/bot_kalkani.php).
+            'bot.kalkan' => \App\Http\Middleware\BotKalkani::class,
             'static.cache' => \App\Http\Middleware\CacheStaticPage::class,
         ]);
 
@@ -36,7 +38,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // kancamiz (asagida) sessizce anasayfaya yonlendiriyordu - deploy
         // script'i bunu "basarili" saniyordu ama gercekte hicbir komut
         // calismiyordu.
-        $middleware->validateCsrfTokens(except: ['_ops/*', '_internal/*']);
+        // 1 Kasım 2026: /ziyaret yalnızca gerçek ziyaretçi sayacını artırır (önbellekli sayfada eski jeton 419 vermesin).
+        $middleware->validateCsrfTokens(except: ['_ops/*', '_internal/*', 'ziyaret', 'site/*/ziyaret']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // config('sentry.dsn') bos ise SDK zaten no-op kalir (bkz.
