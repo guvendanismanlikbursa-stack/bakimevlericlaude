@@ -62,6 +62,14 @@
       {{-- 28 Ekim 2026: TTB mevzuatı - açıklama metni gösterilmez (hasta yorumu alıntıları içeriyor). --}}
     </section>
 
+    {{-- 1 Kasım 2026: kullanıcının talebi - çalışma saatleri. --}}
+    @if($e->openingHoursRows())
+      <section style="{{ $kart }}padding:0;border:0;background:transparent;box-shadow:none;">
+        @include('themes._shared.partials.saat-tablo', ['kayit' => $e, 'stil' => 'height:100%;'])
+      </section>
+      @include('themes._shared.partials.saat-script')
+    @endif
+
     {{-- 28 Ekim 2026: "hangi durumlarda başvurulur" bölümü kaldırıldı - TTB md. 14: hekim sayfası
          uzmanlık alanı dışındaki (hastalık adı gibi) anahtar kelimelerle bulunmamalı. --}}
   </div>

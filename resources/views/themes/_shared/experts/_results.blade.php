@@ -25,6 +25,8 @@
             <div class="min-w-0">
               <div class="font-black text-gray-950 truncate">{{ $expert->title }} {{ $expert->name }}</div>
               <div class="text-sm text-gray-500 mt-0.5 truncate">{{ $expert->branch }} <span class="text-gray-400">({{ $expert->branch_label }})</span> · {{ $expert->city?->name }}@if($expert->district) / {{ $expert->district }}@endif</div>
+              {{-- 1 Kasım 2026: kullanıcının talebi - çalışma saati kart kapalıyken de görünür. --}}
+              @include('themes._shared.partials.saat-ozet', ['kayit' => $expert])
             </div>
           </div>
           <div class="flex items-center gap-3 shrink-0">
@@ -52,6 +54,9 @@
               <div class="bg-white rounded-lg px-3 py-2 border border-gray-100"><span class="text-gray-400 text-xs block">İnternet sitesi</span><a href="{{ $doktorSiteAdresi }}" target="_blank" rel="noopener" class="font-bold" style="color:#0d6e6a;word-break:break-all;">{{ \App\Models\ExpertWebsite::displayAddress($doktorSiteAdresi) }}</a></div>
             @endif
           </div>
+
+          {{-- 1 Kasım 2026: kullanıcının talebi - açılan kartta 7 günlük çalışma saatleri. --}}
+          @include('themes._shared.partials.saat-tablo', ['kayit' => $expert, 'stil' => 'margin-bottom:16px;'])
 
           @if($expert->phone)
             <a href="tel:{{ preg_replace('/\s+/', '', $expert->phone) }}" class="flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl text-white font-black px-6 py-3 mb-5 hover:brightness-110 transition" style="background: #0d9488;">

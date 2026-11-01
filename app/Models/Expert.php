@@ -11,12 +11,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Expert extends Model
 {
     use SoftDeletes;
+    // 1 Kasım 2026: çalışma saatleri (kurumlarla ortak).
+    use Concerns\CalismaSaatleri;
 
     protected $fillable = [
         'name', 'slug', 'title', 'branch', 'branch_label', 'city_id', 'district',
         'address', 'lat', 'lng', 'phone', 'phone_type', 'clinic_name', 'description',
         'google_maps_url', 'rating', 'review_count', 'reviews', 'supporter_until',
         'website_status', 'website_url', 'website_checked_at',
+        'opening_hours', 'opening_hours_fetched_at',
         'source', 'source_payload', 'is_published', 'is_claimed',
         'marketing_status', 'marketing_status_at', 'marketing_brochure_requested', 'marketing_callback_at',
     ];
@@ -26,6 +29,8 @@ class Expert extends Model
         return [
             'supporter_until' => 'date',
             'website_checked_at' => 'datetime',
+            'opening_hours' => 'array',
+            'opening_hours_fetched_at' => 'datetime',
             'marketing_status_at' => 'datetime',
             'marketing_callback_at' => 'datetime',
             'marketing_brochure_requested' => 'boolean',

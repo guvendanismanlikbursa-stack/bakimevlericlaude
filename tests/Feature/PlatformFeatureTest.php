@@ -8972,4 +8972,16 @@ Metin {standart_fiyat}"])->assertRedirect();
         // SSL sertifikası yenilemesi (acme-challenge) http üzerinden çalışmalı
         $this->get('http://bakimevibul.com/.well-known/acme-challenge/dosya')->assertStatus(404);
     }
+
+    // 1 Kasım 2026: doktor çalışma saatleri kart özeti, açılan detay ve doktor sayfasında görünür.
+    public function test_doktor_calisma_saatleri_gorunur(): void
+    {
+        $e = new \App\Models\Expert(['opening_hours' => ['Pazartesi' => '09:00 - 18:00', 'Salı' => '09:00 - 18:00', 'Çarşamba' => '09:00 - 18:00', 'Perşembe' => '09:00 - 18:00', 'Cuma' => '09:00 - 18:00', 'Cumartesi' => '09:00 - 14:00', 'Pazar' => 'Kapalı']]);
+        $this->assertSame('Pzt–Cum 09:00–18:00 · Cmt 09:00–14:00 · Paz Kapalı', $e->openingHoursSummary());
+        $this->assertSame([], (new \App\Models\Expert(['opening_hours' => array_fill_keys(\App\Models\Expert::GUNLER, 'Kapalı')]))->openingHoursRows());
+        $html = view('themes._shared.partials.saat-ozet', ['kayit' => $e])->render().view('themes._shared.partials.saat-tablo', ['kayit' => $e])->render();
+        $this->assertStringContainsString('Pzt–Cum 09:00–18:00', $html);
+        $this->assertStringContainsString('js-saat-satir', $html);
+        $this->assertSame('', trim(view('themes._shared.partials.saat-ozet', ['kayit' => new \App\Models\Expert()])->render()));
+    }
 }

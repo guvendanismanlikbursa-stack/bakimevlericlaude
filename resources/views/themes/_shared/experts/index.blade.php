@@ -173,6 +173,7 @@
   kaliyor, runFilter() sessizce hicbir sey yapmadan donuyordu (hata da
   vermiyordu). Script artik sonuc div'inden SONRA calisir. --}}
   @include('themes._shared.partials.location-filter-script')
+  @include('themes._shared.partials.saat-script')
 </div>
 </div>
 
