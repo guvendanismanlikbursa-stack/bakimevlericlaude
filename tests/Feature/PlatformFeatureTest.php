@@ -8959,4 +8959,17 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->assertSame(0, \App\Models\PlatformNotification::where('type', 'bot_alarm')->count());
         \App\Support\TrafikAnaliz::$klasor = null;
     }
+
+    // 1 Kasım 2026: HTTP ile gelen istekler HTTPS'e 301 ile yönlenir; https ve acme-challenge hariç.
+    public function test_http_istekleri_httpse_yonlendirilir(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+        $r = $this->get('http://bakimevibul.com/kurumlar?city=bursa');
+        $r->assertStatus(301);
+        $this->assertSame('https://bakimevibul.com/kurumlar?city=bursa', $r->headers->get('Location'));
+        // zaten https olan yönlendirilmez (sonsuz döngü olmaz)
+        $this->get('https://localhost/site/bakimevibul/')->assertOk();
+        // SSL sertifikası yenilemesi (acme-challenge) http üzerinden çalışmalı
+        $this->get('http://bakimevibul.com/.well-known/acme-challenge/dosya')->assertStatus(404);
+    }
 }

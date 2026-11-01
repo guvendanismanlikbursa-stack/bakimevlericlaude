@@ -13,6 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(prepend: [
+            // 1 Kasım 2026: HTTP -> HTTPS yönlendirmesi en başta çalışsın (oturum/çerez işlenmeden).
+            \App\Http\Middleware\ForceHttps::class,
+        ]);
         $middleware->web(append: [
             ResolveBrand::class,
             \App\Http\Middleware\SecurityHeaders::class,
