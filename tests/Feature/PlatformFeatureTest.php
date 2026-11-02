@@ -8738,6 +8738,39 @@ class PlatformFeatureTest extends TestCase
     }
 
     // 30 Ekim 2026: adminin ayrıntılı CRM'i - pazarlamacıyla aynı notlar, kapsam/arama/kim filtresi.
+    public function test_admin_crm_site_sozlesmesi_whatsapp(): void
+    {
+        $f = $this->rehabFacility;
+        $f->update(['is_claimed' => false, 'is_broker_managed' => false, 'is_subscribed' => false, 'phone' => '0532 777 88 99', 'phone_type' => 'mobile']);
+        $this->withSession(['admin_id' => $this->admin->id]);
+        $this->get('/admin/crm?group=all')->assertOk()->assertSee('Site sözleşmesi gönder', false)->assertSee(route('admin.crm.contract', $f), false);
+        $r = $this->post(route('admin.crm.contract', $f), ['paket' => 'Profesyonel Site', 'ucret' => '14.900']);
+        $r->assertRedirect();
+        $hedef = $r->headers->get('Location');
+        $this->assertStringStartsWith('https://wa.me/905327778899?text=', $hedef);
+        $metin = rawurldecode(substr($hedef, strpos($hedef, '=') + 1));
+        foreach (['Sayın '.$f->name, 'İlk yıl 14.900 ₺ (KDV dahil)', 'yıllık yenileme ücreti', 'alan adını satan firmanın kurallarına', 'vergi dairesi', 'Okudum, kabul ediyorum', '24 saat', 'Güven Bakım ve Danışmanlık Hizmetleri'] as $parca) {
+            $this->assertStringContainsString($parca, $metin);
+        }
+        $not = \App\Models\FacilityMarketingNote::where('facility_id', $f->id)->first();
+        $this->assertTrue($not->sozlesme);
+        // Görüşme sayısına katılmaz, geçmişte görünür, silinemez.
+        $this->post(route('admin.crm.store-note', $f), ['status' => 'called'])->assertRedirect();
+        $this->get('/admin/crm?group=all')->assertSee('<b>1</b><span>☎️ Bugün tüm görüşmeler', false)->assertSee('Site sözleşmesi WhatsApp', false)
+            ->assertDontSee(route('admin.crm.destroy-note', [$f, $not->id]), false);
+        $this->post(route('admin.crm.destroy-note', [$f, $not->id]))->assertSessionHas('error');
+        $this->assertDatabaseHas('facility_marketing_notes', ['id' => $not->id]);
+        // Geçersiz paket / ücret reddedilir.
+        $this->post(route('admin.crm.contract', $f), ['paket' => 'Uydurma', 'ucret' => '1'])->assertSessionHasErrors('paket');
+        $this->post(route('admin.crm.contract', $f), ['paket' => 'Standart Site', 'ucret' => 'abc'])->assertSessionHasErrors('ucret');
+
+        // Doktor paketleri hekim paket fiyatlarından gelir.
+        $e = \App\Models\Expert::create(['name' => 'Dr. Soz Test', 'slug' => 'dr-soz-test', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'phone' => '0533 111 22 33', 'is_published' => true]);
+        $r = $this->post(route('admin.crm.doctors.contract', $e), ['paket' => 'Profesyonel Site', 'ucret' => '12.900']);
+        $this->assertStringStartsWith('https://wa.me/905331112233?text=', $r->headers->get('Location'));
+        $this->assertTrue(\App\Models\ExpertMarketingNote::where('expert_id', $e->id)->first()->sozlesme);
+    }
+
     public function test_admin_crm_gorusme_kaydi_silme_tek_kayit_korunur(): void
     {
         $f = $this->rehabFacility;

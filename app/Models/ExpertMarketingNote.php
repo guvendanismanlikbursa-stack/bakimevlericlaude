@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 // (kurumlardaki FacilityMarketingNote ile aynı alanlar + ilgilendiği paket).
 class ExpertMarketingNote extends Model
 {
-    protected $fillable = ['expert_id', 'marketer_id', 'admin_id', 'status', 'contact_name', 'contact_role', 'website_status', 'site_offer_interest', 'package_interest', 'note', 'brochure_requested', 'callback_at'];
+    protected $fillable = ['expert_id', 'marketer_id', 'admin_id', 'status', 'contact_name', 'contact_role', 'website_status', 'site_offer_interest', 'package_interest', 'note', 'brochure_requested', 'callback_at', 'sozlesme'];
 
     // Doktorlara özel paket seçenekleri (sorular kurumlarla aynı, yalnızca bu farklı).
     public const PACKAGES = [
@@ -19,7 +19,7 @@ class ExpertMarketingNote extends Model
 
     protected function casts(): array
     {
-        return ['brochure_requested' => 'boolean', 'callback_at' => 'datetime'];
+        return ['brochure_requested' => 'boolean', 'callback_at' => 'datetime', 'sozlesme' => 'boolean'];
     }
 
     public function contactLabel(): ?string

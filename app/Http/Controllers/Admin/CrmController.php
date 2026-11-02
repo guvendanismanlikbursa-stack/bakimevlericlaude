@@ -283,7 +283,46 @@ REHBER;
         return $this->notSil($expert, ExpertMarketingNote::class, 'expert_id', $note);
     }
 
+    public function sendContract(Request $request, Facility $facility)
+    {
+        return $this->sozlesmeGonder($request, $facility, FacilityMarketingNote::class, 'facility_id', false);
+    }
+
+    public function sendDoctorContract(Request $request, Expert $expert)
+    {
+        return $this->sozlesmeGonder($request, $expert, ExpertMarketingNote::class, 'expert_id', true);
+    }
+
     // ---------------------------------------------------------------- Ortak
+
+    /**
+     * 2 Kasım 2026: site hizmet sözleşmesi - metin hazırlanır, görüşme geçmişine "sözleşme"
+     * kaydı olarak (tarih/saat + tam metin) düşer, ardından WhatsApp mesaj hazır şekilde açılır.
+     */
+    private function sozlesmeGonder(Request $request, $kayit, string $model, string $fk, bool $doktor)
+    {
+        $data = $request->validate([
+            'paket' => ['required', 'string', 'max:60', Rule::in(array_keys(\App\Support\SiteSozlesmesi::paketler($doktor)))],
+            'ucret' => ['required', 'string', 'max:20', 'regex:/^[0-9][0-9.,]*$/'],
+        ]);
+        $wa = classify_phone_type($kayit->phone) === 'mobile' ? normalize_whatsapp_number($kayit->phone) : '';
+        if ($wa === '') {
+            return redirect()->to(url()->previous().'#k'.$kayit->id)->with('error', 'Sözleşme gönderilemedi: '.$kayit->name.' için cep telefonu yok.');
+        }
+        $ad = $doktor ? trim(($kayit->title ? $kayit->title.' ' : '').$kayit->name) : $kayit->name;
+        $metin = \App\Support\SiteSozlesmesi::metin($ad, $data['paket'], $data['ucret']);
+        $model::create([
+            $fk => $kayit->id,
+            'marketer_id' => null,
+            'admin_id' => session('admin_id'),
+            'status' => $kayit->marketing_status ?: 'called',
+            'note' => $metin,
+            'sozlesme' => true,
+        ]);
+        log_admin_event('admin_crm_contract_sent', $kayit, ['paket' => $data['paket'], 'ucret' => $data['ucret']]);
+
+        return redirect()->away('https://wa.me/'.$wa.'?text='.rawurlencode($metin));
+    }
 
     /**
      * 2 Kasım 2026: kullanıcının talebi - admin görüşme kaydını silebilir; ama kurum/doktorun
@@ -294,6 +333,9 @@ REHBER;
     {
         $geri = redirect()->to(url()->previous().'#k'.$kayit->id);
         $not = $model::where($fk, $kayit->id)->findOrFail($notId);
+        if ($not->sozlesme) {
+            return $geri->with('error', 'Sözleşme kaydı silinemez: gönderildiğinin kanıtıdır.');
+        }
         if ($model::where($fk, $kayit->id)->count() <= 1) {
             return $geri->with('error', 'Tek görüşme kaydı silinemez: '.$kayit->name.' için başka görüşme kaydı yok.');
         }
@@ -421,7 +463,7 @@ REHBER;
     {
         $son = [];
         $sayi = 0;
-        foreach ($sorgu->orderBy('created_at')->get([$kisi, 'created_at']) as $n) {
+        foreach ($sorgu->where('sozlesme', false)->orderBy('created_at')->get([$kisi, 'created_at']) as $n) {
             $an = $n->created_at->getTimestamp();
             if (! isset($son[$n->$kisi]) || $an - $son[$n->$kisi] > 120) {
                 $sayi++;

@@ -751,6 +751,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // 2 Kasım 2026: görüşme kaydı silme (tek kayıt kalmışsa silinemez).
         Route::post('/crm/kurum/{facility}/not/{note}/sil', [\App\Http\Controllers\Admin\CrmController::class, 'destroyNote'])->whereNumber('note')->name('crm.destroy-note');
         Route::post('/crm/doktor/{expert}/not/{note}/sil', [\App\Http\Controllers\Admin\CrmController::class, 'destroyDoctorNote'])->whereNumber('note')->name('crm.doctors.destroy-note');
+        // 2 Kasım 2026: site hizmet sözleşmesini WhatsApp'tan gönderme (geçmişe kanıt kaydı düşer).
+        Route::post('/crm/kurum/{facility}/sozlesme', [\App\Http\Controllers\Admin\CrmController::class, 'sendContract'])->name('crm.contract');
+        Route::post('/crm/doktor/{expert}/sozlesme', [\App\Http\Controllers\Admin\CrmController::class, 'sendDoctorContract'])->name('crm.doctors.contract');
 
         Route::get('/bildirimler', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/bildirimler/{notification}/okundu', [\App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');

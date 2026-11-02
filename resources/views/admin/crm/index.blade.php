@@ -209,9 +209,11 @@
               @if($n->site_offer_interest) · {{ \App\Models\FacilityMarketingNote::SITE_OFFER_INTEREST[$n->site_offer_interest] ?? '' }}@endif
               @if($n->brochure_requested !== null) · Broşür: {{ $n->brochure_requested ? 'istiyor' : 'istemiyor' }}@endif
               @if($n->callback_at) · 📅 {{ $n->callback_at->format('d.m.Y H:i') }}@endif
-              @if($n->note)<div style="border:0;padding:2px 0 0;color:#111827;">“{{ $n->note }}”</div>@endif
-              {{-- 2 Kasım 2026: görüşme kaydı silme - tek kayıt kalmışsa buton çıkmaz (sunucu da engeller). --}}
-              @if($notlar->count() > 1)
+              @if($n->sozlesme)
+                <details style="border:0;padding:2px 0 0;"><summary style="cursor:pointer;color:#0d6e6a;font-weight:800;">📄 Site sözleşmesi WhatsApp'tan gönderildi (metni gör)</summary><div style="border:0;white-space:pre-line;color:#111827;padding:4px 0 0;">{{ $n->note }}</div></details>
+              @elseif($n->note)<div style="border:0;padding:2px 0 0;color:#111827;">“{{ $n->note }}”</div>@endif
+              {{-- 2 Kasım 2026: görüşme kaydı silme - tek kayıt kalmışsa buton çıkmaz (sunucu da engeller); sözleşme kaydı kanıt olduğu için silinmez. --}}
+              @if($notlar->count() > 1 && ! $n->sozlesme)
                 <form method="POST" action="{{ $doktor ? route('admin.crm.doctors.destroy-note', [$k, $n->id]) : route('admin.crm.destroy-note', [$k, $n->id]) }}" onsubmit="return confirm('Bu görüşme kaydı silinsin mi?');" style="border:0;padding:2px 0 0;margin:0;">
                   @csrf
                   <button type="submit" style="background:none;border:0;padding:0;color:#b91c1c;font-size:12px;font-weight:700;cursor:pointer;">🗑 Sil</button>
@@ -220,6 +222,27 @@
             </div>
           @endforeach
         </div>
+      </details>
+    @endif
+
+    {{-- 2 Kasım 2026: site kabul edene WhatsApp'tan hizmet sözleşmesi (yenileme, alan adı, fatura, onay). --}}
+    @if($wa)
+      @php $sozPaket = \App\Support\SiteSozlesmesi::paketler($doktor); @endphp
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer;font-size:13.5px;font-weight:900;color:#166534;">📄 Site sözleşmesi gönder (WhatsApp)</summary>
+        <form method="POST" action="{{ $doktor ? route('admin.crm.doctors.contract', $k) : route('admin.crm.contract', $k) }}" target="_blank" onsubmit="setTimeout(function(){ location.reload(); }, 1500);" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+          @csrf
+          <div><span class="crm-etk">Paket</span>
+            <select name="paket" class="crm-girdi" onchange="this.form.ucret.value = this.options[this.selectedIndex].dataset.ucret || '';">
+              @foreach($sozPaket as $pAd => $pUcret)<option value="{{ $pAd }}" data-ucret="{{ $pUcret }}">{{ $pAd }}</option>@endforeach
+            </select>
+          </div>
+          <div><span class="crm-etk">İlk yıl ücreti (₺, KDV dahil)</span>
+            <input name="ucret" value="{{ reset($sozPaket) }}" required inputmode="decimal" pattern="[0-9][0-9.,]*" maxlength="20" class="crm-girdi" style="width:140px;" placeholder="ör. 12.900">
+          </div>
+          <button type="submit" class="crm-dg" style="border-color:#86efac;color:#166534;font-weight:900;">💬 WhatsApp'ta aç</button>
+        </form>
+        <div style="font-size:12px;color:#6b7280;margin-top:6px;">Mesaj hazır yazılmış olarak açılır, siz "Gönder"e basarsınız. Gönderim görüşme geçmişine tarih ve saatiyle kaydedilir.</div>
       </details>
     @endif
 

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 // notu gecmisi - bkz. Marketer\CrmController.
 class FacilityMarketingNote extends Model
 {
-    protected $fillable = ['facility_id', 'marketer_id', 'admin_id', 'status', 'contact_name', 'contact_role', 'website_status', 'site_offer_interest', 'note', 'brochure_requested', 'callback_at'];
+    protected $fillable = ['facility_id', 'marketer_id', 'admin_id', 'status', 'contact_name', 'contact_role', 'website_status', 'site_offer_interest', 'note', 'brochure_requested', 'callback_at', 'sozlesme'];
 
     // 18 Ekim 2026: görüşülen kişinin kurumdaki konumu.
     public const CONTACT_ROLES = ['calisan' => 'Çalışan', 'mudur' => 'Müdür', 'sahibi' => 'Sahibi'];
@@ -35,6 +35,7 @@ class FacilityMarketingNote extends Model
         return [
             'brochure_requested' => 'boolean',
             'callback_at' => 'datetime',
+            'sozlesme' => 'boolean',
         ];
     }
 
