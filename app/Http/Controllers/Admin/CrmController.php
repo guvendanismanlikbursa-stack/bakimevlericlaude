@@ -273,7 +273,41 @@ REHBER;
         return redirect()->to(url()->previous().'#k'.$expert->id)->with('success', 'Not kaydedildi: '.$expert->name);
     }
 
+    public function destroyNote(Facility $facility, int $note)
+    {
+        return $this->notSil($facility, FacilityMarketingNote::class, 'facility_id', $note);
+    }
+
+    public function destroyDoctorNote(Expert $expert, int $note)
+    {
+        return $this->notSil($expert, ExpertMarketingNote::class, 'expert_id', $note);
+    }
+
     // ---------------------------------------------------------------- Ortak
+
+    /**
+     * 2 Kasım 2026: kullanıcının talebi - admin görüşme kaydını silebilir; ama kurum/doktorun
+     * tek görüşme kaydı kalmışsa silinemez. Silinen kayıt en sonuncusuysa, listede görünen
+     * durum bir önceki kayda göre geri alınır. Silinen kaydın içeriği işlem günlüğüne yazılır.
+     */
+    private function notSil($kayit, string $model, string $fk, int $notId)
+    {
+        $geri = redirect()->to(url()->previous().'#k'.$kayit->id);
+        $not = $model::where($fk, $kayit->id)->findOrFail($notId);
+        if ($model::where($fk, $kayit->id)->count() <= 1) {
+            return $geri->with('error', 'Tek görüşme kaydı silinemez: '.$kayit->name.' için başka görüşme kaydı yok.');
+        }
+        $sonKayit = fn () => $model::where($fk, $kayit->id)->orderByDesc('created_at')->orderByDesc('id')->first();
+        $sonuncuydu = $sonKayit()->id === $not->id;
+        log_admin_event('admin_crm_note_deleted', $kayit, $not->only(['id', 'status', 'note', 'contact_name', 'callback_at', 'created_at', 'admin_id', 'marketer_id']));
+        $not->delete();
+        if ($sonuncuydu) {
+            $yeniSon = $sonKayit();
+            $kayit->update(['marketing_status' => $yeniSon->status, 'marketing_status_at' => $yeniSon->created_at]);
+        }
+
+        return $geri->with('success', 'Görüşme kaydı silindi: '.$kayit->name);
+    }
 
     /** Arama, "kim aradı" ve son görüşme filtresi (kurum ve doktorda aynı). */
     private function ortakFiltreler($q, Request $r): void

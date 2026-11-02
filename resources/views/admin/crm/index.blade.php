@@ -210,6 +210,13 @@
               @if($n->brochure_requested !== null) · Broşür: {{ $n->brochure_requested ? 'istiyor' : 'istemiyor' }}@endif
               @if($n->callback_at) · 📅 {{ $n->callback_at->format('d.m.Y H:i') }}@endif
               @if($n->note)<div style="border:0;padding:2px 0 0;color:#111827;">“{{ $n->note }}”</div>@endif
+              {{-- 2 Kasım 2026: görüşme kaydı silme - tek kayıt kalmışsa buton çıkmaz (sunucu da engeller). --}}
+              @if($notlar->count() > 1)
+                <form method="POST" action="{{ $doktor ? route('admin.crm.doctors.destroy-note', [$k, $n->id]) : route('admin.crm.destroy-note', [$k, $n->id]) }}" onsubmit="return confirm('Bu görüşme kaydı silinsin mi?');" style="border:0;padding:2px 0 0;margin:0;">
+                  @csrf
+                  <button type="submit" style="background:none;border:0;padding:0;color:#b91c1c;font-size:12px;font-weight:700;cursor:pointer;">🗑 Sil</button>
+                </form>
+              @endif
             </div>
           @endforeach
         </div>

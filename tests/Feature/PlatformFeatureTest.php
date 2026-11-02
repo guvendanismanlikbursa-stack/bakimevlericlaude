@@ -8738,6 +8738,38 @@ class PlatformFeatureTest extends TestCase
     }
 
     // 30 Ekim 2026: adminin ayrıntılı CRM'i - pazarlamacıyla aynı notlar, kapsam/arama/kim filtresi.
+    public function test_admin_crm_gorusme_kaydi_silme_tek_kayit_korunur(): void
+    {
+        $f = $this->rehabFacility;
+        $f->update(['is_claimed' => false, 'is_broker_managed' => false, 'is_subscribed' => false, 'phone' => '0532 777 88 99', 'phone_type' => 'mobile']);
+        $this->withSession(['admin_id' => $this->admin->id]);
+        $this->post(route('admin.crm.store-note', $f), ['status' => 'called', 'note' => 'İlk görüşme'])->assertRedirect();
+        $ilk = \App\Models\FacilityMarketingNote::where('facility_id', $f->id)->first();
+        // Tek kayıt: buton yok, sunucu da silmez.
+        $this->get('/admin/crm?group=all')->assertDontSee(route('admin.crm.destroy-note', [$f, $ilk->id]), false);
+        $this->post(route('admin.crm.destroy-note', [$f, $ilk->id]))->assertSessionHas('error');
+        $this->assertDatabaseHas('facility_marketing_notes', ['id' => $ilk->id]);
+        // İkinci kayıt eklenince silinebilir; sonuncu silinirse durum bir öncekine döner.
+        $this->post(route('admin.crm.store-note', $f), ['status' => 'price_requested', 'note' => 'Tekrar kayıt'])->assertRedirect();
+        $ikinci = \App\Models\FacilityMarketingNote::where('facility_id', $f->id)->latest('id')->first();
+        $this->get('/admin/crm?group=all')->assertSee(route('admin.crm.destroy-note', [$f, $ikinci->id]), false);
+        $this->post(route('admin.crm.destroy-note', [$f, $ikinci->id]))->assertSessionHas('success');
+        $this->assertDatabaseMissing('facility_marketing_notes', ['id' => $ikinci->id]);
+        $this->assertSame('called', $f->fresh()->marketing_status);
+        // Başka kurumun kaydı bu kurum adresinden silinemez.
+        $this->post(route('admin.crm.destroy-note', [$f, 999999]))->assertNotFound();
+
+        // Doktor tarafı.
+        $e = \App\Models\Expert::create(['name' => 'Dr. Sil Test', 'slug' => 'dr-sil-test', 'branch' => 'Pediatri', 'branch_label' => 'Çocuk Doktoru', 'city_id' => $this->city->id, 'phone' => '0532 111 22 33', 'is_published' => true]);
+        $this->post(route('admin.crm.doctors.store-note', $e), ['status' => 'called'])->assertRedirect();
+        $this->post(route('admin.crm.doctors.store-note', $e), ['status' => 'called'])->assertRedirect();
+        $son = \App\Models\ExpertMarketingNote::where('expert_id', $e->id)->latest('id')->first();
+        $this->post(route('admin.crm.doctors.destroy-note', [$e, $son->id]))->assertSessionHas('success');
+        $kalan = \App\Models\ExpertMarketingNote::where('expert_id', $e->id)->first();
+        $this->post(route('admin.crm.doctors.destroy-note', [$e, $kalan->id]))->assertSessionHas('error');
+        $this->assertSame(1, \App\Models\ExpertMarketingNote::where('expert_id', $e->id)->count());
+    }
+
     public function test_admin_crm_lists_calls_and_shares_notes_with_marketers(): void
     {
         $marketer = \App\Models\Marketer::create(['name' => 'Pazarlamaci K', 'phone' => '05559998855', 'password' => Hash::make('x'), 'is_active' => true]);

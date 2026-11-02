@@ -748,6 +748,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/crm/kurum/{facility}/not', [\App\Http\Controllers\Admin\CrmController::class, 'storeNote'])->name('crm.store-note');
         Route::get('/crm/kurum/{facility}/teklif-sayfasi', [\App\Http\Controllers\Admin\CrmController::class, 'offerPage'])->name('crm.offer-page');
         Route::post('/crm/doktor/{expert}/not', [\App\Http\Controllers\Admin\CrmController::class, 'storeDoctorNote'])->name('crm.doctors.store-note');
+        // 2 Kasım 2026: görüşme kaydı silme (tek kayıt kalmışsa silinemez).
+        Route::post('/crm/kurum/{facility}/not/{note}/sil', [\App\Http\Controllers\Admin\CrmController::class, 'destroyNote'])->whereNumber('note')->name('crm.destroy-note');
+        Route::post('/crm/doktor/{expert}/not/{note}/sil', [\App\Http\Controllers\Admin\CrmController::class, 'destroyDoctorNote'])->whereNumber('note')->name('crm.doctors.destroy-note');
 
         Route::get('/bildirimler', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/bildirimler/{notification}/okundu', [\App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');
