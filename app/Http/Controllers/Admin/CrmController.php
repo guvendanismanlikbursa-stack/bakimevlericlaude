@@ -367,14 +367,35 @@ REHBER;
     private function ozet(string $notModeli, $kayitSorgusu): array
     {
         $bugun = now()->startOfDay();
+        // 2 Kasım 2026: kullanıcının bildirdiği hata - 4 görüşme yapılmış ama 5 görünüyordu; aynı kişiye
+        // girilen ikinci not (ör. form iki kez gönderilince oluşan boş kayıt) ayrı görüşme sayılıyordu.
+        // Kullanıcının kuralı: aynı kişiyle farklı saatlerde yapılan görüşmeler ayrı sayılır; yalnızca
+        // aynı kişiye 2 dakika içinde düşen tekrar kayıt sayılmaz.
+        $kisi = $notModeli === ExpertMarketingNote::class ? 'expert_id' : 'facility_id';
 
         return [
             'bugun_randevu' => (clone $kayitSorgusu)->whereBetween('marketing_callback_at', [$bugun, $bugun->copy()->endOfDay()])->count(),
             'geciken_randevu' => (clone $kayitSorgusu)->where('marketing_callback_at', '<', now())->whereNotIn('marketing_status', ['subscribed', 'receipt_sent', 'not_interested', 'removal_requested'])->count(),
-            'bugun_gorusme' => $notModeli::where('created_at', '>=', $bugun)->count(),
-            'bugun_benim' => $notModeli::where('created_at', '>=', $bugun)->where('admin_id', session('admin_id'))->count(),
-            'hafta_gorusme' => $notModeli::where('created_at', '>=', now()->subDays(7))->count(),
+            'bugun_gorusme' => $this->gorusmeSay($notModeli::where('created_at', '>=', $bugun), $kisi),
+            'bugun_benim' => $this->gorusmeSay($notModeli::where('created_at', '>=', $bugun)->where('admin_id', session('admin_id')), $kisi),
+            'hafta_gorusme' => $this->gorusmeSay($notModeli::where('created_at', '>=', now()->subDays(7)), $kisi),
         ];
+    }
+
+    /** Görüşme sayısı: aynı kişiye önceki kayıttan 2 dakika içinde girilen not (çift gönderim) sayılmaz. */
+    private function gorusmeSay($sorgu, string $kisi): int
+    {
+        $son = [];
+        $sayi = 0;
+        foreach ($sorgu->orderBy('created_at')->get([$kisi, 'created_at']) as $n) {
+            $an = $n->created_at->getTimestamp();
+            if (! isset($son[$n->$kisi]) || $an - $son[$n->$kisi] > 120) {
+                $sayi++;
+            }
+            $son[$n->$kisi] = $an;
+        }
+
+        return $sayi;
     }
 
     private function notDogrula(Request $request, bool $doktor): array

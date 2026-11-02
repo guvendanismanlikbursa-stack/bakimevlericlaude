@@ -8762,6 +8762,11 @@ class PlatformFeatureTest extends TestCase
         $this->get('/admin/crm?kim=hic')->assertOk()->assertDontSee('id="k'.$f->id.'"', false);
         // Randevuyu kapat.
         $this->post(route('admin.crm.store-note', $f), ['status' => 'called', 'randevu_kapat' => '1'])->assertRedirect();
+        // Aynı kuruma 2 dakika içinde düşen ikinci not = tek görüşme (2 Kasım 2026 hatası: 4 görüşme 5 görünüyordu);
+        // daha sonraki bir saatte yapılan görüşme ise ayrıca sayılır.
+        $this->get('/admin/crm')->assertSee('<b>1</b><span>☎️ Bugün tüm görüşmeler', false)->assertSee('<b>1</b><span>🛡️ Bugün sizin görüşmeleriniz', false);
+        \App\Models\FacilityMarketingNote::where('facility_id', $f->id)->latest('id')->first()->forceFill(['created_at' => now()->addMinutes(30)])->save();
+        $this->get('/admin/crm')->assertSee('<b>2</b><span>☎️ Bugün tüm görüşmeler', false);
         $this->assertNull($f->fresh()->marketing_callback_at);
         $this->flushSession();
 
