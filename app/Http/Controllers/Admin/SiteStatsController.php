@@ -78,7 +78,10 @@ class SiteStatsController extends Controller
         $botEngel = \Illuminate\Support\Facades\Schema::hasTable('bot_engel_kayitlari')
             ? \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('tarih', '>=', $last7)
                 ->selectRaw('anahtar, neden, sum(sayi) as sayi, max(son_gorulme) as son, min(tarih) as ilk, group_concat(distinct marka) as markalar')
-                ->groupBy('anahtar', 'neden')->orderByDesc('sayi')->limit(40)->get()
+                ->groupBy('anahtar', 'neden')
+                // 2 Kasım 2026: kullanıcının talebi - liste çok uzuyordu; en son engellenen en üstte,
+                // sayfa başına 10 kayıt (ayrı sayfa adı: aile listesinin sayfalamasını etkilemez).
+                ->orderByDesc('son')->paginate(10, ['*'], 'bot_sayfa')->withQueryString()->fragment('engellenen-botlar')
             : collect();
         $botEngelGunluk = \Illuminate\Support\Facades\Schema::hasTable('bot_engel_kayitlari')
             ? \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('tarih', '>=', $last7)->selectRaw('tarih, sum(sayi) as sayi')->groupBy('tarih')->orderBy('tarih')->pluck('sayi', 'tarih')

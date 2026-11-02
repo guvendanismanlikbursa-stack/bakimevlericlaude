@@ -157,6 +157,7 @@
         </tbody>
       </table>
     </div>
+    @if($botEngel->hasPages())<div class="mt-4">{{ $botEngel->links() }}</div>@endif
   @endif
 </div>
 
