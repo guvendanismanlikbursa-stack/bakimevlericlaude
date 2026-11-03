@@ -1,13 +1,29 @@
 @extends('layouts.brand')
-@section('title', $facility->name.' - '.($facility->city->name ?? '').' '.($facility->district ?? ''))
+@php
+  // 3 Kasım 2026: kullanıcının talebi - Search Console'da kurum adı aramalarında
+  // çok gösterim ama çok az tıklama vardı (ör. 1.146 gösterim / 3 tıklama).
+  // Başlık ve açıklama, arayan ailenin aradığı şeyi (yorum, fiyat, iletişim,
+  // puan, açık saatler) söyleyecek şekilde yeniden yazıldı. Yorum sayısı
+  // yazılmaz (çekilen yorumlar toplamın sadece bir kısmı, yanıltıcı olur).
+  $seoYer = trim(($facility->district ? $facility->district.'/' : '').($facility->city->name ?? ''), '/');
+  $seoPuan = ($facility->rating && $facility->rating > 0 && ! $facility->hidesPatientReviews()) ? number_format((float) $facility->rating, 1, ',', '') : null;
+  $seoBaslik = $facility->name.' '.($seoPuan ? 'Yorumları, Fiyatı ve İletişim' : 'Fiyat ve İletişim Bilgileri').($seoYer ? ' – '.$seoYer : '');
+  $seoSaatler = array_values(array_filter((array) ($facility->opening_hours ?? []), 'is_string'));
+  $seoYirmiDort = count($seoSaatler) === 7 && collect($seoSaatler)->every(fn ($s) => (bool) preg_match('/24\s*saat/u', $s));
+  $seoAciklama = $facility->name.($seoYer ? ', '.$seoYer.'.' : '.')
+    .($seoPuan ? ' '.$seoPuan.'/5 puan.' : '')
+    .($seoYirmiDort ? ' 7/24 açık.' : '')
+    .' Fotoğraflar, hizmetler, ziyaret bilgisi ve aile yorumları; ücretsiz bilgi ve fiyat talebi gönderin.';
+@endphp
+@section('title', $seoBaslik)
 @if(($serviceSection['slug'] ?? null) !== (current_brand()['default_section'] ?? null))
   {{-- bkz. layouts/brand.blade.php - envanter 3 markada da paylasildigi
        icin bu kurum kendi bolumune ait OLMAYAN markada da erisilebiliyor;
        kopya icerik olarak indekslenmesin, sadece kendi markasinda indexlensin. --}}
   @section('robots_meta', 'noindex,follow')
 @endif
-@section('og_title', $facility->name.' - '.($facility->city->name ?? '').' '.($facility->district ?? ''))
-@section('meta_description', \Illuminate\Support\Str::limit(strip_tags((string) $facility->publicDescription()), 100).' '.facility_brand_framing($facility, current_brand())['meta_suffix'])
+@section('og_title', $seoBaslik)
+@section('meta_description', \Illuminate\Support\Str::limit($seoAciklama, 300))
 @section('og_image', facility_card_image($facility))
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => [
