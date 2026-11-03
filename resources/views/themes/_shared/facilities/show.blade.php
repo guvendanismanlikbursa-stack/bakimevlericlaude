@@ -5,12 +5,21 @@
   // Başlık ve açıklama, arayan ailenin aradığı şeyi (yorum, fiyat, iletişim,
   // puan, açık saatler) söyleyecek şekilde yeniden yazıldı. Yorum sayısı
   // yazılmaz (çekilen yorumlar toplamın sadece bir kısmı, yanıltıcı olur).
+  // Tamamı büyük harfle kayıtlı adlar ("ÖZEL DİLEK ANAOKULU") Google'da
+  // bağırıyormuş gibi görünüyor; yalnızca başlık/açıklamada Türkçe kurallara
+  // uygun düzgün yazıma çevrilir (veritabanındaki ad değişmez).
+  $seoAd = $facility->name;
+  if (preg_match('/\p{Lu}{3}/u', $seoAd) && $seoAd === mb_strtoupper(str_replace(['i', 'ı'], ['İ', 'I'], $seoAd), 'UTF-8')) {
+    $kucuk = mb_strtolower(str_replace(['I', 'İ'], ['ı', 'i'], $seoAd), 'UTF-8');
+    $seoAd = preg_replace_callback('/(?<!\p{L})\p{L}/u', fn ($m) => $m[0] === 'i' ? 'İ' : ($m[0] === 'ı' ? 'I' : mb_strtoupper($m[0], 'UTF-8')), $kucuk);
+    $seoAd = preg_replace_callback('/(?<=\s)(Ve|İle|De|Da)(?=\s)/u', fn ($m) => ['Ve' => 've', 'İle' => 'ile', 'De' => 'de', 'Da' => 'da'][$m[1]], $seoAd);
+  }
   $seoYer = trim(($facility->district ? $facility->district.'/' : '').($facility->city->name ?? ''), '/');
   $seoPuan = ($facility->rating && $facility->rating > 0 && ! $facility->hidesPatientReviews()) ? number_format((float) $facility->rating, 1, ',', '') : null;
-  $seoBaslik = $facility->name.' '.($seoPuan ? 'Yorumları, Fiyatı ve İletişim' : 'Fiyat ve İletişim Bilgileri').($seoYer ? ' – '.$seoYer : '');
+  $seoBaslik = $seoAd.' '.($seoPuan ? 'Yorumları, Fiyatı ve İletişim' : 'Fiyat ve İletişim Bilgileri').($seoYer ? ' – '.$seoYer : '');
   $seoSaatler = array_values(array_filter((array) ($facility->opening_hours ?? []), 'is_string'));
   $seoYirmiDort = count($seoSaatler) === 7 && collect($seoSaatler)->every(fn ($s) => (bool) preg_match('/24\s*saat/u', $s));
-  $seoAciklama = $facility->name.($seoYer ? ', '.$seoYer.'.' : '.')
+  $seoAciklama = $seoAd.($seoYer ? ', '.$seoYer.'.' : '.')
     .($seoPuan ? ' '.$seoPuan.'/5 puan.' : '')
     .($seoYirmiDort ? ' 7/24 açık.' : '')
     .' Fotoğraflar, hizmetler, ziyaret bilgisi ve aile yorumları; ücretsiz bilgi ve fiyat talebi gönderin.';
