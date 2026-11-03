@@ -1520,6 +1520,28 @@
       ? number_format($facility->price_min, 0).' - '.number_format($facility->price_max, 0).' TL'
       : number_format($facility->price_min ?: $facility->price_max, 0).' TL';
   }
+  // 3 Kasım 2026: kullanıcının talebi (maksimum görünürlük) - taranan çalışma
+  // saatleri (opening_hours: "07:30 - 18:00", "24 saat açık", "Kapalı")
+  // Google'ın anladığı openingHoursSpecification olarak eklenir. "Kapalı"
+  // günler yazılmaz; tanınmayan biçimler sessizce atlanır (uydurma yok).
+  $gunler = ['Pazartesi' => 'Monday', 'Salı' => 'Tuesday', 'Çarşamba' => 'Wednesday', 'Perşembe' => 'Thursday', 'Cuma' => 'Friday', 'Cumartesi' => 'Saturday', 'Pazar' => 'Sunday'];
+  $saatSemasi = [];
+  foreach ((array) ($facility->opening_hours ?? []) as $gun => $deger) {
+    if (! isset($gunler[$gun]) || ! is_string($deger)) {
+      continue;
+    }
+    if (preg_match('/24\s*saat/u', $deger)) {
+      $saatSemasi[] = ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => 'https://schema.org/'.$gunler[$gun], 'opens' => '00:00', 'closes' => '23:59'];
+      continue;
+    }
+    preg_match_all('/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/', $deger, $araliklar, PREG_SET_ORDER);
+    foreach ($araliklar as $a) {
+      $saatSemasi[] = ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => 'https://schema.org/'.$gunler[$gun], 'opens' => str_pad($a[1], 5, '0', STR_PAD_LEFT), 'closes' => str_pad($a[2], 5, '0', STR_PAD_LEFT)];
+    }
+  }
+  if ($saatSemasi) {
+    $facilitySchema['openingHoursSpecification'] = $saatSemasi;
+  }
   // 13 Ekim 2026: kullanicinin talebi - semalari zenginlestirme. Kurumun
   // GERCEKTEN yapilandirilmis yas grubu verisi (FacilityAgeGroup, zaten
   // $facility->ageGroups ile on-yuklu - bkz. FacilityController::show())

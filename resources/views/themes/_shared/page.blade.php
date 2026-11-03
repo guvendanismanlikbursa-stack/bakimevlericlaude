@@ -1,6 +1,25 @@
 @extends('layouts.brand')
 @section('title', $page->title)
 @section('meta_description', \Illuminate\Support\Str::limit(strip_tags($page->summary ?? $page->body), 155).' | '.current_brand()['name'])
+{{-- 3 Kasım 2026: kullanıcının talebi (maksimum görünürlük) - rehber
+     yazıları Google'a "makale" olarak bildirilir (başlık, güncelleme tarihi,
+     yayıncı). Yalnızca veritabanındaki gerçek rehber yazılarında. --}}
+@if(($page->type ?? null) === 'guide' && ! empty($page->updated_at))
+@section('breadcrumb_jsonld')
+<script type="application/ld+json">{!! json_encode(array_filter([
+  '@context' => 'https://schema.org',
+  '@type' => 'Article',
+  'headline' => \Illuminate\Support\Str::limit($page->title, 110, ''),
+  'description' => \Illuminate\Support\Str::limit(strip_tags($page->summary ?? ''), 200) ?: null,
+  'datePublished' => optional($page->created_at)->toIso8601String(),
+  'dateModified' => $page->updated_at->toIso8601String(),
+  'mainEntityOfPage' => url()->current(),
+  'inLanguage' => 'tr-TR',
+  'author' => ['@type' => 'Organization', 'name' => current_brand()['name'], 'url' => brand_route('home')],
+  'publisher' => ['@type' => 'Organization', 'name' => current_brand()['name'], 'url' => brand_route('home')],
+]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+@endsection
+@endif
 
 @section('content')
 @php
@@ -19,7 +38,7 @@
   <div class="max-w-4xl mx-auto px-4 py-10">
     <a href="{{ brand_route('home', $relatedSectionSlug ? ['bolum' => $relatedSectionSlug] : []) }}" class="text-sm font-semibold text-primary">← Ana sayfaya dön</a>
     <h1 class="text-3xl md:text-4xl font-black text-gray-950 mt-4 mb-3">{{ $page->title }}</h1>
-    <p class="text-gray-500">{{ $brand['name'] }} bilgi merkezi</p>
+    <p class="text-gray-500">{{ $brand['name'] }} bilgi merkezi @if(($page->type ?? null) === 'guide' && ! empty($page->updated_at))· Son güncelleme: {{ $page->updated_at->translatedFormat('j F Y') }}@endif</p>
   </div>
 </section>
 
@@ -65,6 +84,13 @@
   .page-content p{margin:.85rem 0;}
   .page-content ul{list-style:disc;padding-left:1.25rem;margin:1rem 0;}
   .page-content li{margin:.35rem 0;}
+  .page-content h3{font-size:1.05rem;font-weight:800;color:#111827;margin-top:1.25rem;margin-bottom:.4rem;}
+  .page-content ol{list-style:decimal;padding-left:1.25rem;margin:1rem 0;}
+  .page-content table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.95rem;}
+  .page-content th,.page-content td{border:1px solid #e5e7eb;padding:.5rem .65rem;text-align:left;vertical-align:top;}
+  .page-content th{background:#f9fafb;font-weight:800;color:#111827;}
+  .page-content .not{background:#fffbeb;border:1px solid #fde68a;border-radius:.75rem;padding:.75rem 1rem;margin:1rem 0;font-size:.92rem;}
+  .page-content a{color:var(--primary);font-weight:700;text-decoration:underline;}
   .page-content strong{color:#111827;}
 </style>
 @endsection
