@@ -41,20 +41,8 @@
   const checkbox = document.getElementById('consent-checkbox');
   const latInput = document.getElementById('signup_lat');
   const lngInput = document.getElementById('signup_lng');
-  let locationRequested = false;
 
-  function requestLocation() {
-    if (locationRequested || !navigator.geolocation) return;
-    locationRequested = true;
-    navigator.geolocation.getCurrentPosition(function(position){
-      latInput.value = position.coords.latitude;
-      lngInput.value = position.coords.longitude;
-    }, function(){}, { timeout: 8000 });
-  }
-
-  checkbox.addEventListener('change', function(){
-    if (checkbox.checked) requestLocation();
-  });
 })();
 </script>
+@include('themes._shared.partials.konum-gonderirken', ['lat' => 'signup_lat', 'lng' => 'signup_lng', 'not' => 'Size yakın seçenekleri gösterebilmemiz için konumunuz soruluyor (isteğe bağlı)…'])
 @endsection

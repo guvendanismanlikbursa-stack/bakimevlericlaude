@@ -352,13 +352,6 @@
     </div>
   </div>
 </div>
-<script>
-(function () {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(function (position) {
-    document.getElementById('js-claim-lat').value = position.coords.latitude;
-    document.getElementById('js-claim-lng').value = position.coords.longitude;
-  }, function () { /* izin verilmedi, sessizce yoksay */ });
-})();
-</script>
+
+@include('themes._shared.partials.konum-gonderirken', ['lat' => 'js-claim-lat', 'lng' => 'js-claim-lng', 'not' => 'Başvurunun gerçekten kurum yetkilisinden geldiğini doğrulamak için konumunuz soruluyor (isteğe bağlı)…'])
 @endsection

@@ -49,27 +49,8 @@
   const latInput = document.getElementById('signup_lat');
   const lngInput = document.getElementById('signup_lng');
   const note = document.getElementById('location-note');
-  let locationRequested = false;
 
-  function requestLocation() {
-    if (locationRequested || !navigator.geolocation) return;
-    locationRequested = true;
-    note.classList.remove('hidden');
-    navigator.geolocation.getCurrentPosition(function(position){
-      latInput.value = position.coords.latitude;
-      lngInput.value = position.coords.longitude;
-      note.textContent = 'Konum alındı, teşekkürler.';
-    }, function(){
-      // Izin verilmedi veya alinamadi; kayit yine de devam eder, konum alanlari bos kalir.
-      note.textContent = 'Konum paylaşılmadı, kaydınız yine de oluşturulacak.';
-    }, { timeout: 8000 });
-  }
-
-  // Aciik riza kutusu isaretlendigi an konum izni istenir (zorunlu alan
-  // tiklendiginde otomatik konum alma talebi).
-  checkbox.addEventListener('change', function(){
-    if (checkbox.checked) requestLocation();
-  });
 })();
 </script>
+@include('themes._shared.partials.konum-gonderirken', ['lat' => 'signup_lat', 'lng' => 'signup_lng', 'bilgiId' => 'location-note', 'not' => 'Size yakın seçenekleri gösterebilmemiz için konumunuz soruluyor (isteğe bağlı)…'])
 @endsection

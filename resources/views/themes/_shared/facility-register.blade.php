@@ -156,22 +156,7 @@
   const form = document.querySelector('form');
   const latInput = document.getElementById('signup_lat');
   const lngInput = document.getElementById('signup_lng');
-  let locationRequested = false;
 
-  function requestLocation() {
-    if (locationRequested || !navigator.geolocation) return;
-    locationRequested = true;
-    navigator.geolocation.getCurrentPosition(function(position){
-      latInput.value = position.coords.latitude;
-      lngInput.value = position.coords.longitude;
-    }, function(){
-      // Izin verilmedi veya alinamadi; basvuru yine de devam eder, konum alanlari bos kalir.
-    }, { timeout: 8000 });
-  }
-
-  if (form) {
-    form.addEventListener('focusin', requestLocation, { once: true });
-  }
 
   // Google donusunu yakala: query string'de applicant_google_name/email
   // varsa yetkili alanlarini doldur, notu goster, URL'i temizle.
@@ -191,4 +176,5 @@
   }
 })();
 </script>
+@include('themes._shared.partials.konum-gonderirken', ['lat' => 'signup_lat', 'lng' => 'signup_lng', 'not' => 'Başvurunuzu bölgenize göre değerlendirebilmemiz için konumunuz soruluyor (isteğe bağlı)…'])
 @endsection
