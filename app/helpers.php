@@ -474,6 +474,14 @@ if (! function_exists('notify_user')) {
         // gibi hala calisir, sadece kafa karistiran ikinci/eksik mail gitmez.
         $suppressEmailForTypes = ['claim_approved', 'registration_approved'];
 
+        // 4 Kasım 2026: kullanıcının talebi - her sabahki otomatik kontrolün (platform:check-user-flows /
+        // check-admin-flows) deneme kayıtları (adında "QATEST" geçen ya da @example.com hesaplı) panele
+        // yazılır (kontrol bunu doğrular) ama e-posta/anlık bildirim GÖNDERİLMEZ. Kontrol başarısız
+        // olursa record_platform_error() ayrıca Hatalar kaydı + e-posta üretir.
+        if (stripos($title.' '.$body, 'QATEST') !== false || str_ends_with(strtolower((string) ($notifiable->email ?? '')), '@example.com')) {
+            return;
+        }
+
         if (! in_array($type, $suppressEmailForTypes, true) && ! empty($notifiable->email) && notification_channel_enabled($notifiable, $type, 'email')) {
             try {
                 \Illuminate\Support\Facades\Mail::to($notifiable->email)->sendNow(
