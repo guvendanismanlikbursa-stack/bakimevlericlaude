@@ -44,7 +44,10 @@
               @endforeach
             </select>
           </form>
-          <a href="{{ route('admin.offer-requests.messages', $r) }}" class="text-xs font-semibold text-red-600 hover:underline whitespace-nowrap">Şikayet / Mesajları İncele</a>
+          {{-- 5 Kasım 2026: yalnızca üye aile ile en az bir mesaj yazışılmışsa göster --}}
+          @if($r->family_user_id && $r->messages_count > 0)
+          <a href="{{ route('admin.offer-requests.messages', $r) }}" class="text-xs font-semibold text-red-600 hover:underline whitespace-nowrap">Yazışmayı İncele</a>
+          @endif
         </div>
       </div>
       <div class="text-xs text-gray-600 flex flex-wrap gap-x-3 gap-y-1">

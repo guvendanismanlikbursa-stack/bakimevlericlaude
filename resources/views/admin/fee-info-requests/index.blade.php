@@ -30,8 +30,8 @@
             <span class="font-semibold {{ $rozet[1] }}">{{ $rozet[0] }}</span> ·
             {{ $r['tur'] === 'teklif' ? 'Teklif Talebi' : 'Kurum İlgi Talebi' }} ·
             {{ $r['created_at']->format('d.m.Y H:i') }}
-            @if($r['tur'] === 'teklif')
-              · <a href="{{ route('admin.offer-requests.messages', $r['id']) }}" class="font-semibold text-red-600 hover:underline">Şikayet / Mesajları İncele</a>
+            @if($r['tur'] === 'teklif' && ! empty($r['yazisma_var']))
+              · <a href="{{ route('admin.offer-requests.messages', $r['id']) }}" class="font-semibold text-red-600 hover:underline">Yazışmayı İncele</a>
             @endif
           </div>
           @if($r['message'])<div class="text-xs text-gray-600 mt-1" title="{{ $r['message'] }}">{{ $r['message'] }}</div>@endif

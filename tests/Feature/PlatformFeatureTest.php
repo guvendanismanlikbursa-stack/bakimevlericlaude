@@ -2227,13 +2227,29 @@ class PlatformFeatureTest extends TestCase
             ->get('/admin/teklif-talepleri')
             ->assertOk()
             ->assertDontSee('Kurumdan hala cevap alamadim.')
-            ->assertSee('Şikayet / Mesajları İncele');
+            ->assertSee('Yazışmayı İncele');
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->get("/admin/teklif-talepleri/{$request->id}/mesajlar")
             ->assertOk()
             ->assertSee('Kurumdan hala cevap alamadim.')
             ->assertSee('Merhaba, hemen donus yapiyoruz.');
+    }
+
+    public function test_admin_list_hides_message_review_link_for_guest_or_unmessaged_requests(): void
+    {
+        // 5 Kasım 2026: misafir (hesapsız) talepte ya da hiç yazışma yokken
+        // inceleme bağlantısı gösterilmez.
+        $guest = $this->offerData('bakimeviara', $this->childCategory, 'Misafir talep');
+        $guest['family_user_id'] = null;
+        OfferRequest::create($guest);
+        OfferRequest::create($this->offerData('bakimeviara', $this->childCategory, 'Mesajsiz uye talebi'));
+
+        $this->withSession(['admin_id' => $this->admin->id])
+            ->get('/admin/teklif-talepleri')
+            ->assertOk()
+            ->assertDontSee('Yazışmayı İncele')
+            ->assertDontSee('Şikayet / Mesajları İncele');
     }
 
     public function test_admin_can_suspend_and_reactivate_family_account_from_complaint_review(): void

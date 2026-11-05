@@ -22,7 +22,7 @@ class FeeInfoRequestController extends Controller
     {
         $scope = $request->query('scope', 'tumu');
 
-        $offerRequests = OfferRequest::with('facility.city')->whereNotNull('facility_id')->latest()->limit(500)->get()
+        $offerRequests = OfferRequest::with('facility.city')->withCount('messages')->whereNotNull('facility_id')->latest()->limit(500)->get()
             ->map(fn (OfferRequest $r) => $this->normalizeOffer($r));
 
         $interestLeads = FacilityInterestLead::with('facility.city')->latest()->limit(500)->get()
@@ -171,6 +171,8 @@ class FeeInfoRequestController extends Controller
             'message' => $r->message,
             'created_at' => $r->created_at,
             'sent_to_facility_at' => $r->sent_to_facility_at,
+            // 5 Kasım 2026: yazışma incelemesi yalnızca üye aile + en az bir mesaj varsa anlamlı.
+            'yazisma_var' => $r->family_user_id && ($r->messages_count ?? 0) > 0,
         ];
     }
 

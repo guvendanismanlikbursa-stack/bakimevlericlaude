@@ -20,7 +20,7 @@ class OfferRequestController extends Controller
         // mesajlasma burada gosterilmez. Sikayet durumunda admin, asagidaki
         // showMessages() ile TEK bir talebin mesaj gecmisini ayrica
         // inceleyip gerekirse aile/kurum hesabini askiya alabilir.
-        $query = OfferRequest::with(['facility', 'quotes.facility']);
+        $query = OfferRequest::with(['facility', 'quotes.facility'])->withCount('messages');
 
         if ($request->filled('brand')) {
             $query->where('brand', $request->brand);

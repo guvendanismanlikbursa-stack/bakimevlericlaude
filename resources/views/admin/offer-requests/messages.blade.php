@@ -1,10 +1,10 @@
 @extends('admin.layout')
-@section('title', 'Talep Mesajları · Şikayet İncelemesi')
+@section('title', 'Talep Yazışması · İnceleme')
 
 @section('content')
 <a href="{{ route('admin.offer-requests.index') }}" class="text-sm text-gray-500 hover:underline">&larr; Teklif Talepleri</a>
-<h1 class="text-2xl font-bold mt-2 mb-1">Şikayet / Mesaj İncelemesi</h1>
-<p class="text-sm text-gray-500 mb-6">Bu ekran sadece bir şikayet/anlaşmazlık incelemesi sırasında açılır. Normal teklif talepleri listesinde mesajlaşma gösterilmez.</p>
+<h1 class="text-2xl font-bold mt-2 mb-1">Yazışma İncelemesi</h1>
+<p class="text-sm text-gray-500 mb-6">Üye aile ile kurum arasındaki site içi yazışma. Bir anlaşmazlık bildirilirse buradan inceleyip gerekirse hesabı askıya alabilirsiniz.</p>
 
 @if(session('success'))
   <div class="mb-4 rounded-lg bg-green-50 text-green-700 text-sm px-4 py-3">{{ session('success') }}</div>
