@@ -5,12 +5,11 @@
 <h1 class="text-2xl font-bold mb-6">Sitelere Giriş Sayıları & Aile Konumları</h1>
 
 <h2 class="font-bold text-lg mb-3">Sitelere Giriş Sayıları</h2>
-{{-- 1 Kasım 2026: kullanıcının talebi - büyük rakam gerçek ziyaretçi; bot dahil sayı saldırıları görmek için altında kalır. --}}
-<p style="font-size:12.5px;color:#6b7280;margin:0 0 14px;line-height:1.55;">
-  <b style="color:#15803d;">Gerçek ziyaretçi</b> (büyük rakam): sayfayı gerçek bir tarayıcıda açan kişi, günde bir kez sayılır; sayfa metnini çekip giden botlar sayılmaz.
-  <b>Bot dahil</b> (gri): eski sayaç; her bot isteği ayrı giriş sayılır, olağan dışı artış bot saldırısı demektir.
-  <b style="color:#b91c1c;">Engellenen</b>: bot kalkanının siteye sokmadığı istekler.
-  @if($gercekBaslangic) Gerçek ziyaretçi sayımı {{ \Illuminate\Support\Carbon::parse($gercekBaslangic)->format('d.m.Y') }} tarihinde başladı; daha önceki günler için yalnızca bot dahil sayı var. @endif
+{{-- 5 Kasım 2026: kullanıcının talebi - sayfada "kişi" yalnızca tek sayaçtır (gerçek ziyaretçi); kartlar, grafik ve tablo aynı rakamı gösterir. --}}
+<p style="font-size:13px;color:#374151;margin:0 0 14px;line-height:1.55;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:9px 12px;">
+  <b style="color:#15803d;">Gerçek ziyaretçi</b> = siteye gerçek tarayıcıyla giren <b>kişi</b> sayısı (her kişi günde bir kez sayılır). Bu sayfadaki bütün kişi sayıları bu rakamdır.
+  <b>Bot dahil giriş</b> (gri) = botlarla birlikte giriş sayısı; ani artış bot saldırısı demektir.
+  @if($gercekBaslangic) (Gerçek ziyaretçi sayımı {{ \Illuminate\Support\Carbon::parse($gercekBaslangic)->format('d.m.Y') }} tarihinde başladı.) @endif
 </p>
 <div class="grid md:grid-cols-3 gap-4 mb-10">
   @foreach($visitStats as $slug => $stat)
@@ -27,7 +26,7 @@
           <div>
             <div class="text-gray-500 text-xs">{{ $ad }}</div>
             <div class="font-black text-lg" style="color:#15803d;">{{ number_format($stat['real'][$k] ?? 0, 0, ',', '.') }}</div>
-            <div style="font-size:11.5px;color:#9ca3af;font-weight:600;">bot dahil: {{ number_format($stat[$k], 0, ',', '.') }}</div>
+            <div style="font-size:11.5px;color:#9ca3af;font-weight:600;">bot dahil giriş: {{ number_format($stat[$k], 0, ',', '.') }}</div>
           </div>
         @endforeach
       </div>
@@ -41,7 +40,7 @@
   <h2 class="font-bold text-lg">🔎 Şüpheli Ağlar — Bugün</h2>
   <p style="font-size:12.5px;color:#6b7280;margin:6px 0 12px;line-height:1.55;">
     Saatte bir güncellenir{{ $gozcuSon ? ' (son: '.\Illuminate\Support\Carbon::parse($gozcuSon)->format('H:i').')' : '' }}. Firmalar, sitemizden en çok sayfa isteyen sunucu sahipleridir.
-    <b>Şüpheli</b>: tarayıcı taklidi yapan, <b>Bot</b>: kendini bot olarak tanıtan istekler. <b>Gerçek kişi</b> sütunu yüksekse engellemeyin; gerçek aileler o ağdan geliyordur.
+    <b>Şüpheli</b>: tarayıcı taklidi yapan, <b>Bot</b>: kendini bot olarak tanıtan istekler. <b>İnsan</b> sütunu yüksekse engellemeyin; gerçek aileler o ağdan geliyordur.
     Olağan dışı durumda size e-posta ve bildirim gelir.
   </p>
   @if($supheliFirmalar->isEmpty())
@@ -50,7 +49,7 @@
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;min-width:760px;">
         <thead><tr>
-          @foreach(['Firma (AS)', 'Şüpheli', 'Bot', 'Gerçek kişi', 'Farklı IP', 'Engellenen', ''] as $b)
+          @foreach(['Firma (AS)', 'Şüpheli', 'Bot', 'İnsan', 'Farklı IP', 'Engellenen', ''] as $b)
             <th style="padding:8px 10px;text-align:{{ $loop->first ? 'left' : 'right' }};font-size:12px;color:#6b7280;font-weight:800;border-bottom:1px solid #e5e7eb;white-space:nowrap;">{{ $b }}</th>
           @endforeach
         </tr></thead>
@@ -164,7 +163,7 @@
 {{-- 26 Ekim 2026: kullanıcının talebi - "bot mu insan mı" ayrıntılı tablo, dönem seçmeli. --}}
 @php
   $markaAd = ['bakimevleri' => 'bakimevleri.com', 'bakimevibul' => 'bakimevibul.com', 'bakimeviara' => 'bakimeviara.com'];
-  $turAd = \App\Support\TrafikAnaliz::TURLER;
+  $turAd = array_merge(\App\Support\TrafikAnaliz::TURLER, ['insan' => 'İnsan']);
   $turRenk = ['insan' => '#15803d', 'supheli' => '#b45309', 'googlebot' => '#2563eb', 'bing' => '#0891b2', 'yz' => '#7c3aed', 'diger_bot' => '#6b7280'];
   $th = 'padding:8px 10px;text-align:right;font-size:12px;color:#6b7280;font-weight:800;white-space:nowrap;border-bottom:1px solid #e5e7eb;';
   $td = 'padding:8px 10px;text-align:right;font-size:14px;white-space:nowrap;border-bottom:1px solid #f1f5f9;';
@@ -180,25 +179,28 @@
     </div>
   </div>
   <p style="font-size:12.5px;color:#6b7280;margin:8px 0 12px;line-height:1.55;">
-    Sunucunun kendi erişim kayıtlarından, yalnızca <b>sayfa</b> istekleri (resim, stil, yazı tipi hariç). <b>Gerçek kişi (muhtemel):</b> tarayıcı ile gelip sayfanın resim ve stil dosyalarını da yükleyen ziyaretçi.
-    <b>Şüpheli tarayıcı:</b> kendini tarayıcı gibi gösterip yalnızca sayfa metnini çeken ziyaretçi; büyük kısmı tarayıcı taklidi yapan botlardır. Botlar kendi adlarıyla ayrılır.
-    Parantez içi: günlük farklı IP sayılarının toplamı.
-    @if($trafikBaslangic) Kayıt başlangıcı: {{ \Illuminate\Support\Carbon::parse($trafikBaslangic)->format('d.m.Y') }} — bu tarihten önceki günler için ayrım yok. @endif
+    <b style="color:#15803d;">Gerçek ziyaretçi</b> sütunu kişi sayısıdır (üstteki kartlarla ve grafikle aynı rakam). Sağdaki sütunlar kişi değil, sunucuya gelen <b>sayfa açılışı</b> sayısıdır: bir kişi 5 sayfa gezerse 5 açılış olur.
+    <b>Şüpheli tarayıcı</b> = kendini tarayıcı gibi gösteren botlar.
+    @if($trafikBaslangic) Sayfa kayıtları {{ \Illuminate\Support\Carbon::parse($trafikBaslangic)->format('d.m.Y') }} tarihinde başladı. @endif
   </p>
   @if(! $trafik)
     <p style="font-size:14px;color:#9ca3af;">Bu dönem için henüz kayıt yok.</p>
   @else
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;min-width:820px;">
-        <thead><tr><th style="{{ $th }}text-align:left;">Site</th>@foreach($turAd as $k => $ad)<th style="{{ $th }}color:{{ $turRenk[$k] }};">{{ $ad }}</th>@endforeach<th style="{{ $th }}">Toplam</th><th style="{{ $th }}">Gerçek kişi payı</th></tr></thead>
+        <thead>
+          <tr><th style="{{ $th }}border-bottom:0;"></th><th style="{{ $th }}border-bottom:0;"></th><th colspan="{{ count($turAd) + 2 }}" style="{{ $th }}text-align:center;color:#374151;background:#f8fafc;">Sayfa açılışları (kişi değil)</th></tr>
+          <tr><th style="{{ $th }}text-align:left;">Site</th><th style="{{ $th }}color:#15803d;background:#f0fdf4;">Gerçek ziyaretçi (kişi)</th>@foreach($turAd as $k => $ad)<th style="{{ $th }}color:{{ $turRenk[$k] }};">{{ $ad }}</th>@endforeach<th style="{{ $th }}">Toplam</th><th style="{{ $th }}">İnsan payı</th></tr>
+        </thead>
         <tbody>
           @foreach($markaAd as $m => $ad)
             @php $satir = $trafik[$m] ?? []; $top = collect($satir)->sum('istek'); @endphp
             <tr>
               <td style="{{ $td }}text-align:left;font-weight:800;">{{ $ad }}</td>
+              <td style="{{ $td }}font-weight:900;color:#15803d;background:#f0fdf4;">{{ number_format($gercekDonem[$m] ?? 0, 0, ',', '.') }}</td>
               @foreach($turAd as $k => $x)
                 @php $d = $satir[$k] ?? ['istek' => 0, 'ip' => 0]; $toplamlar[$k]['istek'] = ($toplamlar[$k]['istek'] ?? 0) + $d['istek']; $toplamlar[$k]['ip'] = ($toplamlar[$k]['ip'] ?? 0) + $d['ip']; @endphp
-                <td style="{{ $td }}"><b>{{ number_format($d['istek'], 0, ',', '.') }}</b> <span style="color:#9ca3af;font-size:12px;">({{ number_format($d['ip'], 0, ',', '.') }})</span></td>
+                <td style="{{ $td }}">{{ number_format($d['istek'], 0, ',', '.') }}</td>
               @endforeach
               <td style="{{ $td }}font-weight:800;">{{ number_format($top, 0, ',', '.') }}</td>
               <td style="{{ $td }}font-weight:800;color:#15803d;">%{{ $top ? round(($satir['insan']['istek'] ?? 0) / $top * 100) : 0 }}</td>
@@ -207,6 +209,7 @@
           @php $genel = collect($toplamlar)->sum('istek'); @endphp
           <tr style="background:#f8fafc;">
             <td style="{{ $td }}text-align:left;font-weight:900;">Toplam</td>
+            <td style="{{ $td }}font-weight:900;color:#15803d;background:#f0fdf4;">{{ number_format(array_sum($gercekDonem), 0, ',', '.') }}</td>
             @foreach($turAd as $k => $x)<td style="{{ $td }}font-weight:900;">{{ number_format($toplamlar[$k]['istek'] ?? 0, 0, ',', '.') }} <span style="color:#9ca3af;font-size:12px;font-weight:600;">(%{{ $genel ? round(($toplamlar[$k]['istek'] ?? 0) / $genel * 100) : 0 }})</span></td>@endforeach
             <td style="{{ $td }}font-weight:900;">{{ number_format($genel, 0, ',', '.') }}</td>
             <td style="{{ $td }}font-weight:900;color:#15803d;">%{{ $genel ? round(($toplamlar['insan']['istek'] ?? 0) / $genel * 100) : 0 }}</td>
@@ -219,11 +222,11 @@
         <summary style="cursor:pointer;font-weight:800;font-size:14px;color:#111827;">Gün gün döküm (3 site toplamı)</summary>
         <div style="overflow-x:auto;margin-top:8px;">
           <table style="width:100%;border-collapse:collapse;min-width:720px;">
-            <thead><tr><th style="{{ $th }}text-align:left;">Gün</th>@foreach($turAd as $k => $ad)<th style="{{ $th }}color:{{ $turRenk[$k] }};">{{ $ad }}</th>@endforeach<th style="{{ $th }}">Toplam</th></tr></thead>
+            <thead><tr><th style="{{ $th }}text-align:left;">Gün</th><th style="{{ $th }}color:#15803d;">Gerçek ziyaretçi (kişi)</th>@foreach($turAd as $k => $ad)<th style="{{ $th }}color:{{ $turRenk[$k] }};">{{ $ad }}</th>@endforeach<th style="{{ $th }}">Toplam</th></tr></thead>
             <tbody>
               @foreach($trafikGunluk->sortKeysDesc() as $g => $rows)
                 @php $gTop = $rows->sum('istek'); $byTur = $rows->keyBy('tur'); @endphp
-                <tr><td style="{{ $td }}text-align:left;">{{ \Illuminate\Support\Carbon::parse($g)->format('d.m.Y') }}</td>@foreach($turAd as $k => $x)<td style="{{ $td }}">{{ number_format((int) ($byTur[$k]->istek ?? 0), 0, ',', '.') }}</td>@endforeach<td style="{{ $td }}font-weight:800;">{{ number_format($gTop, 0, ',', '.') }}</td></tr>
+                <tr><td style="{{ $td }}text-align:left;">{{ \Illuminate\Support\Carbon::parse($g)->format('d.m.Y') }}</td><td style="{{ $td }}font-weight:800;color:#15803d;">{{ number_format($gercekGunluk[$g] ?? 0, 0, ',', '.') }}</td>@foreach($turAd as $k => $x)<td style="{{ $td }}">{{ number_format((int) ($byTur[$k]->istek ?? 0), 0, ',', '.') }}</td>@endforeach<td style="{{ $td }}font-weight:800;">{{ number_format($gTop, 0, ',', '.') }}</td></tr>
               @endforeach
             </tbody>
           </table>
@@ -282,7 +285,7 @@
         data: {
           labels: [],
           datasets: [{
-            label: 'Bot dahil',
+            label: 'Bot dahil giriş',
             data: [],
             borderColor: '#0b5d8c',
             backgroundColor: gradient,

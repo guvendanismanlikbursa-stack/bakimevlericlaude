@@ -136,6 +136,11 @@ class SiteStatsController extends Controller
         foreach ($trafikSatir as $r) {
             $trafik[$r->marka][$r->tur] = ['istek' => (int) $r->istek, 'ip' => (int) $r->ip];
         }
+        // 5 Kasım 2026: tablodaki kişi sayısı, kartlar ve grafikle aynı sayaçtan (gerçek ziyaretçi) gelir.
+        $gercekDonem = SiteVisit::whereDate('visit_date', '>=', $donemBas)->whereDate('visit_date', '<=', $donemSon)
+            ->selectRaw('brand, sum(real_count) as toplam')->groupBy('brand')->pluck('toplam', 'brand')->map(fn ($v) => (int) $v)->all();
+        $gercekGunluk = SiteVisit::whereDate('visit_date', '>=', $donemBas)->whereDate('visit_date', '<=', $donemSon)->get(['visit_date', 'real_count'])
+            ->groupBy(fn ($r) => $r->visit_date->toDateString())->map(fn ($g) => (int) $g->sum('real_count'))->all();
         $trafikBaslangic = \Illuminate\Support\Facades\Schema::hasTable('trafik_gunluk') ? \Illuminate\Support\Facades\DB::table('trafik_gunluk')->min('tarih') : null;
         $trafikGunluk = \Illuminate\Support\Facades\Schema::hasTable('trafik_gunluk')
             ? \Illuminate\Support\Facades\DB::table('trafik_gunluk')->whereBetween('tarih', [$donemBas, $donemSon])
@@ -144,7 +149,7 @@ class SiteStatsController extends Controller
 
         return view('admin.site-stats.index', compact(
             'brands', 'visitStats', 'dailySeries', 'families', 'cityCounts', 'totalFamilies', 'withLocation', 'verifiedCount',
-            'donemler', 'donem', 'trafik', 'trafikBaslangic', 'trafikGunluk', 'donemBas', 'donemSon',
+            'donemler', 'donem', 'trafik', 'trafikBaslangic', 'trafikGunluk', 'donemBas', 'donemSon', 'gercekDonem', 'gercekGunluk',
             'gercekBaslangic', 'botEngel', 'botEngelGunluk', 'supheliFirmalar', 'engelliListe', 'gozcuSon'
         ));
     }

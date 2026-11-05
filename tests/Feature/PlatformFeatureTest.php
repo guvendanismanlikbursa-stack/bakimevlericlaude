@@ -8537,9 +8537,12 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(2, (int) $v('insan')->istek);
         \App\Support\TrafikAnaliz::$klasor = null;
 
+        // 5 Kasım 2026: tablodaki kişi sütunu, kartlardaki gerçek ziyaretçi sayacıyla aynı rakamı gösterir.
+        \App\Models\SiteVisit::create(['brand' => 'bakimevleri', 'visit_date' => now()->toDateString(), 'count' => 50, 'real_count' => 7]);
         $admin = ['admin_id' => $this->admin->id];
         $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => '1']))->assertOk()
-            ->assertSee('Ziyaretçi Türleri — Bot mu, İnsan mı?', false)->assertSee('Gerçek kişi (muhtemel)', false)
+            ->assertSee('color:#15803d;background:#f0fdf4;">7</td>', false)->assertDontSee('Gerçek kişi', false)
+            ->assertSee('Ziyaretçi Türleri — Bot mu, İnsan mı?', false)->assertSee('Gerçek ziyaretçi (kişi)', false)->assertSee('Sayfa açılışları (kişi değil)', false)
             ->assertSee('Son 6 ay', false)->assertSee('Son 1 yıl', false)->assertSee('%33', false);
         $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => 'dun']))->assertOk()->assertSee('Bu dönem için henüz kayıt yok.', false);
         $this->withSession($admin)->get(route('admin.site-stats.index', ['donem' => '365']))->assertOk();

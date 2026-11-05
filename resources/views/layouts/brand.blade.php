@@ -646,7 +646,11 @@ if (new URLSearchParams(window.location.search).has('page')) {
 <script>
 (function () {
   try {
-    var k = 'gz:{{ app()->bound('currentBrand') ? app('currentBrand')['slug'] : '' }}:' + new Date().toISOString().slice(0, 10);
+    // 5 Kasım 2026: gün Türkiye saatine göre (eskiden UTC idi; gece 00-03 arası gelen biri aynı gün iki kez sayılabiliyordu).
+    var gun = '';
+    try { gun = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date()); } catch (e) {}
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(gun)) gun = new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+    var k = 'gz:{{ app()->bound('currentBrand') ? app('currentBrand')['slug'] : '' }}:' + gun;
     if (localStorage.getItem(k)) return;
     localStorage.setItem(k, '1');
     var u = @json(brand_route('site-visit.beacon'));
