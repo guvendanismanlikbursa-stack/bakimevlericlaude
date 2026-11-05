@@ -1444,6 +1444,24 @@
   </div>
 </div>
 
+@php
+  $rehberYazilari = \App\Models\ContentPage::kapsamIcinYazilar($facility->category?->brand_scope, (int) $facility->id);
+@endphp
+@if($rehberYazilari->isNotEmpty())
+  {{-- 5 Kasım 2026: konuyla ilgili rehber yazıları (aileye yardımcı + yazılara iç bağlantı). --}}
+  <div class="max-w-6xl mx-auto px-4 pb-10">
+    <h2 class="font-black text-xl mt-4 mb-4">Karar Verirken Yardımcı Yazılar</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      @foreach($rehberYazilari as $yazi)
+        <a href="{{ $yazi['url'] }}" class="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2 hover:shadow-md transition group">
+          @if($yazi['kapak'])<img src="{{ $yazi['kapak'] }}" alt="" loading="lazy" width="96" height="54" style="width:96px;height:54px;object-fit:cover;border-radius:6px;flex-shrink:0;">@endif
+          <div class="text-sm font-black text-gray-950" style="line-height:1.35;">{{ $yazi['baslik'] }}</div>
+        </a>
+      @endforeach
+    </div>
+  </div>
+@endif
+
 @if($related->isNotEmpty())
   {{-- 12 Agustos 2026: kullanicinin talebi - "Benzer Kurumlar" tum kurum
        detaylari ve islemler BITTIKTEN SONRA, sayfanin gercek sonunda,

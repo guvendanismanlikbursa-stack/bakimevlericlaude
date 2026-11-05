@@ -19,6 +19,14 @@ class PageController extends Controller
             ->where('slug', $slug)
             ->first();
 
+        // 5 Kasım 2026: yayın tarihi gelmemiş rehber yazısı henüz yayında değildir.
+        abort_if($page && $page->type === 'guide' && ! $page->yayindaMi(), 404);
+        $ilgili = collect();
+        if ($page && $page->type === 'guide' && $page->category) {
+            $ilgili = ContentPage::guides()->yayinda()->where('brand', $brand['slug'])->where('category', $page->category)
+                ->where('id', '!=', $page->id)->orderByRaw('cover_path is null')->orderByRaw('abs(cast(id as signed) - ?)', [$page->id])->limit(4)->get();
+        }
+
         if (! $page) {
             $fallback = site_content_page($brand['slug'], $slug);
             abort_if(! $fallback, 404);
@@ -32,6 +40,6 @@ class PageController extends Controller
             ];
         }
 
-        return view("themes.{$brand['theme']}.page", compact('page'));
+        return view("themes.{$brand['theme']}.page", compact('page', 'ilgili'));
     }
 }

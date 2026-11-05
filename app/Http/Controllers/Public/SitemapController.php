@@ -185,7 +185,8 @@ class SitemapController extends Controller
             }
         }
 
-        ContentPage::where('brand', $brandSlug)->get(['slug', 'updated_at'])->each(function ($page) use ($urls, $prefix) {
+        // 5 Kasım 2026: yayın tarihi gelmemiş rehber yazıları haritada yok.
+        ContentPage::where('brand', $brandSlug)->yayinda()->get(['slug', 'updated_at'])->each(function ($page) use ($urls, $prefix) {
             $urls->push($this->url($prefix.'/sayfa/'.$page->slug, 'monthly', '0.6', $page->updated_at));
         });
 
