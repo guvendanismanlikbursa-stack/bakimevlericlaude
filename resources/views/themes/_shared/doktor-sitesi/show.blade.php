@@ -14,6 +14,10 @@
   $ilgi = $site->ilgiAlanlariListesi();
   $saatler = trim((string) $site->calisma_saatleri);
   $brans = $e->branch_label ?: $e->branch;
+  // 6 Kasım 2026: branşa ait temsili fotoğraflar.
+  $icerikTur = \App\Support\DoktorIcerik::tur($e->branch, $e->branch_label);
+  $bransGiris = \App\Support\DoktorIcerik::gorsel($icerikTur, 'giris');
+  $bransYan = \App\Support\DoktorIcerik::gorsel($icerikTur, 'yan');
   $telefon = $e->phone;
   $telLink = $telefon ? 'tel:'.preg_replace('/[^0-9+]/', '', $telefon) : null;
   $adres = trim(($e->address ?: '').($e->district && ! str_contains((string) $e->address, (string) $e->district) ? ', '.$e->district : '').($e->city ? ' / '.$e->city->name : ''), ' ,/');
@@ -67,7 +71,8 @@
   .menu nav a{text-decoration:none;color:var(--soluk)}
   .menu nav a:hover{color:var(--ana)}
   @media(min-width:900px){.menu nav{display:flex}}
-  .giris{background:linear-gradient(135deg,var(--koyu),var(--ana));color:#fff}
+  .giris{position:relative;background:linear-gradient(135deg,var(--koyu),var(--ana));background-size:cover;background-position:center;color:#fff}
+  .temsili-not{position:absolute;right:14px;bottom:12px;font-size:11px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.3);padding:3px 9px;border-radius:999px}
   .giris .kap{display:grid;gap:28px;align-items:center;padding-top:clamp(48px,9vw,96px);padding-bottom:clamp(48px,9vw,96px)}
   @media(min-width:820px){.giris .kap{grid-template-columns:minmax(0,1fr) 300px;gap:48px}}
   .giris h1{font-size:clamp(30px,5.5vw,52px);font-weight:900}
@@ -127,7 +132,8 @@
   </div>
 </header>
 
-<section class="giris">
+<section class="giris" style="background-image:linear-gradient(90deg,rgba(10,22,26,.88) 0%,rgba(10,22,26,.62) 55%,rgba(10,22,26,.35) 100%),url('{{ $bransGiris }}');">
+  <span class="temsili-not">Temsili görsel</span>
   <div class="kap">
     <div>
       @if($brans)<div class="rozet">{{ $brans }}@if($e->city) · {{ $e->city->name }}@endif</div>@endif
@@ -142,7 +148,7 @@
     @if($foto)
       <img src="{{ $foto }}" alt="{{ $adSoyad }}" class="portre">
     @else
-      <div class="portre-bos" aria-hidden="true">{{ $basHarf }}</div>
+      <img src="{{ $bransYan }}" alt="{{ $brans ?: 'Muayenehane' }} - temsili görsel" class="portre">
     @endif
   </div>
 </section>

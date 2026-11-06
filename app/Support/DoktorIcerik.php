@@ -147,4 +147,15 @@ class DoktorIcerik
             ['soru' => 'Acil bir durumda ne yapmalıyım?', 'cevap' => 'Acil durumlarda vakit kaybetmeden 112’yi arayın ya da en yakın acil servise başvurun.'],
         ];
     }
+
+    /**
+     * 6 Kasım 2026: branşa ait temsili gerçek fotoğraflar (public/images/doktor-brans).
+     * $yer: giris (sayfa başı arka planı), yan (doktor fotoğrafı yoksa kart), bant (bilgilendirme bölümü).
+     */
+    public static function gorsel(string $tur, string $yer): string
+    {
+        $tur = in_array($tur, ['dis', 'pediatri', 'ortopedi', 'cocuk-psikiyatri', 'ftr', 'noroloji', 'cocuk-noroloji', 'geriatri'], true) ? $tur : 'genel';
+
+        return asset("images/doktor-brans/{$tur}-{$yer}.jpg");
+    }
 }

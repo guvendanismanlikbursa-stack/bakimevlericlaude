@@ -24,6 +24,10 @@
   $sss = $site->listOf('faqs');
   // 25 Ekim 2026: branşa göre otomatik bilgilendirme içerikleri (bkz. App\Support\DoktorIcerik).
   $icerikTur = \App\Support\DoktorIcerik::tur($e->branch, $e->branch_label);
+  // 6 Kasım 2026: branşa ait temsili fotoğraflar (sayfa başı, yan kart, bilgilendirme bandı).
+  $bransGiris = \App\Support\DoktorIcerik::gorsel($icerikTur, 'giris');
+  $bransYan = \App\Support\DoktorIcerik::gorsel($icerikTur, 'yan');
+  $bransBant = \App\Support\DoktorIcerik::gorsel($icerikTur, 'bant');
   $durumlar = \App\Support\DoktorIcerik::durumlar($icerikTur);
   $hazirlik = \App\Support\DoktorIcerik::hazirlik($icerikTur);
   $surec = \App\Support\DoktorIcerik::surec((bool) $whatsapp);
@@ -146,6 +150,14 @@
   .cekmece nav a{font-family:var(--baslik);font-size:32px;text-decoration:none;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
   .cekmece .alt-btn{margin-top:auto;display:grid;gap:10px}
 
+  /* 6 Kasım 2026: branş fotoğrafları */
+  .temsili-not{position:absolute;right:16px;bottom:14px;z-index:3;font-size:11px;letter-spacing:.04em;color:rgba(255,255,255,.75);background:rgba(0,0,0,.28);padding:3px 9px;border-radius:999px}
+  .portre-kart img.temsili-yan{filter:saturate(1.05)}
+  .durum-bas{display:grid;gap:28px;align-items:center;margin-bottom:48px}
+  @media(min-width:960px){.durum-bas{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:56px}}
+  .brans-bant{position:relative;margin:0;border-radius:var(--yuvarlak,24px);overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.45)}
+  .brans-bant img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
+  .brans-bant figcaption{position:absolute;right:12px;bottom:10px;font-size:11px;color:#fff;background:rgba(0,0,0,.4);padding:3px 9px;border-radius:999px}
   /* Giriş */
   .giris{position:relative;min-height:min(100svh,940px);display:flex;align-items:flex-end;color:#fff;overflow:hidden;background:linear-gradient(135deg,var(--koyu),var(--ana))}
   .giris.ic-sayfa{min-height:clamp(340px,52vh,520px)}
@@ -391,7 +403,9 @@
   </div>
 </div>
 
-<section class="giris desensiz dr-giris">
+<section class="giris dr-giris">
+  <div class="giris-foto" style="background-image:url('{{ $bransGiris }}');" aria-hidden="true"></div>
+  <span class="temsili-not">Temsili görsel</span>
   @if(! empty($hareketli))
     <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="tibbi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:8%;top:18%;--b:54px;--o:.14;--s:17s;--g:0s;"><path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M11 14v2a5 5 0 0 0 10 0v-1"/><circle cx="21" cy="13" r="2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:44%;top:12%;--b:40px;--o:.12;--s:21s;--g:-5s;"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l2-3 3 6 2-3h6"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:88%;top:22%;--b:34px;--o:.16;--s:15s;--g:-3s;"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:70%;top:70%;--b:44px;--o:.1;--s:19s;--g:-8s;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:20%;top:76%;--b:28px;--o:.14;--s:13s;--g:-6s;"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:92%;top:62%;--b:30px;--o:.1;--s:18s;--g:-11s;"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l2-3 3 6 2-3h6"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="left:56%;top:44%;--b:36px;--o:.08;--s:23s;--g:-2s;"><path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M11 14v2a5 5 0 0 0 10 0v-1"/><circle cx="21" cy="13" r="2"/></svg></div>
@@ -412,7 +426,7 @@
       </div>
     </div>
     <div class="portre-kart gorun">
-      @if($foto)<img src="{{ $foto }}" alt="{{ $ad }}">@else<div class="bos" aria-hidden="true">{{ $harf }}</div>@endif
+      @if($foto)<img src="{{ $foto }}" alt="{{ $ad }}">@else<img src="{{ $bransYan }}" alt="{{ $brans ?: 'Muayenehane' }} - temsili görsel" class="temsili-yan">@endif
       <div class="unvan-rozet"><b>{{ $ad }}</b>@if($brans)<span>{{ $brans }}</span>@endif</div>
     </div>
   </div>
@@ -462,7 +476,10 @@
 {{-- 25 Ekim 2026: branşa göre bilgilendirme - başvuru durumları --}}
 <section class="bolum" id="durumlar">
   <div class="kap">
-    <div class="bolum-bas gorun"><div class="sol"><div class="etiket">Bilgilendirme</div><h2>Hangi durumlarda başvurabilirsiniz?</h2><p class="giris-metni" style="margin-top:14px;">{{ $brans ? $brans.' alanında' : 'Muayenehanede' }} sık karşılaşılan başvuru nedenlerinden bazıları.</p></div></div>
+    <div class="durum-bas">
+      <div class="bolum-bas gorun" style="margin-bottom:0;"><div class="sol"><div class="etiket">Bilgilendirme</div><h2>Hangi durumlarda başvurabilirsiniz?</h2><p class="giris-metni" style="margin-top:14px;">{{ $brans ? $brans.' alanında' : 'Muayenehanede' }} sık karşılaşılan başvuru nedenlerinden bazıları.</p></div></div>
+      <figure class="brans-bant gorun"><img src="{{ $bransBant }}" alt="{{ $brans ?: 'Muayenehane' }} - temsili görsel" loading="lazy"><figcaption>Temsili görsel</figcaption></figure>
+    </div>
     <div class="izgara uc">
       @foreach($durumlar as [$durumBaslik, $durumMetin])
         <div class="deger gorun"><span class="no">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span><h3>{{ $durumBaslik }}</h3><p>{{ $durumMetin }}</p></div>
