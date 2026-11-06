@@ -1,0 +1,562 @@
+[
+ {
+  "id": 6,
+  "cover_path": "images/rehber/bakimevibul/huzurevi-secerken-dikkat-edilmesi-gereken-15-konu.jpg",
+  "category": "huzurevi-ve-bakimevi"
+ },
+ {
+  "id": 7,
+  "cover_path": "images/rehber/bakimevibul/kres-secerken-sorulacak-sorular.jpg",
+  "category": null
+ },
+ {
+  "id": 8,
+  "cover_path": "images/rehber/bakimevibul/rehabilitasyon-merkezi-nasil-secilir.jpg",
+  "category": null
+ },
+ {
+  "id": 14,
+  "cover_path": "images/rehber/bakimeviara/huzurevi-secerken-dikkat-edilmesi-gereken-15-konu.jpg",
+  "category": null
+ },
+ {
+  "id": 15,
+  "cover_path": "images/rehber/bakimeviara/kres-secerken-sorulacak-sorular.jpg",
+  "category": null
+ },
+ {
+  "id": 16,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyon-merkezi-nasil-secilir.jpg",
+  "category": "merkez-secimi"
+ },
+ {
+  "id": 22,
+  "cover_path": "images/rehber/bakimevleri/huzurevi-secerken-dikkat-edilmesi-gereken-15-konu.jpg",
+  "category": null
+ },
+ {
+  "id": 23,
+  "cover_path": "images/rehber/bakimevleri/kres-secerken-sorulacak-sorular.jpg",
+  "category": "kres-ve-anaokulu-secimi"
+ },
+ {
+  "id": 24,
+  "cover_path": "images/rehber/bakimevleri/rehabilitasyon-merkezi-nasil-secilir.jpg",
+  "category": null
+ },
+ {
+  "id": 30,
+  "cover_path": "images/rehber/bakimevibul/cocuk-bursa-kres-anaokulu-rehberi.jpg",
+  "category": null
+ },
+ {
+  "id": 31,
+  "cover_path": "images/rehber/bakimevleri/yasli-bakim-bursa-bakimevi-huzurevi-rehberi.jpg",
+  "category": null
+ },
+ {
+  "id": 32,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyon-bursa-fizik-tedavi-rehberi.jpg",
+  "category": "merkez-secimi"
+ },
+ {
+  "id": 35,
+  "cover_path": "images/rehber/bakimevibul/cocuk-istanbul-kres-anaokulu-rehberi.jpg",
+  "category": null
+ },
+ {
+  "id": 45,
+  "cover_path": "images/rehber/bakimevleri/cocuk-doktoruna-ne-zaman-basvurulmali.jpg",
+  "category": "beslenme-ve-gunluk-bakim"
+ },
+ {
+  "id": 46,
+  "cover_path": "images/rehber/bakimevleri/cocuk-psikiyatristine-ne-zaman-basvurulmali.jpg",
+  "category": "uyum-ve-gelisim"
+ },
+ {
+  "id": 47,
+  "cover_path": "images/rehber/bakimevleri/cocuk-norolojisi-belirtileri-nelerdir.jpg",
+  "category": "uyum-ve-gelisim"
+ },
+ {
+  "id": 48,
+  "cover_path": "images/rehber/bakimevleri/cocuk-endokrinolojisi-buyume-gelisim.jpg",
+  "category": "uyum-ve-gelisim"
+ },
+ {
+  "id": 49,
+  "cover_path": "images/rehber/bakimevleri/cocuk-gastroenterolojisi-beslenme-sorunlari.jpg",
+  "category": "beslenme-ve-gunluk-bakim"
+ },
+ {
+  "id": 50,
+  "cover_path": "images/rehber/bakimevleri/geriatri-nedir-ne-zaman-basvurulmali.jpg",
+  "category": null
+ },
+ {
+  "id": 51,
+  "cover_path": "images/rehber/bakimevleri/yaslilikta-norolojik-belirtiler-demans.jpg",
+  "category": null
+ },
+ {
+  "id": 52,
+  "cover_path": "images/rehber/bakimevleri/yaslilikta-ruh-sagligi-psikiyatri.jpg",
+  "category": null
+ },
+ {
+  "id": 53,
+  "cover_path": "images/rehber/bakimevleri/yaslilarda-fizik-tedavi-rehabilitasyon.jpg",
+  "category": null
+ },
+ {
+  "id": 54,
+  "cover_path": "images/rehber/bakimevleri/yaslilikta-kalp-sagligi-kardiyoloji.jpg",
+  "category": null
+ },
+ {
+  "id": 55,
+  "cover_path": "images/rehber/bakimevleri/fizik-tedavi-rehabilitasyon-kimler-icin.jpg",
+  "category": null
+ },
+ {
+  "id": 56,
+  "cover_path": "images/rehber/bakimevleri/cocuklarda-rehabilitasyon-serebral-palsi.jpg",
+  "category": "uyum-ve-gelisim"
+ },
+ {
+  "id": 57,
+  "cover_path": "images/rehber/bakimevleri/inme-sonrasi-norolojik-rehabilitasyon.jpg",
+  "category": null
+ },
+ {
+  "id": 58,
+  "cover_path": "images/rehber/bakimevleri/ameliyat-sonrasi-ortopedik-rehabilitasyon.jpg",
+  "category": null
+ },
+ {
+  "id": 59,
+  "cover_path": "images/rehber/bakimevleri/ozel-egitimde-psikiyatrik-destek-sureci.jpg",
+  "category": "uyum-ve-gelisim"
+ },
+ {
+  "id": 60,
+  "cover_path": "images/rehber/bakimevibul/cocuk-doktoruna-ne-zaman-basvurulmali.jpg",
+  "category": null
+ },
+ {
+  "id": 61,
+  "cover_path": "images/rehber/bakimevibul/cocuk-psikiyatristine-ne-zaman-basvurulmali.jpg",
+  "category": null
+ },
+ {
+  "id": 62,
+  "cover_path": "images/rehber/bakimevibul/cocuk-norolojisi-belirtileri-nelerdir.jpg",
+  "category": null
+ },
+ {
+  "id": 63,
+  "cover_path": "images/rehber/bakimevibul/cocuk-endokrinolojisi-buyume-gelisim.jpg",
+  "category": null
+ },
+ {
+  "id": 64,
+  "cover_path": "images/rehber/bakimevibul/cocuk-gastroenterolojisi-beslenme-sorunlari.jpg",
+  "category": null
+ },
+ {
+  "id": 65,
+  "cover_path": "images/rehber/bakimevibul/geriatri-nedir-ne-zaman-basvurulmali.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 66,
+  "cover_path": "images/rehber/bakimevibul/yaslilikta-norolojik-belirtiler-demans.jpg",
+  "category": "alzheimer-ve-demans"
+ },
+ {
+  "id": 67,
+  "cover_path": "images/rehber/bakimevibul/yaslilikta-ruh-sagligi-psikiyatri.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 68,
+  "cover_path": "images/rehber/bakimevibul/yaslilarda-fizik-tedavi-rehabilitasyon.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 69,
+  "cover_path": "images/rehber/bakimevibul/yaslilikta-kalp-sagligi-kardiyoloji.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 70,
+  "cover_path": "images/rehber/bakimevibul/fizik-tedavi-rehabilitasyon-kimler-icin.jpg",
+  "category": null
+ },
+ {
+  "id": 71,
+  "cover_path": "images/rehber/bakimevibul/cocuklarda-rehabilitasyon-serebral-palsi.jpg",
+  "category": null
+ },
+ {
+  "id": 72,
+  "cover_path": "images/rehber/bakimevibul/inme-sonrasi-norolojik-rehabilitasyon.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 73,
+  "cover_path": "images/rehber/bakimevibul/ameliyat-sonrasi-ortopedik-rehabilitasyon.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 74,
+  "cover_path": "images/rehber/bakimevibul/ozel-egitimde-psikiyatrik-destek-sureci.jpg",
+  "category": null
+ },
+ {
+  "id": 75,
+  "cover_path": "images/rehber/bakimeviara/cocuk-doktoruna-ne-zaman-basvurulmali.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 76,
+  "cover_path": "images/rehber/bakimeviara/cocuk-psikiyatristine-ne-zaman-basvurulmali.jpg",
+  "category": "aile-destegi"
+ },
+ {
+  "id": 77,
+  "cover_path": "images/rehber/bakimeviara/cocuk-norolojisi-belirtileri-nelerdir.jpg",
+  "category": "ozel-egitim"
+ },
+ {
+  "id": 78,
+  "cover_path": "images/rehber/bakimeviara/cocuk-endokrinolojisi-buyume-gelisim.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 79,
+  "cover_path": "images/rehber/bakimeviara/cocuk-gastroenterolojisi-beslenme-sorunlari.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 80,
+  "cover_path": "images/rehber/bakimeviara/geriatri-nedir-ne-zaman-basvurulmali.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 81,
+  "cover_path": "images/rehber/bakimeviara/yaslilikta-norolojik-belirtiler-demans.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 82,
+  "cover_path": "images/rehber/bakimeviara/yaslilikta-ruh-sagligi-psikiyatri.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 83,
+  "cover_path": "images/rehber/bakimeviara/yaslilarda-fizik-tedavi-rehabilitasyon.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 84,
+  "cover_path": "images/rehber/bakimeviara/yaslilikta-kalp-sagligi-kardiyoloji.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 85,
+  "cover_path": "images/rehber/bakimeviara/fizik-tedavi-rehabilitasyon-kimler-icin.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 86,
+  "cover_path": "images/rehber/bakimeviara/cocuklarda-rehabilitasyon-serebral-palsi.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 87,
+  "cover_path": "images/rehber/bakimeviara/inme-sonrasi-norolojik-rehabilitasyon.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 88,
+  "cover_path": "images/rehber/bakimeviara/ameliyat-sonrasi-ortopedik-rehabilitasyon.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 89,
+  "cover_path": "images/rehber/bakimeviara/ozel-egitimde-psikiyatrik-destek-sureci.jpg",
+  "category": "aile-destegi"
+ },
+ {
+  "id": 90,
+  "cover_path": "images/rehber/bakimevleri/cocuk-kardiyolojisi-ne-zaman-basvurulmali.jpg",
+  "category": "beslenme-ve-gunluk-bakim"
+ },
+ {
+  "id": 91,
+  "cover_path": "images/rehber/bakimevleri/cocuk-alerji-immunoloji-belirtileri.jpg",
+  "category": "beslenme-ve-gunluk-bakim"
+ },
+ {
+  "id": 92,
+  "cover_path": "images/rehber/bakimevleri/cocuk-gogus-hastaliklari-solunum-sorunlari.jpg",
+  "category": "beslenme-ve-gunluk-bakim"
+ },
+ {
+  "id": 93,
+  "cover_path": "images/rehber/bakimevleri/cocuk-enfeksiyon-hastaliklari-tekrarlayan-enfeksiyon.jpg",
+  "category": "beslenme-ve-gunluk-bakim"
+ },
+ {
+  "id": 94,
+  "cover_path": "images/rehber/bakimevleri/cocuk-ortopedisi-duruş-bozuklugu.jpg",
+  "category": "uyum-ve-gelisim"
+ },
+ {
+  "id": 95,
+  "cover_path": "images/rehber/bakimevleri/yaslilikta-ic-hastaliklari-dahiliye-takibi.jpg",
+  "category": null
+ },
+ {
+  "id": 96,
+  "cover_path": "images/rehber/bakimevleri/yaslilikta-ortopedi-travmatoloji-kirik-riski.jpg",
+  "category": null
+ },
+ {
+  "id": 97,
+  "cover_path": "images/rehber/bakimevleri/yaslilikta-beyin-sinir-cerrahisi-ne-zaman.jpg",
+  "category": null
+ },
+ {
+  "id": 98,
+  "cover_path": "images/rehber/bakimevleri/yaslilikta-endokrinoloji-metabolizma-diyabet.jpg",
+  "category": null
+ },
+ {
+  "id": 99,
+  "cover_path": "images/rehber/bakimevleri/rehabilitasyonda-genel-cocuk-sagligi-degerlendirmesi.jpg",
+  "category": "beslenme-ve-gunluk-bakim"
+ },
+ {
+  "id": 100,
+  "cover_path": "images/rehber/bakimevleri/rehabilitasyonda-beyin-sinir-cerrahisi-sonrasi-surec.jpg",
+  "category": null
+ },
+ {
+  "id": 101,
+  "cover_path": "images/rehber/bakimevleri/yaslida-rehabilitasyon-geriatri-perspektifi.jpg",
+  "category": null
+ },
+ {
+  "id": 102,
+  "cover_path": "images/rehber/bakimevleri/romatolojik-hastaliklarda-rehabilitasyon.jpg",
+  "category": null
+ },
+ {
+  "id": 103,
+  "cover_path": "images/rehber/bakimevleri/algoloji-kronik-agri-yonetimi.jpg",
+  "category": null
+ },
+ {
+  "id": 104,
+  "cover_path": "images/rehber/bakimevibul/cocuk-kardiyolojisi-ne-zaman-basvurulmali.jpg",
+  "category": null
+ },
+ {
+  "id": 105,
+  "cover_path": "images/rehber/bakimevibul/cocuk-alerji-immunoloji-belirtileri.jpg",
+  "category": null
+ },
+ {
+  "id": 106,
+  "cover_path": "images/rehber/bakimevibul/cocuk-gogus-hastaliklari-solunum-sorunlari.jpg",
+  "category": null
+ },
+ {
+  "id": 107,
+  "cover_path": "images/rehber/bakimevibul/cocuk-enfeksiyon-hastaliklari-tekrarlayan-enfeksiyon.jpg",
+  "category": null
+ },
+ {
+  "id": 108,
+  "cover_path": "images/rehber/bakimevibul/cocuk-ortopedisi-duruş-bozuklugu.jpg",
+  "category": null
+ },
+ {
+  "id": 109,
+  "cover_path": "images/rehber/bakimevibul/yaslilikta-ic-hastaliklari-dahiliye-takibi.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 110,
+  "cover_path": "images/rehber/bakimevibul/yaslilikta-ortopedi-travmatoloji-kirik-riski.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 111,
+  "cover_path": "images/rehber/bakimevibul/yaslilikta-beyin-sinir-cerrahisi-ne-zaman.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 112,
+  "cover_path": "images/rehber/bakimevibul/yaslilikta-endokrinoloji-metabolizma-diyabet.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 113,
+  "cover_path": "images/rehber/bakimevibul/rehabilitasyonda-genel-cocuk-sagligi-degerlendirmesi.jpg",
+  "category": null
+ },
+ {
+  "id": 114,
+  "cover_path": "images/rehber/bakimevibul/rehabilitasyonda-beyin-sinir-cerrahisi-sonrasi-surec.jpg",
+  "category": null
+ },
+ {
+  "id": 115,
+  "cover_path": "images/rehber/bakimevibul/yaslida-rehabilitasyon-geriatri-perspektifi.jpg",
+  "category": "gunluk-yasam"
+ },
+ {
+  "id": 116,
+  "cover_path": "images/rehber/bakimevibul/romatolojik-hastaliklarda-rehabilitasyon.jpg",
+  "category": null
+ },
+ {
+  "id": 117,
+  "cover_path": "images/rehber/bakimevibul/algoloji-kronik-agri-yonetimi.jpg",
+  "category": null
+ },
+ {
+  "id": 118,
+  "cover_path": "images/rehber/bakimeviara/cocuk-kardiyolojisi-ne-zaman-basvurulmali.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 119,
+  "cover_path": "images/rehber/bakimeviara/cocuk-alerji-immunoloji-belirtileri.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 120,
+  "cover_path": "images/rehber/bakimeviara/cocuk-gogus-hastaliklari-solunum-sorunlari.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 121,
+  "cover_path": "images/rehber/bakimeviara/cocuk-enfeksiyon-hastaliklari-tekrarlayan-enfeksiyon.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 122,
+  "cover_path": "images/rehber/bakimeviara/cocuk-ortopedisi-duruş-bozuklugu.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 123,
+  "cover_path": "images/rehber/bakimeviara/yaslilikta-ic-hastaliklari-dahiliye-takibi.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 124,
+  "cover_path": "images/rehber/bakimeviara/yaslilikta-ortopedi-travmatoloji-kirik-riski.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 125,
+  "cover_path": "images/rehber/bakimeviara/yaslilikta-beyin-sinir-cerrahisi-ne-zaman.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 126,
+  "cover_path": "images/rehber/bakimeviara/yaslilikta-endokrinoloji-metabolizma-diyabet.jpg",
+  "category": "evde-gunluk-yasam"
+ },
+ {
+  "id": 127,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyonda-genel-cocuk-sagligi-degerlendirmesi.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 128,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyonda-beyin-sinir-cerrahisi-sonrasi-surec.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 129,
+  "cover_path": "images/rehber/bakimeviara/yaslida-rehabilitasyon-geriatri-perspektifi.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 130,
+  "cover_path": "images/rehber/bakimeviara/romatolojik-hastaliklarda-rehabilitasyon.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 131,
+  "cover_path": "images/rehber/bakimeviara/algoloji-kronik-agri-yonetimi.jpg",
+  "category": "rehabilitasyon-sureci"
+ },
+ {
+  "id": 140,
+  "cover_path": "images/rehber/bakimevibul/yasli-bakim-evde-bakim-maasi-2026.jpg",
+  "category": "haklar-ve-destekler"
+ },
+ {
+  "id": 141,
+  "cover_path": "images/rehber/bakimevibul/yasli-bakim-devlet-huzurevi-basvuru-sartlari.jpg",
+  "category": "huzurevi-ve-bakimevi"
+ },
+ {
+  "id": 142,
+  "cover_path": "images/rehber/bakimevibul/yasli-bakim-huzurevi-mi-evde-bakim-mi.jpg",
+  "category": "evde-bakim"
+ },
+ {
+  "id": 143,
+  "cover_path": "images/rehber/bakimevleri/cocuk-kres-ile-anaokulu-farki.jpg",
+  "category": "kres-ve-anaokulu-secimi"
+ },
+ {
+  "id": 144,
+  "cover_path": "images/rehber/bakimevleri/cocuk-kres-ucretleri-2026.jpg",
+  "category": "kayit-ve-ucretler"
+ },
+ {
+  "id": 145,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyon-ram-raporu-nasil-alinir.jpg",
+  "category": "raporlar-ve-haklar"
+ },
+ {
+  "id": 146,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyon-ozel-egitim-devlet-destegi-2026.jpg",
+  "category": "raporlar-ve-haklar"
+ },
+ {
+  "id": 147,
+  "cover_path": "images/rehber/bakimevibul/yasli-bakim-65-yas-ayligi-2026.jpg",
+  "category": "haklar-ve-destekler"
+ },
+ {
+  "id": 148,
+  "cover_path": "images/rehber/bakimevibul/yasli-bakim-alzheimer-hastasi-icin-bakimevi-secimi.jpg",
+  "category": "alzheimer-ve-demans"
+ },
+ {
+  "id": 149,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyon-engelli-raporu-ile-saglanan-haklar.jpg",
+  "category": "raporlar-ve-haklar"
+ },
+ {
+  "id": 150,
+  "cover_path": "images/rehber/bakimeviara/rehabilitasyon-cozger-raporu-nedir.jpg",
+  "category": "raporlar-ve-haklar"
+ },
+ {
+  "id": 151,
+  "cover_path": "images/rehber/bakimevleri/cocuk-anaokulu-ucretleri-2026.jpg",
+  "category": "kayit-ve-ucretler"
+ }
+]
