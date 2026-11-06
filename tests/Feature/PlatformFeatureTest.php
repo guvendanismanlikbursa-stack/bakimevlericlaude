@@ -5186,6 +5186,75 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(1, DB::table('facility_engagement_events')->where('facility_id', $facility->id)->where('type', 'phone_click')->count());
     }
 
+    // 6 Kasım 2026: kurum sayfası gerçek ilgi ölçümü (yıllık üyelik satışı için kanıt).
+    public function test_kurum_sayfasi_gercek_ilgi_olcumu_ve_satis_firsatlari(): void
+    {
+        $facility = $this->rehabFacility;
+        $url = '/site/bakimeviara/kurumlar/'.$facility->slug.'/olay';
+        $tarayici = ['HTTP_USER_AGENT' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0'];
+
+        // Sayfada ölçüm betiği ve olay adresi var.
+        // Ön kayıtlı kurumda ölçüm betiği var ama doğrudan Ara / WhatsApp düğmesi YOK (aile yine formu kullanır).
+        $facility->update(['phone' => '05321234567']);
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)->assertOk()->assertSee($facility->slug.'\/olay', false)
+            ->assertDontSee('href="tel:', false)->assertDontSee('data-kurum-iletisim="arama"', false)
+            ->assertDontSee('data-kurum-iletisim="whatsapp"', false)->assertDontSee('Hemen Ara');
+
+        // Ön kayıtlı kurumda "Ara" / "WhatsApp" düğmeleri form penceresi açar; metin "talebiniz kuruma iletilir".
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)->assertSee('data-ilgi-ac="arama"', false)
+            ->assertSee('data-ilgi-ac="whatsapp"', false)->assertSee('talebiniz kuruma iletilir', false)->assertSee('id="ilgi-pencere"', false);
+        $this->withServerVariables($tarayici + ['REMOTE_ADDR' => '10.0.0.7'])->postJson($url, ['tur' => 'arama-istek'])->assertNoContent();
+        $this->withServerVariables($tarayici + ['REMOTE_ADDR' => '10.0.0.7'])->postJson($url, ['tur' => 'whatsapp-istek'])->assertNoContent();
+        $this->assertSame(2, $facility->fresh()->gercekIlgi(30)['istek']);
+        $this->post('/site/bakimeviara/kurum-ilgi-talebi', ['facility_id' => $facility->id, 'full_name' => 'Ayşe Test', 'phone' => '05551112233', 'kaynak' => 'whatsapp'])->assertRedirect();
+        $this->assertDatabaseHas('facility_interest_leads', ['facility_id' => $facility->id, 'source' => 'whatsapp']);
+        // Talep gönderildikten sonra aynı oturumda düğmeler yerine "Talebiniz alındı" görünür.
+        $this->get('/site/bakimeviara/kurumlar/'.$facility->slug)->assertDontSee('data-ilgi-ac="arama"', false)->assertSee('Talebiniz alındı');
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurum-ilgi-talepleri')->assertOk()->assertSee('"WhatsApp" düğmesinden', false);
+        $this->flushSession();
+
+        // CSRF jetonu olmadan (sendBeacon) kabul edilir; aynı ziyaretçi 24 saatte bir kez sayılır.
+        $this->withServerVariables($tarayici)->postJson($url, ['tur' => 'ziyaret'])->assertNoContent();
+        $this->withServerVariables($tarayici)->postJson($url, ['tur' => 'ziyaret'])->assertNoContent();
+        $this->withServerVariables($tarayici)->postJson($url, ['tur' => 'arama'])->assertNoContent();
+        $this->withServerVariables($tarayici)->postJson($url, ['tur' => 'whatsapp'])->assertNoContent();
+        $this->withServerVariables($tarayici)->postJson($url, ['tur' => 'yol'])->assertNoContent();
+        $this->withServerVariables($tarayici)->postJson($url, ['tur' => 'uydurma'])->assertNoContent();
+        $say = fn ($tur) => DB::table('facility_engagement_events')->where('facility_id', $facility->id)->where('type', $tur)->count();
+        $this->assertSame(1, $say('js_view'));
+        $this->assertSame(1, $say('phone_click'));
+        $this->assertSame(1, $say('whatsapp_click'));
+        $this->assertSame(1, $say('directions_click'));
+
+        // Botlar ve admin oturumu sayılmaz.
+        $this->withServerVariables(['HTTP_USER_AGENT' => 'Googlebot/2.1', 'REMOTE_ADDR' => '10.0.0.9'])->postJson($url, ['tur' => 'ziyaret']);
+        $this->withSession(['admin_id' => $this->admin->id])->withServerVariables($tarayici + ['REMOTE_ADDR' => '10.0.0.8'])->postJson($url, ['tur' => 'ziyaret']);
+        $this->assertSame(1, $say('js_view'));
+
+        $ilgi = $facility->fresh()->gercekIlgi(30);
+        $this->assertSame(1, $ilgi['ziyaret']);
+        $this->assertSame(1, $ilgi['arama']);
+        $this->assertSame(1, $ilgi['whatsapp']);
+        $this->assertSame(1, $ilgi['yol']);
+
+        // Eski butonların gönderdiği 'phone' türü de artık kaydedilir (önceden 422 dönüyordu).
+        $facility->update(['phone' => '05321234567', 'is_subscribed' => true, 'subscription_plan' => 'monthly',
+            'subscription_started_at' => now(), 'subscription_paid_until' => now()->addMonth()->toDateString()]);
+        DB::table('facility_engagement_events')->where('facility_id', $facility->id)->where('type', 'phone_click')->delete();
+        $this->postJson('/site/bakimeviara/kurumlar/'.$facility->slug.'/iletisim-tiklama', ['type' => 'phone'])->assertOk();
+        $this->assertSame(1, $say('phone_click'));
+        $facility->update(['is_subscribed' => false, 'subscription_paid_until' => null]);
+
+        // Satış Fırsatları: gerçek ilgiye göre listelenir, rakamlar ve teklif butonu görünür.
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/satis-firsatlari')
+            ->assertOk()->assertSee($facility->name)->assertSee('arama tıklaması')->assertSee('kez aramak/yazmak istedi')->assertSee('Teklif + rakamlar');
+
+        // Teklif linki WhatsApp mesajı kurumun rakamlarını içerir.
+        $yon = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kurum-davetleri/'.$facility->id.'/teklif-linki?via=whatsapp');
+        $yon->assertRedirect();
+        $this->assertStringContainsString(rawurlencode('Son 30 günde sitemizde'), $yon->headers->get('Location'));
+    }
+
     public function test_claimed_and_unclaimed_facility_cards_both_use_the_same_full_layout(): void
     {
         // 30 Eylul 2026: kullanicinin talebi - "hepsi (ön kayıtlı dahil)

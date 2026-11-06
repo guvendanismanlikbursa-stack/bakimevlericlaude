@@ -20,7 +20,7 @@
   @forelse($leads as $lead)
     <div class="p-4 flex items-start justify-between gap-3 flex-wrap">
       <div class="min-w-0">
-        <div class="font-bold text-gray-900">{{ $lead->full_name }}</div>
+        <div class="font-bold text-gray-900">{{ $lead->full_name }}@if($lead->source === 'arama') <span style="font-size:11px;font-weight:800;background:#dbeafe;color:#1e40af;border-radius:999px;padding:2px 8px;">📞 "Ara" düğmesinden</span>@elseif($lead->source === 'whatsapp') <span style="font-size:11px;font-weight:800;background:#dcfce7;color:#166534;border-radius:999px;padding:2px 8px;">💬 "WhatsApp" düğmesinden</span>@endif</div>
         <div class="text-xs text-gray-500 mt-0.5">
           📞 {{ $lead->phone }}@if($lead->email) · {{ $lead->email }}@endif ·
           @if($lead->facility)

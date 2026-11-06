@@ -648,7 +648,7 @@
             width="100%" height="280" style="border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
           </iframe>
         </div>
-        <a href="https://www.google.com/maps/dir/?api=1&destination={{ $facility->lat }},{{ $facility->lng }}" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 text-sm font-black" style="color: {{ $colors['primary'] }};">📍 Yol tarifi al</a>
+        <a href="https://www.google.com/maps/dir/?api=1&destination={{ $facility->lat }},{{ $facility->lng }}" data-kurum-iletisim="yol" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 text-sm font-black" style="color: {{ $colors['primary'] }};">📍 Yol tarifi al</a>
       </div>
     @endif
 
@@ -1249,12 +1249,12 @@
              876. satirdaki AYNI stil) gorunuyor. Gercekten sahiplenilmis
              (kendi hatti olan) kurumlarda numara aynen gosterilmeye devam eder. --}}
         @if(($contactPhoneClaimed = facility_public_contact_phone($facility)) && ! $facility->is_broker_managed)
-          <a href="tel:{{ $contactPhoneClaimed }}" class="block mt-4 text-sm font-black text-center" style="color: {{ $colors['primary'] }};">📞 {{ $contactPhoneClaimed }}</a>
+          <a href="tel:{{ $contactPhoneClaimed }}" data-kurum-iletisim="arama" class="block mt-4 text-sm font-black text-center" style="color: {{ $colors['primary'] }};">📞 {{ $contactPhoneClaimed }}</a>
         @elseif($contactPhoneClaimed)
-          <a href="tel:{{ $contactPhoneClaimed }}" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mt-4" style="background: {{ $colors['primary'] }};">📞 Hemen Ara</a>
+          <a href="tel:{{ $contactPhoneClaimed }}" data-kurum-iletisim="arama" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mt-4" style="background: {{ $colors['primary'] }};">📞 Hemen Ara</a>
         @endif
         @if($claimedWhatsappUrl = facility_public_whatsapp_url($facility))
-          <a href="{{ $claimedWhatsappUrl }}" target="_blank" rel="noopener" class="block mt-2 text-sm font-black text-center" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
+          <a href="{{ $claimedWhatsappUrl }}" data-kurum-iletisim="whatsapp" target="_blank" rel="noopener" class="block mt-2 text-sm font-black text-center" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
         @endif
 
 
@@ -1336,11 +1336,62 @@
              form kalir. --}}
         @if($facility->isActiveSubscriber())
           @if($subscriberPhone = facility_public_contact_phone($facility))
-            <a href="tel:{{ $subscriberPhone }}" data-contact-track="phone" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mb-3" style="background: {{ $colors['primary'] }};">📞 Hemen Ara</a>
+            <a href="tel:{{ $subscriberPhone }}" data-contact-track="phone" data-kurum-iletisim="arama" class="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white text-center shadow-sm hover:shadow-md transition mb-3" style="background: {{ $colors['primary'] }};">📞 Hemen Ara</a>
           @endif
           @if($subscriberWhatsapp = facility_public_whatsapp_url($facility))
-            <a href="{{ $subscriberWhatsapp }}" target="_blank" rel="noopener" data-contact-track="whatsapp" class="block text-sm font-black text-center mb-4" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
+            <a href="{{ $subscriberWhatsapp }}" target="_blank" rel="noopener" data-contact-track="whatsapp" data-kurum-iletisim="whatsapp" class="block text-sm font-black text-center mb-4" style="color: #128C4A;">💬 WhatsApp'tan Yaz</a>
           @endif
+        @endif
+        {{-- 6 Kasım 2026: kullanıcının talebi - ön kayıtlı kurumda da "Ara" ve "WhatsApp" düğmeleri görünür;
+             numara kapalı olduğu için basınca kısa form penceresi açılır ("talebiniz kuruma iletilir").
+             Basışlar kurum için "aramak / yazmak istedi" olarak sayılır (bkz. EngagementController::olay). --}}
+        @if(! $facility->isActiveSubscriber() && ! in_array($facility->id, (array) session('ilgi_talebi_gonderildi', []), true))
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+            <button type="button" data-ilgi-ac="arama" data-kurum-iletisim="arama-istek" style="display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:12px 10px;font-weight:900;font-size:14px;color:#fff;background:{{ $colors['primary'] }};border:0;cursor:pointer;">📞 Ara</button>
+            <button type="button" data-ilgi-ac="whatsapp" data-kurum-iletisim="whatsapp-istek" style="display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:12px 10px;font-weight:900;font-size:14px;color:#fff;background:#1fa855;border:0;cursor:pointer;">💬 WhatsApp</button>
+          </div>
+          <dialog id="ilgi-pencere" aria-labelledby="ilgi-pencere-baslik" style="border:0;border-radius:18px;padding:0;width:min(92vw,420px);box-shadow:0 30px 80px rgba(0,0,0,.35);">
+            <form method="POST" action="{{ route('facility-interest-leads.store') }}" data-ilgi-formu style="padding:22px;display:grid;gap:10px;">
+              @csrf
+              <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true"><label for="hp-website-pencere">Web siteniz</label><input type="text" id="hp-website-pencere" name="website" tabindex="-1" autocomplete="off"></div>
+              <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+              <input type="hidden" name="kaynak" value="arama" data-ilgi-kaynak>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <h3 id="ilgi-pencere-baslik" style="margin:0;font-size:18px;font-weight:900;color:#111827;">{{ $facility->name }} ile iletişime geçin</h3>
+                <button type="button" data-ilgi-kapat aria-label="Kapat" style="border:0;background:#f3f4f6;border-radius:999px;width:32px;height:32px;font-size:16px;cursor:pointer;flex:none;">✕</button>
+              </div>
+              <p style="margin:0;font-size:14px;color:#4b5563;line-height:1.5;">Bu kurumun iletişim bilgileri henüz doğrulanmadı. Adınızı ve telefonunuzu bırakın, <b>talebiniz kuruma iletilir</b>.</p>
+              <label for="pencere-ad" class="sr-only">Adınız Soyadınız</label>
+              <input type="text" id="pencere-ad" name="full_name" placeholder="Adınız Soyadınız" required autocomplete="name" style="border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:15px;width:100%;">
+              <label for="pencere-tel" class="sr-only">Telefon</label>
+              <input type="tel" id="pencere-tel" name="phone" placeholder="Telefon" required autocomplete="tel" inputmode="tel" style="border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:15px;width:100%;">
+              <label for="pencere-not" class="sr-only">Notunuz (isteğe bağlı)</label>
+              <textarea id="pencere-not" name="message" rows="2" placeholder="Notunuz (isteğe bağlı)" style="border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;font-size:15px;width:100%;"></textarea>
+              <button style="border:0;border-radius:12px;padding:12px;font-weight:900;font-size:15px;color:#fff;background:{{ $colors['primary'] }};cursor:pointer;">📩 Talebimi İlet</button>
+            </form>
+          </dialog>
+          <script>
+          (function () {
+            var pencere = document.getElementById('ilgi-pencere');
+            if (!pencere) return;
+            var kaynak = pencere.querySelector('[data-ilgi-kaynak]');
+            document.querySelectorAll('[data-ilgi-ac]').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                kaynak.value = btn.getAttribute('data-ilgi-ac');
+                if (typeof pencere.showModal === 'function') {
+                  pencere.showModal();
+                  var ad = document.getElementById('pencere-ad');
+                  if (ad) ad.focus();
+                } else {
+                  var hedef = document.getElementById('ilgi-formu');
+                  if (hedef) hedef.scrollIntoView({ behavior: 'smooth' });
+                }
+              });
+            });
+            pencere.querySelector('[data-ilgi-kapat]').addEventListener('click', function () { pencere.close(); });
+            pencere.addEventListener('click', function (e) { if (e.target === pencere) pencere.close(); });
+          })();
+          </script>
         @endif
         {{-- 28 Ekim 2026: kullanıcının talebi - gönderen kişiye "talebiniz alındı" mutlaka gösterilir
              ve aynı oturumda bu kuruma tekrar gönderilemez (bkz. FacilityInterestLeadController). --}}
@@ -1356,6 +1407,7 @@
           @csrf
           @include('themes._shared.partials.honeypot')
           <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+          <input type="hidden" name="kaynak" value="form">
           <label for="lead-full-name" class="sr-only">Adınız Soyadınız</label>
           <input type="text" id="lead-full-name" name="full_name" value="{{ old('full_name') }}" placeholder="Adınız Soyadınız" required class="border rounded-lg px-3 py-2 w-full">
           <label for="lead-phone" class="sr-only">Telefon</label>
@@ -1376,24 +1428,13 @@
           form.addEventListener('submit', function (e) {
             if (form.dataset.gonderiliyor) { e.preventDefault(); return; }
             form.dataset.gonderiliyor = '1';
-            var btn = form.querySelector('button');
+            var btn = form.querySelector('button:not([type="button"])');
             if (btn) { btn.disabled = true; btn.style.opacity = '.7'; btn.textContent = '⏳ Gönderiliyor…'; }
           });
         });
         </script>
         @endif
-        <script>
-        document.querySelectorAll('[data-contact-track]').forEach(function (el) {
-          el.addEventListener('click', function () {
-            fetch(@json(brand_route('facilities.contact-click', ['slug' => $facility->slug])), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
-              body: JSON.stringify({ type: el.dataset.contactTrack }),
-              keepalive: true,
-            }).catch(function () {});
-          });
-        });
-        </script>
+        {{-- 6 Kasım 2026: tıklama ölçümü sayfa sonundaki tek betiğe taşındı (tüm kurumlar için). --}}
       @endif
 
       @if(! $facility->is_claimed && ! $facility->is_broker_managed)
@@ -1635,6 +1676,37 @@
 @endphp
 <script type="application/ld+json">
 {!! json_encode($facilitySchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
+</script>
+
+{{-- 6 Kasım 2026: kullanıcının talebi (yıllık üyelik satışı için kuruma kanıt) - gerçek ilgi ölçümü.
+     Sayfada gezinen ziyaretçi (kaydırma/dokunma ya da 8 sn görünür kalma) ve Ara / WhatsApp / Yol tarifi
+     tıklamaları kaydedilir; betiği çalıştırmayan botlar sayılmaz. Bkz. EngagementController::olay. --}}
+<script>
+(function () {
+  var url = @json(brand_route('facilities.olay', ['slug' => $facility->slug]));
+  var gonder = function (tur) {
+    try {
+      var govde = JSON.stringify({ tur: tur });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(url, new Blob([govde], { type: 'application/json' })))) {
+        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: govde, keepalive: true }).catch(function () {});
+      }
+    } catch (e) {}
+  };
+  var sayildi = false;
+  var ziyaret = function () {
+    if (sayildi || document.visibilityState !== 'visible') return;
+    sayildi = true;
+    gonder('ziyaret');
+  };
+  ['scroll', 'pointerdown', 'keydown', 'touchstart'].forEach(function (olay) { window.addEventListener(olay, ziyaret, { once: true, passive: true }); });
+  setTimeout(ziyaret, 8000);
+  // Yalnızca kurumun KENDİ iletişim bağlantıları sayılır (data-kurum-iletisim); sitenin genel
+  // yardım/WhatsApp düğmesi gibi platform bağlantıları kuruma yazılmaz.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('[data-kurum-iletisim]') : null;
+    if (a) gonder(a.getAttribute('data-kurum-iletisim'));
+  }, true);
+})();
 </script>
 
 @include('themes._shared.partials.engagement-script')

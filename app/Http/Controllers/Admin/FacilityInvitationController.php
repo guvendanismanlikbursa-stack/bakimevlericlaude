@@ -137,7 +137,18 @@ class FacilityInvitationController extends Controller
         $url = facility_offer_url($facility);
 
         if ($request->query('via') === 'whatsapp') {
-            $message = "Merhaba, {$facility->name} için hazırladığımız İyilik Hareketi üyelik teklifini aşağıdaki linkten inceleyebilirsiniz. "
+            // 6 Kasım 2026: mesajın başında kurumun son 30 günlük gerçek rakamları (varsa) yer alır.
+            $ilgi = $facility->gercekIlgi(30);
+            $ziyaret = max($ilgi['ziyaret'], $ilgi['sunucu']);
+            $iletisim = $ilgi['arama'] + $ilgi['whatsapp'] + $ilgi['yol'];
+            $parcalar = array_filter([
+                $ziyaret > 0 ? "kurumunuzun sayfası {$ziyaret} kez ziyaret edildi" : null,
+                $iletisim > 0 ? "{$iletisim} kişi aramak, yazmak ya da yol tarifi almak için tıkladı" : null,
+                $ilgi['istek'] > 0 ? "{$ilgi['istek']} kişi sizi aramak ya da WhatsApp'tan yazmak için düğmeye bastı (numaranız sitede kapalı olduğu için size doğrudan ulaşamadılar)" : null,
+                $ilgi['talep'] > 0 ? "{$ilgi['talep']} aile bilgi ve fiyat talebi gönderdi" : null,
+            ]);
+            $rakam = $parcalar ? 'Son 30 günde sitemizde '.implode(', ', $parcalar).'. ' : '';
+            $message = "Merhaba, {$facility->name}. {$rakam}Kurumunuz için hazırladığımız İyilik Hareketi üyelik teklifini aşağıdaki linkten inceleyebilirsiniz. "
                 ."Bu sayfa yalnızca kurumunuza özeldir; kurumunuzun son 30 günlük ilgi rakamlarını ve üyelik seçeneklerini içerir.\n\n{$url}";
             $waUrl = facility_whatsapp_url_with_message($facility, $message);
             abort_if(! $waUrl, 404, 'Bu kurumun cep telefonu yok. Linki kopyalayıp başka kanaldan gönderebilirsiniz: '.$url);

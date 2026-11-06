@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class FacilityInterestLead extends Model
 {
     protected $fillable = [
-        'facility_id', 'brand', 'full_name', 'phone', 'email', 'message', 'status', 'sent_to_facility_at',
+        'facility_id', 'brand', 'full_name', 'phone', 'email', 'message', 'source', 'status', 'sent_to_facility_at',
     ];
 
     protected $casts = [

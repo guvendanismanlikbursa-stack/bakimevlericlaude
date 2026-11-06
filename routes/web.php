@@ -140,6 +140,8 @@ $siteRoutes = function () {
     Route::post('/kurumlar/{slug}/kontenjan-sor', [VisitRequestController::class, 'storeAvailability'])->middleware('throttle:public-form')->name('visit-requests.availability');
     Route::post('/kurumlar/{slug}/favori-say', [EngagementController::class, 'toggleFavoriteCount'])->middleware('throttle:public-light')->name('facilities.favorite-count');
     Route::post('/kurumlar/{slug}/iletisim-tiklama', [EngagementController::class, 'trackContactClick'])->middleware('throttle:public-light')->name('facilities.contact-click');
+    // 6 Kasım 2026: kurum sayfası gerçek ilgi ölçümü (ziyaret / arama / WhatsApp / yol tarifi), bkz. EngagementController::olay.
+    Route::post('/kurumlar/{slug}/olay', [EngagementController::class, 'olay'])->middleware('throttle:public-light')->name('facilities.olay');
     Route::post('/kurumlar/{slug}/gorsel/{image}/goruntulendi', [\App\Http\Controllers\Public\FacilityImageController::class, 'markViewed'])->middleware('throttle:public-light')->name('facilities.image.viewed');
     Route::post('/teklif-talebi', [OfferRequestController::class, 'store'])->middleware('throttle:public-form')->name('offer-requests.store');
     // 20 Eylul 2026: kullanicinin talebi - on kayitli kurumlarda telefon/

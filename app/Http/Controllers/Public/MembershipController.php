@@ -61,15 +61,14 @@ class MembershipController extends Controller
             ])->saveQuietly();
         }
 
-        $since = now()->subDays(30);
-        $events = $facility->engagementEvents()->where('created_at', '>=', $since)
-            ->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type');
-
+        // 6 Kasım 2026: rakamlar Facility::gercekIlgi()'den; tarayıcı doğrulamalı ziyaret sayımı
+        // 14 günlük veri biriktirdikten sonra ana rakam olur, o zamana kadar sunucu ölçümü kullanılır.
+        $ilgi = $facility->gercekIlgi(30);
+        $dogrulamaHazir = now()->gte(\Illuminate\Support\Carbon::parse(Facility::GERCEK_ILGI_BASLANGIC)->addDays(14));
         $stats = [
-            'real_views' => (int) ($events['real_view'] ?? 0),
-            'contact_clicks' => (int) ($events['phone_click'] ?? 0) + (int) ($events['whatsapp_click'] ?? 0),
-            'price_requests' => \App\Models\FacilityInterestLead::where('facility_id', $facility->id)->where('created_at', '>=', $since)->count()
-                + $facility->offerRequests()->where('created_at', '>=', $since)->count(),
+            'real_views' => $dogrulamaHazir ? $ilgi['ziyaret'] : max($ilgi['ziyaret'], $ilgi['sunucu']),
+            'contact_clicks' => $ilgi['arama'] + $ilgi['whatsapp'] + $ilgi['yol'],
+            'price_requests' => $ilgi['talep'],
         ];
 
         $packages = SubscriptionPackage::active()->membership()->orderBy('sort_order')->orderBy('price')->get()

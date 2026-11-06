@@ -52,25 +52,52 @@ class SalesOpportunitiesController extends Controller
             default => null,
         };
         $query = Facility::query()
-            ->whereNull('deleted_at')
-            ->where('is_claimed', false)
-            ->where('is_broker_managed', false)
+            ->whereNull('facilities.deleted_at')
+            ->where('facilities.is_claimed', false)
+            ->where('facilities.is_broker_managed', false)
             ->where(function ($q) {
-                $q->where('is_subscribed', false)->orWhere('subscription_paid_until', '<', now()->startOfDay());
+                $q->where('facilities.is_subscribed', false)->orWhere('facilities.subscription_paid_until', '<', now()->startOfDay());
             })
-            ->where('views_count', '>', 0)
-            ->where('name', 'not like', 'QATEST%')
+            ->where('facilities.name', 'not like', 'QATEST%')
             ->with(['city', 'category'])
-            ->selectRaw('facilities.*, '.($periodColumn ? "GREATEST(views_count - {$periodColumn}, 0)" : 'views_count').' as period_views');
+            // 6 Kasım 2026: kullanıcının talebi (yıllık üyelik satışı, plan A+D) - telefonda söylenecek
+            // rakamlar artık son 30 günün GERÇEK ilgisinden gelir: tarayıcı doğrulamalı ziyaret (js),
+            // sunucu tarafı tekil ziyaret (rv), Ara / WhatsApp / Yol tarifi tıklamaları ve talepler.
+            ->leftJoinSub(
+                DB::table('facility_engagement_events')
+                    ->where('created_at', '>=', now()->subDays(30))
+                    ->whereIn('type', ['js_view', 'real_view', 'phone_click', 'whatsapp_click', 'directions_click', 'phone_intent', 'whatsapp_intent'])
+                    ->selectRaw("facility_id, sum(type = 'js_view') as ilgi_js, sum(type = 'real_view') as ilgi_rv, sum(type = 'phone_click') as ilgi_ara, sum(type = 'whatsapp_click') as ilgi_wa, sum(type = 'directions_click') as ilgi_yol, sum(type in ('phone_intent', 'whatsapp_intent')) as ilgi_istek")
+                    ->groupBy('facility_id'),
+                'ilgi', 'ilgi.facility_id', '=', 'facilities.id'
+            )
+            ->leftJoinSub(
+                DB::table('facility_interest_leads')->where('created_at', '>=', now()->subDays(30))
+                    ->selectRaw('facility_id, count(*) as ilgi_talep')->groupBy('facility_id'),
+                'talep', 'talep.facility_id', '=', 'facilities.id'
+            )
+            ->where(fn ($q) => $q->where('ilgi.ilgi_rv', '>', 0)->orWhere('ilgi.ilgi_js', '>', 0)->orWhere('ilgi.ilgi_istek', '>', 0)->orWhere('talep.ilgi_talep', '>', 0))
+            ->selectRaw('facilities.*, ilgi.ilgi_js, ilgi.ilgi_rv, ilgi.ilgi_ara, ilgi.ilgi_wa, ilgi.ilgi_yol, ilgi.ilgi_istek, talep.ilgi_talep, '.($periodColumn ? "CASE WHEN views_count > {$periodColumn} THEN views_count - {$periodColumn} ELSE 0 END" : 'views_count').' as period_views');
 
         if ($request->filled('city')) {
             $query->whereHas('city', fn ($q) => $q->where('slug', $request->city));
         }
         if ($request->filled('q')) {
-            $query->whereTrLike('name', $request->string('q'));
+            $query->whereTrLike('facilities.name', $request->string('q'));
+        }
+        if ($request->filled('kategori')) {
+            $query->whereHas('category', fn ($q) => $q->where('slug', $request->kategori));
         }
 
-        $facilities = $query->orderByDesc('period_views')->paginate(50)->withQueryString();
+        // Varsayılan: gerçek ilgi (önce talep ve iletişim tıklamaları, sonra ziyaret). "Görüntülenme" eski bot dahil sayaç.
+        if ($request->query('sirala') === 'goruntulenme') {
+            $query->orderByDesc('period_views');
+        } else {
+            $query->orderByRaw('coalesce(talep.ilgi_talep, 0) * 10 + coalesce(ilgi.ilgi_istek, 0) * 6 + coalesce(ilgi.ilgi_ara, 0) * 5 + coalesce(ilgi.ilgi_wa, 0) * 5 + coalesce(ilgi.ilgi_yol, 0) * 3 desc')
+                ->orderByRaw('coalesce(ilgi.ilgi_js, 0) desc')
+                ->orderByRaw('coalesce(ilgi.ilgi_rv, 0) desc');
+        }
+        $facilities = $query->paginate(50)->withQueryString();
 
         $facilities->getCollection()->transform(function ($f) use ($memberCounts) {
             $key = "{$f->city_id}|{$f->district}|{$f->facility_category_id}";
@@ -80,7 +107,8 @@ class SalesOpportunitiesController extends Controller
         });
 
         $cities = \App\Models\City::orderBy('name')->get();
+        $kategoriler = \App\Models\FacilityCategory::orderBy('name')->get(['slug', 'name']);
 
-        return view('admin.sales-opportunities.index', compact('facilities', 'cities', 'period'));
+        return view('admin.sales-opportunities.index', compact('facilities', 'cities', 'period', 'kategoriler'));
     }
 }

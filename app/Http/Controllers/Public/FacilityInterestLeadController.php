@@ -22,6 +22,8 @@ class FacilityInterestLeadController extends Controller
             'phone' => 'required|string|max:30',
             'email' => 'nullable|email|max:150',
             'message' => 'nullable|string|max:1000',
+            // 6 Kasım 2026: talebin geldiği düğme (form | arama | whatsapp).
+            'kaynak' => 'nullable|in:form,arama,whatsapp',
         ]);
 
         $brand = current_brand();
@@ -51,6 +53,7 @@ class FacilityInterestLeadController extends Controller
             'phone' => $validated['phone'],
             'email' => $validated['email'] ?? null,
             'message' => $validated['message'] ?? null,
+            'source' => $validated['kaynak'] ?? 'form',
         ]);
 
         // 30 Eylul 2026: kullanicinin bildirdigi gercek hata - bu talepler
@@ -62,7 +65,7 @@ class FacilityInterestLeadController extends Controller
         // gönderim bitene kadar sayfa bekliyordu ve veli "olmadı" sanıp tekrar basıyordu.
         \Illuminate\Support\defer(fn () => \App\Models\Admin::all()->each(fn ($admin) => notify_user(
             $admin, 'facility_interest_lead', 'Yeni kurum ilgi talebi',
-            "\"{$facility->name}\" (ön kayıtlı kurum) için {$lead->full_name} bilgi/fiyat talebi gönderdi.",
+            "\"{$facility->name}\" (ön kayıtlı kurum) için {$lead->full_name} ".match ($lead->source) { 'arama' => '\"Ara\" düğmesinden', 'whatsapp' => '\"WhatsApp\" düğmesinden', default => '' }." bilgi/fiyat talebi gönderdi.",
             ['facility_id' => $facility->id, 'lead_id' => $lead->id]
         )));
         $request->session()->put('ilgi_talebi_gonderildi', array_values(array_unique([...$gonderilen, $facility->id])));

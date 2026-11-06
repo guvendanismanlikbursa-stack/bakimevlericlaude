@@ -77,6 +77,9 @@ class EngagementController extends Controller
         // FacilityImageController::markViewed() de $request->route(...) ile
         // okuyor - ayni, kanitlanmis calisan desen burada da kullanildi.
         $slug = $request->route('slug');
+        // 6 Kasım 2026: sayfadaki betik 'phone'/'whatsapp' gönderiyordu, burada yalnızca
+        // phone_click/whatsapp_click kabul ediliyordu - hiçbir tıklama kaydedilmemişti. İkisi de kabul edilir.
+        $request->merge(['type' => ['phone' => 'phone_click', 'whatsapp' => 'whatsapp_click'][$request->input('type')] ?? $request->input('type')]);
         $data = $request->validate(['type' => 'required|in:phone_click,whatsapp_click']);
 
         $brand = current_brand();
@@ -98,6 +101,47 @@ class EngagementController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * 6 Kasım 2026: kullanıcının talebi (yıllık üyelik satışı için kuruma kanıt) -
+     * kurum sayfasındaki betik çağırır: sayfada gerçekten gezinen ziyaretçi
+     * (js_view) ve Ara / WhatsApp / Yol tarifi tıklamaları. Betiği çalıştırmayan
+     * botlar sayılmaz; admin ile kurumun kendi oturumu sayılmaz; aynı ziyaretçi
+     * (tuzlanmış IP özeti) aynı kurum ve aynı tür için 24 saatte bir kez sayılır.
+     */
+    public function olay(Request $request)
+    {
+        // arama-istek / whatsapp-istek: ön kayıtlı kurumda düğmeye basıldı (numara kapalı, form penceresi açıldı).
+        $turler = ['ziyaret' => 'js_view', 'arama' => 'phone_click', 'whatsapp' => 'whatsapp_click', 'yol' => 'directions_click',
+            'arama-istek' => 'phone_intent', 'whatsapp-istek' => 'whatsapp_intent'];
+        $tur = $turler[(string) $request->input('tur')] ?? null;
+        if (! $tur || is_bot_user_agent($request->userAgent()) || session('admin_id')) {
+            return response()->noContent();
+        }
+
+        $brand = current_brand();
+        $facility = Facility::published()->forBrand($brand['category_scope'])->where('slug', $request->route('slug'))->first();
+        if (! $facility) {
+            return response()->noContent();
+        }
+        $kurumKullanicisi = session('facility_user_id');
+        if ($kurumKullanicisi && (int) \App\Models\FacilityUser::whereKey($kurumKullanicisi)->value('facility_id') === (int) $facility->id) {
+            return response()->noContent();
+        }
+
+        $ipHash = hash('sha256', $request->ip().config('app.key'));
+        try {
+            $varMi = $facility->engagementEvents()->where('type', $tur)->where('ip_hash', $ipHash)
+                ->where('created_at', '>=', now()->subDay())->exists();
+            if (! $varMi) {
+                $facility->engagementEvents()->create(['type' => $tur, 'ip_hash' => $ipHash]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Kurum sayfası olayı kaydedilemedi: '.$e->getMessage(), ['facility_id' => $facility->id]);
+        }
+
+        return response()->noContent();
     }
 
     public function toggleFavoriteCount(Request $request)

@@ -43,7 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // script'i bunu "basarili" saniyordu ama gercekte hicbir komut
         // calismiyordu.
         // 1 Kasım 2026: /ziyaret yalnızca gerçek ziyaretçi sayacını artırır (önbellekli sayfada eski jeton 419 vermesin).
-        $middleware->validateCsrfTokens(except: ['_ops/*', '_internal/*', 'ziyaret', 'site/*/ziyaret']);
+        $middleware->validateCsrfTokens(except: ['_ops/*', '_internal/*', 'ziyaret', 'site/*/ziyaret', 'kurumlar/*/olay', 'site/*/kurumlar/*/olay']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // config('sentry.dsn') bos ise SDK zaten no-op kalir (bkz.

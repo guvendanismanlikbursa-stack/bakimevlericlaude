@@ -928,6 +928,38 @@ class Facility extends Model
     // "size gercekten talep geliyor" kanitini son 30 gune gore gosterme.
     // Gunluk pencere (24 saat) dusuk trafikli kurumlarda cogunlukla 0
     // gosterip mesaji zayiflatirdi; 30 gun daha istikrarli.
+    /**
+     * 6 Kasım 2026: kuruma gösterilecek gerçek ilgi (yıllık üyelik satışı için kanıt).
+     * ziyaret = sayfada betiği çalışan (gerçek tarayıcı) tekil ziyaretçi; ölçüm
+     * 6 Kasım 2026'da başladı. 'sunucu' = eski sunucu tarafı tekil ölçüm (tarayıcı
+     * taklidi yapan kazıyıcıları da sayabilir), geçiş döneminde yedek olarak.
+     *
+     * @return array{ziyaret:int, sunucu:int, arama:int, whatsapp:int, yol:int, istek:int, talep:int}
+     */
+    public function gercekIlgi(int $gun = 30): array
+    {
+        $since = now()->subDays($gun);
+        $c = $this->engagementEvents()->where('created_at', '>=', $since)
+            ->whereIn('type', ['js_view', 'real_view', 'phone_click', 'whatsapp_click', 'directions_click', 'phone_intent', 'whatsapp_intent'])
+            ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type');
+        $talep = \App\Models\FacilityInterestLead::where('facility_id', $this->id)->where('created_at', '>=', $since)->count()
+            + $this->offerRequests()->where('created_at', '>=', $since)->count();
+
+        return [
+            'ziyaret' => (int) ($c['js_view'] ?? 0),
+            'sunucu' => (int) ($c['real_view'] ?? 0),
+            'arama' => (int) ($c['phone_click'] ?? 0),
+            'whatsapp' => (int) ($c['whatsapp_click'] ?? 0),
+            'yol' => (int) ($c['directions_click'] ?? 0),
+            // ön kayıtlı kurumda Ara / WhatsApp düğmesine basan (numara kapalı olduğu için form açıldı)
+            'istek' => (int) ($c['phone_intent'] ?? 0) + (int) ($c['whatsapp_intent'] ?? 0),
+            'talep' => $talep,
+        ];
+    }
+
+    /** Tarayıcı doğrulamalı ziyaret ölçümünün başladığı gün (bundan ~14 gün sonra yeterli veri olur). */
+    public const GERCEK_ILGI_BASLANGIC = '2026-11-06';
+
     public function engagementStats30d(): array
     {
         $counts = $this->engagementEvents()
