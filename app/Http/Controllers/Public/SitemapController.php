@@ -111,6 +111,11 @@ class SitemapController extends Controller
                 $urls->push($this->url($prefix.'/fiyat-rehberi/'.$section['slug'].'/'.$city->slug, 'weekly', '0.6', $cityLastmod));
 
                 foreach ($districtCombos[$section['slug']][$city->slug] ?? [] as $district) {
+                    // 9 Kasım 2026: kullanıcının kararı (SEO denetimi) - kurumu olmayan ilçe sayfaları
+                    // haritaya girmez; Google boş sayfa çokluğunu "zayıf içerik" sayıyordu.
+                    if (! $district['has_facilities']) {
+                        continue;
+                    }
                     $urls->push($this->url(
                         $prefix.'/rehber/'.$section['slug'].'/'.$city->slug.'/'.$district['slug'],
                         $district['has_facilities'] ? 'weekly' : 'monthly',
@@ -285,13 +290,15 @@ class SitemapController extends Controller
             $bucketed[$key]['districts'][$row->district] = ($bucketed[$key]['districts'][$row->district] ?? 0) + $row->cnt;
         }
 
-        // Gercek kurumu (>=3) olan ilceler: [sectionSlug|citySlug][districtSlug] = true
+        // Gercek kurumu olan ilceler: [sectionSlug|citySlug][districtSlug] = true
+        // 9 Kasım 2026: eşik 3'ten 1'e indi - haritaya artık yalnız kurumu olan ilçeler giriyor,
+        // 1-2 kurumlu ilçe de gerçek içerik taşıdığı için dışarıda kalmamalı.
         $withFacilities = [];
         foreach ($bucketed as $key => $data) {
             $validDistricts = collect(districts_for_city($data['city_name']));
 
             foreach ($data['districts'] as $districtName => $count) {
-                if ($count < 3) {
+                if ($count < 1) {
                     continue;
                 }
 

@@ -1,5 +1,6 @@
 @extends('layouts.brand')
-@if(! ($activeSection['slug'] ?? null) || $activeSection['slug'] !== (current_brand()['default_section'] ?? null))
+{{-- 9 Kasım 2026 (Search Console verisi): akışın ileri sayfaları (ör. 249. sayfa) zayıf içerik; Google'a kapalı. --}}
+@if(! ($activeSection['slug'] ?? null) || $activeSection['slug'] !== (current_brand()['default_section'] ?? null) || (int) request('page', 1) > 1)
   @section('robots_meta', 'noindex,follow')
 @endif
 @section('content')

@@ -9144,4 +9144,15 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->assertStringContainsString('js-saat-satir', $html);
         $this->assertSame('', trim(view('themes._shared.partials.saat-ozet', ['kayit' => new \App\Models\Expert()])->render()));
     }
+
+    // 9 Kasım 2026: SEO - eski /public/ adresi 301, giriş sayfası ve akışın ileri sayfası noindex, tanıtım cümleleri bölümle eşleşir.
+    public function test_seo_denetimi_public_yonlendirme_ve_noindex(): void
+    {
+        $y = $this->get('/public/fiyat-rehberi/cocuk/sakarya?page=2');
+        $y->assertStatus(301);
+        $this->assertStringEndsWith('/fiyat-rehberi/cocuk/sakarya?page=2', $y->headers->get('Location'));
+        $this->get('/site/bakimevleri/aile/giris')->assertOk()->assertSee('<meta name="robots" content="noindex,follow">', false);
+        $this->assertStringContainsString('Kreş', config('brands.brands.bakimevleri.tagline'));
+        $this->assertStringContainsString('huzurevi', config('brands.brands.bakimevibul.tagline'));
+    }
 }

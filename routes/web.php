@@ -380,6 +380,13 @@ $siteRoutes = function () {
 
 // 1) Gercek domain modu (host eslesirse ResolveBrand brand'i ayarlar)
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+// 9 Kasım 2026 (Search Console verisi): eski paylaşımlı sunucudan kalan /public/... adresleri Google'da
+// kayıtlı ve tıklanıyordu, VDS'de 404 veriyordu; aynı sayfanın asıl adresine kalıcı (301) yönlenir.
+Route::get('/public/{yol}', function (\Illuminate\Http\Request $request, string $yol) {
+    $sorgu = $request->getQueryString();
+
+    return redirect('/'.ltrim($yol, '/').($sorgu ? '?'.$sorgu : ''), 301);
+})->where('yol', '.*')->name('eski-public-yonlendirme');
 Route::get('/robots.txt', RobotsController::class)->name('robots');
 // cPanel cron'u dakikada bir bu URL'i curl ile tetikler (bkz. CronRunnerController).
 Route::get('/_internal/cron-runner', [CronRunnerController::class, 'run'])->name('internal.cron-runner');

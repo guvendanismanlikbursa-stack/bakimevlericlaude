@@ -1,7 +1,8 @@
 @extends('layouts.brand')
 @section('title', $title)
 @section('meta_description', ($subtitle ?? $title).' | '.current_brand()['name'])
-@if(! ($activeSection['slug'] ?? null) || $activeSection['slug'] !== (current_brand()['default_section'] ?? null))
+{{-- 9 Kasım 2026 (Search Console verisi): akışın ileri sayfaları (ör. 249. sayfa) zayıf içerik; Google'a kapalı. --}}
+@if(! ($activeSection['slug'] ?? null) || $activeSection['slug'] !== (current_brand()['default_section'] ?? null) || (int) request('page', 1) > 1)
   {{-- bkz. layouts/brand.blade.php - bolum secilmemis (TUM kategoriler
        karisik) hali VEYA baska markanin bolumu, 3 markada da ayni cikan
        kopya icerik; sadece markanin KENDI bolumune gore filtrelenmis hali

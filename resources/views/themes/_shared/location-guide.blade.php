@@ -9,7 +9,17 @@
   // ama kimse bu sekilde aramiyor - gercek arama terimi icin bkz.
   // config/brands.php seo_title alani ("Bakimevi", "Kres" vb.).
   $topicTitle = $category->name ?? $section['seo_title'] ?? $section['title'];
-  $title = $placeTitle . ' ' . $topicTitle . ' kurumları';
+  // 9 Kasım 2026 (SEO denetimi, kullanıcı onayı): aileler "eskipazar kreş", "eskipazar kreş fiyatları"
+  // diye arıyor; "… Kreş kurumları" yerine çoğul kategori adı + fiyat/yorum vurgusu.
+  $topicPlural = [
+      'Kreş' => 'Kreşleri', 'Bakımevi' => 'Bakımevleri', 'Rehabilitasyon Merkezi' => 'Rehabilitasyon Merkezleri',
+      'Çocuk Bakım Merkezi' => 'Çocuk Bakım Merkezleri', 'Kreş ve Anaokulu' => 'Kreş ve Anaokulları',
+      'Nörolojik Rehabilitasyon Merkezi' => 'Nörolojik Rehabilitasyon Merkezleri', 'Özel Eğitim ve Gelişim Merkezi' => 'Özel Eğitim ve Gelişim Merkezleri',
+      'Fizik Tedavi ve Rehabilitasyon' => 'Fizik Tedavi ve Rehabilitasyon Merkezleri', 'Bireysel Fizyoterapist' => 'Bireysel Fizyoterapistler',
+      'Yaşlı Bakım Evi' => 'Yaşlı Bakım Evleri', 'Huzurevi' => 'Huzurevleri',
+  ][$topicTitle] ?? $topicTitle.' Kurumları';
+  $title = $placeTitle . ' ' . $topicPlural;
+  $seoTitle = ($districtName ? $city->name.' '.$districtName : $city->name).' '.$topicPlural.': Fiyatlar ve Yorumlar';
   $breadcrumbItems = [
       ['name' => $brand['name'], 'url' => brand_route('home')],
       ['name' => $section['title'], 'url' => brand_route('location-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug])],
@@ -21,9 +31,9 @@
       $breadcrumbItems[] = ['name' => $districtName, 'url' => url()->current()];
   }
 @endphp
-@section('title', $title)
-@section('og_title', $title)
-@section('meta_description', $brand['name'].' ile '.$placeTitle.' bölgesindeki '.$topicTitle.' kurumlarını karşılaştırın, ücretsiz teklif alın.')
+@section('title', $seoTitle)
+@section('og_title', $seoTitle)
+@section('meta_description', $placeTitle.' bölgesindeki '.mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $topicPlural), 'UTF-8').' için fiyatları ve yorumları karşılaştırın, ücretsiz teklif alın.')
 @section('og_image', seo_og_image($section))
 {{-- 12 Ekim 2026: kullanicinin acik talebi - "il+kreş/anaokulu, il+rehabilitasyon,
      ilceleri ile birlikte yasli bakimda da ayni sekilde cikmasi gerekiyor"
