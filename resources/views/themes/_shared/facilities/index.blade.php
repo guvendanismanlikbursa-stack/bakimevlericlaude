@@ -13,6 +13,16 @@
        cikiyor; kopya icerik olarak indekslenmesin. --}}
   @section('robots_meta', 'noindex,follow')
 @endif
+@php
+  // 9 Kasım 2026 (Search Console verisi): "nilüfer kreş" gibi aramalarda /kurumlar?bolum=cocuk&city=bursa&district=Nilüfer
+  // ile /rehber/cocuk/bursa/nilufer birbiriyle yarışıyordu. Yalnız il/ilçe süzülmüş liste, aynı yerin rehber
+  // sayfasını asıl adres gösterir (her "ilçe + tür" araması için tek ana sayfa).
+  $__yalnizYer = $activeSection && request()->filled('city')
+      && collect(request()->query())->except(['bolum', 'city', 'district', 'page'])->filter(fn ($v) => $v !== null && $v !== '')->isEmpty();
+@endphp
+@if($__yalnizYer && (int) request('page', 1) <= 1)
+  @section('canonical', 'https://'.bolum_sahibi_host($activeSection['slug']).preg_replace('#^/site/[^/]+#', '', (string) parse_url(brand_route('location-guide.show', array_filter(['sectionSlug' => $activeSection['slug'], 'citySlug' => request('city'), 'districtSlug' => request('district') ? \Illuminate\Support\Str::slug(request('district')) : null])), PHP_URL_PATH)))
+@endif
 @section('content')
 @php
   $brand = current_brand();

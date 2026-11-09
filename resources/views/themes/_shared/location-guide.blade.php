@@ -11,13 +11,7 @@
   $topicTitle = $category->name ?? $section['seo_title'] ?? $section['title'];
   // 9 Kasım 2026 (SEO denetimi, kullanıcı onayı): aileler "eskipazar kreş", "eskipazar kreş fiyatları"
   // diye arıyor; "… Kreş kurumları" yerine çoğul kategori adı + fiyat/yorum vurgusu.
-  $topicPlural = [
-      'Kreş' => 'Kreşleri', 'Bakımevi' => 'Bakımevleri', 'Rehabilitasyon Merkezi' => 'Rehabilitasyon Merkezleri',
-      'Çocuk Bakım Merkezi' => 'Çocuk Bakım Merkezleri', 'Kreş ve Anaokulu' => 'Kreş ve Anaokulları',
-      'Nörolojik Rehabilitasyon Merkezi' => 'Nörolojik Rehabilitasyon Merkezleri', 'Özel Eğitim ve Gelişim Merkezi' => 'Özel Eğitim ve Gelişim Merkezleri',
-      'Fizik Tedavi ve Rehabilitasyon' => 'Fizik Tedavi ve Rehabilitasyon Merkezleri', 'Bireysel Fizyoterapist' => 'Bireysel Fizyoterapistler',
-      'Yaşlı Bakım Evi' => 'Yaşlı Bakım Evleri', 'Huzurevi' => 'Huzurevleri',
-  ][$topicTitle] ?? $topicTitle.' Kurumları';
+  $topicPlural = kurum_turu_cogul($topicTitle);
   $title = $placeTitle . ' ' . $topicPlural;
   $seoTitle = ($districtName ? $city->name.' '.$districtName : $city->name).' '.$topicPlural.': Fiyatlar ve Yorumlar';
   $breadcrumbItems = [
@@ -35,6 +29,10 @@
 @section('og_title', $seoTitle)
 @section('meta_description', $placeTitle.' bölgesindeki '.mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $topicPlural), 'UTF-8').' için fiyatları ve yorumları karşılaştırın, ücretsiz teklif alın.')
 @section('og_image', seo_og_image($section))
+{{-- 9 Kasım 2026: bölümün sahibi başka siteyse asıl adres orası (bkz. bolum_sahibi_url). --}}
+@if($__sahipUrl = bolum_sahibi_url($section['slug'] ?? null))
+  @section('canonical', $__sahipUrl)
+@endif
 {{-- 12 Ekim 2026: kullanicinin acik talebi - "il+kreş/anaokulu, il+rehabilitasyon,
      ilceleri ile birlikte yasli bakimda da ayni sekilde cikmasi gerekiyor"
      (bkz. price-guide.blade.php ayni tarihli/sebepli degisiklik). Daha once

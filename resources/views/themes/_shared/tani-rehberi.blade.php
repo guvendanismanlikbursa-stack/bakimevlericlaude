@@ -10,6 +10,10 @@
   ];
 @endphp
 @section('title', $title)
+{{-- 9 Kasım 2026: tanı rehberi rehabilitasyon bölümüne ait; sahibi bakimeviara (bkz. bolum_sahibi_url). --}}
+@if($__sahipUrl = bolum_sahibi_url('rehabilitasyon'))
+  @section('canonical', $__sahipUrl)
+@endif
 @section('og_title', $title)
 @section('meta_description', $placeTitle.' bölgesinde '.$tani['title'].' desteği veren rehabilitasyon ve özel eğitim kurumlarını karşılaştırın.')
 @section('breadcrumb_jsonld')

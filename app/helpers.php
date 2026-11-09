@@ -237,6 +237,65 @@ if (! function_exists('canonical_url')) {
     }
 }
 
+if (! function_exists('kurum_turu_cogul')) {
+    /** 9 Kasım 2026: başlıklarda kullanılan kurum türünün çoğulu ("Kreş" → "Kreşleri"). */
+    function kurum_turu_cogul(string $tur): string
+    {
+        return [
+            'Kreş' => 'Kreşleri', 'Bakımevi' => 'Bakımevleri', 'Rehabilitasyon Merkezi' => 'Rehabilitasyon Merkezleri',
+            'Çocuk Bakım Merkezi' => 'Çocuk Bakım Merkezleri', 'Kreş ve Anaokulu' => 'Kreş ve Anaokulları',
+            'Nörolojik Rehabilitasyon Merkezi' => 'Nörolojik Rehabilitasyon Merkezleri', 'Özel Eğitim ve Gelişim Merkezi' => 'Özel Eğitim ve Gelişim Merkezleri',
+            'Fizik Tedavi ve Rehabilitasyon' => 'Fizik Tedavi ve Rehabilitasyon Merkezleri', 'Bireysel Fizyoterapist' => 'Bireysel Fizyoterapistler',
+            'Yaşlı Bakım Evi' => 'Yaşlı Bakım Evleri', 'Huzurevi' => 'Huzurevleri',
+        ][$tur] ?? $tur.' Kurumları';
+    }
+}
+
+if (! function_exists('bolum_sahibi_host')) {
+    /** 9 Kasım 2026: bölümün sahibi sitenin alan adı (bkz. bolum_sahibi_url); bulunamazsa bu site. */
+    function bolum_sahibi_host(?string $sectionSlug): string
+    {
+        foreach (config('brands.brands', []) as $marka) {
+            if ($sectionSlug && ($marka['default_section'] ?? null) === $sectionSlug && ! empty($marka['domains'][0])) {
+                return $marka['domains'][0];
+            }
+        }
+
+        return current_brand()['domains'][0] ?? request()->getHost();
+    }
+}
+
+if (! function_exists('bolum_sahibi_url')) {
+    /**
+     * 9 Kasım 2026 (kullanıcı onayı, Search Console verisi): her bölümün TEK sahibi site var
+     * (varsayılan bölümü o olan marka: çocuk → bakimevleri, yaşlı bakım → bakimevibul,
+     * rehabilitasyon → bakimeviara). 12 Ekim'deki "3 site de her bölümde çıksın" kararı,
+     * aynı arama için 3 siteden onlarca sayfanın birbiriyle yarışmasına yol açıyordu
+     * (ör. "ankara kreş fiyatları": 3 site, 98 sayfa, ortalama sıra 68). Sahip olmayan sitede
+     * sayfa ziyaretçiye açık kalır; Google'a asıl adres olarak sahip sitedeki aynı yol bildirilir.
+     * Bu site sahipse null döner (kendi asıl adresi geçerli).
+     */
+    function bolum_sahibi_url(?string $sectionSlug): ?string
+    {
+        if (! $sectionSlug || (current_brand()['default_section'] ?? null) === $sectionSlug) {
+            return null;
+        }
+        foreach (config('brands.brands', []) as $marka) {
+            if (($marka['default_section'] ?? null) !== $sectionSlug || empty($marka['domains'][0])) {
+                continue;
+            }
+            // Yerel/test ortamındaki /site/{marka}/ öneki asıl adrese taşınmaz.
+            $yol = '/'.ltrim(preg_replace('#^site/[^/]+/?#', '', request()->path()), '/');
+            parse_str((string) request()->server('QUERY_STRING'), $sorgu);
+            $sorgu = array_intersect_key($sorgu, array_flip(['page']));
+
+            return 'https://'.$marka['domains'][0].($yol === '/' ? '' : $yol).($sorgu ? '?'.http_build_query($sorgu) : '');
+        }
+
+        return null;
+    }
+}
+
 if (! function_exists('seo_og_image')) {
     function seo_og_image(?array $section = null): string
     {

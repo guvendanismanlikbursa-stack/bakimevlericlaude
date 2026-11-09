@@ -38,8 +38,17 @@
 @endphp
 @section('title', $placeTitle.' '.$topicTitle.' Fiyatları - Ücret Rehberi')
 @section('og_title', $placeTitle.' '.$topicTitle.' Fiyatları')
-@section('meta_description', $placeTitle.' bölgesinde '.$topicTitle.' kurumlarının ortalama, en düşük ve en yüksek fiyat bilgileri.')
+@php
+  $__resmi = ($section['slug'] ?? null) === 'yasli-bakim' ? config('resmi_ucretler.yasli_bakim.'.$city->slug) : null;
+@endphp
+@section('meta_description', $__resmi
+  ? $placeTitle.' huzurevi ve bakımevi fiyatları '.config('resmi_ucretler.yil').': resmi aylık ücret '.number_format($__resmi['taban'], 0, ',', '.').' – '.number_format($__resmi['tavan'], 0, ',', '.').' TL (KDV hariç). Kurumları karşılaştırın, ücretsiz fiyat isteyin.'
+  : $placeTitle.' bölgesinde '.$topicTitle.' kurumlarının ortalama, en düşük ve en yüksek fiyat bilgileri.')
 @section('og_image', seo_og_image($section))
+{{-- 9 Kasım 2026: bölümün sahibi başka siteyse asıl adres orası (bkz. bolum_sahibi_url). --}}
+@if($__sahipUrl = bolum_sahibi_url($section['slug'] ?? null))
+  @section('canonical', $__sahipUrl)
+@endif
 {{-- 12 Ekim 2026: kullanicinin acik talebi - "fiyat soranlara siteler
      cikmali 3 sitede de". Daha once bir markanin KENDI bolumu disindaki
      fiyat rehberi sayfalari kopya icerik riskine karsi noindex idi (bkz.
@@ -83,6 +92,34 @@
           <a href="{{ $category ? brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug, 'districtSlug' => Str::slug($district)]) : brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => Str::slug($district)]) }}" class="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:shadow-sm">{{ $district }}</a>
         @endforeach
       </div>
+    </div>
+  @endif
+
+  {{-- 9 Kasım 2026 (kullanıcı onayı): yalnızca resmi, kaynağı belli ücret bilgisi (bkz. config/resmi_ucretler.php). --}}
+  @php
+    $resmiYil = config('resmi_ucretler.yil');
+    $resmiYasli = ($section['slug'] ?? null) === 'yasli-bakim' ? config('resmi_ucretler.yasli_bakim.'.$city->slug) : null;
+    $mebGoster = ($section['slug'] ?? null) === 'rehabilitasyon' || ($category && $category->brand_scope === 'ozel-egitim');
+    $meb = config('resmi_ucretler.meb_ozel_egitim');
+    $tl = fn ($v) => number_format((float) $v, 0, ',', '.').' TL';
+  @endphp
+  @if(($section['slug'] ?? null) === 'yasli-bakim')
+    <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6">
+      <div class="text-xs text-gray-500">{{ $city->name }} resmi ücret aralığı ({{ $resmiYil }})</div>
+      @if($resmiYasli)
+        <div class="text-2xl font-black mt-1">{{ $tl($resmiYasli['taban']) }} – {{ $tl($resmiYasli['tavan']) }} <span class="text-sm font-semibold text-gray-500">/ ay, KDV hariç</span></div>
+        <p class="text-sm text-gray-600 mt-2">{{ $city->name }} Valiliği ücret tespit komisyonunun {{ $resmiYil }} kararına göre özel huzurevi ve yaşlı bakım merkezlerinde aylık taban ve tavan ücret. Oda tipi ve bakım ihtiyacına göre kurumun ücreti bu aralıkta belirlenir; tavan ücret aşılamaz.
+          Kaynak: <a href="{{ $resmiYasli['url'] }}" rel="nofollow noopener" target="_blank" style="text-decoration:underline">{{ $resmiYasli['kaynak'] }}</a></p>
+      @else
+        <p class="text-sm text-gray-600 mt-2">Özel huzurevi ve yaşlı bakım merkezi ücretleri her ilde Valilik ücret tespit komisyonunca taban–tavan olarak belirlenir. {{ $city->name }} için {{ $resmiYil }} tablosu kamuya açık olarak yayımlanmadığından burada rakam vermiyoruz; güncel ücreti aşağıdaki kurumlardan ücretsiz isteyebilirsiniz.</p>
+      @endif
+    </div>
+  @endif
+  @if($mebGoster && $meb)
+    <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6">
+      <div class="text-xs text-gray-500">Devlet desteği – MEB özel eğitim ({{ $resmiYil }})</div>
+      <div class="text-2xl font-black mt-1">{{ $tl($meb['bireysel']) }} <span class="text-sm font-semibold text-gray-500">/ ay bireysel eğitim, KDV hariç</span></div>
+      <p class="text-sm text-gray-600 mt-2">Özel eğitim raporu olan bireyler için MEB, izinli özel eğitim ve rehabilitasyon merkezlerine ayda {{ $meb['bireysel_saat'] }} saat bireysel eğitimde {{ $tl($meb['bireysel']) }}, {{ $meb['grup_saat'] }} saat grup eğitiminde {{ $tl($meb['grup']) }} öder (KDV hariç). Bu kapsamı aşan ek seans ve hizmetlerin ücretini aile karşılar. Kaynak: {{ $meb['kaynak'] }}.</p>
     </div>
   @endif
 

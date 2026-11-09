@@ -37,7 +37,11 @@
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => [
       ['name' => current_brand()['name'], 'url' => brand_route('home')],
-      ['name' => $facility->city->name ?? '', 'url' => brand_route('facilities.index', ['city' => $facility->city->slug ?? null])],
+      {{-- 9 Kasım 2026 (SEO): ara adımlar il ve ilçe rehberi; kurum sayfaları kendi "ilçe + tür" sayfasını güçlendirir. --}}
+      ...(($serviceSection['slug'] ?? null) && ($facility->city->slug ?? null) ? array_values(array_filter([
+          ['name' => ($facility->city->name ?? '').' '.kurum_turu_cogul($serviceSection['seo_title'] ?? $serviceSection['title']), 'url' => brand_route('location-guide.show', ['sectionSlug' => $serviceSection['slug'], 'citySlug' => $facility->city->slug])],
+          $facility->district ? ['name' => $facility->district.' '.kurum_turu_cogul($serviceSection['seo_title'] ?? $serviceSection['title']), 'url' => brand_route('location-guide.show', ['sectionSlug' => $serviceSection['slug'], 'citySlug' => $facility->city->slug, 'districtSlug' => \Illuminate\Support\Str::slug($facility->district)])] : null,
+      ])) : [['name' => $facility->city->name ?? '', 'url' => brand_route('facilities.index', ['city' => $facility->city->slug ?? null])]]),
       ['name' => $facility->name, 'url' => brand_route('facilities.show', ['slug' => $facility->slug])],
   ]])
 @endsection
@@ -1533,6 +1537,12 @@
     </div>
   </div>
 @endif
+<div class="max-w-6xl mx-auto px-4 pb-10">
+    {{-- 9 Kasım 2026 (SEO): kurumun ilçe rehberine metin bağlantısı (tasarım değişmez, tek satır). --}}
+    @if(($serviceSection['slug'] ?? null) && ($facility->city->slug ?? null))
+      <a href="{{ brand_route('location-guide.show', array_filter(['sectionSlug' => $serviceSection['slug'], 'citySlug' => $facility->city->slug, 'districtSlug' => $facility->district ? \Illuminate\Support\Str::slug($facility->district) : null])) }}" style="display:inline-block;margin-top:14px;font-size:14px;font-weight:800;text-decoration:underline;color:inherit;">{{ $facility->district ?: ($facility->city->name ?? '') }} bölgesindeki tüm {{ mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], kurum_turu_cogul($serviceSection['seo_title'] ?? $serviceSection['title'])), 'UTF-8') }} →</a>
+    @endif
+</div>
 
 @if($acceptsFamilyRequests)
   {{-- 12 Agustos 2026: kullanicinin talebi - "bu uygulamanin kalbi"

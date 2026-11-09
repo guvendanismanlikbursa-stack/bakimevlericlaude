@@ -9155,4 +9155,36 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->assertStringContainsString('Kreş', config('brands.brands.bakimevleri.tagline'));
         $this->assertStringContainsString('huzurevi', config('brands.brands.bakimevibul.tagline'));
     }
+
+    // 9 Kasım 2026: her bölümün tek sahibi site - sahip olmayan sitedeki rehber/fiyat/tanı sayfası asıl adres olarak sahibi gösterir.
+    public function test_bolum_sahibi_site_asil_adres(): void
+    {
+        $sehir = $this->city->slug;
+        $kanonik = fn ($yanit) => preg_match('/<link rel="canonical" href="([^"]*)"/', $yanit->getContent(), $m) ? html_entity_decode($m[1]) : null;
+        $this->assertSame('https://bakimevleri.com/rehber/cocuk/'.$sehir, $kanonik($this->get('/site/bakimevibul/rehber/cocuk/'.$sehir)->assertOk()));
+        $this->assertSame('https://bakimevleri.com/fiyat-rehberi/cocuk/'.$sehir, $kanonik($this->get('/site/bakimeviara/fiyat-rehberi/cocuk/'.$sehir)->assertOk()));
+        $this->assertSame('https://bakimevibul.com/rehber/yasli-bakim/'.$sehir, $kanonik($this->get('/site/bakimevleri/rehber/yasli-bakim/'.$sehir)->assertOk()));
+        $this->assertStringEndsWith('/rehber/cocuk/'.$sehir, $kanonik($this->get('/site/bakimevleri/rehber/cocuk/'.$sehir)->assertOk()));
+        $this->assertStringStartsWith('https://bakimevleri.com/rehber/cocuk/'.$sehir, (string) $kanonik($this->get('/site/bakimevleri/kurumlar?bolum=cocuk&city='.$sehir)->assertOk()));
+    }
+
+    // 9 Kasım 2026: kurum sayfası ilçe rehberine bağlanır (metin bağlantısı + breadcrumb kodu).
+    public function test_kurum_sayfasi_ilce_rehberine_baglanir(): void
+    {
+        $f = $this->facilityUser->facility->fresh(['city', 'category']);
+        $html = $this->get('/site/bakimevleri/kurumlar/'.$f->slug)->assertOk()->getContent();
+        $this->assertStringContainsString('/rehber/', $html);
+        $this->assertMatchesRegularExpression('/bölgesindeki tüm [^<]+ →/u', $html);
+    }
+
+    // 9 Kasım 2026: fiyat sayfasında yalnız resmi ücret bilgisi - İstanbul huzurevi taban-tavanı, tablosu olmayan ilde açıklama, rehabilitasyonda MEB desteği.
+    public function test_fiyat_rehberi_resmi_ucret_bilgisi(): void
+    {
+        $this->get('/site/bakimevibul/fiyat-rehberi/yasli-bakim/istanbul')->assertOk()
+            ->assertSee('20.250 TL – 106.616 TL', false)->assertSee('İstanbul Aile ve Sosyal Hizmetler İl Müdürlüğü', false);
+        \App\Models\City::firstOrCreate(['slug' => 'erzurum'], ['name' => 'Erzurum']);
+        $this->get('/site/bakimevibul/fiyat-rehberi/yasli-bakim/erzurum')->assertOk()->assertSee('kamuya açık olarak yayımlanmadığından', false);
+        $this->get('/site/bakimeviara/fiyat-rehberi/rehabilitasyon/istanbul')->assertOk()->assertSee('7.748 TL', false);
+        $this->get('/site/bakimevleri/fiyat-rehberi/cocuk/istanbul')->assertOk()->assertDontSee('7.748 TL', false)->assertDontSee('>0 TL<', false);
+    }
 }
