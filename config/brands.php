@@ -142,7 +142,9 @@ return [
         'bakimevibul' => [
             'slug' => 'bakimevibul',
             'name' => 'bakimevibul.com',
-            'tagline' => 'Kreş, anaokulu ve çocuk bakım kurumlarını güvenle bul',
+            // 9 Kasım 2026 (SEO denetimi): 1 Ekim'deki bölüm takasında tanıtım cümleleri takas edilmemişti;
+            // yaşlı bakım sitesi "kreş", çocuk sitesi "huzurevi" yazıyordu (sayfa altı, açıklama, bilgi kodu).
+            'tagline' => 'Bakımevi, huzurevi ve yaşlı bakım merkezlerini güvenle karşılaştırın',
             'theme' => 'bakimevibul',
             'domains' => ['bakimevibul.com', 'www.bakimevibul.com', 'bakimevibul.test', 'bakimevibul.local', 'localhost:8000'],
             'primary_color' => '#1e6f5c',
@@ -176,7 +178,8 @@ return [
             // (Google'in en cok agirlik verdigi kok sayfada) dogrudan
             // celisiyordu - "bakimevi/bakimevleri/huzurevi" aramalarinda
             // cikmama sorununun en olasi nedeniydi.
-            'tagline' => 'Bakımevi, huzurevi ve yaşlı bakım merkezlerini güvenle karşılaştırın',
+            // 9 Kasım 2026: varsayılan bölüm 'cocuk' olduğu için tanıtım cümlesi çocuk bakımına göre.
+            'tagline' => 'Kreş, anaokulu ve çocuk bakım kurumlarını güvenle bul',
             'theme' => 'bakimevleri',
             'domains' => ['bakimevleri.com', 'www.bakimevleri.com', 'bakimevleri.test', 'bakimevleri.local'],
             'primary_color' => '#0b5d8c',

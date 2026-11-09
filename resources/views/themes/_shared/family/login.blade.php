@@ -1,4 +1,6 @@
 @extends('layouts.brand')
+{{-- 9 Kasım 2026 (SEO denetimi): giriş/kayıt/şifre sayfaları arama sonucunda çıkmaz. --}}
+@section('robots_meta', 'noindex,follow')
 
 @section('content')
 <div class="max-w-md mx-auto px-4 py-12">

@@ -55,7 +55,7 @@ class SitemapController extends Controller
         $urls->push($this->url($prefix.'/karar-sihirbazi', 'weekly', '0.8'));
         $urls->push($this->url($prefix.'/bakim-danismani', 'weekly', '0.8'));
         $urls->push($this->url($prefix.'/karsilastir', 'weekly', '0.7'));
-        $urls->push($this->url($prefix.'/favoriler', 'weekly', '0.7'));
+        // 9 Kasım 2026 (SEO denetimi): /favoriler oturum ister, giriş sayfasına yönlendiriyordu; haritadan çıkarıldı.
         $urls->push($this->url($prefix.'/sss', 'monthly', '0.6'));
         // 18 Ekim 2026: İyilik Hareketi sayfası yalnızca yayına alındıktan sonra.
         if (membership_live()) {

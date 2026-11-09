@@ -14,9 +14,18 @@
   // varsayilani icin de kullanip (once hep sabit $brand['tagline']'a
   // dusuyordu, paylasilan sayfanin gercek basligiyla alakasiz goruniyordu).
   $__pageTitle = trim($__env->yieldContent('title', $brand['tagline']));
+  // 9 Kasım 2026 (SEO denetimi): Google ~60 karakterden sonrasını kesiyor; site adı eki yalnız
+  // başlık kısaysa eklenir (uzun kurum/doktor başlıklarında konum bilgisi görünür kalsın).
+  $__fullTitle = mb_strlen($__pageTitle.' · '.$brand['name']) <= 65 ? $__pageTitle.' · '.$brand['name'] : $__pageTitle;
+  // Açıklamanın sonundaki " | site adı" eki atılır, ~158 karakteri aşarsa kelime sınırında kısaltılır.
+  $__metaDesc = html_entity_decode(trim($__env->yieldContent('meta_description', $brand['tagline'])), ENT_QUOTES, 'UTF-8');
+  $__metaDesc = preg_replace('/\s*\|\s*'.preg_quote($brand['name'], '/').'\s*$/u', '', $__metaDesc);
+  if (mb_strlen($__metaDesc) > 158) {
+    $__metaDesc = preg_replace('/\s+\S*$/u', '', rtrim(mb_substr($__metaDesc, 0, 157))).'…';
+  }
 @endphp
-<title>{{ $__pageTitle }} · {{ $brand['name'] }}</title>
-<meta name="description" content="@yield('meta_description', $brand['tagline'])">
+<title>{{ $__fullTitle }}</title>
+<meta name="description" content="{{ $__metaDesc }}">
 <link rel="canonical" href="@yield('canonical', canonical_url())">
 {{--
   12 Agustos 2026: kullanicinin talebi - 3 marka ayni veritabanini/ayni
@@ -40,12 +49,12 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ $brand['name'] }}">
 <meta property="og:title" content="@yield('og_title', $__pageTitle)">
-<meta property="og:description" content="@yield('meta_description', $brand['tagline'])">
+<meta property="og:description" content="{{ $__metaDesc }}">
 <meta property="og:url" content="@yield('canonical', canonical_url())">
 <meta property="og:image" content="@yield('og_image', seo_og_image())">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="@yield('og_title', $__pageTitle)">
-<meta name="twitter:description" content="@yield('meta_description', $brand['tagline'])">
+<meta name="twitter:description" content="{{ $__metaDesc }}">
 <meta name="twitter:image" content="@yield('og_image', seo_og_image())">
 @php
   $brandSlug = $brand['slug'] ?? null;
