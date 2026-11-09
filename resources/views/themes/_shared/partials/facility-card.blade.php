@@ -120,7 +120,9 @@
       @if($kartSaatOzeti = $facility->openingHoursSummary())
         <div class="js-kart-saat" data-saatler="{{ json_encode(array_values($facility->openingHoursRows()), JSON_UNESCAPED_UNICODE) }}" style="background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:4px 8px;margin:4px 0 6px;font-size:12px;line-height:1.5;font-weight:800;color:#0e4f5c;">
           {{-- 31 Ekim 2026: kullanıcının talebi - kutu çok yer kaplıyordu; tek akışta, en fazla 2 satır. --}}
-          <span class="js-kart-saat-durum" style="display:none;font-size:10.5px;font-weight:900;padding:0 7px;border-radius:999px;white-space:nowrap;margin-right:5px;"></span><span aria-hidden="true">🕒</span> {{ $kartSaatOzeti }}
+          {{-- 9 Kasım 2026: kullanıcının isteği - kartta gün adları yok; yalnız "şu an açık/kapalı" ve bugünün saat aralığı
+               (tarayıcı bugünü bilir; önbellekli sayfada ilk görünen değer en sık saat aralığıdır). --}}
+          <span class="js-kart-saat-durum" style="display:none;font-size:10.5px;font-weight:900;padding:0 7px;border-radius:999px;white-space:nowrap;margin-right:5px;"></span><span aria-hidden="true">🕒</span> <span class="js-kart-saat-metin">{{ collect($facility->openingHoursRows())->values()->filter(fn ($v) => trim((string) $v) !== '' && mb_strtolower((string) $v, 'UTF-8') !== 'kapalı')->countBy()->sortDesc()->keys()->first() ?? $kartSaatOzeti }}</span>
         </div>
         @once
           <script>
@@ -138,6 +140,8 @@
                       if (p[1] <= p[0]) p[1] += 1440;
                       if (dakika >= p[0] && dakika < p[1]) acik = true;
                     });
+                    var metin = k.querySelector('.js-kart-saat-metin');
+                    if (metin && saat) metin.textContent = saat === 'Kapalı' ? 'Bugün kapalı' : saat;
                     var e = k.querySelector('.js-kart-saat-durum');
                     e.textContent = acik ? '● Şu an açık' : '● Şu an kapalı';
                     e.style.background = acik ? '#16a34a' : '#fee2e2';

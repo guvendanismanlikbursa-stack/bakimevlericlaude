@@ -9003,7 +9003,9 @@ Metin {standart_fiyat}"])->assertRedirect();
             'Cuma' => '08:30 - 17:30', 'Cumartesi' => '09:00 - 12:00,13:00 - 16:00', 'Pazar' => 'Kapalı'];
         $f->update(['opening_hours' => $saat, 'opening_hours_fetched_at' => now()]);
         $this->assertSame('Pzt–Cum 08:30–17:30 · Cmt 09:00–12:00, 13:00–16:00 · Paz Kapalı', $f->fresh()->openingHoursSummary());
-        $this->assertStringContainsString('Pzt–Cum 08:30–17:30', $kart());
+        // 9 Kasım 2026: kartta gün adı yok, yalnız saat aralığı (bugününki tarayıcıda yazılır).
+        $this->assertStringContainsString('js-kart-saat-metin">08:30–17:30<', $kart());
+        $this->assertStringNotContainsString('Pzt–Cum', $kart());
         $this->get('/site/bakimevleri/kurumlar/'.$f->slug)->assertOk()->assertSee('Çalışma saatleri', false)->assertSee('Cumartesi', false);
 
         $f->update(['opening_hours' => array_fill_keys(\App\Models\Facility::GUNLER, '24 saat açık')]);
@@ -9138,7 +9140,7 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->assertSame('Pzt–Cum 09:00–18:00 · Cmt 09:00–14:00 · Paz Kapalı', $e->openingHoursSummary());
         $this->assertSame([], (new \App\Models\Expert(['opening_hours' => array_fill_keys(\App\Models\Expert::GUNLER, 'Kapalı')]))->openingHoursRows());
         $html = view('themes._shared.partials.saat-ozet', ['kayit' => $e])->render().view('themes._shared.partials.saat-tablo', ['kayit' => $e])->render();
-        $this->assertStringContainsString('Pzt–Cum 09:00–18:00', $html);
+        $this->assertStringContainsString('js-kart-saat-metin">09:00–18:00<', $html);
         $this->assertStringContainsString('js-saat-satir', $html);
         $this->assertSame('', trim(view('themes._shared.partials.saat-ozet', ['kayit' => new \App\Models\Expert()])->render()));
     }

@@ -20,7 +20,10 @@
     document.querySelectorAll('.js-kart-saat:not([data-islendi])').forEach(function (k) {
       k.setAttribute('data-islendi', '1');
       try {
-        var acik = acikMi(JSON.parse(k.getAttribute('data-saatler'))[bugun] || '', dakika);
+        var bugunSaat = JSON.parse(k.getAttribute('data-saatler'))[bugun] || '';
+        var acik = acikMi(bugunSaat, dakika);
+        var metin = k.querySelector('.js-kart-saat-metin');
+        if (metin && bugunSaat) metin.textContent = bugunSaat === 'Kapalı' ? 'Bugün kapalı' : bugunSaat;
         var e = k.querySelector('.js-kart-saat-durum');
         e.textContent = acik ? '● Şu an açık' : '● Şu an kapalı';
         e.style.background = acik ? '#16a34a' : '#fee2e2';
