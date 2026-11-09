@@ -103,7 +103,8 @@ class PriceGuideController extends Controller
         ]));
 
         $data = Cache::remember($cacheKey, now()->addMinutes(15), function () use ($baseQuery, $city, $districtName, $section, $brand, $category) {
-            $priced = (clone $baseQuery)->whereNotNull('price_min');
+            // 9 Kasım 2026: fiyatı 0 girilmiş kurum ortalamaya katılmaz (sayfa "0 TL" gösteriyordu).
+            $priced = (clone $baseQuery)->whereNotNull('price_min')->where('price_min', '>', 0);
 
             $priceStats = (clone $priced)->selectRaw(
                 'COUNT(*) as priced_count, AVG(price_min) as avg_min, MIN(price_min) as min_price, MAX(price_max) as max_price'
