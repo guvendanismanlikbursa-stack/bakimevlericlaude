@@ -6,10 +6,10 @@
   // Google icin), degilse genel bolum basligi kullanilsin.
   $__title = $activeExpert
       ? "{$activeExpert->title} {$activeExpert->name} — {$activeExpert->branch} ({$activeExpert->branch_label}) ".($activeExpert->city?->name ?? '')
-      : (request('branch') === 'fizyoterapist' ? 'Fizyoterapistler — Adres, Telefon ve Çalışma Saatleri' : 'Özel Doktorlar — Çocuk ve Yaşlı Sağlığı Alanında Uzman Hekimler');
+      : (request('branch') === 'fizyoterapist' ? 'Fizyoterapistler — Adres, Telefon ve Çalışma Saatleri' : 'Özel Doktorlar ve Bireysel Fizyoterapistler — Çocuk ve Yaşlı Sağlığı');
   $__description = $activeExpert
       ? trim("{$activeExpert->title} {$activeExpert->name}, ".($activeExpert->district ? "{$activeExpert->district}/" : '').($activeExpert->city?->name ?? '')." bölgesinde {$activeExpert->branch_label} olarak hizmet veriyor.".($activeExpert->phone ? " İletişim: {$activeExpert->phone}." : ''))
-      : (request('branch') === 'fizyoterapist' ? 'Bireysel çalışan fizyoterapistleri il ve ilçeye göre bulun; adres, telefon ve çalışma saatleri.' : 'Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları il, ilçe veya branşa göre bulun.');
+      : (request('branch') === 'fizyoterapist' ? 'Bireysel çalışan fizyoterapistleri il ve ilçeye göre bulun; adres, telefon ve çalışma saatleri.' : 'Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları ve bireysel çalışan fizyoterapistleri il, ilçe veya uzmanlık alanına göre bulun.');
 @endphp
 @php
   // 25 Ekim 2026: arama motoru düzeni - asıl adres her zaman bakimevleri.com; il/ilçe/branş
@@ -63,13 +63,14 @@
       <h1 class="text-2xl font-black text-gray-950 mb-2">Fizyoterapistler</h1>
       <p class="text-gray-500 mb-6">Bireysel çalışan fizyoterapistleri bulun; aileler doğrudan arayabilir.</p>
     @else
-      <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
-      <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
+      {{-- 15 Kasım 2026: bireysel fizyoterapistler de bu bölümde (kullanıcı: tanıtım yazılarında da yer almalı). --}}
+      <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar ve Bireysel Fizyoterapistler</h1>
+      <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları ve bireysel çalışan fizyoterapistleri bulun; aileler doğrudan arayabilir.</p>
     @endif
   @endif
 
   <form method="GET" action="{{ brand_route('experts.index') }}" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-expert-results" data-count-target="js-expert-count" class="js-location-filter flex flex-wrap gap-3 mb-6" style="background:rgba(255,255,255,.92);border:1px solid #d5ebe8;border-radius:16px;padding:12px;box-shadow:0 6px 20px -12px rgba(13,110,106,.35);">
-    <input type="search" name="search" value="{{ request('search') }}" placeholder="Doktor adı veya branş ile ara..." autocomplete="off" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[180px]" style="max-width:100%;">
+    <input type="search" name="search" value="{{ request('search') }}" placeholder="Doktor / fizyoterapist adı veya branş ile ara..." autocomplete="off" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[180px]" style="max-width:100%;">
     <select name="city" class="js-city border rounded-lg px-3 py-2 text-sm" style="max-width:100%;min-width:0;text-overflow:ellipsis;">
       <option value="">Tüm İller</option>
       @foreach($cities as $city)
@@ -142,15 +143,23 @@
     <div style="margin-top:28px;display:grid;gap:18px;">
       @if($populer->isNotEmpty())
         <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
-          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">Popüler aramalar</h2>
+          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">Popüler doktor aramaları</h2>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             @foreach($populer as $p)<a href="{{ brand_route('experts.landing', ['il' => $p['il_slug'], 'a' => $p['ilce_slug'], 'b' => $p['brans_slug']]) }}" style="{{ $linkKutu }}">{{ $p['ilce'] }} {{ \App\Support\DoktorSeo::BRANSLAR[$p['brans_slug']]['cogul'] }} <span style="color:#0d9488;">{{ $p['toplam'] }}</span></a>@endforeach
           </div>
         </section>
       @endif
+      @if(($populerFzt ?? collect())->isNotEmpty())
+        <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
+          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">Popüler fizyoterapist aramaları</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            @foreach($populerFzt as $p)<a href="{{ brand_route('experts.landing', $p['ilce_slug'] ? ['il' => $p['il_slug'], 'a' => $p['ilce_slug'], 'b' => 'fizyoterapist'] : ['il' => $p['il_slug'], 'a' => 'fizyoterapist']) }}" style="{{ $linkKutu }}">{{ $p['ad'] }} Fizyoterapistler <span style="color:#0d9488;">{{ $p['toplam'] }}</span></a>@endforeach
+          </div>
+        </section>
+      @endif
       @if($populerIller->isNotEmpty())
         <section style="background:rgba(255,255,255,.9);border:1px solid #d5ebe8;border-radius:16px;padding:16px;">
-          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">İllere göre özel doktorlar</h2>
+          <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">İllere göre özel doktorlar ve fizyoterapistler</h2>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             @foreach($populerIller as $p)<a href="{{ brand_route('experts.landing', ['il' => $p['il_slug']]) }}" style="{{ $linkKutu }}">{{ $p['il_ad'] }} <span style="color:#0d9488;">{{ $p['toplam'] }}</span></a>@endforeach
           </div>
@@ -166,7 +175,7 @@
   <div role="note" style="margin-bottom:12px;border:1px solid #cfe3e1;background:#f3faf9;border-radius:14px;padding:14px 16px;color:#1f2937;font-size:14px;line-height:1.6;">
     <div style="font-weight:800;color:#0d6e6a;margin-bottom:4px;">ℹ️ Bilgilendirme</div>
     @php $fztSayfa = request('branch') === 'fizyoterapist'; @endphp
-    Bu sayfada yer alan {{ $fztSayfa ? 'fizyoterapist' : 'hekim' }} bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları {{ $fztSayfa ? 'fizyoterapiste' : 'hekime' }} daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir {{ $fztSayfa ? 'fizyoterapistin' : 'hekimin' }} reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir {{ $fztSayfa ? 'fizyoterapist' : 'hekim' }} öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
+    Bu sayfada yer alan {{ $fztSayfa ? 'fizyoterapist' : 'hekim ve fizyoterapist' }} bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları {{ $fztSayfa ? 'fizyoterapiste' : 'hekime ya da fizyoterapiste' }} daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir {{ $fztSayfa ? 'fizyoterapistin' : 'hekimin ya da fizyoterapistin' }} reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir {{ $fztSayfa ? 'fizyoterapist' : 'hekim ya da fizyoterapist' }} öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
   </div>
   {{-- 28 Ekim 2026: İyilik Hareketi destekçi hekim teşekkür listesi kaldırıldı - TTB md. 13:
        hekimler aracılık yapan platformlara üye olamaz; üyelik/destekçilik izlenimi verilmez. --}}

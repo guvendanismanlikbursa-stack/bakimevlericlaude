@@ -119,21 +119,20 @@
   @if($salesFunnel[0]['count'] === 0)
     <div class="text-sm text-gray-400">Henüz hiçbir kurum aranmamış, huni burada birikecek.</div>
   @else
-    <div class="flex flex-wrap gap-2">
+    {{-- 15 Kasım 2026: kullanıcı "çok kötü görünüyor" - dar ekranda kelimeler harf harf kırılıyordu (min-w-[140px] derlenmiş CSS'te yok).
+         Satır içi ızgara: her adım en az 130 px, sığmayan alt satıra geçer; oklar yerine adım numarası. --}}
+    <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));">
       @foreach($salesFunnel as $i => $stage)
-        <div class="flex-1 min-w-[140px] rounded-lg bg-gray-50 p-3">
-          <div class="text-xs text-gray-500">{{ $stage['label'] }}</div>
-          <div class="text-xl font-black text-gray-950 mt-1">{{ $stage['count'] }}</div>
-          <div class="text-xs font-semibold text-gray-400 mt-0.5">
+        <div style="background:#f9fafb;border:1px solid #eef0f3;border-radius:12px;padding:12px 14px;min-width:0;">
+          <div style="font-size:12.5px;color:#6b7280;line-height:1.35;word-break:normal;overflow-wrap:normal;hyphens:none;"><span style="color:#9ca3af;font-weight:800;">{{ $i + 1 }}.</span> {{ $stage['label'] }}</div>
+          <div style="font-size:22px;font-weight:900;color:#030712;margin-top:4px;">{{ $stage['count'] }}</div>
+          <div style="font-size:11.5px;font-weight:600;color:#9ca3af;margin-top:2px;line-height:1.4;">
             %{{ $stage['percent_of_total'] }} toplam
             @if($stage['percent_of_prev'] !== null)
-              · %{{ $stage['percent_of_prev'] }} önceki adımdan
+              <br>%{{ $stage['percent_of_prev'] }} önceki adımdan
             @endif
           </div>
         </div>
-        @if(! $loop->last)
-          <div class="flex items-center text-gray-300 text-lg px-1">→</div>
-        @endif
       @endforeach
     </div>
   @endif

@@ -311,7 +311,9 @@
   main nav[role="navigation"] > div > div { min-width: 0; }
   /* Yan yana öğeler sığmazsa alt satıra geçer; ızgara kutuları içerik yüzünden taşmaz; uzun metin kayar. */
   main .flex:not(.flex-nowrap):not(.flex-col) { flex-wrap: wrap; }
-  main .grid > *, main .flex > * { min-width: 0; }
+  /* Izgara kutuları içerik yüzünden taşmasın; yan yana (flex) kutular ise DARALMAZ, alt satıra geçer
+     (daralma izni kelimeleri harf harf kırıyordu - satış hunisi kartı, 15 Kasım 2026). */
+  main .grid > * { min-width: 0; }
   main pre, main code { white-space: pre-wrap; word-break: break-word; }
   main div, main p, main span, main a, main li, main label { overflow-wrap: break-word; }
   main img, main video, main canvas, main iframe { max-width: 100%; }

@@ -133,13 +133,17 @@ class ExpertController extends Controller
             ->with('city:id,name')->orderBy('name')->get(['id', 'name', 'title', 'city_id']);
 
         // 25 Ekim 2026: filtresiz sayfada "Popüler aramalar" bağlantıları (il / ilçe / branş açılış sayfaları).
-        $populer = $hasFilter || $seo ? collect() : \App\Support\DoktorSeo::dagilim()->whereNotNull('ilce_slug')->whereNotNull('brans_slug')
+        // 15 Kasım 2026: fizyoterapistler ayrı satırda (diş doktoru aramaları çok olduğu için ortak listede kayboluyorlardı).
+        $populerFzt = $hasFilter || $seo ? collect() : \App\Support\DoktorSeo::dagilim()->where('brans_slug', 'fizyoterapist')
+            ->groupBy('il_slug')->map(fn ($g) => ['il_slug' => $g->first()['il_slug'], 'ilce_slug' => null, 'ad' => $g->first()['il_ad'], 'toplam' => $g->sum('adet')])
+            ->sortByDesc('toplam')->take(16)->values();
+        $populer = $hasFilter || $seo ? collect() : \App\Support\DoktorSeo::dagilim()->whereNotNull('ilce_slug')->whereNotNull('brans_slug')->where('brans_slug', '!=', 'fizyoterapist')
             ->groupBy(fn ($r) => $r['il_slug'].'|'.$r['ilce_slug'].'|'.$r['brans_slug'])
             ->map(fn ($g) => $g->first() + ['toplam' => $g->sum('adet')])->sortByDesc('toplam')->take(30)->values();
         $populerIller = $hasFilter || $seo ? collect() : \App\Support\DoktorSeo::dagilim()->groupBy('il_slug')
             ->map(fn ($g) => ['il_slug' => $g->first()['il_slug'], 'il_ad' => $g->first()['il_ad'], 'toplam' => $g->sum('adet')])->sortByDesc('toplam')->take(20)->values();
 
-        return view('themes._shared.experts.index', compact('experts', 'cities', 'districtMap', 'branches', 'activeExpertSlug', 'activeExpert', 'publiclyVisible', 'hasFilter', 'destekciler', 'seo', 'populer', 'populerIller'));
+        return view('themes._shared.experts.index', compact('experts', 'cities', 'districtMap', 'branches', 'activeExpertSlug', 'activeExpert', 'publiclyVisible', 'hasFilter', 'destekciler', 'seo', 'populer', 'populerIller', 'populerFzt'));
     }
     /**
      * 25 Ekim 2026: kart açılması / telefon tıklaması (sayfadaki betik gönderir).

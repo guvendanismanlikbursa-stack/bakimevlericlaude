@@ -63,21 +63,26 @@ class ExpertSeoController extends Controller
         $yer = $ilceAdi ? $ilceAdi.' ('.$city->name.')' : $city->name;
         // 15 Kasım 2026: fizyoterapistler doktor değildir - sayfa metinlerinde "doktor/hekim/muayenehane" yerine kendi adları.
         $fzt = $bransSlug === 'fizyoterapist';
-        $tekil = $fzt ? 'fizyoterapist' : 'doktor';
-        $neYazi = $brans ? $brans['cogul'] : 'Özel Doktorlar';
-        $neKucuk = mb_strtolower($brans ? $brans['cogul'] : 'özel doktorlar', 'UTF-8');
+        // Branşsız il/ilçe sayfası: orada fizyoterapist de varsa metinler ikisini birlikte anar.
+        $karma = ! $bransSlug && $kapsam->where('brans_slug', 'fizyoterapist')->sum('adet') > 0;
+        $tekil = $fzt ? 'fizyoterapist' : ($karma ? 'doktor ya da fizyoterapist' : 'doktor');
+        $neYazi = $brans ? $brans['cogul'] : ($karma ? 'Özel Doktorlar ve Fizyoterapistler' : 'Özel Doktorlar');
+        $neKucuk = mb_strtolower($brans ? $brans['cogul'] : ($karma ? 'özel doktor ve fizyoterapist' : 'özel doktorlar'), 'UTF-8');
         $yol = '/uzmanlar/'.$city->slug.($ilceSlug ? '/'.$ilceSlug : '').($bransSlug ? '/'.$bransSlug : '');
         $sayfa = max(1, (int) $request->query('page', 1));
 
         $h1 = ($ilceAdi ?: $city->name).' '.$neYazi.($brans ? ' ('.$brans['title'].')' : '');
-        $title = $h1.($ilceAdi ? ' – '.$city->name : '').' | '.$adet.' '.($fzt ? 'Fizyoterapist' : 'Doktor').', Adres ve Telefon'.($sayfa > 1 ? ' – Sayfa '.$sayfa : '');
+        $title = $h1.($ilceAdi ? ' – '.$city->name : '').' | '.$adet.' '.($fzt ? 'Fizyoterapist' : ($karma ? 'Doktor ve Fizyoterapist' : 'Doktor')).', Adres ve Telefon'.($sayfa > 1 ? ' – Sayfa '.$sayfa : '');
         $aciklama = $yer.' bölgesindeki '.$adet.' '.($fzt ? 'fizyoterapist' : $neKucuk).' için '.($fzt ? 'adres, telefon ve çalışma saati' : 'klinik, adres ve telefon').' bilgileri. Liste herkese açık kaynaklardan derlenir ve alfabetiktir.';
 
         $giris = $fzt
             ? $yer.' bölgesinde çalışan '.$adet.' fizyoterapist aşağıda alfabetik sırayla listelenmiştir. '
               .'Her fizyoterapistin kartında adres, telefon ve çalışma saatleri yer alır; randevu doğrudan fizyoterapistle görüşülerek alınır.'
-            : $yer.' bölgesinde muayenehanesi bulunan '.$adet.' '.$neKucuk.' aşağıda alfabetik sırayla listelenmiştir. '
-              .'Her doktorun kartında klinik, adres ve telefon bilgisi yer alır; randevu doğrudan doktorun muayenehanesinden alınır.';
+            : ($karma
+                ? $yer.' bölgesinde çalışan '.$adet.' özel doktor ve bireysel fizyoterapist aşağıda alfabetik sırayla listelenmiştir. '
+                  .'Her kartta adres ve telefon bilgisi yer alır; randevu doğrudan doktorun muayenehanesinden ya da fizyoterapistle görüşülerek alınır.'
+                : $yer.' bölgesinde muayenehanesi bulunan '.$adet.' '.$neKucuk.' aşağıda alfabetik sırayla listelenmiştir. '
+                  .'Her doktorun kartında klinik, adres ve telefon bilgisi yer alır; randevu doğrudan doktorun muayenehanesinden alınır.');
         if (! $ilceSlug) {
             $enCok = $kapsam->whereNotNull('ilce')->groupBy('ilce')->map->sum('adet')->sortDesc()->take(4);
             if ($enCok->count() > 1) {
@@ -87,18 +92,18 @@ class ExpertSeoController extends Controller
 
         $sss = [
             ['soru' => $yer.' bölgesinde kaç '.$neKucuk.' listeleniyor?', 'cevap' => 'Sitemizde şu an '.$yer.' için '.$adet.' kayıt bulunuyor. Liste düzenli olarak güncellenir.'],
-            ['soru' => 'Randevu nasıl alabilirim?', 'cevap' => $fzt ? 'Listede fizyoterapistin kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, fizyoterapistle doğrudan görüşülerek alınır.' : 'Listede doktorun kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, doktorun muayenehanesiyle yapılır.'],
+            ['soru' => 'Randevu nasıl alabilirim?', 'cevap' => $karma ? 'Listede kartı açıp telefon numarasına dokunarak doktoru ya da fizyoterapisti doğrudan arayabilirsiniz.' : ($fzt ? 'Listede fizyoterapistin kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, fizyoterapistle doğrudan görüşülerek alınır.' : 'Listede doktorun kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, doktorun muayenehanesiyle yapılır.')],
         ];
         // 28 Ekim 2026: "hangi durumlarda başvurulur" sorusu kaldırıldı (TTB md. 14 - uzmanlık dışı anahtar kelime).
         $sss[] = ['soru' => 'Bu liste nasıl hazırlanıyor?', 'cevap' => 'Bilgiler herkese açık güncel kaynaklardan derlenir. Sıralama alfabetiktir; hiçbir '.$tekil.' öne çıkarılmaz ve liste reklam amacı taşımaz.'];
-        $sss[] = ['soru' => 'Siteniz randevu ya da yönlendirme hizmeti veriyor mu?', 'cevap' => $fzt ? 'Hayır. Sitemiz fizyoterapistlerle danışanlar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve fizyoterapistler sitemize üye değildir. İletişim doğrudan fizyoterapistle kurulur.' : 'Hayır. Sitemiz hekimlerle hastalar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve hekimler sitemize üye değildir. İletişim doğrudan muayenehaneyle kurulur.'];
+        $sss[] = ['soru' => 'Siteniz randevu ya da yönlendirme hizmeti veriyor mu?', 'cevap' => ($fzt || $karma) ? 'Hayır. Sitemiz '.($karma ? 'hekimler ve fizyoterapistlerle' : 'fizyoterapistlerle').' danışanlar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve '.($karma ? 'hekimler ile fizyoterapistler' : 'fizyoterapistler').' sitemize üye değildir. İletişim doğrudan '.($karma ? 'muayenehane ya da fizyoterapistle' : 'fizyoterapistle').' kurulur.' : ($fzt ? 'Hayır. Sitemiz fizyoterapistlerle danışanlar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve fizyoterapistler sitemize üye değildir. İletişim doğrudan fizyoterapistle kurulur.' : 'Hayır. Sitemiz hekimlerle hastalar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve hekimler sitemize üye değildir. İletişim doğrudan muayenehaneyle kurulur.')];
 
         // Bağlantılar: aynı ildeki ilçeler, aynı ilçedeki branşlar, il geneli
         $link = fn (array $p) => brand_route('experts.landing', $p);
         $ilceLinkleri = $dagilim->whereNotNull('ilce_slug')->when($bransSlug, fn ($c) => $c->where('brans_slug', $bransSlug))
             ->groupBy('ilce_slug')->map(fn ($g) => ['ad' => $g->countBy('ilce')->sortDesc()->keys()->first(), 'adet' => $g->sum('adet'), 'slug' => $g->first()['ilce_slug']])
             ->reject(fn ($x) => $x['slug'] === $ilceSlug)->sortByDesc('adet')->take(24)
-            ->map(fn ($x) => ['ad' => $x['ad'].($brans ? ' '.$brans['cogul'] : ' doktorları'), 'adet' => $x['adet'], 'url' => $link(array_filter(['il' => $city->slug, 'a' => $x['slug'], 'b' => $bransSlug]))])->values();
+            ->map(fn ($x) => ['ad' => $x['ad'].($brans ? ' '.$brans['cogul'] : ($karma ? ' doktor ve fizyoterapistleri' : ' doktorları')), 'adet' => $x['adet'], 'url' => $link(array_filter(['il' => $city->slug, 'a' => $x['slug'], 'b' => $bransSlug]))])->values();
         $bransLinkleri = $dagilim->when($ilceSlug, fn ($c) => $c->where('ilce_slug', $ilceSlug))->whereNotNull('brans_slug')
             ->groupBy('brans_slug')->map(fn ($g, $s) => ['slug' => $s, 'adet' => $g->sum('adet')])
             ->reject(fn ($x) => $x['slug'] === $bransSlug)->sortByDesc('adet')
