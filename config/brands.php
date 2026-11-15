@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 $allCategoryScopes = ['yasli-bakim', 'cocuk-bakim', 'ozel-egitim', 'rehabilitasyon', 'fizik-tedavi'];
 

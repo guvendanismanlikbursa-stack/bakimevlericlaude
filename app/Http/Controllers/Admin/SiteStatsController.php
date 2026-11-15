@@ -15,6 +15,8 @@ class SiteStatsController extends Controller
 
     public function index(Request $request)
     {
+        // 15 Kasım 2026: kullanıcının kararı - ziyaret rakamları Google Analytics'ten (bkz. App\Support\AnalitikPanelVerisi).
+        $ga = $this->analitik($request);
         $brands = config('brands.brands');
         $today = now()->toDateString();
         $last7 = now()->subDays(6)->toDateString();
@@ -151,7 +153,41 @@ class SiteStatsController extends Controller
             'brands', 'visitStats', 'dailySeries', 'families', 'cityCounts', 'totalFamilies', 'withLocation', 'verifiedCount',
             'donemler', 'donem', 'trafik', 'trafikBaslangic', 'trafikGunluk', 'donemBas', 'donemSon', 'gercekDonem', 'gercekGunluk',
             'gercekBaslangic', 'botEngel', 'botEngelGunluk', 'supheliFirmalar', 'engelliListe', 'gozcuSon'
-        ));
+        ) + $ga);
+    }
+
+    private function analitik(Request $request): array
+    {
+        $donemler = \App\Support\AnalitikPanelVerisi::DONEMLER;
+        $gun = array_key_exists((int) $request->query('gun'), $donemler) ? (int) $request->query('gun') : 30;
+        $site = in_array($request->query('site'), \App\Services\GoogleVeriServisi::SITELER, true) ? $request->query('site') : 'hepsi';
+        $ilId = $request->filled('il') ? (int) $request->query('il') : null;
+        $bolum = $request->filled('bolum') ? (string) $request->query('bolum') : null;
+        $v = app(\App\Support\AnalitikPanelVerisi::class);
+        $sonuc = ['gaDonemler' => $donemler, 'gaGun' => $gun, 'gaSite' => $site, 'gaIl' => $ilId, 'gaBolum' => $bolum,
+            'ga' => null, 'gaHam' => null, 'gaHata' => null, 'gaHazir' => app(\App\Services\GoogleVeriServisi::class)->hazirMi(),
+            'gaIller' => \App\Models\City::orderBy('name')->get(['id', 'name'])];
+        if (! $sonuc['gaHazir']) {
+            return $sonuc;
+        }
+        try {
+            if ($request->boolean('yenile')) {
+                @set_time_limit(180);
+                $v->cek($gun);
+            }
+            $ham = $v->ham($gun);
+            if (! $ham) {
+                @set_time_limit(180);
+                $ham = $v->cek($gun);
+            }
+            $sonuc['gaHam'] = ['tarih' => $ham['tarih'], 'bas' => $ham['bas'], 'son' => $ham['son'], 'sc_bas' => $ham['sc_bas'], 'sc_son' => $ham['sc_son']];
+            $sonuc['ga'] = $v->hazirla($ham, $site, $ilId, $bolum);
+        } catch (\Throwable $e) {
+            report($e);
+            $sonuc['gaHata'] = $e->getMessage();
+        }
+
+        return $sonuc;
     }
 
     public function showFamily(FamilyUser $familyUser)

@@ -139,132 +139,13 @@
   @endif
 </div>
 
-{{-- 29 Agustos 2026: kullanicinin talebi - "kullanicilar hangi kurum
-     turunu en cok ariyor" sorusuna panelde dogrudan cevap (bkz.
-     Admin\DashboardController::categoryDemandSummary()) - tahmin degil,
-     kurumlarin gercek goruntulenme sayisina gore dagilim.
-     6 Eylul 2026: kullanicinin bildirdigi gercek gozlem - "yuzdeler hic
-     degismiyor" (TUM ZAMANLAR toplami kullaniliyordu, bkz. controller ayni
-     tarihli yorum) - artik SON 30 GUNDEKI GERCEK degisim gosteriliyor.
-     Ayrica doldurma cubugu "bg-primary" adinda TANIMLI OLMAYAN bir Tailwind
-     rengi kullaniyordu (bkz. site-stats sayfasindaki ayni turden hata) -
-     gorunmez kaliyordu, gercek bir hex renge cevrildi. --}}
-{{-- 26 Ekim 2026: kullanıcının talebi - 4 bölümde son 24 saatlik giriş sayaçları. --}}
-<div class="bg-white rounded-xl shadow-sm p-5 mb-10">
-  <h2 class="font-bold text-lg mb-1">Son 24 Saat — Bölümlere Giriş</h2>
-  <p class="text-xs text-gray-500 mb-4">Kurum / doktor sayfası açılışları. <b>Gerçek kişi:</b> bot hariç, aynı tarayıcı ya da bağlantı aynı sayfayı 24 saatte 1 kez sayılır. <b>Toplam giriş:</b> her açılış; arama motoru botları ve tekrar açılışlar dahil.</p>
-  <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
-    @foreach($son24 as $s)
-      @php $oran = $s['toplam'] > 0 ? round($s['gercek'] / $s['toplam'] * 100) : 0; @endphp
-      <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:14px 16px;">
-        <div style="font-weight:800;color:#111827;">{{ $s['baslik'] === 'Doktorlar' ? '🩺 ' : '' }}{{ $s['baslik'] }}</div>
-        <div style="margin-top:8px;font-size:26px;font-weight:900;color:#1e6f5c;line-height:1;">{{ number_format($s['gercek'], 0, ',', '.') }}</div>
-        <div style="font-size:12.5px;font-weight:700;color:#6b7280;margin-top:2px;">👤 gerçek kişi</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:800;color:#0b5d8c;line-height:1;">{{ number_format($s['toplam'], 0, ',', '.') }}</div>
-        <div style="font-size:12.5px;font-weight:700;color:#6b7280;margin-top:2px;">🌐 toplam giriş (bot dahil)</div>
-        @if($s['toplam'] > 0)<div style="margin-top:8px;font-size:12px;color:#6b7280;">Girişlerin %{{ $oran }}'i tekil gerçek kişi</div>@endif
-      </div>
-    @endforeach
-  </div>
-  <p class="text-xs text-gray-400 mt-3">Doktorlar bölümü sayımı 26.10.2026'da başladı; ilk günlerde düşük görünmesi normaldir.</p>
-</div>
-
-<div class="bg-white rounded-xl shadow-sm p-5 mb-10">
-  <h2 class="font-bold text-lg mb-1">Kurum Türüne Göre İlgi</h2>
-  @if($categoryDemand['has_trend_data'])
-    <p class="text-xs text-gray-500 mb-4">Son 30 günde kazanılan görüntülenmeye göre — tahmin değil, gerçek kullanıcı verisi.</p>
-  @else
-    <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
-      30 günlük gerçek trend verisi henüz birikiyor (yaklaşık {{ $categoryDemand['days_until_trend'] }} gün sonra hazır olacak) — o zamana kadar aşağıda kurumların bugüne kadarki TOPLAM görüntülenmesine göre dağılım gösteriliyor, bu yüzden gün gün neredeyse hiç değişmez.
-    </p>
-  @endif
-  <div class="space-y-3">
-    @foreach($categoryDemand['rows'] as $row)
-      <div>
-        <div class="flex items-center justify-between text-sm mb-1">
-          <span class="font-semibold text-gray-800">{{ $row['title'] }}</span>
-          <span class="font-black text-gray-950">%{{ number_format($row['percent'], 1, ',', '.') }} <span class="font-normal text-gray-400">({{ number_format($row['count'], 0, ',', '.') }} görüntülenme)</span></span>
-        </div>
-        <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden">
-          <div class="h-full rounded-full" style="width: {{ $row['percent'] }}%; background:#0b5d8c;"></div>
-        </div>
-      </div>
-    @endforeach
-  </div>
-</div>
-
-{{-- 6 Eylul 2026: kullanicinin talebi - yukaridaki kart bot dahil TUM
-     istekleri sayan views_count'u kullaniyor (kullanicinin kendi eski
-     talebi uzerine). Bu YENI, AYRI kart SADECE gercek (bot haric, oturumda
-     24 saatte 1 kez) tiklamayi gosterir - bkz. Admin\DashboardController::
-     categoryRealClickSummary() ayni tarihli yorum. --}}
-<div class="bg-white rounded-xl shadow-sm p-5 mb-10" id="en-cok-tiklanan">
-  <h2 class="font-bold text-lg mb-1">Gerçek Tıklama (Bot Hariç)</h2>
-  <p class="text-xs text-gray-500 mb-4">
-    Son 30 gün · yalnızca bilinen arama motoru/SEO botları hariç tutulan, aynı tarayıcının aynı kurumu 24 saatte yalnızca 1 kez saydığı ölçüm
-    @if($realClickDemand['tracking_since'])
-      · takip başlangıcı: {{ \Illuminate\Support\Carbon::parse($realClickDemand['tracking_since'])->format('d.m.Y') }}
-    @endif
-  </p>
-  @if($realClickDemand['total'] === 0)
-    <p class="text-sm text-gray-400">Henüz gerçek tıklama kaydı yok.</p>
-  @else
-    <div class="space-y-3">
-      @foreach($realClickDemand['rows'] as $row)
-        <div>
-          <div class="flex items-center justify-between text-sm mb-1">
-            <span class="font-semibold text-gray-800">{{ $row['title'] }}</span>
-            <span class="font-black text-gray-950">%{{ number_format($row['percent'], 1, ',', '.') }} <span class="font-normal text-gray-400">({{ number_format($row['count'], 0, ',', '.') }} tıklama)</span></span>
-          </div>
-          <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden">
-            <div class="h-full rounded-full" style="width: {{ $row['percent'] }}%; background:#1e6f5c;"></div>
-          </div>
-        </div>
-      @endforeach
-    </div>
-    <div class="mt-5 pt-5 border-t border-gray-100">
-      <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
-        <div class="text-xs font-semibold text-gray-500">En çok tıklanan kurumlar</div>
-        {{-- 13 Ekim 2026: kullanicinin talebi - "turkiye ve il bazli
-             filtreleme olmali, bolum bolum de ayrilmali" - sayfa bu GET
-             formuyla kendini ayni filtrelerle yeniden yukler, secim
-             degisince otomatik gonderir (JS'siz de calisan native fallback). --}}
-        {{-- 13 Ekim 2026: kullanicinin talebi - "filtreleme yapinca sayfanin
-             en ustune atmamali, oldugu yerde kalmali". GET formu dogasi
-             geregi sayfayi yeniden yukler (bu, native/JS'siz fallback'in
-             BEDELI) - ama action'a #en-cok-tiklanan eklenince tarayici
-             yukleme sonrasi otomatik bu karta kaydirir, en uste atmaz. --}}
-        <form method="GET" action="{{ url()->current() }}#en-cok-tiklanan" class="flex items-center gap-2 flex-wrap">
-          <select name="il" onchange="this.form.submit()" class="border rounded-lg px-2 py-1 text-xs">
-            <option value="">Türkiye geneli</option>
-            @foreach($realClickCities as $city)
-              <option value="{{ $city->id }}" @selected($realClickCityId === $city->id)>{{ $city->name }}</option>
-            @endforeach
-          </select>
-          <select name="bolum" onchange="this.form.submit()" class="border rounded-lg px-2 py-1 text-xs">
-            <option value="">Tüm bölümler</option>
-            @foreach($realClickSections as $slug => $section)
-              <option value="{{ $slug }}" @selected($realClickSection === $slug)>{{ $section['title'] }}</option>
-            @endforeach
-          </select>
-          <noscript><button type="submit" class="border rounded-lg px-2 py-1 text-xs font-semibold">Filtrele</button></noscript>
-        </form>
-      </div>
-      @if($realClickDemand['top_facilities']->isNotEmpty())
-        <div class="space-y-1.5">
-          @foreach($realClickDemand['top_facilities'] as $i => $f)
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-700"><span class="text-gray-400 font-mono text-xs mr-1">{{ $i + 1 }}.</span>{{ $f->name }}</span>
-              <span class="font-black text-gray-950">{{ number_format($f->toplam, 0, ',', '.') }} tıklama</span>
-            </div>
-          @endforeach
-        </div>
-      @else
-        <p class="text-sm text-gray-400">Bu filtreyle eşleşen gerçek tıklama kaydı yok.</p>
-      @endif
-    </div>
-  @endif
-</div>
+{{-- 15 Kasım 2026: kullanıcının talebi - "bütün istatistikleri tek sayfada topla" + "sayaçlarımıza güvenmiyorum".
+     Bölümlere giriş, kurum türüne göre ilgi ve en çok tıklanan kurumlar İstatistikler sayfasına taşındı ve
+     Google Analytics verisiyle gösteriliyor (bkz. admin/site-stats/_analytics.blade.php). --}}
+<a href="{{ route('admin.site-stats.index') }}" style="display:block;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:14px;padding:16px 20px;margin-bottom:28px;text-decoration:none;color:#0c4a6e;">
+  <div style="font-size:16px;font-weight:800;">📊 Ziyaretçi, bölüm ve kurum istatistikleri İstatistikler sayfasında →</div>
+  <div style="font-size:13px;margin-top:4px;">Google Analytics verisiyle: 3 site, 4 bölüm, kurum türleri, en çok bakılan kurumlar, trafik kaynakları ve Google arama.</div>
+</a>
 
 <div class="grid md:grid-cols-3 gap-6 mb-10">
   @foreach($stats as $slug => $s)

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'mail' => [
@@ -28,6 +28,10 @@ return [
     // surece layouts/brand.blade.php hicbir script render etmez.
     'google_analytics' => [
         'id' => env('GA4_MEASUREMENT_ID'),
+        // 15 Kasım 2026: admin paneline Analytics verisi çekmek için (mülk kimliği + hizmet hesabı dosyası).
+        'property_id' => env('GA4_PROPERTY_ID'),
+        'credentials' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
+        'ca_bundle' => env('GOOGLE_CA_BUNDLE'),
         'ids' => [
             'bakimevibul' => env('GA4_MEASUREMENT_ID_BAKIMEVIBUL'),
             'bakimeviara' => env('GA4_MEASUREMENT_ID_BAKIMEVIARA'),

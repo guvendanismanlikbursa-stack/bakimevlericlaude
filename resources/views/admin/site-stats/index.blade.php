@@ -1,39 +1,17 @@
 @extends('admin.layout')
-@section('title', 'Site İstatistikleri')
+@section('title', 'İstatistikler')
 
 @section('content')
-<h1 class="text-2xl font-bold mb-6">Sitelere Giriş Sayıları & Aile Konumları</h1>
+{{-- 15 Kasım 2026: kullanıcının talebi - "bütün istatistikleri adminde tek sayfada topla" + "bizim sayaçlarımıza güvenmiyorum".
+     Ziyaret rakamları Google Analytics'ten; bot güvenliği ve aile konumları kendi kayıtlarımızdan (Analytics bunları göremez).
+     Eski sayaç kartları ve giriş trendi kaldırıldı. --}}
+<h1 class="text-2xl font-bold mb-6">İstatistikler</h1>
 
-<h2 class="font-bold text-lg mb-3">Sitelere Giriş Sayıları</h2>
-{{-- 5 Kasım 2026: kullanıcının talebi - sayfada "kişi" yalnızca tek sayaçtır (gerçek ziyaretçi); kartlar, grafik ve tablo aynı rakamı gösterir. --}}
-<p style="font-size:13px;color:#374151;margin:0 0 14px;line-height:1.55;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:9px 12px;">
-  <b style="color:#15803d;">Gerçek ziyaretçi</b> = siteye gerçek tarayıcıyla giren <b>kişi</b> sayısı (her kişi günde bir kez sayılır). Bu sayfadaki bütün kişi sayıları bu rakamdır.
-  <b>Bot dahil giriş</b> (gri) = botlarla birlikte giriş sayısı; ani artış bot saldırısı demektir.
-  @if($gercekBaslangic) (Gerçek ziyaretçi sayımı {{ \Illuminate\Support\Carbon::parse($gercekBaslangic)->format('d.m.Y') }} tarihinde başladı.) @endif
-</p>
-<div class="grid md:grid-cols-3 gap-4 mb-10">
-  @foreach($visitStats as $slug => $stat)
-    <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-      <div class="font-black text-gray-950 mb-3">{{ $stat['name'] }}</div>
-      @if(($stat['kat'] ?? 0) >= 2 && $stat['today'] >= 2000)
-        <div style="background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:10px;padding:7px 10px;font-size:12.5px;font-weight:700;line-height:1.45;margin-bottom:10px;">⚠ Olağan dışı bot yoğunluğu: bugünkü bot dahil giriş, son 7 gün ortalamasının {{ number_format($stat['kat'], 1, ',', '.') }} katı.</div>
-      @endif
-      @if(($stat['engel_bugun'] ?? 0) > 0)
-        <div style="background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:700;margin-bottom:10px;">🛡 Bugün engellenen bot isteği: {{ number_format($stat['engel_bugun'], 0, ',', '.') }}</div>
-      @endif
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        @foreach(['today' => 'Bugün', 'last_7_days' => 'Son 7 gün', 'last_30_days' => 'Son 30 gün', 'last_90_days' => 'Son 3 ay', 'last_180_days' => 'Son 6 ay', 'last_365_days' => 'Son 1 yıl', 'all_time' => 'Toplam'] as $k => $ad)
-          <div>
-            <div class="text-gray-500 text-xs">{{ $ad }}</div>
-            <div class="font-black text-lg" style="color:#15803d;">{{ number_format($stat['real'][$k] ?? 0, 0, ',', '.') }}</div>
-            <div style="font-size:11.5px;color:#9ca3af;font-weight:600;">bot dahil giriş: {{ number_format($stat[$k], 0, ',', '.') }}</div>
-          </div>
-        @endforeach
-      </div>
-    </div>
-  @endforeach
-</div>
+@include('admin.site-stats._analytics')
 
+<details style="background:#fff;border:1px solid #eef0f3;border-radius:14px;padding:16px 20px;margin-bottom:22px;" @if(request()->has('donem')) open @endif>
+  <summary style="cursor:pointer;font-size:17px;font-weight:800;color:#111827;">🛡 Güvenlik — Bot İzleme <span style="font-size:12px;font-weight:700;color:#6b7280;">(sunucu kayıtlarımız; Analytics botları göremez)</span></summary>
+  <div style="margin-top:16px;">
 {{-- 1 Kasım 2026: saatlik bot gözcüsü - bugünkü şüpheli ağlar, tek dokunuşla engelleme (mobil dahil). --}}
 @php $btn = 'display:inline-block;border:0;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;'; @endphp
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10" id="supheli-aglar">
@@ -235,127 +213,8 @@
     @endif
   @endif
 </div>
-
-@if($dailySeries->isNotEmpty())
-  {{-- 5 Ekim 2026: kullanicinin talebi - eski cubuk grafik "amator" bulundu,
-       Google Search Console tarzi (duz cizgi, altinda hafif dolgu, hover'da
-       tooltip) bir cizgi grafigine + 1/7/30 gun arasinda gecis yapan bir
-       anahtara cevrildi. Sunucudan hep 30 gunluk veri gelir, 1/7 gunluk
-       gorunum JS tarafinda son N gunu dilimleyerek (ekstra istek atmadan,
-       aninda) uretilir. Chart.js admin panelinde ilk kez kullaniliyor,
-       jsDelivr CDN'den yuklenir (CSP yok, sorun degil). --}}
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-10">
-    <div class="flex items-center justify-between gap-4 flex-wrap mb-4">
-      <h2 class="font-bold text-lg">Giriş Trendi</h2>
-      <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm" id="trend-range-toggle">
-        <button type="button" data-range="1" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 transition">1 gün</button>
-        <button type="button" data-range="7" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">7 gün</button>
-        <button type="button" data-range="30" class="trend-range-btn px-3 py-1.5 font-semibold border-l border-gray-200 transition" style="background:#0b5d8c;color:#fff;">30 gün</button>
-        <button type="button" data-range="90" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">90 gün</button>
-        <button type="button" data-range="180" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">6 ay</button>
-        <button type="button" data-range="365" class="trend-range-btn px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition">1 yıl</button>
-      </div>
-    </div>
-    <div style="height: 260px;">
-      <canvas id="trend-chart"></canvas>
-    </div>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script>
-    (function () {
-      @php $trendVeri = $dailySeries->map(fn ($rows, $date) => ['date' => $date, 'total' => $rows->sum('count'), 'real' => $rows->sum('real_count')])->values(); @endphp
-      var dailyData = @json($trendVeri);
-      var aylar = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-      function formatDate(d) {
-        var parts = d.split('-');
-        return parseInt(parts[2], 10) + ' ' + aylar[parseInt(parts[1], 10) - 1];
-      }
-      function formatNum(n) {
-        return new Intl.NumberFormat('tr-TR').format(n);
-      }
-
-      var ctx = document.getElementById('trend-chart').getContext('2d');
-      var gradient = ctx.createLinearGradient(0, 0, 0, 260);
-      gradient.addColorStop(0, 'rgba(11,93,140,0.22)');
-      gradient.addColorStop(1, 'rgba(11,93,140,0.01)');
-
-      var chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Bot dahil giriş',
-            data: [],
-            borderColor: '#0b5d8c',
-            backgroundColor: gradient,
-            fill: true,
-            tension: 0.35,
-            borderWidth: 2.5,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-            pointBackgroundColor: '#0b5d8c',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-          }, {
-            label: 'Gerçek ziyaretçi',
-            data: [],
-            borderColor: '#15803d',
-            backgroundColor: 'rgba(21,128,61,0.08)',
-            fill: true,
-            tension: 0.35,
-            borderWidth: 2.5,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-          }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: true, labels: { boxWidth: 12, font: { size: 12 } } },
-            tooltip: {
-              backgroundColor: '#111827',
-              padding: 10,
-              titleFont: { weight: 'bold' },
-              callbacks: { label: function (c) { return c.dataset.label + ': ' + formatNum(c.parsed.y); } },
-            },
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 11 }, maxRotation: 0, autoSkip: true } },
-            y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: { size: 11 }, callback: formatNum } },
-          },
-        },
-      });
-
-      function render(rangeDays) {
-        var slice = dailyData.slice(-rangeDays);
-        chart.data.labels = slice.map(function (d) { return formatDate(d.date); });
-        chart.data.datasets[0].data = slice.map(function (d) { return d.total; });
-        chart.data.datasets[1].data = slice.map(function (d) { return d.real; });
-        chart.data.datasets[0].pointRadius = rangeDays <= 7 ? 3 : 0;
-        chart.update();
-      }
-
-      render(30);
-
-      document.querySelectorAll('.trend-range-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          document.querySelectorAll('.trend-range-btn').forEach(function (b) {
-            b.style.background = '';
-            b.style.color = '';
-            b.classList.add('text-gray-600');
-          });
-          btn.style.background = '#0b5d8c';
-          btn.style.color = '#fff';
-          btn.classList.remove('text-gray-600');
-          render(parseInt(btn.dataset.range, 10));
-        });
-      });
-    })();
-  </script>
-@endif
+</details>
 
 <h2 class="font-bold text-lg mb-3">Kayıt Olan Ailelerin Konumları</h2>
 <div class="grid sm:grid-cols-4 gap-4 mb-6">

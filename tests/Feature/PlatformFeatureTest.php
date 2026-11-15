@@ -4407,6 +4407,45 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('yeni kurum kaydı onay bekliyor');
     }
 
+    // 15 Kasım 2026: İstatistikler sayfası - Google Analytics sayfa adresleri 4 bölüme ve site seçimine doğru ayrılır.
+    public function test_analitik_panel_bolum_ve_site_ayrimi(): void
+    {
+        $bos = fn () => [];
+        $ham = [
+            'ozet' => [['bakimevleri.com', 'date_range_0', 10, 8, 12, 6, 30, 600], ['bakimevibul.com', 'date_range_0', 100, 99, 100, 2, 100, 50]],
+            'toplam' => [['date_range_0', 110, 107, 112, 8, 130, 650]],
+            'gunluk' => [['20261110', 'bakimevleri.com', 5, 3]],
+            'kanal' => [['Direct', 'bakimevibul.com', 100, 2, 100], ['Organic Search', 'bakimevleri.com', 12, 6, 10]],
+            'kaynak' => [], 'sehir' => [], 'cihaz' => [], 'olay' => [],
+            'sayfa' => [
+                ['/kurumlar/'.$this->elderlyFacility->slug, 'bakimevleri.com', 7, 5],
+                ['/kurumlar/'.$this->childFacility->slug.'/', 'www.bakimevibul.com', 4, 3],
+                ['/doktor/ornek-dr', 'bakimevleri.com', 3, 2],
+                ['/uzmanlar/bursa', 'bakimevibul.com', 2, 2],
+            ],
+            'sc' => [],
+        ];
+        $v = app(\App\Support\AnalitikPanelVerisi::class);
+        $yasli = service_section_for_scope($this->elderlyCategory->brand_scope)['slug'];
+        $cocuk = service_section_for_scope($this->childCategory->brand_scope)['slug'];
+
+        $hepsi = $v->hazirla($ham, 'hepsi', null, null);
+        $this->assertSame(7, (int) $hepsi['bolumler'][$yasli]['goruntulenme']);
+        $this->assertSame(4, (int) $hepsi['bolumler'][$cocuk]['goruntulenme']);
+        $this->assertSame(5, (int) $hepsi['bolumler']['doktorlar']['goruntulenme']);
+        $this->assertSame(110, (int) $hepsi['toplam']['simdi']['activeUsers']);
+        $this->assertSame($this->elderlyFacility->id, $hepsi['kurumlar'][0]['id']);
+
+        $tek = $v->hazirla($ham, 'bakimevleri.com', null, null);
+        $this->assertSame(0, (int) $tek['bolumler'][$cocuk]['goruntulenme']);
+        $this->assertSame(3, (int) $tek['bolumler']['doktorlar']['goruntulenme']);
+        $this->assertSame(10, (int) $tek['toplam']['simdi']['activeUsers']);
+        $this->assertSame(['Organic Search'], array_keys($tek['kanallar']));
+
+        $suzulmus = $v->hazirla($ham, 'hepsi', null, $cocuk);
+        $this->assertSame([$this->childFacility->id], array_column($suzulmus['kurumlar'], 'id'));
+    }
+
     public function test_admin_dashboard_shows_category_demand_by_real_views(): void
     {
         $this->elderlyFacility->update(['views_count' => 300]);
@@ -4414,18 +4453,12 @@ class PlatformFeatureTest extends TestCase
 
         $response = $this->withSession(['admin_id' => $this->admin->id])->get('/admin');
 
-        $response->assertOk()->assertSee('Kurum Türüne Göre İlgi');
-        $content = $response->getContent();
-        $this->assertStringContainsString('300 görüntülenme', $content);
-        $this->assertStringContainsString('100 görüntülenme', $content);
+        // 15 Kasım 2026: kullanıcının kararı - ziyaret/ilgi istatistikleri İstatistikler sayfasına taşındı (Google Analytics);
+        // Genel Bakış yalnızca oraya bağlantı verir.
+        $response->assertOk()->assertSee('İstatistikler sayfasında')->assertDontSee('Kurum Türüne Göre İlgi');
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/site-istatistikleri')->assertOk()
+            ->assertSee('Ziyaretçi İstatistikleri')->assertSee('Google Analytics bağlantısı ayarlı değil');
 
-        // Yasli bakim (300 goruntulenme) daha fazla ilgi gordugu icin
-        // listede once gelmeli (siralama toplam goruntulenmeye gore).
-        $yasliPos = strpos($content, 'Yaşlı Bakım');
-        $ozelEgitimPos = strpos($content, service_section_for_scope($this->childCategory->brand_scope)['title']);
-        $this->assertNotFalse($yasliPos);
-        $this->assertNotFalse($ozelEgitimPos);
-        $this->assertLessThan($ozelEgitimPos, $yasliPos);
     }
 
     // 14 Agustos 2026: kullanicinin bildirdigi hata - "kurum ismi yaparak
@@ -8582,9 +8615,9 @@ class PlatformFeatureTest extends TestCase
 
         $this->flushSession();
         $this->withSession(['admin_id' => $this->admin->id])->get(route('admin.dashboard'))->assertOk()
-            ->assertSee('Son 24 Saat — Bölümlere Giriş', false)->assertSee('🩺 Doktorlar', false)
-            ->assertSeeInOrder(['🩺 Doktorlar', '>1<', 'gerçek kişi', '>4<', 'toplam giriş (bot dahil)'], false)
-            ->assertSeeInOrder(['Kurum Türüne Göre İlgi', 'Doktorlar', 'Gerçek Tıklama (Bot Hariç)', 'Doktorlar'], false);
+            // 15 Kasım 2026: bölüm giriş sayıları İstatistikler sayfasında Google Analytics'ten gösteriliyor;
+            // kendi sayacımız kayıt tutmaya devam eder (yukarıdaki sayaç kontrolleri).
+            ->assertSee('İstatistikler sayfasında', false)->assertDontSee('Son 24 Saat — Bölümlere Giriş', false);
     }
 
     // 26 Ekim 2026: erişim kayıtlarından ziyaretçi türü özeti + Site İstatistikleri dönem tablosu.
@@ -9060,7 +9093,8 @@ Metin {standart_fiyat}"])->assertRedirect();
         $satir = \App\Models\SiteVisit::where('brand', 'bakimevibul')->whereDate('visit_date', now()->toDateString())->first();
         $this->assertSame(1, (int) $satir->real_count);
         $this->assertGreaterThanOrEqual(1, (int) $satir->count);
-        $this->actingAsAdminForStats()->get('/admin/site-istatistikleri')->assertOk()->assertSee('Gerçek ziyaretçi')->assertSee('bot dahil');
+        // 15 Kasım 2026: sayaç kartları kaldırıldı (rakamlar Google Analytics'ten); sayfa açılır, bot güvenliği bölümü durur.
+        $this->actingAsAdminForStats()->get('/admin/site-istatistikleri')->assertOk()->assertSee('Güvenlik — Bot İzleme');
     }
 
     private function actingAsAdminForStats()

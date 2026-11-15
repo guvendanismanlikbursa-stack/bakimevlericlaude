@@ -16,6 +16,7 @@
              sadece 130M), sadece test surecinin toplam kumulatif yuku PHP'nin
              varsayilan sinirina cok yakindi. Guvenli bir marjla sabitlendi. -->
         <ini name="memory_limit" value="256M"/>
+        <env name="GA4_PROPERTY_ID" value=""/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="base64:7jX1vxIvvxYzE0whngqq70YpXGzUxnWKiNoOMvNK0/A="/>
         <env name="APP_DEBUG" value="true"/>

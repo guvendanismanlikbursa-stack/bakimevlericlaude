@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Services\GoogleVeriServisi;
+use App\Support\AnalitikPanelVerisi;
+use Illuminate\Console\Command;
+
+// 15 Kasım 2026: İstatistikler sayfasının Analytics / Search Console verisini her sabah önbelleğe çeker
+// (sayfa açılışında Google'a gidilmez). Dönemler ayrı ayrı zamanlanır ki web-cron uzun işi kesmesin.
+class GoogleVeriYenile extends Command
+{
+    protected $signature = 'google:veri-yenile {--gun=* : 7, 30, 90, 365 (boşsa hepsi)}';
+
+    protected $description = 'Google Analytics ve Search Console verisini İstatistikler sayfası için önbelleğe çeker';
+
+    public function handle(GoogleVeriServisi $g, AnalitikPanelVerisi $v): int
+    {
+        if (! $g->hazirMi()) {
+            $this->warn('GA4_PROPERTY_ID ya da hizmet hesabı dosyası yok, atlandı.');
+
+            return self::SUCCESS;
+        }
+        @set_time_limit(300);
+        $gunler = array_map('intval', $this->option('gun') ?: array_keys(AnalitikPanelVerisi::DONEMLER));
+        foreach ($gunler as $gun) {
+            if (! isset(AnalitikPanelVerisi::DONEMLER[$gun])) {
+                continue;
+            }
+            $t = microtime(true);
+            $v->cek($gun);
+            $this->info("$gun gün: tamam (".round(microtime(true) - $t, 1).' sn)');
+        }
+
+        return self::SUCCESS;
+    }
+}
