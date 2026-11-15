@@ -180,9 +180,14 @@
         <div style="height:{{ max(200, count($ga['dallar']) * 30) }}px;"><canvas id="ga-dal"></canvas></div>
       @endif
     </div>
-    <div style="{{ $kart }}" id="en-cok-bakilan">
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
-        <h2 style="{{ $h2 }}">{{ $doktorSecili ? 'En Çok Bakılan Doktorlar' : 'En Çok Bakılan Kurumlar' }}</h2>
+    {{-- 15 Kasım 2026: kullanıcının talebi - "çok yer kaplıyor", iki liste akordiyon (tıklayınca açılır); filtre seçiliyse açık gelir. --}}
+    @php $akordiyonBaslik = 'cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;'; $filtreVar = $gaIl || $gaBolum; @endphp
+    <details style="{{ $kart }}" id="en-cok-bakilan" @if($filtreVar) open @endif>
+      <summary style="{{ $akordiyonBaslik }}">
+        <h2 style="{{ $h2 }}margin:0;">{{ $doktorSecili ? '🩺 En Çok Bakılan Doktorlar' : '🏠 En Çok Bakılan Kurumlar' }} <span style="font-size:12px;font-weight:700;color:#6b7280;">({{ count($doktorSecili ? $ga['doktorlar'] : $ga['kurumlar']) }})</span></h2>
+        <span style="font-size:13px;font-weight:800;color:#0b5d8c;white-space:nowrap;">Göster / gizle ▾</span>
+      </summary>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;">
         <form method="GET" action="{{ url()->current() }}#en-cok-bakilan" style="display:flex;gap:6px;flex-wrap:wrap;">
           <input type="hidden" name="gun" value="{{ $gaGun }}">@if($gaSite !== 'hepsi')<input type="hidden" name="site" value="{{ $gaSite }}">@endif
           <select name="il" onchange="this.form.submit()" style="border:1px solid #d1d5db;border-radius:8px;padding:4px 6px;font-size:12.5px;">
@@ -202,17 +207,20 @@
       @else
         {!! $listeTablo($liste, $doktorSecili ? 'doktor' : 'kurum') !!}
       @endif
-    </div>
+    </details>
     @unless($doktorSecili)
-      <div style="{{ $kart }}" id="en-cok-bakilan-doktor">
-        <h2 style="{{ $h2 }}">🩺 En Çok Bakılan Doktorlar</h2>
-        <p style="{{ $acik }}">Yukarıdaki il seçimi bu listeye de uygulanır.</p>
+      <details style="{{ $kart }}" id="en-cok-bakilan-doktor" @if($gaIl) open @endif>
+        <summary style="{{ $akordiyonBaslik }}">
+          <h2 style="{{ $h2 }}margin:0;">🩺 En Çok Bakılan Doktorlar <span style="font-size:12px;font-weight:700;color:#6b7280;">({{ count($ga['doktorlar']) }})</span></h2>
+          <span style="font-size:13px;font-weight:800;color:#0b5d8c;white-space:nowrap;">Göster / gizle ▾</span>
+        </summary>
+        <p style="{{ $acik }}margin-top:10px;">Kurumlar listesindeki il seçimi bu listeye de uygulanır.</p>
         @if(empty($ga['doktorlar']))
           <p style="font-size:13.5px;color:#9ca3af;">Bu filtreyle görüntülenen doktor yok.</p>
         @else
           {!! $listeTablo($ga['doktorlar'], 'doktor') !!}
         @endif
-      </div>
+      </details>
     @endunless
   </div>
 

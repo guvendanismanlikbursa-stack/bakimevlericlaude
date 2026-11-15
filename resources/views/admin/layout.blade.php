@@ -323,7 +323,7 @@
       var bas = t.tHead ? t.tHead.rows[t.tHead.rows.length - 1] : null;
       if (bas) {
         Array.prototype.forEach.call(bas.cells, function (c) {
-          var ad = (c.innerText || '').replace(/\s+/g, ' ').trim();
+          var ad = (c.textContent || '').replace(/\s+/g, ' ').trim();   // gizli (kapalı akordiyon) tabloda da okunur
           for (var i = 0; i < (c.colSpan || 1); i++) basliklar.push(ad);
         });
       }
@@ -331,12 +331,12 @@
         Array.prototype.forEach.call(tb.rows, function (r) {
           var k = 0;
           Array.prototype.forEach.call(r.cells, function (c) {
-            if (!c.hasAttribute('data-etiket')) c.setAttribute('data-etiket', basliklar[k] || '');
+            if (!c.getAttribute('data-etiket')) c.setAttribute('data-etiket', basliklar[k] || '');
             k += c.colSpan || 1;
           });
         });
       });
-      t.dataset.etiketlendi = '1';
+      if (basliklar.some(function (x) { return x; })) t.dataset.etiketlendi = '1';
     }
     function kontrol() {
       document.querySelectorAll('main table').forEach(function (t) {
