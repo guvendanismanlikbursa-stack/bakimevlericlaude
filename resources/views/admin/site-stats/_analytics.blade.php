@@ -95,7 +95,7 @@
     <div style="{{ $kart }}">
       <h2 style="{{ $h2 }}">Sitelere Göre</h2>
       <p style="{{ $acik }}">İlgi oranı %15'in altındaysa ziyaretlerin çoğu birkaç saniyede çıkıyor demektir; bu genellikle bot ya da yanlış yönlendirilmiş trafiktir.</p>
-      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:720px;">
+      <div><table style="width:100%;border-collapse:collapse;">
         <thead><tr>@foreach(['Site', 'Etkileşimli ziyaret', 'Ziyaretçi', 'Değişim', 'Ziyaret', 'Sayfa', 'İlgi oranı', 'Ort. süre'] as $b)<th style="{{ $th }}{{ $loop->first ? 'text-align:left;' : '' }}">{{ $b }}</th>@endforeach</tr></thead>
         <tbody>
           @foreach(\App\Services\GoogleVeriServisi::SITELER as $s)
@@ -148,16 +148,41 @@
     <div style="height:240px;"><canvas id="ga-bolum"></canvas></div>
   </div>
 
-  {{-- Kurum türü + en çok bakılan kurumlar (alt alta, tam genişlik) --}}
+  {{-- Tür + en çok bakılanlar (kurumlar ve doktorlar; alt alta, tam genişlik).
+       15 Kasım 2026: kullanıcı "doktorlar bölümünün verileri yok, bütün istatistiklere eklemelisin" dedi. --}}
+  @php
+    $listeTablo = function (array $satirlar, string $tur) use ($th, $td, $sayi) {
+        $h = '<table style="width:100%;border-collapse:collapse;margin-top:8px;"><thead><tr><th style="'.$th.'text-align:left;">'.($tur === 'doktor' ? 'Doktor' : 'Kurum').'</th><th style="'.$th.'">Görüntüleme</th><th style="'.$th.'">Kişi</th></tr></thead><tbody>';
+        foreach ($satirlar as $i => $f) {
+            $link = $tur === 'doktor' ? route('admin.experts.edit', $f['id']) : route('admin.facilities.edit', $f['id']);
+            $h .= '<tr><td style="'.$td.'text-align:left;white-space:normal;"><span style="color:#9ca3af;font-size:11.5px;">'.($i + 1).'.</span> '
+                .'<a href="'.e($link).'" style="color:#111827;font-weight:700;text-decoration:none;">'.e($f['ad']).'</a> '
+                .'<span style="font-size:11.5px;color:#9ca3af;">'.e($f['il']).' · '.e($tur === 'doktor' ? $f['dal'] : $f['tur']).'</span></td>'
+                .'<td style="'.$td.'font-weight:800;">'.$sayi($f['goruntulenme']).'</td><td style="'.$td.'">'.$sayi($f['kisi']).'</td></tr>';
+        }
+
+        return $h.'</tbody></table>';
+    };
+    $doktorSecili = $gaBolum === 'doktorlar';
+  @endphp
   <div>
     <div style="{{ $kart }}">
-      <h2 style="{{ $h2 }}">Kurum Türüne Göre İlgi</h2>
-      <p style="{{ $acik }}">Kurum sayfası görüntülenmesinin türlere dağılımı.</p>
+      <h2 style="{{ $h2 }}">Türe Göre İlgi <span style="font-size:12px;font-weight:700;color:#6b7280;">(kurumlar ve doktorlar)</span></h2>
+      <p style="{{ $acik }}">Kurum ve doktor sayfalarının görüntülenmesinin türlere dağılımı.</p>
       <div style="height:{{ max(200, count($ga['turler']) * 34) }}px;"><canvas id="ga-tur"></canvas></div>
+    </div>
+    <div style="{{ $kart }}">
+      <h2 style="{{ $h2 }}">🩺 Doktorlar — Uzmanlık Alanına Göre İlgi</h2>
+      <p style="{{ $acik }}">Doktor sayfalarının (doktor kartı ve doktor web sitesi) uzmanlık alanlarına dağılımı.</p>
+      @if(empty($ga['dallar']))
+        <p style="font-size:13.5px;color:#9ca3af;">Bu dönemde doktor sayfası görüntülenmesi yok.</p>
+      @else
+        <div style="height:{{ max(200, count($ga['dallar']) * 30) }}px;"><canvas id="ga-dal"></canvas></div>
+      @endif
     </div>
     <div style="{{ $kart }}" id="en-cok-bakilan">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
-        <h2 style="{{ $h2 }}">En Çok Bakılan Kurumlar</h2>
+        <h2 style="{{ $h2 }}">{{ $doktorSecili ? 'En Çok Bakılan Doktorlar' : 'En Çok Bakılan Kurumlar' }}</h2>
         <form method="GET" action="{{ url()->current() }}#en-cok-bakilan" style="display:flex;gap:6px;flex-wrap:wrap;">
           <input type="hidden" name="gun" value="{{ $gaGun }}">@if($gaSite !== 'hepsi')<input type="hidden" name="site" value="{{ $gaSite }}">@endif
           <select name="il" onchange="this.form.submit()" style="border:1px solid #d1d5db;border-radius:8px;padding:4px 6px;font-size:12.5px;">
@@ -165,30 +190,30 @@
             @foreach($gaIller as $il)<option value="{{ $il->id }}" @selected($gaIl === $il->id)>{{ $il->name }}</option>@endforeach
           </select>
           <select name="bolum" onchange="this.form.submit()" style="border:1px solid #d1d5db;border-radius:8px;padding:4px 6px;font-size:12.5px;">
-            <option value="">Tüm bölümler</option>
+            <option value="">Tüm bölümler (kurumlar)</option>
             @foreach(service_sections() as $s)<option value="{{ $s['slug'] }}" @selected($gaBolum === $s['slug'])>{{ $s['title'] }}</option>@endforeach
+            <option value="doktorlar" @selected($doktorSecili)>🩺 Doktorlar</option>
           </select>
         </form>
       </div>
-      @if(empty($ga['kurumlar']))
-        <p style="font-size:13.5px;color:#9ca3af;margin-top:10px;">Bu filtreyle görüntülenen kurum yok.</p>
+      @php $liste = $doktorSecili ? $ga['doktorlar'] : $ga['kurumlar']; @endphp
+      @if(empty($liste))
+        <p style="font-size:13.5px;color:#9ca3af;margin-top:10px;">Bu filtreyle görüntülenen {{ $doktorSecili ? 'doktor' : 'kurum' }} yok.</p>
       @else
-        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;margin-top:8px;min-width:520px;">
-          <thead><tr><th style="{{ $th }}text-align:left;">Kurum</th><th style="{{ $th }}">Görüntüleme</th><th style="{{ $th }}">Kişi</th></tr></thead>
-          <tbody>
-            @foreach($ga['kurumlar'] as $i => $f)
-              <tr>
-                <td style="{{ $td }}text-align:left;white-space:normal;"><span style="color:#9ca3af;font-size:11.5px;">{{ $i + 1 }}.</span>
-                  <a href="{{ route('admin.facilities.edit', $f['id']) }}" style="color:#111827;font-weight:700;text-decoration:none;">{{ $f['ad'] }}</a>
-                  <span style="font-size:11.5px;color:#9ca3af;">{{ $f['il'] }} · {{ $f['tur'] }}</span></td>
-                <td style="{{ $td }}font-weight:800;">{{ $sayi($f['goruntulenme']) }}</td>
-                <td style="{{ $td }}">{{ $sayi($f['kisi']) }}</td>
-              </tr>
-            @endforeach
-          </tbody>
-        </table></div>
+        {!! $listeTablo($liste, $doktorSecili ? 'doktor' : 'kurum') !!}
       @endif
     </div>
+    @unless($doktorSecili)
+      <div style="{{ $kart }}" id="en-cok-bakilan-doktor">
+        <h2 style="{{ $h2 }}">🩺 En Çok Bakılan Doktorlar</h2>
+        <p style="{{ $acik }}">Yukarıdaki il seçimi bu listeye de uygulanır.</p>
+        @if(empty($ga['doktorlar']))
+          <p style="font-size:13.5px;color:#9ca3af;">Bu filtreyle görüntülenen doktor yok.</p>
+        @else
+          {!! $listeTablo($ga['doktorlar'], 'doktor') !!}
+        @endif
+      </div>
+    @endunless
   </div>
 
   {{-- Trafik kaynakları --}}
@@ -197,7 +222,7 @@
     <p style="{{ $acik }}"><b>Doğrudan giriş</b> yüksek ama ilgi oranı çok düşükse bu trafik büyük olasılıkla bottur. Google'dan gelenler en değerli ziyaretçilerdir.</p>
     <div style="display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:start;">
       <div style="height:260px;"><canvas id="ga-kanal"></canvas></div>
-      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+      <div><table style="width:100%;border-collapse:collapse;">
         <thead><tr><th style="{{ $th }}text-align:left;">Kaynak</th><th style="{{ $th }}">Ziyaret</th><th style="{{ $th }}">Etkileşimli</th><th style="{{ $th }}">İlgi oranı</th></tr></thead>
         <tbody>
           @foreach($ga['kanallar'] as $ad => [$oturum, $etk, $kisi])
@@ -235,7 +260,7 @@
   <div style="{{ $kart }}">
     <h2 style="{{ $h2 }}">Ziyaretçilerin Yaptığı İşlemler</h2>
     <p style="{{ $acik }}">Sitede ölçülen işlemler. Form ve dış bağlantı (telefon / WhatsApp) tıklamaları talebe en yakın göstergelerdir.</p>
-    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+    <div><table style="width:100%;border-collapse:collapse;">
       <thead><tr><th style="{{ $th }}text-align:left;">İşlem</th><th style="{{ $th }}">Sayı</th><th style="{{ $th }}">Kişi</th></tr></thead>
       <tbody>
         @foreach($ga['olaylar'] as $ad => [$adet, $kisi])
@@ -277,7 +302,7 @@
     <div style="height:240px;"><canvas id="ga-sc"></canvas></div>
     <details style="margin-top:12px;" open>
       <summary style="cursor:pointer;font-size:13px;font-weight:800;color:#0b5d8c;">En çok tıklanan aramalar</summary>
-      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;margin-top:8px;">
+      <div><table style="width:100%;border-collapse:collapse;margin-top:8px;">
         <thead><tr><th style="{{ $th }}text-align:left;">Aranan kelime</th><th style="{{ $th }}">Tıklama</th><th style="{{ $th }}">Gösterim</th><th style="{{ $th }}">Sıra</th></tr></thead>
         <tbody>@foreach($ga['sorgular'] as $kelime => $v)<tr><td style="{{ $td }}text-align:left;white-space:normal;">{{ $kelime }}</td><td style="{{ $td }}font-weight:800;">{{ $sayi($v['tiklama']) }}</td><td style="{{ $td }}">{{ $sayi($v['gosterim']) }}</td><td style="{{ $td }}">{{ number_format($v['sira'], 1, ',', '.') }}</td></tr>@endforeach</tbody>
       </table></div>
@@ -295,10 +320,12 @@
       'gunler' => array_map(fn ($g) => \Illuminate\Support\Carbon::parse($g)->format('d.m'), $gunler), 'seri' => $seri,
       'bolum' => ['ad' => array_column($ga['bolumler'], 'baslik'), 'gor' => array_column($ga['bolumler'], 'goruntulenme'), 'kisi' => array_column($ga['bolumler'], 'kisi')],
       'tur' => ['ad' => array_keys($ga['turler']), 'deger' => array_values($ga['turler'])],
+      'dal' => ['ad' => array_keys($ga['dallar']), 'deger' => array_values($ga['dallar'])],
       'kanal' => ['ad' => array_map(fn ($k) => $kanalAd[$k] ?? $k, array_keys($ga['kanallar'])), 'deger' => array_map(fn ($v) => $v[0], array_values($ga['kanallar']))],
       'sehir' => ['ad' => array_keys($ga['sehirler']), 'deger' => array_map(fn ($v) => $v[0], array_values($ga['sehirler']))],
       'cihaz' => ['ad' => array_map(fn ($k) => ['mobile' => 'Telefon', 'desktop' => 'Bilgisayar', 'tablet' => 'Tablet', 'smart tv' => 'Akıllı TV'][$k] ?? $k, array_keys($ga['cihazlar'])), 'deger' => array_map(fn ($v) => $v[0], array_values($ga['cihazlar']))],
-      'sc' => ['gun' => array_map(fn ($g) => \Illuminate\Support\Carbon::parse($g)->format('d.m'), array_keys($ga['scGunluk'])), 'tik' => array_column($ga['scGunluk'], 'tiklama'), 'gos' => array_column($ga['scGunluk'], 'gosterim')],
+      'sc' => ['gun' => array_map(fn ($g) => \Illuminate\Support\Carbon::parse($g)->format('d.m'), array_keys($ga['scGunluk'])), 'tik' => array_column($ga['scGunluk'], 'tiklama'), 'gos' => array_column($ga['scGunluk'], 'gosterim'),
+        'site' => array_map(fn ($s) => ['ad' => $s, 'renk' => $renk[$s], 'tik' => array_map(fn ($g) => $g['site'][$s] ?? 0, array_values($ga['scGunluk']))], array_keys($ga['sc']))],
     ];
   @endphp
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -335,11 +362,12 @@
     var yatay = function (id, d, renk) {
       new Chart(document.getElementById(id), {
         type: 'bar',
-        data: { labels: d.ad, datasets: [{ label: id === 'ga-tur' ? 'Görüntüleme' : 'Ziyaretçi', data: d.deger, backgroundColor: renk, borderRadius: 5 }] },
+        data: { labels: d.ad, datasets: [{ label: id === 'ga-sehir' ? 'Ziyaretçi' : 'Görüntüleme', data: d.deger, backgroundColor: renk, borderRadius: 5 }] },
         options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { callback: bicim } } } }
       });
     };
     yatay('ga-tur', G.tur, '#0b5d8c');
+    if (document.getElementById('ga-dal')) yatay('ga-dal', G.dal, '#7c3aed');
     yatay('ga-sehir', G.sehir, '#1e6f5c');
 
     var pasta = function (id, d) {
@@ -357,9 +385,11 @@
 
     new Chart(document.getElementById('ga-sc'), {
       type: 'line',
-      data: { labels: G.sc.gun, datasets: [
-        { label: 'Tıklama', data: G.sc.tik, borderColor: '#0b5d8c', backgroundColor: '#0b5d8c22', fill: true, tension: .3, pointRadius: 0, borderWidth: 2, yAxisID: 'y' },
-        { label: 'Gösterim', data: G.sc.gos, borderColor: '#7c3aed', tension: .3, pointRadius: 0, borderWidth: 2, yAxisID: 'y2' }] },
+      // 15 Kasım 2026: 3 site seçiliyken her sitenin tıklaması ayrı renkli çizgi; mor kesikli çizgi toplam gösterim.
+      data: { labels: G.sc.gun, datasets: (G.sc.site.length > 1
+          ? G.sc.site.map(function (s) { return { label: s.ad + ' tıklama', data: s.tik, borderColor: s.renk, backgroundColor: s.renk, tension: .3, pointRadius: 0, borderWidth: 2, yAxisID: 'y' }; })
+          : [{ label: 'Tıklama', data: G.sc.tik, borderColor: '#0b5d8c', backgroundColor: '#0b5d8c22', fill: true, tension: .3, pointRadius: 0, borderWidth: 2, yAxisID: 'y' }])
+        .concat([{ label: G.sc.site.length > 1 ? 'Gösterim (3 site toplam)' : 'Gösterim', data: G.sc.gos, borderColor: '#7c3aed', borderDash: [5, 4], tension: .3, pointRadius: 0, borderWidth: 2, yAxisID: 'y2' }]) },
       options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
         scales: { y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Tıklama' } }, y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Gösterim' } } } }
     });

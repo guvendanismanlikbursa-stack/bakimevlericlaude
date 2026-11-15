@@ -290,5 +290,71 @@
   })();
 </script>
 
+{{-- 15 Kasım 2026: KURAL (kullanıcı) - "scroll ile sağa sola kaydırmadan bütün kartlardaki veriler görünmeli,
+     admin panelindeki bütün sayfalar için geçerli". Bulunduğu kutuya sığmayan her tablo otomatik olarak kart
+     görünümüne geçer: her satır bir kart, her hücre "sütun adı: değer" olarak alt alta. Geniş ekranda tablo aynen kalır. --}}
+<style>
+  table.kart-tablo { min-width: 0 !important; width: 100% !important; border: 0 !important; }
+  table.kart-tablo thead { display: none !important; }
+  table.kart-tablo, table.kart-tablo tbody, table.kart-tablo tfoot, table.kart-tablo tr { display: block !important; width: 100% !important; }
+  table.kart-tablo tr { border: 1px solid #e5e7eb !important; border-radius: 12px; margin: 0 0 10px; padding: 8px 12px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+  table.kart-tablo td, table.kart-tablo th { display: flex !important; justify-content: space-between; align-items: flex-start; gap: 12px; width: auto !important; min-width: 0 !important;
+    text-align: right !important; white-space: normal !important; word-break: break-word; border: 0 !important; padding: 5px 0 !important; }
+  table.kart-tablo td::before, table.kart-tablo th::before { content: attr(data-etiket); flex: 0 0 auto; max-width: 45%; text-align: left; font-size: 12px; font-weight: 700; color: #6b7280; }
+  table.kart-tablo td[data-etiket=""]::before, table.kart-tablo th[data-etiket=""]::before { display: none; }
+  table.kart-tablo td[data-etiket=""], table.kart-tablo td:first-child { display: block !important; text-align: left !important; }
+  table.kart-tablo td:first-child::before { display: block; max-width: none; margin-bottom: 2px; }
+  table.kart-tablo td:empty { display: none !important; }
+  /* Sayfa numaraları (1 2 3 … 457) dar ekranda alt satıra geçer, yana taşmaz. */
+  main nav[role="navigation"] > div, main nav[role="navigation"] span.inline-flex { flex-wrap: wrap !important; gap: 6px 0; }
+  main nav[role="navigation"] > div > div { min-width: 0; }
+  /* Yan yana öğeler sığmazsa alt satıra geçer; ızgara kutuları içerik yüzünden taşmaz; uzun metin kayar. */
+  main .flex:not(.flex-nowrap):not(.flex-col) { flex-wrap: wrap; }
+  main .grid > *, main .flex > * { min-width: 0; }
+  main pre, main code { white-space: pre-wrap; word-break: break-word; }
+  main div, main p, main span, main a, main li, main label { overflow-wrap: break-word; }
+  main img, main video, main canvas, main iframe { max-width: 100%; }
+</style>
+<script>
+  (function () {
+    function etiketle(t) {
+      if (t.dataset.etiketlendi) return;
+      var basliklar = [];
+      var bas = t.tHead ? t.tHead.rows[t.tHead.rows.length - 1] : null;
+      if (bas) {
+        Array.prototype.forEach.call(bas.cells, function (c) {
+          var ad = (c.innerText || '').replace(/\s+/g, ' ').trim();
+          for (var i = 0; i < (c.colSpan || 1); i++) basliklar.push(ad);
+        });
+      }
+      Array.prototype.forEach.call(t.tBodies, function (tb) {
+        Array.prototype.forEach.call(tb.rows, function (r) {
+          var k = 0;
+          Array.prototype.forEach.call(r.cells, function (c) {
+            if (!c.hasAttribute('data-etiket')) c.setAttribute('data-etiket', basliklar[k] || '');
+            k += c.colSpan || 1;
+          });
+        });
+      });
+      t.dataset.etiketlendi = '1';
+    }
+    function kontrol() {
+      document.querySelectorAll('main table').forEach(function (t) {
+        if (t.closest('[data-kart-yok]')) return;
+        t.classList.remove('kart-tablo');
+        var kutu = t.parentElement;
+        while (kutu && kutu !== document.body && getComputedStyle(kutu).display === 'contents') kutu = kutu.parentElement;
+        var sigmiyor = t.scrollWidth > kutu.clientWidth + 2 || t.getBoundingClientRect().right > document.querySelector('main').getBoundingClientRect().right + 2;
+        if (sigmiyor) { etiketle(t); t.classList.add('kart-tablo'); }
+      });
+    }
+    var bekle;
+    window.addEventListener('resize', function () { clearTimeout(bekle); bekle = setTimeout(kontrol, 150); });
+    document.addEventListener('toggle', function () { setTimeout(kontrol, 0); }, true);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', kontrol); else kontrol();
+    window.addEventListener('load', kontrol);
+    window.adminTabloKontrol = kontrol;
+  })();
+</script>
 </body>
 </html>

@@ -144,7 +144,7 @@ class AnalitikPanelVerisi
         $cihazlar = $topla($ham['cihaz'], 5);
         $olaylar = $topla($ham['olay'], 25);
         $sayfalar = $topla($ham['sayfa'], 100000);
-        [$bolumler, $turler, $kurumlar, $enCokSayfa] = $this->sayfalariAyir($sayfalar, $ilId, $bolumSec);
+        [$bolumler, $turler, $kurumlar, $enCokSayfa, $dallar, $doktorlar] = $this->sayfalariAyir($sayfalar, $ilId, $bolumSec);
 
         // Search Console
         $sc = [];
@@ -158,6 +158,7 @@ class AnalitikPanelVerisi
             foreach ($v['gunluk'] as $r) {
                 $scGunluk[$r['keys'][0]]['tiklama'] = ($scGunluk[$r['keys'][0]]['tiklama'] ?? 0) + $r['clicks'];
                 $scGunluk[$r['keys'][0]]['gosterim'] = ($scGunluk[$r['keys'][0]]['gosterim'] ?? 0) + $r['impressions'];
+                $scGunluk[$r['keys'][0]]['site'][$s] = $r['clicks'];   // grafikte site site tıklama çizgisi
             }
             foreach ($v['sorgu'] as $r) {
                 $q = $r['keys'][0];
@@ -170,7 +171,7 @@ class AnalitikPanelVerisi
         uasort($sorgular, fn ($a, $b) => $b['tiklama'] <=> $a['tiklama'] ?: $b['gosterim'] <=> $a['gosterim']);
 
         return compact('ozet', 'toplam', 'gunluk', 'kanallar', 'kaynaklar', 'sehirler', 'cihazlar', 'olaylar',
-            'bolumler', 'turler', 'kurumlar', 'enCokSayfa', 'sc', 'scGunluk') + ['sorgular' => array_slice($sorgular, 0, 30, true)];
+            'bolumler', 'turler', 'kurumlar', 'enCokSayfa', 'dallar', 'doktorlar', 'sc', 'scGunluk') + ['sorgular' => array_slice($sorgular, 0, 30, true)];
     }
 
     private function sayfalariAyir(array $sayfalar, ?int $ilId, ?string $bolumSec): array
@@ -181,6 +182,7 @@ class AnalitikPanelVerisi
         }
         $bolumler['doktorlar'] = ['baslik' => 'Doktorlar', 'goruntulenme' => 0, 'kisi' => 0];
         $kurumSayfa = [];
+        $doktorSayfa = [];   // 15 Kasım 2026: doktor detay sayfaları (uzmanlık alanı + en çok bakılan doktorlar)
         $enCok = [];
         foreach ($sayfalar as $yol => [$gor, $kisi]) {
             $yol = rtrim((string) strtok((string) $yol, '?'), '/') ?: '/';
@@ -191,6 +193,11 @@ class AnalitikPanelVerisi
             } elseif (preg_match('#^/(doktor|dr|uzmanlar)(/|$)#', $yol)) {
                 $bolumler['doktorlar']['goruntulenme'] += $gor;
                 $bolumler['doktorlar']['kisi'] += $kisi;
+                if (preg_match('#^/(doktor|dr)/([A-Za-z0-9-]+)#', $yol, $dm)) {
+                    $anahtar = $dm[1].':'.$dm[2];   // /doktor/{uzman slug}, /dr/{doktor sitesi slug}
+                    $doktorSayfa[$anahtar][0] = ($doktorSayfa[$anahtar][0] ?? 0) + $gor;
+                    $doktorSayfa[$anahtar][1] = ($doktorSayfa[$anahtar][1] ?? 0) + $kisi;
+                }
             }
         }
         uasort($enCok, fn ($a, $b) => $b[0] <=> $a[0]);
@@ -219,6 +226,48 @@ class AnalitikPanelVerisi
         arsort($turler);
         usort($kurumlar, fn ($a, $b) => $b['goruntulenme'] <=> $a['goruntulenme']);
 
-        return [$bolumler, $turler, array_slice($kurumlar, 0, 25), array_slice($enCok, 0, 25, true)];
+        // Doktorlar: uzmanlık alanına göre ilgi + en çok bakılan doktorlar (il filtresi ortak)
+        $uzmanSlug = [];
+        $siteSlug = [];
+        foreach (array_keys($doktorSayfa) as $a) {
+            [$tur, $sl] = explode(':', $a, 2);
+            $tur === 'doktor' ? $uzmanSlug[] = $sl : $siteSlug[] = $sl;
+        }
+        $kolon = ['experts.id', 'experts.name', 'experts.title', 'experts.branch_label', 'experts.city_id', 'cities.name as il'];
+        $uzmanToplam = [];   // uzman id => [görüntülenme, kişi, kayıt]
+        foreach (array_chunk($uzmanSlug, 500) as $parca) {
+            foreach (DB::table('experts')->leftJoin('cities', 'cities.id', '=', 'experts.city_id')->whereIn('experts.slug', $parca)->get(array_merge($kolon, ['experts.slug as anahtar'])) as $e) {
+                [$g, $k] = $doktorSayfa['doktor:'.$e->anahtar];
+                $uzmanToplam[$e->id] = [($uzmanToplam[$e->id][0] ?? 0) + $g, ($uzmanToplam[$e->id][1] ?? 0) + $k, $e];
+            }
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable('expert_websites')) {
+            foreach (array_chunk($siteSlug, 500) as $parca) {
+                foreach (DB::table('expert_websites as w')->join('experts', 'experts.id', '=', 'w.expert_id')->leftJoin('cities', 'cities.id', '=', 'experts.city_id')
+                    ->whereIn('w.slug', $parca)->get(array_merge($kolon, ['w.slug as anahtar'])) as $e) {
+                    [$g, $k] = $doktorSayfa['dr:'.$e->anahtar];
+                    $uzmanToplam[$e->id] = [($uzmanToplam[$e->id][0] ?? 0) + $g, ($uzmanToplam[$e->id][1] ?? 0) + $k, $e];
+                }
+            }
+        }
+        $dallar = [];
+        $doktorlar = [];
+        foreach ($uzmanToplam as [$gor, $kisi, $e]) {
+            $dal = $e->branch_label ?: 'Diğer';
+            $dallar[$dal] = ($dallar[$dal] ?? 0) + $gor;
+            if ($ilId && (int) $e->city_id !== $ilId) {
+                continue;
+            }
+            $doktorlar[] = ['id' => $e->id, 'ad' => trim(($e->title ? $e->title.' ' : '').$e->name), 'il' => $e->il, 'dal' => $dal, 'goruntulenme' => $gor, 'kisi' => $kisi];
+        }
+        arsort($dallar);
+        // Türe göre ilgi grafiğinde doktorlar da bir satır (doktor detay sayfaları toplamı)
+        if ($dallar) {
+            $turler['Doktorlar (tüm uzmanlık alanları)'] = array_sum($dallar);
+            arsort($turler);
+        }
+        usort($doktorlar, fn ($a, $b) => $b['goruntulenme'] <=> $a['goruntulenme']);
+
+        return [$bolumler, $turler, array_slice($kurumlar, 0, 25), array_slice($enCok, 0, 25, true), array_slice($dallar, 0, 15, true), array_slice($doktorlar, 0, 25)];
     }
 }
