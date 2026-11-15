@@ -78,6 +78,7 @@
         <a href="{{ route('admin.facilities.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facilities.*') ? 'bg-gray-700 text-white' : '' }}">Kurumlar</a>
         <a href="{{ route('admin.facility-websites.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.facility-websites.*') ? 'bg-gray-700 text-white' : '' }}">🌐 Kurum Siteleri</a>
         <a href="{{ route('admin.experts.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.experts.*') ? 'bg-gray-700 text-white' : '' }}">Doktorlar</a>
+        @if(\Illuminate\Support\Facades\Route::has('admin.fizyo-tasima.index'))<a href="{{ route('admin.fizyo-tasima.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.fizyo-tasima.*') ? 'bg-gray-700 text-white' : '' }}">↩ Fizyoterapist Taşıması</a>@endif
         {{-- 25 Ekim 2026: kullanıcının talebi - Doktor Siteleri listesi. --}}
         <a href="{{ route('admin.expert-websites.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.expert-websites.*') ? 'bg-gray-700 text-white' : '' }}">🩺 Doktor Siteleri</a>
         {{-- 25 Ekim 2026: kurum + doktor sitesi satış takibi. --}}

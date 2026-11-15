@@ -61,17 +61,23 @@ class ExpertSeoController extends Controller
         ]));
 
         $yer = $ilceAdi ? $ilceAdi.' ('.$city->name.')' : $city->name;
+        // 15 Kasım 2026: fizyoterapistler doktor değildir - sayfa metinlerinde "doktor/hekim/muayenehane" yerine kendi adları.
+        $fzt = $bransSlug === 'fizyoterapist';
+        $tekil = $fzt ? 'fizyoterapist' : 'doktor';
         $neYazi = $brans ? $brans['cogul'] : 'Özel Doktorlar';
         $neKucuk = mb_strtolower($brans ? $brans['cogul'] : 'özel doktorlar', 'UTF-8');
         $yol = '/uzmanlar/'.$city->slug.($ilceSlug ? '/'.$ilceSlug : '').($bransSlug ? '/'.$bransSlug : '');
         $sayfa = max(1, (int) $request->query('page', 1));
 
         $h1 = ($ilceAdi ?: $city->name).' '.$neYazi.($brans ? ' ('.$brans['title'].')' : '');
-        $title = $h1.($ilceAdi ? ' – '.$city->name : '').' | '.$adet.' Doktor, Adres ve Telefon'.($sayfa > 1 ? ' – Sayfa '.$sayfa : '');
-        $aciklama = $yer.' bölgesindeki '.$adet.' '.$neKucuk.' için klinik, adres ve telefon bilgileri. Liste herkese açık kaynaklardan derlenir ve alfabetiktir.';
+        $title = $h1.($ilceAdi ? ' – '.$city->name : '').' | '.$adet.' '.($fzt ? 'Fizyoterapist' : 'Doktor').', Adres ve Telefon'.($sayfa > 1 ? ' – Sayfa '.$sayfa : '');
+        $aciklama = $yer.' bölgesindeki '.$adet.' '.($fzt ? 'fizyoterapist' : $neKucuk).' için '.($fzt ? 'adres, telefon ve çalışma saati' : 'klinik, adres ve telefon').' bilgileri. Liste herkese açık kaynaklardan derlenir ve alfabetiktir.';
 
-        $giris = $yer.' bölgesinde muayenehanesi bulunan '.$adet.' '.$neKucuk.' aşağıda alfabetik sırayla listelenmiştir. '
-            .'Her doktorun kartında klinik, adres ve telefon bilgisi yer alır; randevu doğrudan doktorun muayenehanesinden alınır.';
+        $giris = $fzt
+            ? $yer.' bölgesinde çalışan '.$adet.' fizyoterapist aşağıda alfabetik sırayla listelenmiştir. '
+              .'Her fizyoterapistin kartında adres, telefon ve çalışma saatleri yer alır; randevu doğrudan fizyoterapistle görüşülerek alınır.'
+            : $yer.' bölgesinde muayenehanesi bulunan '.$adet.' '.$neKucuk.' aşağıda alfabetik sırayla listelenmiştir. '
+              .'Her doktorun kartında klinik, adres ve telefon bilgisi yer alır; randevu doğrudan doktorun muayenehanesinden alınır.';
         if (! $ilceSlug) {
             $enCok = $kapsam->whereNotNull('ilce')->groupBy('ilce')->map->sum('adet')->sortDesc()->take(4);
             if ($enCok->count() > 1) {
@@ -81,11 +87,11 @@ class ExpertSeoController extends Controller
 
         $sss = [
             ['soru' => $yer.' bölgesinde kaç '.$neKucuk.' listeleniyor?', 'cevap' => 'Sitemizde şu an '.$yer.' için '.$adet.' kayıt bulunuyor. Liste düzenli olarak güncellenir.'],
-            ['soru' => 'Randevu nasıl alabilirim?', 'cevap' => 'Listede doktorun kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, doktorun muayenehanesiyle yapılır.'],
+            ['soru' => 'Randevu nasıl alabilirim?', 'cevap' => $fzt ? 'Listede fizyoterapistin kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, fizyoterapistle doğrudan görüşülerek alınır.' : 'Listede doktorun kartını açıp telefon numarasına dokunarak doğrudan arayabilirsiniz. Randevu, doktorun muayenehanesiyle yapılır.'],
         ];
         // 28 Ekim 2026: "hangi durumlarda başvurulur" sorusu kaldırıldı (TTB md. 14 - uzmanlık dışı anahtar kelime).
-        $sss[] = ['soru' => 'Bu liste nasıl hazırlanıyor?', 'cevap' => 'Bilgiler herkese açık güncel kaynaklardan derlenir. Sıralama alfabetiktir; hiçbir doktor öne çıkarılmaz ve liste reklam amacı taşımaz.'];
-        $sss[] = ['soru' => 'Siteniz randevu ya da yönlendirme hizmeti veriyor mu?', 'cevap' => 'Hayır. Sitemiz hekimlerle hastalar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve hekimler sitemize üye değildir. İletişim doğrudan muayenehaneyle kurulur.'];
+        $sss[] = ['soru' => 'Bu liste nasıl hazırlanıyor?', 'cevap' => 'Bilgiler herkese açık güncel kaynaklardan derlenir. Sıralama alfabetiktir; hiçbir '.$tekil.' öne çıkarılmaz ve liste reklam amacı taşımaz.'];
+        $sss[] = ['soru' => 'Siteniz randevu ya da yönlendirme hizmeti veriyor mu?', 'cevap' => $fzt ? 'Hayır. Sitemiz fizyoterapistlerle danışanlar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve fizyoterapistler sitemize üye değildir. İletişim doğrudan fizyoterapistle kurulur.' : 'Hayır. Sitemiz hekimlerle hastalar arasında aracılık yapmaz; randevu, ücret ya da yönlendirme hizmeti sunmaz ve hekimler sitemize üye değildir. İletişim doğrudan muayenehaneyle kurulur.'];
 
         // Bağlantılar: aynı ildeki ilçeler, aynı ilçedeki branşlar, il geneli
         $link = fn (array $p) => brand_route('experts.landing', $p);
@@ -98,7 +104,7 @@ class ExpertSeoController extends Controller
             ->reject(fn ($x) => $x['slug'] === $bransSlug)->sortByDesc('adet')
             ->map(fn ($x) => ['ad' => ($ilceAdi ?: $city->name).' '.DoktorSeo::BRANSLAR[$x['slug']]['cogul'], 'adet' => $x['adet'], 'url' => $ilceSlug ? $link(['il' => $city->slug, 'a' => $ilceSlug, 'b' => $x['slug']]) : $link(['il' => $city->slug, 'a' => $x['slug']])])->values();
 
-        $kirinti = [['ad' => 'Özel Doktorlar', 'url' => brand_route('experts.index'), 'asil' => DoktorSeo::asilAdres('/uzmanlar')],
+        $kirinti = [['ad' => ($fzt ? 'Uzmanlar' : 'Özel Doktorlar'), 'url' => brand_route('experts.index'), 'asil' => DoktorSeo::asilAdres('/uzmanlar')],
             ['ad' => $city->name, 'url' => $link(['il' => $city->slug]), 'asil' => DoktorSeo::asilAdres('/uzmanlar/'.$city->slug)]];
         if ($ilceSlug) {
             $kirinti[] = ['ad' => $ilceAdi, 'url' => $link(['il' => $city->slug, 'a' => $ilceSlug]), 'asil' => DoktorSeo::asilAdres('/uzmanlar/'.$city->slug.'/'.$ilceSlug)];
@@ -122,6 +128,7 @@ class ExpertSeoController extends Controller
         $slug = (string) $request->route('slug');
         $expert = Expert::where('slug', $slug)->where('is_published', true)->with('city')->firstOrFail();
         $bransSlug = DoktorSeo::bransSlug($expert->branch, $expert->branch_label);
+        $fzt = $bransSlug === 'fizyoterapist';   // 15 Kasım 2026: fizyoterapist doktor değildir
         $brans = $bransSlug ? DoktorSeo::BRANSLAR[$bransSlug] : null;
         $ilceSlug = $expert->district ? DoktorSeo::ilceSlug($expert->district) : null;
         $city = $expert->city;
@@ -135,7 +142,7 @@ class ExpertSeoController extends Controller
         $siteAdresi = $site && $site->isLive() ? $site->publicUrl() : null;
 
         $link = fn (array $p) => brand_route('experts.landing', $p);
-        $kirinti = [['ad' => 'Özel Doktorlar', 'url' => brand_route('experts.index'), 'asil' => DoktorSeo::asilAdres('/uzmanlar')]];
+        $kirinti = [['ad' => ($fzt ? 'Uzmanlar' : 'Özel Doktorlar'), 'url' => brand_route('experts.index'), 'asil' => DoktorSeo::asilAdres('/uzmanlar')]];
         if ($city) {
             $kirinti[] = ['ad' => $city->name, 'url' => $link(['il' => $city->slug]), 'asil' => DoktorSeo::asilAdres('/uzmanlar/'.$city->slug)];
             if ($ilceSlug) {

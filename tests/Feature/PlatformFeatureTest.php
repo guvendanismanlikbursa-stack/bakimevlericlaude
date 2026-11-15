@@ -4407,6 +4407,46 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('yeni kurum kaydı onay bekliyor');
     }
 
+    // 15 Kasım 2026: bireysel fizyoterapistler kurumlardan Uzmanlar bölümüne taşınır (doktorlar gibi; reklam yok,
+    // doğrudan arama). Sahiplenilmiş kurum taşınmaz, eski adresler 301, veriler korunur, geri alınabilir.
+    public function test_fizyoterapist_uzmana_tasima_ve_geri_alma(): void
+    {
+        $kat = FacilityCategory::create(['name' => 'Bireysel Fizyoterapist', 'slug' => 'bireysel-fizyoterapist', 'brand_scope' => $this->rehabCategory->brand_scope]);
+        $ayse = $this->facility('Fzt Deneme Ayse', $kat, false);
+        $ayse->update(['old_slug' => 'eski-fzt-ayse', 'phone' => '05321112233']);
+        $sahipli = $this->facility('Fzt Sahipli Mehmet', $kat, true);
+        \Illuminate\Support\Facades\DB::table('facility_google_reviews')->insert(['facility_id' => $ayse->id, 'author_name' => 'Veli', 'rating' => 5, 'body' => 'Çok ilgili', 'position' => 0, 'fetched_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+
+        // Admin sekmesi: onay yazılmadan çalışmaz, yazılınca taşır (15 Kasım 2026 kullanıcı talebi).
+        $admin = $this->withSession(['admin_id' => $this->admin->id]);
+        $admin->post('/admin/fizyoterapist-tasima/tasi', ['onay' => 'yanlis'])->assertSessionHasErrors('onay');
+        $this->assertSame(0, \App\Models\Expert::count());
+        $admin->post('/admin/fizyoterapist-tasima/tasi', ['onay' => 'TAŞI'])->assertRedirect();
+
+        $uzman = \App\Models\Expert::where('source', \App\Console\Commands\FizyoterapistUzmanaTasi::KAYNAK)->sole();
+        $this->assertSame('Fizyoterapi', $uzman->branch);
+        $this->assertSame('Fizyoterapist', $uzman->branch_label);
+        $this->assertSame('05321112233', $uzman->phone);
+        $this->assertSame($ayse->id, $uzman->source_payload['kurum_id']);
+        $this->assertCount(1, $uzman->reviews);
+        $this->assertSoftDeleted('facilities', ['id' => $ayse->id, 'uzmana_tasindi_expert_id' => $uzman->id]);
+        $this->assertNotSoftDeleted('facilities', ['id' => $sahipli->id]);
+        $this->assertDatabaseHas('facility_google_reviews', ['facility_id' => $ayse->id]);
+
+        foreach ([$ayse->slug, 'eski-fzt-ayse'] as $eski) {
+            $yanit = $this->get('/site/bakimeviara/kurumlar/'.$eski);
+            $yanit->assertStatus(301);
+            $this->assertStringContainsString('/doktor/'.$uzman->slug, $yanit->headers->get('Location'));
+        }
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/cop-kutusu')->assertOk()->assertDontSee('Fzt Deneme Ayse');
+
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/fizyoterapist-tasima')->assertOk()->assertSee('Kurum haline geri döndür');
+        $this->withSession(['admin_id' => $this->admin->id])->post('/admin/fizyoterapist-tasima/geri-al', ['onay' => 'GERİ AL'])->assertRedirect();
+        $this->assertNotSoftDeleted('facilities', ['id' => $ayse->id, 'uzmana_tasindi_expert_id' => null]);
+        $this->assertSame(0, \App\Models\Expert::withTrashed()->where('source', \App\Console\Commands\FizyoterapistUzmanaTasi::KAYNAK)->count());
+        $this->assertDatabaseCount('expert_slug_redirects', 0);
+    }
+
     // 15 Kasım 2026: İstatistikler sayfası - Google Analytics sayfa adresleri 4 bölüme ve site seçimine doğru ayrılır.
     public function test_analitik_panel_bolum_ve_site_ayrimi(): void
     {

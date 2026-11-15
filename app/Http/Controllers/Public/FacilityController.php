@@ -238,6 +238,14 @@ class FacilityController extends Controller
                 return redirect(brand_route('facilities.show', ['slug' => $yonlendirmeHedefi->slug]), 301);
             }
 
+            // 15 Kasım 2026: Uzmanlar bölümüne taşınan bireysel fizyoterapistlerin eski kurum adresleri.
+            if (\Illuminate\Support\Facades\Schema::hasTable('expert_slug_redirects')) {
+                $uzmanId = \Illuminate\Support\Facades\DB::table('expert_slug_redirects')->where('old_slug', $slug)->value('expert_id');
+                if ($uzmanId && ($uzman = \App\Models\Expert::where('is_published', true)->find($uzmanId))) {
+                    return redirect(brand_route('experts.show', ['slug' => $uzman->slug]), 301);
+                }
+            }
+
             abort(404);
         }
 

@@ -28,6 +28,8 @@ class ExpertController extends Controller
         'cocuk-psikiyatrisi' => ['title' => 'Çocuk Psikiyatrisi', 'label' => 'Çocuk Gelişim Uzmanı'],
         'noroloji' => ['title' => 'Nöroloji', 'label' => 'Beyin ve Sinir Hastalıkları'],
         'ortopedi' => ['title' => 'Ortopedi', 'label' => 'Kemik ve Eklem Hastalıkları'],
+        // 15 Kasım 2026: bireysel fizyoterapistler kurumlardan Uzmanlar bölümüne taşındı.
+        'fizyoterapist' => ['title' => 'Fizyoterapi', 'label' => 'Fizyoterapist'],
     ];
 
     /**

@@ -23,6 +23,7 @@ class ExpertController extends Controller
         'Çocuk Psikiyatrisi' => 'Çocuk Gelişim Uzmanı',
         'Nöroloji' => 'Beyin ve Sinir Hastalıkları',
         'Ortopedi' => 'Kemik ve Eklem Hastalıkları',
+        'Fizyoterapi' => 'Fizyoterapist',   // 15 Kasım 2026: kurumlardan taşınan bireysel fizyoterapistler
     ];
 
     /**

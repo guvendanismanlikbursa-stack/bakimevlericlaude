@@ -26,6 +26,8 @@ class DoktorSeo
         'cocuk-psikiyatrisi' => ['title' => 'Çocuk Psikiyatrisi', 'label' => 'Çocuk Gelişim Uzmanı', 'cogul' => 'Çocuk Psikiyatristleri'],
         'noroloji' => ['title' => 'Nöroloji', 'label' => 'Beyin ve Sinir Hastalıkları', 'cogul' => 'Nöroloji Uzmanları'],
         'ortopedi' => ['title' => 'Ortopedi', 'label' => 'Kemik ve Eklem Hastalıkları', 'cogul' => 'Ortopedi Uzmanları'],
+        // 15 Kasım 2026: kurumlardan taşınan bireysel fizyoterapistler.
+        'fizyoterapist' => ['title' => 'Fizyoterapi', 'label' => 'Fizyoterapist', 'cogul' => 'Fizyoterapistler'],
     ];
 
     public const ANA_ALAN = 'https://bakimevleri.com';

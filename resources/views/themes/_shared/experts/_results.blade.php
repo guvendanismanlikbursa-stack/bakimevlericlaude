@@ -41,7 +41,7 @@
                denkliği belirsiz unvan/sertifikalar olabiliyor) ve destekçi etiketi gösterilmez;
                yalnızca unvan, ad, uzmanlık, adres ve iletişim. --}}
           {{-- 25 Ekim 2026: doktorun kendi sayfası (arama motorları için de ayrı adres). --}}
-          <a href="{{ brand_route('experts.show', $expert->slug) }}" style="display:inline-block;margin-bottom:12px;font-size:13.5px;font-weight:800;color:#0d6e6a;text-decoration:none;">Doktor sayfası →</a>
+          <a href="{{ brand_route('experts.show', $expert->slug) }}" style="display:inline-block;margin-bottom:12px;font-size:13.5px;font-weight:800;color:#0d6e6a;text-decoration:none;">{{ $expert->branch === 'Fizyoterapi' ? 'Fizyoterapist sayfası →' : 'Doktor sayfası →' }}</a>
           <div class="grid sm:grid-cols-2 gap-3 text-sm mb-4">
             @if($expert->clinic_name)
               <div class="bg-white rounded-lg px-3 py-2 border border-gray-100"><span class="text-gray-400 text-xs block">Klinik/Hastane</span><span class="font-bold text-gray-800">{{ $expert->clinic_name }}</span></div>

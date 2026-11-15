@@ -52,7 +52,7 @@
 
   <div style="display:grid;gap:16px;margin-top:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
     <section style="{{ $kart }}">
-      <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">Muayenehane bilgileri</h2>
+      <h2 style="font-size:17px;font-weight:900;color:#0f172a;margin-bottom:10px;">{{ $e->branch === 'Fizyoterapi' ? 'İletişim ve adres bilgileri' : 'Muayenehane bilgileri' }}</h2>
       <div style="display:grid;gap:8px;font-size:14.5px;">
         @if($e->clinic_name)<div style="{{ $bilgi }}"><span style="display:block;font-size:12px;color:#94a3b8;">Klinik / Hastane</span><b style="color:#0f172a;">{{ $e->clinic_name }}</b></div>@endif
         @if($e->address)<div style="{{ $bilgi }}"><span style="display:block;font-size:12px;color:#94a3b8;">Adres</span><b style="color:#0f172a;">{{ $e->address }}</b></div>@endif
@@ -109,13 +109,13 @@
       <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:14px;font-weight:800;">
         @if($city && $ilceSlug && $bransSlug)<a href="{{ brand_route('experts.landing', ['il' => $city->slug, 'a' => $ilceSlug, 'b' => $bransSlug]) }}" style="color:#0d6e6a;">{{ $e->district }} {{ $brans['cogul'] }} →</a>@endif
         @if($city && $bransSlug)<a href="{{ brand_route('experts.landing', ['il' => $city->slug, 'a' => $bransSlug]) }}" style="color:#0d6e6a;">{{ $city->name }} {{ $brans['cogul'] }} →</a>@endif
-        @if($city && $ilceSlug)<a href="{{ brand_route('experts.landing', ['il' => $city->slug, 'a' => $ilceSlug]) }}" style="color:#0d6e6a;">{{ $e->district }} özel doktorları →</a>@endif
+        @if($city && $ilceSlug)<a href="{{ brand_route('experts.landing', ['il' => $city->slug, 'a' => $ilceSlug]) }}" style="color:#0d6e6a;">{{ $e->district }} {{ $e->branch === 'Fizyoterapi' ? 'uzmanları' : 'özel doktorları' }} →</a>@endif
       </div>
     </section>
   @endif
 
   <div role="note" style="margin-top:16px;border:1px solid #cfe3e1;background:#f3faf9;border-radius:14px;padding:12px 16px;color:#1f2937;font-size:13.5px;line-height:1.6;">
-    ℹ️ Bu sayfadaki bilgiler herkese açık güncel kaynaklardan derlenmiştir ve yalnızca ailelerin aradıkları hekime kolayca ulaşması amacını taşır; reklam değildir. Düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
+    ℹ️ Bu sayfadaki bilgiler herkese açık güncel kaynaklardan derlenmiştir ve yalnızca ailelerin aradıkları {{ $e->branch === 'Fizyoterapi' ? 'fizyoterapiste' : 'hekime' }} kolayca ulaşması amacını taşır; reklam değildir. Düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
   </div>
 </div>
 </div>

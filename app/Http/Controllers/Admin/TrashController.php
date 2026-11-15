@@ -40,7 +40,10 @@ class TrashController extends Controller
         abort_unless(array_key_exists($activeType, self::TYPES), 404);
 
         $modelClass = self::TYPES[$activeType];
-        $items = $modelClass::onlyTrashed()->latest('deleted_at')->paginate(20)->withQueryString();
+        // 15 Kasım 2026: Uzmanlar'a taşınan fizyoterapist kurum kayıtları çöp değildir (veri saklanır), listede gösterilmez.
+        $items = $modelClass::onlyTrashed()
+            ->when($modelClass === Facility::class && \Illuminate\Support\Facades\Schema::hasColumn('facilities', 'uzmana_tasindi_expert_id'), fn ($q) => $q->whereNull('uzmana_tasindi_expert_id'))
+            ->latest('deleted_at')->paginate(20)->withQueryString();
 
         if ($redirect = $this->redirectIfPageOutOfRange($request, $items)) {
             return $redirect;

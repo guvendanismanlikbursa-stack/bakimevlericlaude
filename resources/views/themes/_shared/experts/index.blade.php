@@ -6,10 +6,10 @@
   // Google icin), degilse genel bolum basligi kullanilsin.
   $__title = $activeExpert
       ? "{$activeExpert->title} {$activeExpert->name} — {$activeExpert->branch} ({$activeExpert->branch_label}) ".($activeExpert->city?->name ?? '')
-      : 'Özel Doktorlar — Çocuk ve Yaşlı Sağlığı Alanında Uzman Hekimler';
+      : (request('branch') === 'fizyoterapist' ? 'Fizyoterapistler — Adres, Telefon ve Çalışma Saatleri' : 'Özel Doktorlar — Çocuk ve Yaşlı Sağlığı Alanında Uzman Hekimler');
   $__description = $activeExpert
       ? trim("{$activeExpert->title} {$activeExpert->name}, ".($activeExpert->district ? "{$activeExpert->district}/" : '').($activeExpert->city?->name ?? '')." bölgesinde {$activeExpert->branch_label} olarak hizmet veriyor.".($activeExpert->phone ? " İletişim: {$activeExpert->phone}." : ''))
-      : 'Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları il, ilçe veya branşa göre bulun.';
+      : (request('branch') === 'fizyoterapist' ? 'Bireysel çalışan fizyoterapistleri il ve ilçeye göre bulun; adres, telefon ve çalışma saatleri.' : 'Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları il, ilçe veya branşa göre bulun.');
 @endphp
 @php
   // 25 Ekim 2026: arama motoru düzeni - asıl adres her zaman bakimevleri.com; il/ilçe/branş
@@ -59,8 +59,13 @@
     <h1 class="text-2xl font-black text-gray-950 mb-2">{{ $seo['h1'] }}</h1>
     <p class="text-gray-600 mb-6" style="max-width:820px;line-height:1.65;">{{ $seo['giris'] }}</p>
   @else
-    <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
-    <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
+    @if(request('branch') === 'fizyoterapist')
+      <h1 class="text-2xl font-black text-gray-950 mb-2">Fizyoterapistler</h1>
+      <p class="text-gray-500 mb-6">Bireysel çalışan fizyoterapistleri bulun; aileler doğrudan arayabilir.</p>
+    @else
+      <h1 class="text-2xl font-black text-gray-950 mb-2">Özel Doktorlar</h1>
+      <p class="text-gray-500 mb-6">Çocuk ve yaşlı sağlığı alanında kendi muayenehanesinde çalışan özel doktorları bulun.</p>
+    @endif
   @endif
 
   <form method="GET" action="{{ brand_route('experts.index') }}" data-district-map='@json($districtMap)' data-instant-filter="1" data-results-target="js-expert-results" data-count-target="js-expert-count" class="js-location-filter flex flex-wrap gap-3 mb-6" style="background:rgba(255,255,255,.92);border:1px solid #d5ebe8;border-radius:16px;padding:12px;box-shadow:0 6px 20px -12px rgba(13,110,106,.35);">
@@ -160,7 +165,8 @@
   <div style="margin-top:28px;">
   <div role="note" style="margin-bottom:12px;border:1px solid #cfe3e1;background:#f3faf9;border-radius:14px;padding:14px 16px;color:#1f2937;font-size:14px;line-height:1.6;">
     <div style="font-weight:800;color:#0d6e6a;margin-bottom:4px;">ℹ️ Bilgilendirme</div>
-    Bu sayfada yer alan hekim bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları hekime daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir hekimin reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir hekim öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
+    @php $fztSayfa = request('branch') === 'fizyoterapist'; @endphp
+    Bu sayfada yer alan {{ $fztSayfa ? 'fizyoterapist' : 'hekim' }} bilgileri, yalnızca herkese açık kaynaklardaki güncel bilgilerden derlenmiştir. Amacımız, ailelerin aradıkları {{ $fztSayfa ? 'fizyoterapiste' : 'hekime' }} daha kolay ve kısa sürede ulaşabilmesine yardımcı olmaktır. Bu bölümde hiçbir {{ $fztSayfa ? 'fizyoterapistin' : 'hekimin' }} reklamı yapılmamaktadır; sıralama alfabetiktir ve hiçbir {{ $fztSayfa ? 'fizyoterapist' : 'hekim' }} öne çıkarılmaz. Bilgilerinizde düzeltme ya da kaldırma talebi için <a href="{{ route('contact.create') }}" style="color:#0d6e6a;font-weight:700;text-decoration:underline;">bize ulaşabilirsiniz</a>.
   </div>
   {{-- 28 Ekim 2026: İyilik Hareketi destekçi hekim teşekkür listesi kaldırıldı - TTB md. 13:
        hekimler aracılık yapan platformlara üye olamaz; üyelik/destekçilik izlenimi verilmez. --}}

@@ -508,6 +508,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // 25 Ekim 2026: Doktorlar bölümünü yayına al / gizle (geri alınabilir).
         Route::post('/doktorlar-bolumu/yayin', [\App\Http\Controllers\Admin\ExpertController::class, 'toggleSection'])->name('experts.section-toggle');
         Route::post('/doktorlar-bolumu/yorumlar', [\App\Http\Controllers\Admin\ExpertController::class, 'toggleReviews'])->name('experts.reviews-toggle');
+        // 15 Kasım 2026: bireysel fizyoterapistlerin Uzmanlar'a taşınması - tek tuşla geri alma / yeniden taşıma.
+        Route::get('/fizyoterapist-tasima', [\App\Http\Controllers\Admin\FizyoterapistTasimaController::class, 'index'])->name('fizyo-tasima.index');
+        Route::post('/fizyoterapist-tasima/geri-al', [\App\Http\Controllers\Admin\FizyoterapistTasimaController::class, 'geriAl'])->name('fizyo-tasima.geri-al');
+        Route::post('/fizyoterapist-tasima/tasi', [\App\Http\Controllers\Admin\FizyoterapistTasimaController::class, 'tasi'])->name('fizyo-tasima.tasi');
         Route::resource('doktorlar', \App\Http\Controllers\Admin\ExpertController::class)
             ->parameters(['doktorlar' => 'expert'])
             ->names('experts')
