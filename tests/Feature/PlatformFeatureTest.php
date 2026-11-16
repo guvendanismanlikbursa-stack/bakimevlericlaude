@@ -9145,6 +9145,18 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->withServerVariables(['REMOTE_ADDR' => '88.230.1.2'])->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/133.0 Safari/537.36')->get('/site/bakimevibul/')->assertOk();
     }
 
+    // 16 Kasım 2026: ana panelde son 24 saat giriş sayıları (saatlik görevin önbelleğinden).
+    public function test_ana_panel_son_24_saat_giris_sayilari(): void
+    {
+        $saat = array_fill_keys([now()->format('YmdH')], 3);
+        \Illuminate\Support\Facades\Cache::forever('google_son24', ['tarih' => now()->toDateTimeString(), 'siteler' => [
+            'bakimevleri.com' => ['kisi' => 1234, 'oturum' => 50, 'etk' => 37, 'sayfa' => 126, 'sure' => 900, 'bugun' => 20, 'bot' => 53, 'saat' => $saat],
+            'bakimevibul.com' => ['kisi' => 7, 'oturum' => 7, 'etk' => 5, 'sayfa' => 18, 'sure' => 270, 'bugun' => 3, 'bot' => 328, 'saat' => $saat],
+            'bakimeviara.com' => ['kisi' => 35, 'oturum' => 35, 'etk' => 26, 'sayfa' => 75, 'sure' => 700, 'bugun' => 9, 'bot' => 0, 'saat' => $saat],
+        ]]);
+        $this->actingAsAdminForStats()->get('/admin')->assertOk()->assertSee('Son 24 saat:')->assertSee('1.234');
+    }
+
     // 1 Kasım 2026: gerçek ziyaretçi sayacı ayrı tutulur; bot dahil sayaç korunur.
     public function test_gercek_ziyaretci_sayaci(): void
     {

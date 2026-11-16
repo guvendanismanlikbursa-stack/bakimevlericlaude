@@ -144,6 +144,16 @@
 <a href="{{ route('admin.site-stats.index') }}" style="display:block;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:14px;padding:16px 20px;margin-bottom:28px;text-decoration:none;color:#0c4a6e;">
   <div style="font-size:16px;font-weight:800;">📊 Ziyaretçi, bölüm ve kurum istatistikleri İstatistikler sayfasında →</div>
   <div style="font-size:13px;margin-top:4px;">Google Analytics verisiyle: 3 site, 4 bölüm, kurum türleri, en çok bakılan kurumlar, trafik kaynakları ve Google arama.</div>
+  {{-- 16 Kasım 2026: son 24 saat giriş sayıları (saatlik görevin önbelleğinden; sayfa açılışında Google'a gidilmez). --}}
+  @php $son24 = \Illuminate\Support\Facades\Cache::get('google_son24'); @endphp
+  @if($son24)
+    <div style="display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:13.5px;">
+      <span style="font-weight:800;">Son 24 saat:</span>
+      @foreach($son24['siteler'] as $s => $x)
+        <span>{{ $s }}: <b>{{ number_format($x['kisi'], 0, ',', '.') }}</b> ziyaretçi</span>
+      @endforeach
+    </div>
+  @endif
 </a>
 
 <div class="grid md:grid-cols-3 gap-6 mb-10">

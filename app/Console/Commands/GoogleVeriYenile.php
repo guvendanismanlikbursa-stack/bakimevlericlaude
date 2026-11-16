@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 // (sayfa açılışında Google'a gidilmez). Dönemler ayrı ayrı zamanlanır ki web-cron uzun işi kesmesin.
 class GoogleVeriYenile extends Command
 {
-    protected $signature = 'google:veri-yenile {--gun=* : 7, 30, 90, 365 (boşsa hepsi)}';
+    protected $signature = 'google:veri-yenile {--gun=* : 7, 30, 90, 365 (boşsa hepsi)} {--son24 : Yalnızca son 24 saat verisini yenile}';
 
     protected $description = 'Google Analytics ve Search Console verisini İstatistikler sayfası için önbelleğe çeker';
 
@@ -22,6 +22,13 @@ class GoogleVeriYenile extends Command
             return self::SUCCESS;
         }
         @set_time_limit(300);
+        // 16 Kasım 2026: son 24 saat kartı her saat yenilenir.
+        if ($this->option('son24')) {
+            $v->cekSon24();
+            $this->info('son 24 saat: tamam');
+
+            return self::SUCCESS;
+        }
         $gunler = array_map('intval', $this->option('gun') ?: array_keys(AnalitikPanelVerisi::DONEMLER));
         foreach ($gunler as $gun) {
             if (! isset(AnalitikPanelVerisi::DONEMLER[$gun])) {

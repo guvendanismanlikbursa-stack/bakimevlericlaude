@@ -82,6 +82,71 @@ class AnalitikPanelVerisi
         return $ham;
     }
 
+    /**
+     * 16 Kasım 2026: kullanıcının talebi - "günlük giriş sayıları da admin panelinde gösterilsin".
+     * Son 24 saatin (saat saat) ziyaretleri, 3 site ayrı ayrı. Küçük bir sorgu; saatlik görevle yenilenir.
+     * Hong Kong/Çin bot olarak ayrı sayılır, gerçek rakamlara katılmaz.
+     */
+    public function cekSon24(): array
+    {
+        $met = ['totalUsers', 'sessions', 'engagedSessions', 'screenPageViews', 'userEngagementDuration'];
+        $satirlar = $this->g->rapor(['dateRanges' => [['startDate' => 'yesterday', 'endDate' => 'today']],
+            'dimensions' => [['name' => 'dateHour'], ['name' => 'hostName'], ['name' => 'country']],
+            'metrics' => array_map(fn ($m) => ['name' => $m], $met), 'limit' => 10000]);
+        $sinir = now()->subHours(24)->format('YmdH');
+        $bugun = now()->format('Ymd');
+        $saatler = [];
+        for ($i = 23; $i >= 0; $i--) {
+            $saatler[now()->subHours($i)->format('YmdH')] = 0;
+        }
+        $siteler = [];
+        foreach (GoogleVeriServisi::SITELER as $s) {
+            $siteler[$s] = ['kisi' => 0, 'oturum' => 0, 'etk' => 0, 'sayfa' => 0, 'sure' => 0, 'bugun' => 0, 'bot' => 0, 'saat' => $saatler];
+        }
+        foreach ($satirlar as $r) {
+            [$saat, $host, $ulke] = $r;
+            $h = self::host($host);
+            if (! $h || $saat < $sinir) {
+                continue;
+            }
+            if (in_array($ulke, self::HARIC_ULKELER, true)) {
+                $siteler[$h]['bot'] += $r[3];
+
+                continue;
+            }
+            $siteler[$h]['kisi'] += $r[3];
+            $siteler[$h]['oturum'] += $r[4];
+            $siteler[$h]['etk'] += $r[5];
+            $siteler[$h]['sayfa'] += $r[6];
+            $siteler[$h]['sure'] += $r[7];
+            if (str_starts_with($saat, $bugun)) {
+                $siteler[$h]['bugun'] += $r[3];
+            }
+            if (isset($siteler[$h]['saat'][$saat])) {
+                $siteler[$h]['saat'][$saat] += $r[3];
+            }
+        }
+        $veri = ['tarih' => now()->toDateTimeString(), 'siteler' => $siteler];
+        Cache::forever('google_son24', $veri);
+
+        return $veri;
+    }
+
+    /** Son 24 saat verisi; 70 dakikadan eskiyse (ya da hiç yoksa) Google'dan tazelenir, hata olursa eldeki gösterilir. */
+    public function son24(): ?array
+    {
+        $veri = Cache::get('google_son24');
+        if (! $veri || now()->diffInMinutes(\Illuminate\Support\Carbon::parse($veri['tarih'])->toImmutable(), true) > 70) {
+            try {
+                $veri = $this->cekSon24();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $veri;
+    }
+
     /** Önbellekteki veri (yoksa en son başarılı veri; o da yoksa null). */
     public function ham(int $gun): ?array
     {

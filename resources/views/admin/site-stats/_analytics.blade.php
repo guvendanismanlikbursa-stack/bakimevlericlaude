@@ -55,6 +55,49 @@
   </div>
 </div>
 
+@if(! empty($son24))
+  {{-- 16 Kasım 2026: kullanıcının talebi - günlük giriş sayıları (son 24 saat, saat saat), 3 site ayrı. Her saat yenilenir. --}}
+  @php
+    $s24 = $son24['siteler'];
+    $saatToplam = [];
+    foreach ($s24 as $sv) { foreach ($sv['saat'] as $k => $n) { $saatToplam[$k] = ($saatToplam[$k] ?? 0) + $n; } }
+    $saatEnCok = max(1, max($saatToplam ?: [0]));
+  @endphp
+  <div id="son24" style="{{ $kart }}">
+    <h2 style="{{ $h2 }}">🕒 Son 24 Saat — Günlük Giriş</h2>
+    <p style="{{ $acik }}">{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->subDay()->format('d.m H:i') }} – {{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('d.m H:i') }} arası gerçek ziyaretçiler (Google Analytics). Her saat yenilenir; Google rakamları 15-30 dk gecikmeli gelir. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
+    <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:16px;">
+      @foreach($s24 as $s => $x)
+        <div style="border:1px solid #eef0f3;border-left:4px solid {{ $renk[$s] ?? '#6b7280' }};border-radius:12px;padding:12px 14px;">
+          <div style="font-size:13px;font-weight:800;color:#374151;">{{ $s }}</div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-top:4px;"><span style="font-size:28px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};">{{ $sayi($x['kisi']) }}</span><span style="font-size:12.5px;color:#6b7280;">ziyaretçi</span></div>
+          <div style="font-size:12.5px;color:#4b5563;line-height:1.7;">
+            Bugün (00:00'dan beri): <b>{{ $sayi($x['bugun']) }}</b><br>
+            Etkileşimli ziyaret: <b>{{ $sayi($x['etk']) }}</b> · İlgi: <b>{{ $x['oturum'] ? $yuzde($x['etk'] / $x['oturum']) : '—' }}</b><br>
+            Bakılan sayfa: <b>{{ $sayi($x['sayfa']) }}</b> · Ort. süre: <b>{{ $x['kisi'] ? $sure($x['sure'] / $x['kisi']) : '—' }}</b>
+            @if($x['bot'])<br><span style="color:#b91c1c;">Ayıklanan bot (HK/Çin): {{ $sayi($x['bot']) }}</span>@endif
+          </div>
+        </div>
+      @endforeach
+    </div>
+    <div style="font-size:12.5px;font-weight:800;color:#6b7280;margin-bottom:6px;">Saat saat ziyaretçi (3 site)</div>
+    <div style="display:flex;align-items:flex-end;gap:2px;height:110px;border-bottom:1px solid #e5e7eb;">
+      @foreach($saatToplam as $k => $n)
+        <div title="{{ substr($k, 8, 2) }}:00 — {{ $n }} ziyaretçi" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;">
+          @foreach($s24 as $s => $x)
+            @if(($x['saat'][$k] ?? 0) > 0)<div style="height:{{ round($x['saat'][$k] / $saatEnCok * 100, 1) }}%;background:{{ $renk[$s] ?? '#6b7280' }};"></div>@endif
+          @endforeach
+        </div>
+      @endforeach
+    </div>
+    <div style="display:flex;gap:2px;font-size:10.5px;color:#9ca3af;margin-top:3px;">
+      @foreach($saatToplam as $k => $n)
+        <div style="flex:1;min-width:0;text-align:center;overflow:hidden;">{{ (int) substr($k, 8, 2) % 3 === 0 ? substr($k, 8, 2) : '' }}</div>
+      @endforeach
+    </div>
+  </div>
+@endif
+
 @if(! $gaHazir)
   <div style="{{ $kart }}background:#fffbeb;border-color:#fde68a;color:#92400e;font-size:14px;">Google Analytics bağlantısı ayarlı değil (GA4_PROPERTY_ID ya da hizmet hesabı dosyası eksik).</div>
 @elseif($gaHata)

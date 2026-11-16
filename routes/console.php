@@ -316,6 +316,12 @@ ScheduledJobMonitor::attach(
 
 // 15 Kasım 2026: İstatistikler sayfası (Google Analytics + Search Console) - her dönem ayrı görev,
 // web-cron uzun işi kesmesin diye 5 dk arayla (bkz. App\Console\Commands\GoogleVeriYenile).
+// 16 Kasım 2026: "Son 24 saat" kartı her saat başı (5. dakika) yenilenir.
+ScheduledJobMonitor::attach(
+    Schedule::command('google:veri-yenile --son24')->hourlyAt(5),
+    'google:veri-yenile --son24',
+    150
+);
 foreach ([7 => '06:20', 30 => '06:25', 90 => '06:30', 365 => '06:35'] as $gun => $saat) {
     ScheduledJobMonitor::attach(
         Schedule::command('google:veri-yenile --gun='.$gun)->dailyAt($saat),
