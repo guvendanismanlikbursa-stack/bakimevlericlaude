@@ -56,7 +56,10 @@ class AnalitikPanelVerisi
             'tarih' => now()->toDateTimeString(), 'bas' => $bas, 'son' => $son,
             'ozet' => $this->rapor(['dateRanges' => $iki, 'dimensions' => [['name' => 'hostName']], 'metrics' => $m(self::OZET), 'limit' => 50]),
             'toplam' => $this->rapor(['dateRanges' => $iki, 'metrics' => $m(self::OZET)]),
-            'gunluk' => $this->rapor(['dateRanges' => $bir, 'dimensions' => [['name' => 'date'], ['name' => 'hostName']], 'metrics' => $m(['activeUsers', 'engagedSessions']), 'limit' => 5000]),
+            // 16 Kasım 2026: GA saatleri fiilen ABD Pasifik saatinde (bkz. config/services.php) → günlük grafik saat saat çekilip
+            // Türkiye gününe göre toplanır (hazirla()). Ziyaretçi = saatlik tekil ziyaretçilerin toplamı (aynı kişi iki farklı saatte gelirse iki sayılır).
+            'gunluk' => $this->rapor(['dateRanges' => [['startDate' => now()->subDays($gun + 1)->toDateString(), 'endDate' => $son]],
+                'dimensions' => [['name' => 'dateHour'], ['name' => 'hostName']], 'metrics' => $m(['activeUsers', 'engagedSessions']), 'limit' => 100000]),
             'kanal' => $hostlu('sessionDefaultChannelGroup', ['sessions', 'engagedSessions', 'activeUsers'], 200),
             'kaynak' => $hostlu('sessionSourceMedium', ['sessions', 'engagedSessions', 'activeUsers'], 300),
             'sehir' => $hostlu('city', ['activeUsers', 'engagedSessions'], 500),
@@ -197,11 +200,19 @@ class AnalitikPanelVerisi
 
         // Günlük seri (site site) - grafik
         $gunluk = [];
+        $gaDilim = config('services.google_analytics.timezone') ?: config('app.timezone');
         foreach ($ham['gunluk'] as [$tarih, $h, $kisi, $etk]) {
             if (! $h = self::host($h)) {
                 continue;
             }
-            $t = substr($tarih, 0, 4).'-'.substr($tarih, 4, 2).'-'.substr($tarih, 6, 2);
+            if (strlen($tarih) === 10) {
+                $t = \Illuminate\Support\Carbon::createFromFormat('YmdH', $tarih, $gaDilim)->setTimezone(config('app.timezone'))->toDateString();
+                if ($t < $ham['bas'] || $t > $ham['son']) {
+                    continue;
+                }
+            } else {
+                $t = substr($tarih, 0, 4).'-'.substr($tarih, 4, 2).'-'.substr($tarih, 6, 2);
+            }
             $gunluk[$t][$h]['kisi'] = ($gunluk[$t][$h]['kisi'] ?? 0) + $kisi;
             $gunluk[$t][$h]['etk'] = ($gunluk[$t][$h]['etk'] ?? 0) + $etk;
         }
