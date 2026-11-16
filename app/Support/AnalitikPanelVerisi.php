@@ -95,7 +95,9 @@ class AnalitikPanelVerisi
             'metrics' => array_map(fn ($m) => ['name' => $m], $met), 'limit' => 10000]);
         $sinir = now()->subHours(23)->format('YmdH');
         $bugun = now()->format('Ymd');
-        $gaDilim = config('services.google_analytics.timezone') ?: 'America/Los_Angeles';
+        $gaDilim = config('services.google_analytics.timezone') ?: 'Europe/Istanbul';
+        $eskiDilim = config('services.google_analytics.timezone_eski') ?: $gaDilim;
+        $degisim = (string) config('services.google_analytics.timezone_degisim_saati', '0');
         $saatler = [];
         for ($i = 23; $i >= 0; $i--) {
             $saatler[now()->subHours($i)->format('YmdH')] = 0;
@@ -106,7 +108,8 @@ class AnalitikPanelVerisi
         }
         foreach ($satirlar as $r) {
             [$saat, $host, $ulke] = $r;
-            $saat = \Illuminate\Support\Carbon::createFromFormat('YmdH', $saat, $gaDilim)->setTimezone(config('app.timezone'))->format('YmdH');
+            $dilim = $saat < $degisim ? $eskiDilim : $gaDilim;
+            $saat = \Illuminate\Support\Carbon::createFromFormat('YmdH', $saat, $dilim)->setTimezone(config('app.timezone'))->format('YmdH');
             $h = self::host($host);
             if (! $h || $saat < $sinir) {
                 continue;
