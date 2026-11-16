@@ -148,7 +148,7 @@
   @php $son24 = \Illuminate\Support\Facades\Cache::get('google_son24'); @endphp
   @if($son24)
     <div style="display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:13.5px;">
-      <span style="font-weight:800;">Son 24 saat:</span>
+      <span style="font-weight:800;">Son 24 saat{{ isset($son24['son']) ? ' (Google, '.\Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['son'])->addHour()->format('d.m H:00').'\'e kadar)' : '' }}:</span>
       @foreach($son24['siteler'] as $s => $x)
         <span>{{ $s }}: <b>{{ number_format($x['kisi'], 0, ',', '.') }}</b> ziyaretçi</span>
       @endforeach

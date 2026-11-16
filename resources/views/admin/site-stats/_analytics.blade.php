@@ -39,14 +39,18 @@
   @endphp
   <div id="son24" style="{{ $kart }}">
     <h2 style="{{ $h2 }}">🕒 Son 24 Saat — Günlük Giriş</h2>
-    <p style="{{ $acik }}">{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->subDay()->format('d.m H:i') }} – {{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('d.m H:i') }} arası gerçek ziyaretçiler (Google Analytics). Saatler Türkiye saatidir. Her saat yenilenir; Google son 1-3 saatin rakamlarını gecikmeli verir. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
+    @php
+      $s24Bas = isset($son24['bas']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['bas']) : null;
+      $s24Son = isset($son24['son']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['son'])->addHour() : null;
+    @endphp
+    <p style="{{ $acik }}">@if($s24Bas && $s24Son){{ $s24Bas->format('d.m H:00') }} – {{ $s24Son->format('d.m H:00') }} arası (Türkiye saati), Google Analytics'in işlediği son 24 saat.@endif
+      Google verileri birkaç saat gecikmeyle işler @if(isset($son24['gecikme'])) (şu an {{ $son24['gecikme'] }} saat geride)@endif; en yeni saatler sonraki yenilemelerde eklenir. Her saat yenilenir. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
     <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:16px;">
       @foreach($s24 as $s => $x)
         <div style="border:1px solid #eef0f3;border-left:4px solid {{ $renk[$s] ?? '#6b7280' }};border-radius:12px;padding:12px 14px;">
           <div style="font-size:13px;font-weight:800;color:#374151;">{{ $s }}</div>
           <div style="display:flex;align-items:baseline;gap:6px;margin-top:4px;"><span style="font-size:28px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};">{{ $sayi($x['kisi']) }}</span><span style="font-size:12.5px;color:#6b7280;">ziyaretçi</span></div>
           <div style="font-size:12.5px;color:#4b5563;line-height:1.7;">
-            Bugün (00:00'dan beri): <b>{{ $sayi($x['bugun']) }}</b><br>
             Etkileşimli ziyaret: <b>{{ $sayi($x['etk']) }}</b> · İlgi: <b>{{ $x['oturum'] ? $yuzde($x['etk'] / $x['oturum']) : '—' }}</b><br>
             Bakılan sayfa: <b>{{ $sayi($x['sayfa']) }}</b> · Ort. süre: <b>{{ $x['kisi'] ? $sure($x['sure'] / $x['kisi']) : '—' }}</b>
             @if($x['bot'])<br><span style="color:#b91c1c;">Ayıklanan bot (HK/Çin): {{ $sayi($x['bot']) }}</span>@endif

@@ -90,28 +90,35 @@ class AnalitikPanelVerisi
     public function cekSon24(): array
     {
         $met = ['totalUsers', 'sessions', 'engagedSessions', 'screenPageViews', 'userEngagementDuration'];
-        $satirlar = $this->g->rapor(['dateRanges' => [['startDate' => '2daysAgo', 'endDate' => 'today']],
+        $satirlar = $this->g->rapor(['dateRanges' => [['startDate' => '3daysAgo', 'endDate' => 'today']],
             'dimensions' => [['name' => 'dateHour'], ['name' => 'hostName'], ['name' => 'country']],
-            'metrics' => array_map(fn ($m) => ['name' => $m], $met), 'limit' => 10000]);
-        $sinir = now()->subHours(23)->format('YmdH');
-        $bugun = now()->format('Ymd');
-        $gaDilim = config('services.google_analytics.timezone') ?: 'Europe/Istanbul';
-        $eskiDilim = config('services.google_analytics.timezone_eski') ?: $gaDilim;
-        $degisim = (string) config('services.google_analytics.timezone_degisim_saati', '0');
+            'metrics' => array_map(fn ($m) => ['name' => $m], $met), 'limit' => 20000]);
+        // GA saatleri config('services.google_analytics.timezone') diliminde gelir (bkz. config/services.php) → Türkiye saatine çevrilir.
+        // Analytics veriyi saatler sonra işler; pencere "şimdi"ye değil Google'ın işlediği en son saate göre kurulur.
+        $gaDilim = config('services.google_analytics.timezone') ?: config('app.timezone');
+        foreach ($satirlar as $i => $r) {
+            $satirlar[$i][0] = \Illuminate\Support\Carbon::createFromFormat('YmdH', $r[0], $gaDilim)->setTimezone(config('app.timezone'))->format('YmdH');
+        }
+        $sonSaat = null;
+        foreach ($satirlar as $r) {
+            if (self::host($r[1]) && ($sonSaat === null || $r[0] > $sonSaat)) {
+                $sonSaat = $r[0];
+            }
+        }
+        $bitis = $sonSaat ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone')) : now()->startOfHour();
         $saatler = [];
         for ($i = 23; $i >= 0; $i--) {
-            $saatler[now()->subHours($i)->format('YmdH')] = 0;
+            $saatler[$bitis->copy()->subHours($i)->format('YmdH')] = 0;
         }
+        $ilk = array_key_first($saatler);
         $siteler = [];
         foreach (GoogleVeriServisi::SITELER as $s) {
-            $siteler[$s] = ['kisi' => 0, 'oturum' => 0, 'etk' => 0, 'sayfa' => 0, 'sure' => 0, 'bugun' => 0, 'bot' => 0, 'saat' => $saatler];
+            $siteler[$s] = ['kisi' => 0, 'oturum' => 0, 'etk' => 0, 'sayfa' => 0, 'sure' => 0, 'bot' => 0, 'saat' => $saatler];
         }
         foreach ($satirlar as $r) {
             [$saat, $host, $ulke] = $r;
-            $dilim = $saat < $degisim ? $eskiDilim : $gaDilim;
-            $saat = \Illuminate\Support\Carbon::createFromFormat('YmdH', $saat, $dilim)->setTimezone(config('app.timezone'))->format('YmdH');
             $h = self::host($host);
-            if (! $h || $saat < $sinir) {
+            if (! $h || $saat < $ilk || $saat > $sonSaat) {
                 continue;
             }
             if (in_array($ulke, self::HARIC_ULKELER, true)) {
@@ -124,14 +131,10 @@ class AnalitikPanelVerisi
             $siteler[$h]['etk'] += $r[5];
             $siteler[$h]['sayfa'] += $r[6];
             $siteler[$h]['sure'] += $r[7];
-            if (str_starts_with($saat, $bugun)) {
-                $siteler[$h]['bugun'] += $r[3];
-            }
-            if (isset($siteler[$h]['saat'][$saat])) {
-                $siteler[$h]['saat'][$saat] += $r[3];
-            }
+            $siteler[$h]['saat'][$saat] += $r[3];
         }
-        $veri = ['tarih' => now()->toDateTimeString(), 'siteler' => $siteler];
+        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'son' => $sonSaat ?? $bitis->format('YmdH'),
+            'gecikme' => (int) floor($bitis->copy()->addHour()->diffInHours(now(), true)), 'siteler' => $siteler];
         Cache::forever('google_son24', $veri);
 
         return $veri;

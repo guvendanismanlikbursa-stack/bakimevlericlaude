@@ -30,11 +30,10 @@ return [
         'id' => env('GA4_MEASUREMENT_ID'),
         // 15 Kasım 2026: admin paneline Analytics verisi çekmek için (mülk kimliği + hizmet hesabı dosyası).
         'property_id' => env('GA4_PROPERTY_ID'),
-        // 16 Kasım 2026: mülk ABD Pasifik saatindeydi; kullanıcı aynı gün Analytics'te "Türkiye" yaptı. Google eski veriyi
-        // değiştirmez: degisim_saati'nden (GA'nın yazdığı YmdH) önceki saatler eski dilimde, sonrakiler yeni dilimde gelir.
-        'timezone' => env('GA4_TIMEZONE', 'Europe/Istanbul'),
-        'timezone_eski' => 'America/Los_Angeles',
-        'timezone_degisim_saati' => '2026111600',
+        // 16 Kasım 2026: Analytics ayarı "Europe/Istanbul" görünse de saatlik veri fiilen ABD Pasifik saatiyle geliyor.
+        // Kanıt: 15 Kasım'da Google'dan gelen ziyaretlerin sunucu kaydındaki (+0300) saat dağılımı, GA dateHour dağılımının
+        // 11 saat ilerisi (akşam 17-23 yoğunluğu GA'da 06-12'de). Saatlik veriler bu dilimden Türkiye saatine çevrilir.
+        'timezone' => env('GA4_TIMEZONE', 'America/Los_Angeles'),
         'credentials' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
         'ca_bundle' => env('GOOGLE_CA_BUNDLE'),
         'ids' => [
