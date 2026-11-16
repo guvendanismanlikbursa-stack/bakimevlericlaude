@@ -90,11 +90,12 @@ class AnalitikPanelVerisi
     public function cekSon24(): array
     {
         $met = ['totalUsers', 'sessions', 'engagedSessions', 'screenPageViews', 'userEngagementDuration'];
-        $satirlar = $this->g->rapor(['dateRanges' => [['startDate' => 'yesterday', 'endDate' => 'today']],
+        $satirlar = $this->g->rapor(['dateRanges' => [['startDate' => '2daysAgo', 'endDate' => 'today']],
             'dimensions' => [['name' => 'dateHour'], ['name' => 'hostName'], ['name' => 'country']],
             'metrics' => array_map(fn ($m) => ['name' => $m], $met), 'limit' => 10000]);
-        $sinir = now()->subHours(24)->format('YmdH');
+        $sinir = now()->subHours(23)->format('YmdH');
         $bugun = now()->format('Ymd');
+        $gaDilim = config('services.google_analytics.timezone') ?: 'America/Los_Angeles';
         $saatler = [];
         for ($i = 23; $i >= 0; $i--) {
             $saatler[now()->subHours($i)->format('YmdH')] = 0;
@@ -105,6 +106,7 @@ class AnalitikPanelVerisi
         }
         foreach ($satirlar as $r) {
             [$saat, $host, $ulke] = $r;
+            $saat = \Illuminate\Support\Carbon::createFromFormat('YmdH', $saat, $gaDilim)->setTimezone(config('app.timezone'))->format('YmdH');
             $h = self::host($host);
             if (! $h || $saat < $sinir) {
                 continue;

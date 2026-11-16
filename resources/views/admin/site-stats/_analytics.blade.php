@@ -29,32 +29,6 @@
   $q = fn (array $ek) => request()->fullUrlWithQuery(array_merge(['yenile' => null], $ek));
 @endphp
 
-<div id="analytics" style="{{ $kart }}">
-  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
-    <div>
-      <h2 style="{{ $h2 }}font-size:19px;">📊 Ziyaretçi İstatistikleri <span style="font-size:12px;font-weight:700;color:#6b7280;">(Google Analytics)</span></h2>
-      @if($gaHam)
-        <p style="{{ $acik }}margin:0;">{{ \Illuminate\Support\Carbon::parse($gaHam['bas'])->format('d.m.Y') }} – {{ \Illuminate\Support\Carbon::parse($gaHam['son'])->format('d.m.Y') }} arası (bugün dahil değil).
-          Veri {{ \Illuminate\Support\Carbon::parse($gaHam['tarih'])->format('d.m.Y H:i') }} tarihinde çekildi, her sabah yenilenir.
-          <a href="{{ $q(['yenile' => 1]) }}#analytics" style="color:#0b5d8c;font-weight:700;" onclick="this.textContent='Çekiliyor, 30-40 sn sürebilir…';">Şimdi yenile</a></p>
-      @endif
-    </div>
-  </div>
-  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;">
-    <div style="display:inline-flex;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
-      <a href="{{ $q(['site' => null]) }}#analytics" style="{{ $sec($gaSite === 'hepsi') }}">3 site toplam</a>
-      @foreach(\App\Services\GoogleVeriServisi::SITELER as $s)
-        <a href="{{ $q(['site' => $s]) }}#analytics" style="{{ $sec($gaSite === $s) }}">{{ $s }}</a>
-      @endforeach
-    </div>
-    <div style="display:inline-flex;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
-      @foreach($gaDonemler as $g => $ad)
-        <a href="{{ $q(['gun' => $g]) }}#analytics" style="{{ $sec($gaGun === $g) }}">{{ $ad }}</a>
-      @endforeach
-    </div>
-  </div>
-</div>
-
 @if(! empty($son24))
   {{-- 16 Kasım 2026: kullanıcının talebi - günlük giriş sayıları (son 24 saat, saat saat), 3 site ayrı. Her saat yenilenir. --}}
   @php
@@ -65,7 +39,7 @@
   @endphp
   <div id="son24" style="{{ $kart }}">
     <h2 style="{{ $h2 }}">🕒 Son 24 Saat — Günlük Giriş</h2>
-    <p style="{{ $acik }}">{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->subDay()->format('d.m H:i') }} – {{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('d.m H:i') }} arası gerçek ziyaretçiler (Google Analytics). Her saat yenilenir; Google rakamları 15-30 dk gecikmeli gelir. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
+    <p style="{{ $acik }}">{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->subDay()->format('d.m H:i') }} – {{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('d.m H:i') }} arası gerçek ziyaretçiler (Google Analytics). Saatler Türkiye saatidir. Her saat yenilenir; Google son 1-3 saatin rakamlarını gecikmeli verir. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
     <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:16px;">
       @foreach($s24 as $s => $x)
         <div style="border:1px solid #eef0f3;border-left:4px solid {{ $renk[$s] ?? '#6b7280' }};border-radius:12px;padding:12px 14px;">
@@ -97,6 +71,32 @@
     </div>
   </div>
 @endif
+
+<div id="analytics" style="{{ $kart }}">
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+    <div>
+      <h2 style="{{ $h2 }}font-size:19px;">📊 Ziyaretçi İstatistikleri <span style="font-size:12px;font-weight:700;color:#6b7280;">(Google Analytics)</span></h2>
+      @if($gaHam)
+        <p style="{{ $acik }}margin:0;">{{ \Illuminate\Support\Carbon::parse($gaHam['bas'])->format('d.m.Y') }} – {{ \Illuminate\Support\Carbon::parse($gaHam['son'])->format('d.m.Y') }} arası (bugün dahil değil).
+          Veri {{ \Illuminate\Support\Carbon::parse($gaHam['tarih'])->format('d.m.Y H:i') }} tarihinde çekildi, her sabah yenilenir.
+          <a href="{{ $q(['yenile' => 1]) }}#analytics" style="color:#0b5d8c;font-weight:700;" onclick="this.textContent='Çekiliyor, 30-40 sn sürebilir…';">Şimdi yenile</a></p>
+      @endif
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;">
+    <div style="display:inline-flex;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+      <a href="{{ $q(['site' => null]) }}#analytics" style="{{ $sec($gaSite === 'hepsi') }}">3 site toplam</a>
+      @foreach(\App\Services\GoogleVeriServisi::SITELER as $s)
+        <a href="{{ $q(['site' => $s]) }}#analytics" style="{{ $sec($gaSite === $s) }}">{{ $s }}</a>
+      @endforeach
+    </div>
+    <div style="display:inline-flex;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+      @foreach($gaDonemler as $g => $ad)
+        <a href="{{ $q(['gun' => $g]) }}#analytics" style="{{ $sec($gaGun === $g) }}">{{ $ad }}</a>
+      @endforeach
+    </div>
+  </div>
+</div>
 
 @if(! $gaHazir)
   <div style="{{ $kart }}background:#fffbeb;border-color:#fde68a;color:#92400e;font-size:14px;">Google Analytics bağlantısı ayarlı değil (GA4_PROPERTY_ID ya da hizmet hesabı dosyası eksik).</div>
