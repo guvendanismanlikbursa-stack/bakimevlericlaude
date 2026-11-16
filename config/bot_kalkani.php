@@ -13,6 +13,10 @@ return [
     // Hiç sınırlanmayan iyi botlar: arama motorları, bağlantı önizlemeleri, izleme ve kendi araçlarımız.
     'iyi_botlar' => '/Googlebot|Google-InspectionTool|GoogleOther|AdsBot-Google|Storebot-Google|Mediapartners-Google|bingbot|BingPreview|YandexBot|DuckDuckBot|Applebot|facebookexternalhit|meta-externalagent|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|UptimeRobot|BakimCacheWarm/i',
 
+    // 16 Kasım 2026: kullanıcının talebi - siteye yük bindiren, işimize yaramayan tarayıcı botları tamamen engellenir (403).
+    // robots.txt'de de "girme" denir; robots.txt dosyasının kendisi bu botlara açık kalır.
+    'kotu_botlar' => '/ElevenlabsCrawler|SemrushBot|SiteAuditBot|PetalBot/i',
+
     // Tamamen engellenen ağlar. Kaynak: RIPE kayıtları (stat.ripe.net), AS numarasının duyurduğu adres blokları.
     'engelli_aglar' => [
         [
@@ -271,6 +275,12 @@ return [
                 [3645648896, 3645652991],
             ],
             'v6' => ['2a02:c202::/32', '2a02:c204::/30'],
+        ],
+        [
+            'ad' => 'Shanghai263 veri merkezi (Çin)',
+            // 16 Kasım 2026: bakimevibul.com'da Analytics'e Hong Kong/Çin ziyaretçisi olarak düşen kazıyıcı
+            // (Windows Chrome 133 taklidi, saniyenin altında çıkış, son 30 günde ~11.800 sahte ziyaretçi). APNIC: 202.46.32.0/19.
+            'v4' => [[3392020480, 3392028671]],
         ],
     ],
 ];

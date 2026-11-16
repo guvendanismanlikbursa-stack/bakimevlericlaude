@@ -125,7 +125,7 @@
           @foreach($botEngel as $b)
             <tr>
               <td style="padding:7px 10px;font-size:13.5px;border-bottom:1px solid #f1f5f9;font-weight:700;">{{ $b->anahtar }}</td>
-              <td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #f1f5f9;">{{ ['liste' => 'Engelli ağ', 'hiz-ip' => 'Hız sınırı (IP)', 'hiz-ag' => 'Hız sınırı (ağ)'][$b->neden] ?? $b->neden }}</td>
+              <td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #f1f5f9;">{{ ['liste' => 'Engelli ağ', 'hiz-ip' => 'Hız sınırı (IP)', 'hiz-ag' => 'Hız sınırı (ağ)', 'kotu-bot' => 'İstenmeyen bot'][$b->neden] ?? $b->neden }}</td>
               <td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #f1f5f9;color:#6b7280;">{{ collect(explode(',', (string) $b->markalar))->filter()->map(fn ($m) => $m.'.com')->join(', ') }}</td>
               <td style="padding:7px 10px;font-size:13.5px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:800;color:#b91c1c;">{{ number_format($b->sayi, 0, ',', '.') }}</td>
               <td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #f1f5f9;text-align:right;color:#6b7280;white-space:nowrap;">{{ $b->son ? \Illuminate\Support\Carbon::parse($b->son)->format('d.m H:i') : '' }}</td>

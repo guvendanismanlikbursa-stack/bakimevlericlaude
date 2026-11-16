@@ -17,7 +17,14 @@ Disallow: /
 ", 200)->header('Content-Type', 'text/plain; charset=UTF-8');
         }
 
+        // 16 Kasım 2026: istenmeyen tarayıcı botları (ayrıca BotKalkani ile 403 alırlar).
+        $istenmeyen = [];
+        foreach (['ElevenlabsCrawler', 'SemrushBot', 'SiteAuditBot', 'PetalBot'] as $bot) {
+            array_push($istenmeyen, 'User-agent: '.$bot, 'Disallow: /', '');
+        }
+
         $lines = [
+            ...$istenmeyen,
             'User-agent: *',
             'Disallow: /admin',
             'Disallow: /aile/panel',

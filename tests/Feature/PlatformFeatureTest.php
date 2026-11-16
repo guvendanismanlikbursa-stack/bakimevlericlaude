@@ -9123,6 +9123,28 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->actingAsAdminForStats()->get('/admin/site-istatistikleri')->assertOk()->assertSee('Engellenen Botlar')->assertSee('88.230.1.1');
     }
 
+    // 16 Kasım 2026: istenmeyen botlar (ElevenLabs/Semrush/Petal) ve Shanghai263 ağı 403; robots.txt onlara açık ve "girme" der.
+    public function test_bot_kalkani_istenmeyen_botlar_ve_shanghai263(): void
+    {
+        config(['bot_kalkani' => require config_path('bot_kalkani.php')]);
+        \Illuminate\Support\Facades\Cache::flush();
+        foreach (['Mozilla/5.0 (compatible; ElevenlabsCrawler/1.0; +https://elevenlabs.io/docs/bots)', 'Mozilla/5.0 (compatible; SemrushBot/7~bl; +http://www.semrush.com/bot.html)',
+            'Mozilla/5.0 (Linux; Android 7.0;) AppleWebKit/537.36 (HTML, like Gecko) Mobile Safari/537.36 (compatible; PetalBot;+https://webmaster.petalsearch.com/site/petalbot)'] as $ua) {
+            $this->withHeader('User-Agent', $ua)->get('/site/bakimevibul/')->assertStatus(403);
+        }
+        $this->assertSame(3, (int) \Illuminate\Support\Facades\DB::table('bot_engel_kayitlari')->where('neden', 'kotu-bot')->sum('sayi'));
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (compatible; SemrushBot/7~bl)')->get('/robots.txt')->assertOk()->assertSee('User-agent: SemrushBot')->assertSee('User-agent: PetalBot');
+
+        $this->assertSame('Shanghai263 veri merkezi (Çin)', \App\Http\Middleware\BotKalkani::engelliAg('202.46.62.16'));
+        $this->assertNull(\App\Http\Middleware\BotKalkani::engelliAg('202.46.64.1'));
+        $cin = ['REMOTE_ADDR' => '202.46.33.7'];
+        $this->withServerVariables($cin)->get('/site/bakimevibul/')->assertStatus(403);
+        $this->withServerVariables($cin)->post('/site/bakimevibul/ziyaret')->assertStatus(403);
+        // Googlebot ve normal ziyaretçi etkilenmez
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')->get('/site/bakimevibul/')->assertOk();
+        $this->withServerVariables(['REMOTE_ADDR' => '88.230.1.2'])->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/133.0 Safari/537.36')->get('/site/bakimevibul/')->assertOk();
+    }
+
     // 1 Kasım 2026: gerçek ziyaretçi sayacı ayrı tutulur; bot dahil sayaç korunur.
     public function test_gercek_ziyaretci_sayaci(): void
     {

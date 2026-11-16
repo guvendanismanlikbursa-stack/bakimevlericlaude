@@ -25,6 +25,8 @@ class BotKalkani
     // Ayar dosyası okunamazsa (ör. eski ayar önbelleği) kullanılacak güvenli varsayılanlar.
     private const IYI_BOTLAR = '/Googlebot|Google-InspectionTool|GoogleOther|AdsBot-Google|Storebot-Google|Mediapartners-Google|bingbot|BingPreview|YandexBot|DuckDuckBot|Applebot|facebookexternalhit|meta-externalagent|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|UptimeRobot|BakimCacheWarm/i';
 
+    private const KOTU_BOTLAR = '/ElevenlabsCrawler|SemrushBot|SiteAuditBot|PetalBot/i';
+
     private const VARSAYILAN = ['ip_siniri' => 150, 'ag_siniri' => 600, 'ceza_saniye' => 3600];
 
     private static function ayar(string $k): int
@@ -34,18 +36,27 @@ class BotKalkani
 
     public function handle(Request $request, Closure $next)
     {
-        if (! config('bot_kalkani.acik', true) || ! in_array($request->method(), ['GET', 'HEAD'], true)) {
+        if (! config('bot_kalkani.acik', true) || $request->is('robots.txt')) {
             return $next($request);
         }
         $ip = (string) $request->ip();
-        if ($ip === '' || preg_match((string) (config('bot_kalkani.iyi_botlar') ?: self::IYI_BOTLAR), (string) $request->userAgent())) {
-            return $next($request);
-        }
+        $ua = (string) $request->userAgent();
+        $iyiBot = (bool) preg_match((string) (config('bot_kalkani.iyi_botlar') ?: self::IYI_BOTLAR), $ua);
 
-        if ($ad = self::engelliAg($ip)) {
+        // 16 Kasım 2026: istenmeyen tarayıcı botları ve engelli ağlar her istek türünde (ziyaret sayacı POST'u dahil) durdurulur.
+        if (preg_match((string) (config('bot_kalkani.kotu_botlar') ?: self::KOTU_BOTLAR), $ua, $es)) {
+            self::kaydet($es[0], 'kotu-bot');
+
+            return response(self::METIN_403, 403);
+        }
+        if ($ip !== '' && ! $iyiBot && ($ad = self::engelliAg($ip))) {
             self::kaydet($ip.' · '.$ad, 'liste');
 
             return response(self::METIN_403, 403);
+        }
+
+        if ($ip === '' || $iyiBot || ! in_array($request->method(), ['GET', 'HEAD'], true)) {
+            return $next($request);
         }
 
         $ag = self::ag($ip);

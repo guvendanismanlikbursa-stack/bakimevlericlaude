@@ -94,7 +94,7 @@
   @if($gaSite === 'hepsi')
     <div style="{{ $kart }}">
       <h2 style="{{ $h2 }}">Sitelere Göre</h2>
-      <p style="{{ $acik }}">İlgi oranı %15'in altındaysa ziyaretlerin çoğu birkaç saniyede çıkıyor demektir; bu genellikle bot ya da yanlış yönlendirilmiş trafiktir.</p>
+      <p style="{{ $acik }}">İlgi oranı %15'in altındaysa ziyaretlerin çoğu birkaç saniyede çıkıyor demektir; bu genellikle bot ya da yanlış yönlendirilmiş trafiktir. Hong Kong ve Çin'den gelen bot trafiği tüm rakamlardan çıkarılmıştır.</p>
       <div><table style="width:100%;border-collapse:collapse;">
         <thead><tr>@foreach(['Site', 'Etkileşimli ziyaret', 'Ziyaretçi', 'Değişim', 'Ziyaret', 'Sayfa', 'İlgi oranı', 'Ort. süre'] as $b)<th style="{{ $th }}{{ $loop->first ? 'text-align:left;' : '' }}">{{ $b }}</th>@endforeach</tr></thead>
         <tbody>

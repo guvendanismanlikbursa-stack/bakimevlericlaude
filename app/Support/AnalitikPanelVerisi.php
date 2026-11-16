@@ -22,7 +22,18 @@ class AnalitikPanelVerisi
 
     private const OZET = ['activeUsers', 'newUsers', 'sessions', 'engagedSessions', 'screenPageViews', 'userEngagementDuration'];
 
+    // 16 Kasım 2026: kullanıcının talebi - bakimevibul.com'a Hong Kong/Çin'den gelen kazıyıcı bot ziyaretleri
+    // (son 30 günde ~11.800 sahte ziyaretçi, %0,2 ilgi) istatistikleri bozuyordu. Bu iki ülkeden gerçek aile
+    // ziyareti olmadığı için tüm Analytics sorgularında hariç tutulur. Ağ ayrıca BotKalkani ile engellendi.
+    public const HARIC_ULKELER = ['Hong Kong', 'China'];
+
     public function __construct(private GoogleVeriServisi $g) {}
+
+    private function rapor(array $istek): array
+    {
+        return $this->g->rapor($istek + ['dimensionFilter' => ['notExpression' => ['filter' => [
+            'fieldName' => 'country', 'inListFilter' => ['values' => self::HARIC_ULKELER]]]]]);
+    }
 
     private static function anahtar(int $gun, ?string $tarih = null): string
     {
@@ -37,15 +48,15 @@ class AnalitikPanelVerisi
         $iki = [['startDate' => $bas, 'endDate' => $son], ['startDate' => now()->subDays($gun * 2)->toDateString(), 'endDate' => now()->subDays($gun + 1)->toDateString()]];
         $bir = [['startDate' => $bas, 'endDate' => $son]];
         $m = fn (array $adlar) => array_map(fn ($x) => ['name' => $x], $adlar);
-        $hostlu = fn (string $boyut, array $met, int $limit) => $this->g->rapor([
+        $hostlu = fn (string $boyut, array $met, int $limit) => $this->rapor([
             'dateRanges' => $bir, 'dimensions' => [['name' => $boyut], ['name' => 'hostName']], 'metrics' => $m($met), 'limit' => $limit,
             'orderBys' => [['metric' => ['metricName' => $met[0]], 'desc' => true]]]);
 
         $ham = [
             'tarih' => now()->toDateTimeString(), 'bas' => $bas, 'son' => $son,
-            'ozet' => $this->g->rapor(['dateRanges' => $iki, 'dimensions' => [['name' => 'hostName']], 'metrics' => $m(self::OZET), 'limit' => 50]),
-            'toplam' => $this->g->rapor(['dateRanges' => $iki, 'metrics' => $m(self::OZET)]),
-            'gunluk' => $this->g->rapor(['dateRanges' => $bir, 'dimensions' => [['name' => 'date'], ['name' => 'hostName']], 'metrics' => $m(['activeUsers', 'engagedSessions']), 'limit' => 5000]),
+            'ozet' => $this->rapor(['dateRanges' => $iki, 'dimensions' => [['name' => 'hostName']], 'metrics' => $m(self::OZET), 'limit' => 50]),
+            'toplam' => $this->rapor(['dateRanges' => $iki, 'metrics' => $m(self::OZET)]),
+            'gunluk' => $this->rapor(['dateRanges' => $bir, 'dimensions' => [['name' => 'date'], ['name' => 'hostName']], 'metrics' => $m(['activeUsers', 'engagedSessions']), 'limit' => 5000]),
             'kanal' => $hostlu('sessionDefaultChannelGroup', ['sessions', 'engagedSessions', 'activeUsers'], 200),
             'kaynak' => $hostlu('sessionSourceMedium', ['sessions', 'engagedSessions', 'activeUsers'], 300),
             'sehir' => $hostlu('city', ['activeUsers', 'engagedSessions'], 500),
