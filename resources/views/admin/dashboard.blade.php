@@ -15,7 +15,7 @@
     <a href="{{ route('admin.chat.index') }}" class="block bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl">
       💬 <strong>{{ $okunmamisSohbetSayisi }}</strong> okunmamış canlı sohbet var →
       @foreach($okunmamisSohbetler as $s)
-        <div class="mt-1 text-xs font-normal text-green-700">{{ $s->guest_name ?: 'Ziyaretçi' }} ({{ config("brands.brands.{$s->brand}.name", $s->brand) }}): {{ \Illuminate\Support\Str::limit($s->last_message_preview ?? '', 60) }}</div>
+        <div class="mt-1 text-xs font-normal text-green-700">{{ $s->guest_name ?: 'Ziyaretçi' }} ({{ config("brands.brands.{$s->brand}.name", $s->brand) }})@if($s->last_message_preview): {{ \Illuminate\Support\Str::limit($s->last_message_preview, 60) }}@endif</div>
       @endforeach
     </a>
   @endif

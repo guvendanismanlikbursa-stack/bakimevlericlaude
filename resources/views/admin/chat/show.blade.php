@@ -95,8 +95,8 @@
   .admin-bubble-guest { margin-right: auto; background: #fff; border: 1px solid #e5e7eb; border-bottom-left-radius: .25rem; }
   .admin-bubble-admin { margin-left: auto; background: #2563eb; color: #fff; border-bottom-right-radius: .25rem; }
   /* 17 Kasım 2026: WhatsApp tarzı tikler - ✓ gönderildi, ✓✓ iletildi (ziyaretçinin ekranına ulaştı), açık mavi ✓✓ okundu. */
-  .js-tik { margin-left: .3rem; font-weight: 700; letter-spacing: -.28em; color: rgba(255,255,255,.65); }
-  .js-tik.okundu { color: #7ff3ff; text-shadow: 0 0 1px rgba(0,0,0,.35); }
+  .js-tik { margin-left: .35rem; font-size: 13px; font-weight: 800; letter-spacing: -.3em; color: rgba(255,255,255,.55); }
+  .js-tik.okundu { color: #4ef0ff; text-shadow: 0 0 2px rgba(0,0,0,.45); }
 </style>
 
 <script>

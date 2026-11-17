@@ -119,8 +119,8 @@
   .js-chat-bubble.admin { margin-right: auto; background: #fff; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: .25rem; }
   .js-chat-bubble img, .js-chat-bubble video { max-width: 100%; border-radius: .5rem; margin-top: .25rem; }
   /* 17 Kasım 2026: WhatsApp tarzı tikler (✓ gönderildi, ✓✓ iletildi, mavi ✓✓ okundu). */
-  .js-chat-tik { display: block; text-align: right; font-size: .68rem; line-height: 1; margin-top: .2rem; letter-spacing: -.28em; padding-right: .28em; color: rgba(255,255,255,.7); font-weight: 700; }
-  .js-chat-tik.okundu { color: #7ff3ff; text-shadow: 0 0 1px rgba(0,0,0,.35); }
+  .js-chat-tik { display: block; text-align: right; font-size: .9rem; line-height: 1; margin-top: .15rem; letter-spacing: -.3em; padding-right: .3em; color: rgba(255,255,255,.55); font-weight: 800; }
+  .js-chat-tik.okundu { color: #4ef0ff; text-shadow: 0 0 2px rgba(0,0,0,.45); }
 </style>
 
 <script>
@@ -190,7 +190,7 @@
   });
 
   toggleBtn.addEventListener('click', function () {
-    if (!panelEl.classList.contains('hidden')) { hideAllPanels(); return; }
+    if (!panelEl.classList.contains('hidden')) { hideAllPanels(); if (state.threadId) startPolling(); return; }
     if (!menuEl.classList.contains('hidden')) { hideAllPanels(); return; }
 
     var savedToken = localStorage.getItem(storageKey);
@@ -206,7 +206,9 @@
 
   closeBtn.addEventListener('click', function () {
     hideAllPanels();
-    if (state.pollTimer) clearInterval(state.pollTimer);
+    // 17 Kasım 2026: pencere kapanınca yoklama tamamen durmaz, yavaşlar (20 sn) - ziyaretçi sitedeyken
+    // temsilcinin mesajı ona "iletildi" (gri ✓✓) sayılabilsin; pencere açılınca "okundu" (mavi ✓✓) olur.
+    startPolling();
   });
 
   // Sohbet devam ederken kullanici konu/niyet degistirmek isteyebilir -
@@ -413,7 +415,8 @@
 
   function startPolling() {
     if (state.pollTimer) clearInterval(state.pollTimer);
-    state.pollTimer = setInterval(pollOnce, 4500);
+    // Pencere açıkken 4,5 sn, kapalıyken 20 sn (bkz. closeBtn).
+    state.pollTimer = setInterval(pollOnce, panelEl.classList.contains('hidden') ? 20000 : 4500);
   }
 
   // 14 Agustos 2026: sekme arka plandayken gereksiz sunucu yuku/pil tuketimini
