@@ -34,6 +34,8 @@ return [
         // Kanıt: 15 Kasım'da Google'dan gelen ziyaretlerin sunucu kaydındaki (+0300) saat dağılımı, GA dateHour dağılımının
         // 11 saat ilerisi (akşam 17-23 yoğunluğu GA'da 06-12'de). Saatlik veriler bu dilimden Türkiye saatine çevrilir.
         'timezone' => env('GA4_TIMEZONE', 'America/Los_Angeles'),
+        // 17 Kasım 2026: bu saatten (YYYYMMDDHH, GA değeri) itibaren GA saatleri Türkiye saatiyle geliyor (bkz. AnalitikPanelVerisi::gaSaati).
+        'timezone_degisim' => env('GA4_TIMEZONE_DEGISIM', '2026111700'),
         'credentials' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
         'ca_bundle' => env('GOOGLE_CA_BUNDLE'),
         'ids' => [

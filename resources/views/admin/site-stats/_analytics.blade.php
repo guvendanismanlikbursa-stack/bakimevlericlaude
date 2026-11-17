@@ -58,21 +58,69 @@
         </div>
       @endforeach
     </div>
-    <div style="font-size:12.5px;font-weight:800;color:#6b7280;margin-bottom:6px;">Saat saat ziyaretçi (3 site)</div>
-    <div style="display:flex;align-items:flex-end;gap:2px;height:110px;border-bottom:1px solid #e5e7eb;">
-      @foreach($saatToplam as $k => $n)
-        <div title="{{ substr($k, 8, 2) }}:00 — {{ $n }} ziyaretçi" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;">
-          @foreach($s24 as $s => $x)
-            @if(($x['saat'][$k] ?? 0) > 0)<div style="height:{{ round($x['saat'][$k] / $saatEnCok * 100, 1) }}%;background:{{ $renk[$s] ?? '#6b7280' }};"></div>@endif
-          @endforeach
-        </div>
+    {{-- 17 Kasım 2026: kullanıcının talebi - renkli bloklara gelince (ya da dokununca) o saatte hangi siteye kaç kişi girdiği net gösterilir. --}}
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:8px;">
+      <span style="font-size:12.5px;font-weight:800;color:#6b7280;">Saat saat ziyaretçi (3 site)</span>
+      @foreach($s24 as $s => $x)
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span style="width:10px;height:10px;border-radius:2px;background:{{ $renk[$s] ?? '#6b7280' }};"></span>{{ $s }}</span>
       @endforeach
+      <span style="font-size:11.5px;color:#9ca3af;">— sayıları görmek için sütunun üzerine gelin ya da dokunun</span>
+    </div>
+    <div id="js-saat-grafik" style="position:relative;">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:110px;border-bottom:1px solid #e5e7eb;">
+        @foreach($saatToplam as $k => $n)
+          @php
+            $saatBas = (int) substr($k, 8, 2);
+            $detay = [];
+            foreach ($s24 as $s => $x) { $detay[] = [$s, $renk[$s] ?? '#6b7280', (int) ($x['saat'][$k] ?? 0)]; }
+          @endphp
+          <div class="js-saat-sutun" tabindex="0" data-baslik="{{ substr($k, 6, 2) }}.{{ substr($k, 4, 2) }} · {{ sprintf('%02d:00–%02d:00', $saatBas, ($saatBas + 1) % 24) }}" data-toplam="{{ $n }}" data-detay='@json($detay)'
+               aria-label="{{ sprintf('%02d:00', $saatBas) }}: {{ $n }} ziyaretçi" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer;border-radius:3px 3px 0 0;">
+            @foreach($s24 as $s => $x)
+              @if(($x['saat'][$k] ?? 0) > 0)<div title="{{ $s }}: {{ $x['saat'][$k] }} ziyaretçi" style="height:{{ round($x['saat'][$k] / $saatEnCok * 100, 1) }}%;background:{{ $renk[$s] ?? '#6b7280' }};"></div>@endif
+            @endforeach
+          </div>
+        @endforeach
+      </div>
+      <div id="js-saat-kutu" role="status" style="display:none;position:absolute;bottom:118px;z-index:20;min-width:200px;background:#111827;color:#fff;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;"></div>
     </div>
     <div style="display:flex;gap:2px;font-size:10.5px;color:#9ca3af;margin-top:3px;">
       @foreach($saatToplam as $k => $n)
-        <div style="flex:1;min-width:0;text-align:center;overflow:hidden;">{{ (int) substr($k, 8, 2) % 3 === 0 ? substr($k, 8, 2) : '' }}</div>
+        <div style="flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:visible;">{{ (int) substr($k, 8, 2) % 3 === 0 ? substr($k, 8, 2) : '' }}</div>
       @endforeach
     </div>
+    <script>
+      (function () {
+        var kap = document.getElementById('js-saat-grafik'), kutu = document.getElementById('js-saat-kutu');
+        if (!kap || !kutu) { return; }
+        var secili = null;
+        function yaz(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function goster(el) {
+          var detay = []; try { detay = JSON.parse(el.getAttribute('data-detay') || '[]'); } catch (e) {}
+          var h = '<div style="font-weight:800;margin-bottom:4px;">' + yaz(el.getAttribute('data-baslik')) + '</div>';
+          detay.forEach(function (d) {
+            h += '<div style="display:flex;align-items:center;gap:7px;"><span style="width:10px;height:10px;border-radius:2px;flex:none;background:' + d[1] + ';"></span>'
+              + '<span style="flex:1;">' + yaz(d[0]) + '</span><b>' + d[2] + '</b></div>';
+          });
+          h += '<div style="border-top:1px solid rgba(255,255,255,.2);margin-top:5px;padding-top:4px;display:flex;justify-content:space-between;"><span>Toplam</span><b>' + yaz(el.getAttribute('data-toplam')) + ' ziyaretçi</b></div>';
+          kutu.innerHTML = h; kutu.style.display = 'block';
+          var kr = kap.getBoundingClientRect(), sr = el.getBoundingClientRect(), g = kutu.offsetWidth;
+          var sol = sr.left - kr.left + sr.width / 2 - g / 2;
+          kutu.style.left = Math.max(0, Math.min(sol, kr.width - g)) + 'px';
+          if (secili) { secili.style.outline = ''; }
+          secili = el; el.style.outline = '2px solid #111827';
+        }
+        function gizle() { kutu.style.display = 'none'; if (secili) { secili.style.outline = ''; secili = null; } }
+        kap.querySelectorAll('.js-saat-sutun').forEach(function (el) {
+          // Fare: üzerine gelince açılır, çıkınca kapanır. Dokunmatik ekran: dokununca açılır, dışarı dokununca kapanır.
+          el.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { goster(el); } });
+          el.addEventListener('focus', function () { goster(el); });
+          el.addEventListener('click', function (e) { e.stopPropagation(); goster(el); });
+        });
+        kap.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { gizle(); } });
+        document.addEventListener('click', function (e) { if (!kap.contains(e.target)) { gizle(); } });
+      })();
+    </script>
   </div>
 @endif
 

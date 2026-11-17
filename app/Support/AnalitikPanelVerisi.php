@@ -27,6 +27,23 @@ class AnalitikPanelVerisi
     // ziyareti olmadığı için tüm Analytics sorgularında hariç tutulur. Ağ ayrıca BotKalkani ile engellendi.
     public const HARIC_ULKELER = ['Hong Kong', 'China'];
 
+    /**
+     * GA'nın "dateHour" değerini (YYYYMMDDHH) Türkiye saatine çevirir.
+     * 17 Kasım 2026: Analytics mülkünün saat dilimi değişikliği 17 Kasım'dan itibaren işledi.
+     * - 16 Kasım dahil öncesi: ABD Pasifik saatiyle geliyor.
+     * - 17 Kasım'dan sonrası: Türkiye saatiyle geliyor.
+     * Kanıt: 17 Kasım 15:30'da GA'nın en son saati "1712" idi; ABD Pasifik olsaydı Türkiye'de 23:00 olurdu, yani gelecek.
+     * Ham veride 1623'ten (Pasifik = TR 17 Kasım 10:00) sonra doğrudan 1711 geliyor, aradaki boşluk gerçek değil.
+     * Tümü Pasifik sayıldığında son 24 saat grafiğinde 11:00-21:00 arası sahte bir boşluk oluşuyordu.
+     */
+    public static function gaSaati(string $dateHour): \Illuminate\Support\Carbon
+    {
+        $degisim = (string) config('services.google_analytics.timezone_degisim', '2026111700');
+        $dilim = $dateHour >= $degisim ? config('app.timezone') : (config('services.google_analytics.timezone') ?: config('app.timezone'));
+
+        return \Illuminate\Support\Carbon::createFromFormat('YmdH', $dateHour, $dilim)->setTimezone(config('app.timezone'));
+    }
+
     public function __construct(private GoogleVeriServisi $g) {}
 
     private function rapor(array $istek): array
@@ -96,11 +113,10 @@ class AnalitikPanelVerisi
         $satirlar = $this->g->rapor(['dateRanges' => [['startDate' => '3daysAgo', 'endDate' => 'today']],
             'dimensions' => [['name' => 'dateHour'], ['name' => 'hostName'], ['name' => 'country']],
             'metrics' => array_map(fn ($m) => ['name' => $m], $met), 'limit' => 20000]);
-        // GA saatleri config('services.google_analytics.timezone') diliminde gelir (bkz. config/services.php) → Türkiye saatine çevrilir.
-        // Analytics veriyi saatler sonra işler; pencere "şimdi"ye değil Google'ın işlediği en son saate göre kurulur.
-        $gaDilim = config('services.google_analytics.timezone') ?: config('app.timezone');
+        // GA saatleri Türkiye saatine çevrilir (bkz. gaSaati). Analytics veriyi saatler sonra işler;
+        // pencere "şimdi"ye değil Google'ın işlediği en son saate göre kurulur.
         foreach ($satirlar as $i => $r) {
-            $satirlar[$i][0] = \Illuminate\Support\Carbon::createFromFormat('YmdH', $r[0], $gaDilim)->setTimezone(config('app.timezone'))->format('YmdH');
+            $satirlar[$i][0] = self::gaSaati($r[0])->format('YmdH');
         }
         $sonSaat = null;
         foreach ($satirlar as $r) {
@@ -200,13 +216,12 @@ class AnalitikPanelVerisi
 
         // Günlük seri (site site) - grafik
         $gunluk = [];
-        $gaDilim = config('services.google_analytics.timezone') ?: config('app.timezone');
         foreach ($ham['gunluk'] as [$tarih, $h, $kisi, $etk]) {
             if (! $h = self::host($h)) {
                 continue;
             }
             if (strlen($tarih) === 10) {
-                $t = \Illuminate\Support\Carbon::createFromFormat('YmdH', $tarih, $gaDilim)->setTimezone(config('app.timezone'))->toDateString();
+                $t = self::gaSaati($tarih)->toDateString();
                 if ($t < $ham['bas'] || $t > $ham['son']) {
                     continue;
                 }

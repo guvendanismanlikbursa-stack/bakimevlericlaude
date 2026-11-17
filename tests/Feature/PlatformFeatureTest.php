@@ -4485,6 +4485,15 @@ class PlatformFeatureTest extends TestCase
     }
 
     // 15 Kasım 2026: İstatistikler sayfası - Google Analytics sayfa adresleri 4 bölüme ve site seçimine doğru ayrılır.
+    public function test_ga_saatleri_degisim_oncesi_pasifik_sonrasi_turkiye_saati(): void
+    {
+        // 17 Kasım 2026: kullanıcının bildirdiği sahte boşluk - GA 17 Kasım'dan itibaren Türkiye saatiyle veriyor.
+        config(['services.google_analytics.timezone' => 'America/Los_Angeles', 'services.google_analytics.timezone_degisim' => '2026111700']);
+        $this->assertSame('2026111710', \App\Support\AnalitikPanelVerisi::gaSaati('2026111623')->format('YmdH'));
+        $this->assertSame('2026111711', \App\Support\AnalitikPanelVerisi::gaSaati('2026111711')->format('YmdH'));
+        $this->assertSame('2026111523', \App\Support\AnalitikPanelVerisi::gaSaati('2026111512')->format('YmdH'));
+    }
+
     public function test_analitik_panel_bolum_ve_site_ayrimi(): void
     {
         $bos = fn () => [];
