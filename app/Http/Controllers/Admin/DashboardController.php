@@ -100,11 +100,18 @@ class DashboardController extends Controller
         // odeme") ana sayfada da ayrintili takip edebilmek icin.
         $salesFunnel = \App\Models\FacilityMarketingNote::funnelStages();
 
+        // 17 Kasım 2026: kullanıcının bildirdiği eksiklik - canlı sohbet mesajları Genel Bakış'ta görünmüyordu
+        // (yalnızca kenar menüde küçük bir sayı vardı). Okunmamış sohbetler diğer bekleyen işler gibi kutuda gösterilir.
+        $okunmamisSohbetler = \App\Models\ChatThread::where('unread_by_admin', true)->orderByDesc('last_message_at')->limit(3)
+            ->get(['id', 'guest_name', 'brand', 'last_message_preview']);
+        $okunmamisSohbetSayisi = \App\Models\ChatThread::where('unread_by_admin', true)->count();
+
         return view('admin.dashboard', compact(
             'stats', 'latestOffers', 'pendingClaims', 'pendingTopups',
             'pendingTopupsAmount', 'pendingRegistrations', 'newVisitServiceRequests', 'latestClaims', 'health',
             'categoryDemand', 'unreadContactMessages', 'pendingAccountDeletions', 'realClickDemand', 'salesFunnel', 'newInterestLeads',
-            'realClickCities', 'realClickSections', 'realClickCityId', 'realClickSection', 'son24'
+            'realClickCities', 'realClickSections', 'realClickCityId', 'realClickSection', 'son24',
+            'okunmamisSohbetler', 'okunmamisSohbetSayisi'
         ));
     }
 

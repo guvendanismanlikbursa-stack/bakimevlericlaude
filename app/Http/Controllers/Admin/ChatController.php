@@ -45,8 +45,11 @@ class ChatController extends Controller
 
     public function show(ChatThread $thread)
     {
+        // 17 Kasım 2026: admin sohbeti açtı → misafirin mesajları iletildi + okundu (misafir mavi tik görür).
+        ChatMessage::alindiIsaretle($thread->id, 'guest', true);
         $thread->load('messages', 'assignedAdmin');
         $thread->update(['unread_by_admin' => false]);
+        $alindi = ChatMessage::alindiDurumu($thread->id, 'admin');
 
         // Ayni misafirin (guest_token) baska bolumlerde acilmis sohbetleri
         // varsa admin gorsun - her biri ayri thread/gecmis, ama ayni kisi.
@@ -55,7 +58,7 @@ class ChatController extends Controller
             ->orderByDesc('last_message_at')
             ->get();
 
-        return view('admin.chat.show', compact('thread', 'siblingThreads'));
+        return view('admin.chat.show', compact('thread', 'siblingThreads', 'alindi'));
     }
 
     public function reply(Request $request, ChatThread $thread)
@@ -96,7 +99,12 @@ class ChatController extends Controller
         $afterId = (int) $request->query('after_id', 0);
         $messages = $thread->messages()->where('id', '>', $afterId)->orderBy('id')->get();
 
+        // 17 Kasım 2026: sohbet sayfası açık ve sekme görünürken çekiliyor (gizliyken sorgu durur) → misafirin
+        // mesajları okundu (misafir mavi tik görür).
+        ChatMessage::alindiIsaretle($thread->id, 'guest', true);
+
         return response()->json([
+            'alindi' => ChatMessage::alindiDurumu($thread->id, 'admin'),
             'messages' => $messages->map(fn ($m) => [
                 'id' => $m->id,
                 'sender_type' => $m->sender_type,

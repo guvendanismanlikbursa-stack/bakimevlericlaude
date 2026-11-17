@@ -2545,6 +2545,43 @@ class PlatformFeatureTest extends TestCase
         ]);
     }
 
+    // 17 Kasım 2026: canlı sohbette WhatsApp tarzı tikler (iletildi/okundu, iki yönlü) + Genel Bakış görsel bildirimi.
+    public function test_canli_sohbet_tikleri_ve_genel_bakis_bildirimi(): void
+    {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci', 'guest_name' => 'Fatma'])->assertOk()->json();
+        $tid = $start['thread_id'];
+        $tok = $start['guest_token'];
+        $mesaj = $this->postJson("/site/bakimeviara/destek/{$tid}/mesaj", ['guest_token' => $tok, 'body' => 'Fiyat bilgisi alabilir miyim?'])->assertOk()->json('message');
+
+        // Admin henüz görmedi: Genel Bakış'ta yeşil sohbet kutusu, bildirim sayacında sohbet bilgisi.
+        $admin = $this->withSession(['admin_id' => $this->admin->id]);
+        $admin->get('/admin')->assertOk()->assertSee('okunmamış canlı sohbet var', false)->assertSee('Fiyat bilgisi alabilir miyim?', false);
+        $sayi = $admin->getJson('/admin/bildirimler/sayi')->assertOk()->json();
+        $this->assertSame(1, $sayi['sohbet_okunmamis']);
+        $this->assertSame($mesaj['id'], $sayi['sohbet_son']['id']);
+        $this->assertSame('Fatma', $sayi['sohbet_son']['ad']);
+
+        // Admin paneli açıkken misafir mesajı "iletildi" (gri ✓✓), henüz "okundu" değil.
+        $durum = $this->getJson("/site/bakimeviara/destek/{$tid}/mesajlar?after_id={$mesaj['id']}&guest_token={$tok}")->json('alindi');
+        $this->assertSame(['iletilen' => $mesaj['id'], 'okunan' => 0], $durum);
+
+        // Admin sohbeti açtı → okundu (mavi ✓✓).
+        $admin->get("/admin/canli-sohbet/{$tid}")->assertOk();
+        $durum = $this->getJson("/site/bakimeviara/destek/{$tid}/mesajlar?after_id={$mesaj['id']}&guest_token={$tok}")->json('alindi');
+        $this->assertSame($mesaj['id'], $durum['okunan']);
+
+        // Admin yanıtı: misafir penceresi kapalıyken çekerse yalnız iletildi, açıkken okundu.
+        $admin->post("/admin/canli-sohbet/{$tid}/yanitla", ['body' => 'Tabii, yardımcı olayım.'])->assertRedirect();
+        $yanitId = \App\Models\ChatMessage::where('chat_thread_id', $tid)->where('sender_type', 'admin')->value('id');
+        $this->assertSame(['iletilen' => 0, 'okunan' => 0], $admin->getJson("/admin/canli-sohbet/{$tid}/mesajlar?after_id={$yanitId}")->json('alindi'));
+        $this->getJson("/site/bakimeviara/destek/{$tid}/mesajlar?after_id=0&guest_token={$tok}&acik=0")->assertOk();
+        $this->assertSame(['iletilen' => $yanitId, 'okunan' => 0], $admin->getJson("/admin/canli-sohbet/{$tid}/mesajlar?after_id={$yanitId}")->json('alindi'));
+        $this->getJson("/site/bakimeviara/destek/{$tid}/mesajlar?after_id=0&guest_token={$tok}&acik=1")->assertOk();
+        $this->assertSame(['iletilen' => $yanitId, 'okunan' => $yanitId], $admin->getJson("/admin/canli-sohbet/{$tid}/mesajlar?after_id={$yanitId}")->json('alindi'));
+        $admin->get("/admin/canli-sohbet/{$tid}")->assertOk()->assertSee('title="Okundu"', false);
+    }
+
     public function test_ip_geo_lookup_service_returns_city_for_public_ip(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'success', 'city' => 'Bursa'])]);

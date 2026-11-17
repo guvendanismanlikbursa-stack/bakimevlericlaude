@@ -119,7 +119,7 @@
         <a href="{{ route('admin.questions.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.questions.*') ? 'bg-gray-700 text-white' : '' }}">Aile Soruları</a>
         <a href="{{ route('admin.contact-messages.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.contact-messages.*') ? 'bg-gray-700 text-white' : '' }}"><span>İletişim Mesajları</span>@if($unreadContactMessagesCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadContactMessagesCount }}</span>@endif</a>
         <a href="{{ route('admin.whatsapp-clicks.index') }}" class="block px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.whatsapp-clicks.*') ? 'bg-gray-700 text-white' : '' }}">WhatsApp Tıklamaları</a>
-        <a href="{{ route('admin.chat.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat.*') ? 'bg-gray-700 text-white' : '' }}"><span>Canlı Sohbet</span>@if($unreadChatThreadsCount > 0)<span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ $unreadChatThreadsCount }}</span>@endif</a>
+        <a href="{{ route('admin.chat.index') }}" class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 {{ request()->routeIs('admin.chat.*') ? 'bg-gray-700 text-white' : '' }}"><span>Canlı Sohbet</span><span id="js-admin-sohbet-rozet" class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full" @if($unreadChatThreadsCount < 1) style="display:none" @endif>{{ $unreadChatThreadsCount }}</span></a>
       </div>
     </details>
 

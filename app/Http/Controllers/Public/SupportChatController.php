@@ -74,6 +74,9 @@ class SupportChatController extends Controller
             $this->notifyAdminsOfNewThread($thread);
         }
 
+        // 17 Kasım 2026: sohbet penceresi açılırken çağrılır → admin mesajları ziyaretçiye ulaştı ve okundu.
+        ChatMessage::alindiIsaretle($thread->id, 'admin', true);
+
         return response()->json([
             'thread_id' => $thread->id,
             'intent' => $thread->intent,
@@ -81,6 +84,7 @@ class SupportChatController extends Controller
             'is_online' => ChatWorkingHour::isCurrentlyOpen(),
             'offline_message' => Setting::get('chat_offline_message', self::DEFAULT_OFFLINE_MESSAGE),
             'messages' => $thread->messages()->orderBy('id')->get()->map(fn ($m) => $this->formatMessage($m))->values(),
+            'alindi' => ChatMessage::alindiDurumu($thread->id, 'guest'),
         ]);
     }
 
@@ -166,9 +170,15 @@ class SupportChatController extends Controller
             $thread->update(['unread_by_guest' => false]);
         }
 
+        // 17 Kasım 2026: WhatsApp tarzı tikler - ziyaretçinin tarayıcısı mesajları çekti → admin mesajları "iletildi";
+        // sohbet penceresi açık ve sekme görünürse (acik=1) ayrıca "okundu". Yanıtta ziyaretçinin kendi
+        // mesajlarının durumu döner (admin iletti/okudu).
+        ChatMessage::alindiIsaretle($thread->id, 'admin', $request->boolean('acik'));
+
         return response()->json([
             'messages' => $messages->map(fn ($m) => $this->formatMessage($m))->values(),
             'is_online' => ChatWorkingHour::isCurrentlyOpen(),
+            'alindi' => ChatMessage::alindiDurumu($thread->id, 'guest'),
         ]);
     }
 

@@ -68,7 +68,7 @@
           @elseif($m->attachment_type === 'video')<br><video src="{{ $url }}" controls class="max-w-xs rounded-lg mt-1"></video>
           @else<br><a href="{{ $url }}" target="_blank" class="underline">Ek dosyayı aç</a>@endif
         @endif
-        <div class="text-[10px] opacity-60 mt-1">{{ $m->sender_type === 'admin' ? ($m->senderAdmin->name ?? 'Admin') : 'Misafir' }} · {{ $m->created_at->format('H:i') }}</div>
+        <div class="text-[10px] mt-1"><span class="opacity-60">{{ $m->sender_type === 'admin' ? ($m->senderAdmin->name ?? 'Admin') : 'Misafir' }} · {{ $m->created_at->format('H:i') }}</span>@if($m->sender_type === 'admin') @if($m->id <= $alindi['okunan'])<span class="js-tik okundu" title="Okundu">✓✓</span>@elseif($m->id <= $alindi['iletilen'])<span class="js-tik" title="İletildi">✓✓</span>@else<span class="js-tik" title="Gönderildi">✓</span>@endif @endif</div>
         @if($m->sender_type === 'guest' && ($detected = detect_chat_section($m->body)))
           <div class="text-[10px] mt-1 inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">🏷 {{ $detected['label'] }} ilgisi olabilir</div>
         @endif
@@ -94,6 +94,9 @@
   .js-admin-bubble { max-width: 70%; padding: .5rem .75rem; border-radius: .9rem; font-size: .85rem; line-height: 1.4; word-wrap: break-word; }
   .admin-bubble-guest { margin-right: auto; background: #fff; border: 1px solid #e5e7eb; border-bottom-left-radius: .25rem; }
   .admin-bubble-admin { margin-left: auto; background: #2563eb; color: #fff; border-bottom-right-radius: .25rem; }
+  /* 17 Kasım 2026: WhatsApp tarzı tikler - ✓ gönderildi, ✓✓ iletildi (ziyaretçinin ekranına ulaştı), açık mavi ✓✓ okundu. */
+  .js-tik { margin-left: .3rem; font-weight: 700; letter-spacing: -.28em; color: rgba(255,255,255,.65); }
+  .js-tik.okundu { color: #7ff3ff; text-shadow: 0 0 1px rgba(0,0,0,.35); }
 </style>
 
 <script>
@@ -110,18 +113,33 @@
     lastId = Math.max(lastId, m.id);
     var div = document.createElement('div');
     div.className = 'js-admin-bubble admin-bubble-' + m.sender_type;
+    div.setAttribute('data-id', m.id);
     var html = m.body ? m.body.replace(/</g, '&lt;') : '';
     if (m.attachment_url && m.attachment_type === 'image') html += '<br><img src="' + m.attachment_url + '" class="max-w-xs rounded-lg mt-1">';
     else if (m.attachment_url && m.attachment_type === 'video') html += '<br><video src="' + m.attachment_url + '" controls class="max-w-xs rounded-lg mt-1"></video>';
     else if (m.attachment_url) html += '<br><a href="' + m.attachment_url + '" target="_blank" class="underline">Ek dosyayı aç</a>';
+    if (m.sender_type === 'admin') html += '<div class="text-[10px] mt-1"><span class="js-tik" title="Gönderildi">✓</span></div>';
     div.innerHTML = html;
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  // 17 Kasım 2026: kendi (admin) mesajlarımızın tiklerini sunucudan gelen "bu id'ye kadar iletildi/okundu" bilgisine göre güncelle.
+  function applyAlindi(alindi) {
+    if (!alindi) return;
+    messagesEl.querySelectorAll('.admin-bubble-admin[data-id]').forEach(function (b) {
+      var id = parseInt(b.getAttribute('data-id'), 10);
+      var tik = b.querySelector('.js-tik');
+      if (!tik) return;
+      if (id <= alindi.okunan) { tik.textContent = '✓✓'; tik.className = 'js-tik okundu'; tik.title = 'Okundu'; }
+      else if (id <= alindi.iletilen) { tik.textContent = '✓✓'; tik.className = 'js-tik'; tik.title = 'İletildi'; }
+    });
+  }
+
   function pollAdmin() {
     fetch(pollUrl + '?after_id=' + lastId).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
       (data.messages || []).forEach(appendMessage);
+      applyAlindi(data.alindi);
     }).catch(function () {});
   }
 

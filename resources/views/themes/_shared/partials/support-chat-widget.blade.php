@@ -118,6 +118,9 @@
   .js-chat-bubble.guest { margin-left: auto; background: {{ $brand['primary_color'] }}; color: #fff; border-bottom-right-radius: .25rem; }
   .js-chat-bubble.admin { margin-right: auto; background: #fff; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: .25rem; }
   .js-chat-bubble img, .js-chat-bubble video { max-width: 100%; border-radius: .5rem; margin-top: .25rem; }
+  /* 17 Kasım 2026: WhatsApp tarzı tikler (✓ gönderildi, ✓✓ iletildi, mavi ✓✓ okundu). */
+  .js-chat-tik { display: block; text-align: right; font-size: .68rem; line-height: 1; margin-top: .2rem; letter-spacing: -.28em; padding-right: .28em; color: rgba(255,255,255,.7); font-weight: 700; }
+  .js-chat-tik.okundu { color: #7ff3ff; text-shadow: 0 0 1px rgba(0,0,0,.35); }
 </style>
 
 <script>
@@ -333,6 +336,7 @@
       state.guestToken = data.guest_token;
       applyOnlineStatus(data.is_online, data.offline_message);
       renderMessages(data.messages, true);
+      applyAlindi(data.alindi);
       panelEl.classList.remove('hidden');
       startPolling();
       setupEyeTracking(gender);
@@ -373,16 +377,36 @@
       else if (m.attachment_url && m.attachment_type === 'video') html += '<br><video src="' + m.attachment_url + '" controls></video>';
       else if (m.attachment_url) html += '<br><a href="' + m.attachment_url + '" target="_blank" rel="noopener" class="underline">Ek dosyayı aç</a>';
       bubble.innerHTML = html || '(boş mesaj)';
+      if (m.sender_type === 'guest') {
+        bubble.setAttribute('data-id', m.id);
+        bubble.insertAdjacentHTML('beforeend', '<span class="js-chat-tik" title="Gönderildi">✓</span>');
+      }
       messagesEl.appendChild(bubble);
     });
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  // 17 Kasım 2026: kullanıcının talebi - WhatsApp gibi tikler. Sunucu "bu id'ye kadar olan mesajlarınız
+  // temsilciye iletildi / temsilci okudu" bilgisini döner; kendi balonlarımızdaki tikler buna göre güncellenir.
+  function applyAlindi(alindi) {
+    if (!alindi) return;
+    messagesEl.querySelectorAll('.js-chat-bubble.guest[data-id]').forEach(function (b) {
+      var id = parseInt(b.getAttribute('data-id'), 10);
+      var tik = b.querySelector('.js-chat-tik');
+      if (!tik) return;
+      if (id <= alindi.okunan) { tik.textContent = '✓✓'; tik.className = 'js-chat-tik okundu'; tik.title = 'Okundu'; }
+      else if (id <= alindi.iletilen) { tik.textContent = '✓✓'; tik.className = 'js-chat-tik'; tik.title = 'İletildi'; }
+    });
+  }
+
   function pollOnce() {
     if (!state.threadId) return;
-    var url = pollUrlTemplate.replace('THREAD_ID', state.threadId) + '?after_id=' + state.lastMessageId + '&guest_token=' + encodeURIComponent(state.guestToken);
+    // acik=1: sohbet penceresi açık ve sekme görünür → temsilcinin mesajları "okundu" sayılır (yalnızca açıksa "iletildi").
+    var acik = !panelEl.classList.contains('hidden') && document.visibilityState === 'visible' ? 1 : 0;
+    var url = pollUrlTemplate.replace('THREAD_ID', state.threadId) + '?after_id=' + state.lastMessageId + '&guest_token=' + encodeURIComponent(state.guestToken) + '&acik=' + acik;
     fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
       renderMessages(data.messages, false);
+      applyAlindi(data.alindi);
       applyOnlineStatus(data.is_online, offlineBanner.textContent);
     }).catch(function () {});
   }

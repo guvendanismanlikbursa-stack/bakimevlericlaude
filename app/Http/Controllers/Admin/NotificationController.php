@@ -50,6 +50,23 @@ class NotificationController extends Controller
     {
         $admin = Admin::findOrFail(session('admin_id'));
 
-        return response()->json(['count' => $admin->notifications()->unread()->count()]);
+        // 17 Kasım 2026: kullanıcının talebi - canlı sohbet için görsel bildirim + WhatsApp tarzı tikler.
+        // Admin panelinin herhangi bir sayfası açıkken (her 20 sn) misafir mesajları "iletildi" sayılır;
+        // yanıtta okunmamış sohbet sayısı ve son misafir mesajının id'si döner (yeni mesajda ekranda uyarı için).
+        \App\Models\ChatMessage::alindiIsaretle(null, 'guest', false);
+        $sonMisafirMesaji = \App\Models\ChatMessage::where('sender_type', 'guest')->latest('id')->first(['id', 'chat_thread_id', 'body', 'attachment_type']);
+        $sohbet = $sonMisafirMesaji ? \App\Models\ChatThread::find($sonMisafirMesaji->chat_thread_id, ['id', 'guest_name', 'brand']) : null;
+
+        return response()->json([
+            'count' => $admin->notifications()->unread()->count(),
+            'sohbet_okunmamis' => \App\Models\ChatThread::where('unread_by_admin', true)->count(),
+            'sohbet_son' => $sonMisafirMesaji ? [
+                'id' => $sonMisafirMesaji->id,
+                'ad' => $sohbet?->guest_name ?: 'Ziyaretçi',
+                'site' => $sohbet ? config("brands.brands.{$sohbet->brand}.name", $sohbet->brand) : '',
+                'onizleme' => $sonMisafirMesaji->body ? \Illuminate\Support\Str::limit($sonMisafirMesaji->body, 70) : '['.($sonMisafirMesaji->attachment_type ?? 'dosya').']',
+                'url' => route('admin.chat.show', $sonMisafirMesaji->chat_thread_id),
+            ] : null,
+        ]);
     }
 }

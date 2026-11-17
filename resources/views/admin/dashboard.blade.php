@@ -8,8 +8,17 @@
 @endphp
 <h1 class="text-2xl font-bold mb-6">Genel Bakış</h1>
 
-@if($pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0 || $newVisitServiceRequests > 0 || $unreadContactMessages > 0 || $pendingAccountDeletions > 0 || $newInterestLeads > 0)
+@if($okunmamisSohbetSayisi > 0 || $pendingClaims > 0 || $pendingTopups > 0 || $pendingRegistrations > 0 || $newVisitServiceRequests > 0 || $unreadContactMessages > 0 || $pendingAccountDeletions > 0 || $newInterestLeads > 0)
 <div class="grid md:grid-cols-3 gap-4 mb-6">
+  {{-- 17 Kasım 2026: kullanıcının talebi - canlı sohbet Genel Bakış'ta görsel olarak da bildirilsin. --}}
+  @if($okunmamisSohbetSayisi > 0)
+    <a href="{{ route('admin.chat.index') }}" class="block bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl">
+      💬 <strong>{{ $okunmamisSohbetSayisi }}</strong> okunmamış canlı sohbet var →
+      @foreach($okunmamisSohbetler as $s)
+        <div class="mt-1 text-xs font-normal text-green-700">{{ $s->guest_name ?: 'Ziyaretçi' }} ({{ config("brands.brands.{$s->brand}.name", $s->brand) }}): {{ \Illuminate\Support\Str::limit($s->last_message_preview ?? '', 60) }}</div>
+      @endforeach
+    </a>
+  @endif
   @if($pendingClaims > 0)
     <a href="{{ route('admin.claims.index') }}" class="block bg-orange-50 border border-orange-200 text-orange-800 px-5 py-4 rounded-xl">
       <strong>{{ $pendingClaims }}</strong> sahiplenme başvurusu onay bekliyor →

@@ -15,6 +15,18 @@
   <p class="text-white/80 text-xs mt-1">Gelen mesaj ve talepleri kaçırmamak için tarayıcı bildirim iznini açık tutun.</p>
 </div>
 
+@if($panelType === 'admin')
+{{-- 17 Kasım 2026: kullanıcının talebi - canlı sohbette yeni mesaj gelince admin panelinin hangi sayfasındaysa
+     (Genel Bakış dahil) ekranda görsel uyarı çıksın; yalnızca ses ve kenar menüdeki küçük sayı yetmiyordu.
+     Renkler satır içi verildi (derlenmiş CSS'te olmayan sınıflar canlıda çalışmıyor). --}}
+<a id="js-sohbet-uyari" href="#" hidden style="display:none; position:fixed; top:16px; right:16px; z-index:60; max-width:340px; background:#16a34a; color:#fff; border-radius:14px; padding:12px 34px 12px 14px; box-shadow:0 10px 25px rgba(0,0,0,.25); font-size:14px; line-height:1.35; text-decoration:none;">
+  <span style="font-weight:700; display:block;">💬 Yeni canlı sohbet mesajı</span>
+  <span id="js-sohbet-uyari-metin" style="display:block; font-size:12.5px; opacity:.92; margin-top:3px;"></span>
+  <span style="display:block; font-size:12px; font-weight:700; margin-top:6px; text-decoration:underline;">Sohbeti aç →</span>
+  <button type="button" id="js-sohbet-uyari-kapat" aria-label="Kapat" style="position:absolute; top:6px; right:10px; background:none; border:0; color:#fff; font-size:18px; line-height:1; cursor:pointer;">×</button>
+</a>
+@endif
+
 <script>
 (function () {
   var panelType = @json($panelType);
@@ -44,11 +56,38 @@
     } catch (e) {}
   }
 
+  // 17 Kasım 2026: admin panelinde canlı sohbet için görsel uyarı + kenar menü sayacının sayfa yenilemeden güncellenmesi.
+  var lastSohbetId = null;
+  var sohbetUyari = document.getElementById('js-sohbet-uyari');
+  var sohbetUyariKapat = document.getElementById('js-sohbet-uyari-kapat');
+  if (sohbetUyariKapat) sohbetUyariKapat.addEventListener('click', function (e) {
+    e.preventDefault(); e.stopPropagation();
+    sohbetUyari.hidden = true; sohbetUyari.style.display = 'none';
+  });
+
+  function sohbetGuncelle(data) {
+    if (panelType !== 'admin' || !('sohbet_okunmamis' in data)) return false;
+    var rozet = document.getElementById('js-admin-sohbet-rozet');
+    if (rozet) { rozet.textContent = data.sohbet_okunmamis; rozet.style.display = data.sohbet_okunmamis > 0 ? '' : 'none'; }
+    var son = data.sohbet_son;
+    var yeni = false;
+    // Zaten o sohbetin sayfasındaysa mesaj ekranda belirir, ayrıca uyarı gösterilmez.
+    if (son && lastSohbetId !== null && son.id > lastSohbetId && location.href.split('?')[0] !== son.url && sohbetUyari) {
+      document.getElementById('js-sohbet-uyari-metin').textContent = son.ad + (son.site ? ' (' + son.site + ')' : '') + ': ' + son.onizleme;
+      sohbetUyari.href = son.url;
+      sohbetUyari.hidden = false; sohbetUyari.style.display = 'block';
+      yeni = true;
+    }
+    if (son) lastSohbetId = son.id; else if (lastSohbetId === null) lastSohbetId = 0;
+    return yeni;
+  }
+
   function pollUnread() {
     fetch(countUrl, { headers: { 'Accept': 'application/json' } })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (data) {
-        if (lastCount !== null && data.count > lastCount) playPing();
+        var yeniSohbet = sohbetGuncelle(data);
+        if ((lastCount !== null && data.count > lastCount) || yeniSohbet) playPing();
         lastCount = data.count;
       })
       .catch(function () {});
