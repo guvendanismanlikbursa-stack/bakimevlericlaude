@@ -97,32 +97,7 @@ class SiteStatsController extends Controller
             ->get()
             ->groupBy(fn ($row) => $row->visit_date->toDateString());
 
-        $familiesQuery = FamilyUser::query();
-        if ($request->filled('brand')) {
-            $familiesQuery->where('registered_brand', $request->brand);
-        }
-        if ($request->filled('has_location')) {
-            $request->has_location === '1'
-                ? $familiesQuery->whereNotNull('signup_lat')
-                : $familiesQuery->whereNull('signup_lat');
-        }
-
-        $families = (clone $familiesQuery)->latest()->paginate(25)->withQueryString();
-
-        if ($redirect = $this->redirectIfPageOutOfRange($request, $families)) {
-            return $redirect;
-        }
-
-        $cityCounts = (clone $familiesQuery)
-            ->whereNotNull('signup_city_name')
-            ->selectRaw('signup_city_name, count(*) as total')
-            ->groupBy('signup_city_name')
-            ->orderByDesc('total')
-            ->get();
-
-        $totalFamilies = (clone $familiesQuery)->count();
-        $withLocation = (clone $familiesQuery)->whereNotNull('signup_lat')->count();
-        $verifiedCount = (clone $familiesQuery)->whereNotNull('email_verified_at')->count();
+        // 18 Kasım 2026: kayıtlı aile listesi ve şehir dağılımı Kullanıcılar > Aileler sayfasına taşındı (kullanıcının talebi).
 
         // 26 Ekim 2026: ziyaretçi türleri (sunucu erişim kayıtlarından günlük özet - bkz. TrafikOzet).
         $donemler = ['1' => 'Bugün', 'dun' => 'Dün', '7' => 'Son 7 gün', '30' => 'Son 30 gün', '90' => 'Son 3 ay', '180' => 'Son 6 ay', '365' => 'Son 1 yıl'];
@@ -150,7 +125,7 @@ class SiteStatsController extends Controller
             : collect();
 
         return view('admin.site-stats.index', compact(
-            'brands', 'visitStats', 'dailySeries', 'families', 'cityCounts', 'totalFamilies', 'withLocation', 'verifiedCount',
+            'brands', 'visitStats', 'dailySeries',
             'donemler', 'donem', 'trafik', 'trafikBaslangic', 'trafikGunluk', 'donemBas', 'donemSon', 'gercekDonem', 'gercekGunluk',
             'gercekBaslangic', 'botEngel', 'botEngelGunluk', 'supheliFirmalar', 'engelliListe', 'gozcuSon'
         ) + $ga);

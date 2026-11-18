@@ -9269,6 +9269,27 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->get('http://bakimevleri.com/sitemap.xml')->assertOk()->assertSee('/fiyat-rehberi/cocuk</loc>', false);
     }
 
+    // 18 Kasım 2026: aile sayıları + şehir dağılımı Kullanıcılar > Aileler sayfasında; konumsuzlar "Şehri bilinmiyor".
+    public function test_aileler_sayfasinda_sehir_dagilimi_ve_konum_filtresi(): void
+    {
+        FamilyUser::create(['registered_brand' => 'bakimevleri', 'name' => 'Konumlu Aile', 'email' => 'konumlu@test.local', 'phone' => '05550000001',
+            'password' => Hash::make('Aile12345!'), 'signup_lat' => 40.19, 'signup_lng' => 29.06, 'signup_city_name' => 'Bursa']);
+
+        $html = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kullanicilar/aileler')->assertOk()->getContent();
+        $this->assertStringContainsString('Şehre Göre Dağılım', $html);
+        $this->assertStringContainsString('Şehri bilinmiyor', $html);
+        $this->assertStringContainsString('Haritada gör', $html);
+        $this->assertMatchesRegularExpression('/Bursa<\/span>.*?font-black">1</s', $html);
+
+        $sadeceKonumlu = $this->withSession(['admin_id' => $this->admin->id])->get('/admin/kullanicilar/aileler?has_location=1')->assertOk()->getContent();
+        $this->assertStringContainsString('Konumlu Aile', $sadeceKonumlu);
+        $this->assertStringNotContainsString('Demo Aile', $sadeceKonumlu);
+
+        // İstatistikler sayfasında artık yalnız yönlendirme bağlantısı var
+        $this->withSession(['admin_id' => $this->admin->id])->get('/admin/site-istatistikleri')->assertOk()
+            ->assertSee('Kullanıcılar › Aileler', false)->assertDontSee('Kayıt Olan Ailelerin Konumları', false);
+    }
+
     // 18 Kasım 2026: Ocak/Temmuz otomatik yenileme - liste sayfasından yalnız ilçe+fiyat alınır, özet il/ilçe eşiğine uyar.
     public function test_piyasa_ucret_yenile_ozet_hesabi(): void
     {

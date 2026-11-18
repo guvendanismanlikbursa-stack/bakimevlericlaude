@@ -9,9 +9,13 @@
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">
           <div class="font-bold text-gray-900 break-words">{{ $family->name }}</div>
-          <div class="text-xs text-gray-500 mt-0.5">{{ $family->email }} · {{ $brands[$family->registered_brand]['name'] ?? $family->registered_brand }} · {{ $family->created_at->format('d.m.Y H:i') }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">{{ $family->email }} · {{ $brands[$family->registered_brand]['name'] ?? $family->registered_brand }} · Kayıt: {{ $family->created_at->format('d.m.Y H:i') }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">📍 {{ $family->signup_city_name ?: 'Şehri bilinmiyor' }} · Rıza: {{ $family->consent_accepted_at?->format('d.m.Y H:i') ?? '—' }}</div>
         </div>
         <div class="flex items-center gap-2 flex-wrap justify-end">
+          @if($family->signup_lat && $family->signup_lng)
+            <a href="https://www.google.com/maps?q={{ $family->signup_lat }},{{ $family->signup_lng }}" target="_blank" rel="noopener" class="text-primary text-sm font-semibold whitespace-nowrap">Haritada gör →</a>
+          @endif
           <a href="{{ route('admin.family-users.show', $family) }}" class="text-primary text-sm font-semibold whitespace-nowrap">Detay →</a>
           <form method="POST" action="{{ route('admin.users.families.impersonate', $family) }}" class="inline" onsubmit="return confirm('{{ $family->name }} adına aile paneline gireceksiniz. Devam edilsin mi?')">
             @csrf

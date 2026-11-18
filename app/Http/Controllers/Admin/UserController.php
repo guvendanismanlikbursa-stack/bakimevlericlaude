@@ -29,6 +29,9 @@ class UserController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('has_location')) {
+            $request->has_location === '1' ? $query->whereNotNull('signup_lat') : $query->whereNull('signup_lat');
+        }
         if ($request->filled('q')) {
             $search = $request->q;
             $query->where(function ($w) use ($search) {
@@ -55,7 +58,21 @@ class UserController extends Controller
             ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         }
 
-        return view('admin.users.families', compact('families', 'brands'));
+        // 18 Kasım 2026: kullanıcının talebi - aile sayıları ve şehir dağılımı (eskiden Site İstatistikleri'ndeydi) burada.
+        // Şehir: kayıtta paylaşılan konumdan; konum paylaşmayanlar "şehri bilinmiyor" olarak ayrıca sayılır.
+        // Liste filtreleri sayfayı yenilemeden yalnız listeyi günceller; bu yüzden özet her zaman TÜM aileler içindir.
+        $ozet = FamilyUser::query();
+        $aileOzet = [
+            'toplam' => (clone $ozet)->count(),
+            'konumlu' => (clone $ozet)->whereNotNull('signup_lat')->count(),
+            'dogrulanmis' => (clone $ozet)->whereNotNull('email_verified_at')->count(),
+            'sehirsiz' => (clone $ozet)->where(fn ($q) => $q->whereNull('signup_city_name')->orWhere('signup_city_name', ''))->count(),
+            'sehirler' => (clone $ozet)->whereNotNull('signup_city_name')->where('signup_city_name', '!=', '')
+                ->selectRaw('signup_city_name, count(*) as total')->groupBy('signup_city_name')
+                ->orderByDesc('total')->orderBy('signup_city_name')->get(),
+        ];
+
+        return view('admin.users.families', compact('families', 'brands', 'aileOzet'));
     }
 
     public function toggleFamilyStatus(FamilyUser $familyUser)
