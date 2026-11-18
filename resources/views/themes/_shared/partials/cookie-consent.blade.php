@@ -5,13 +5,17 @@
   aria-label="Çerez onayı"
 >
   <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+    {{-- 18 Kasım 2026: kullanıcının kararı - "Reddet" ve kapatma yok; iki seçenekten biri seçilmeden band kapanmaz.
+         "Yalnızca zorunlu çerezler": Analytics çerezsiz çalışır (bkz. layouts/brand.blade.php izin modu). --}}
     <p class="text-sm text-white/80 flex-1">
-      Sitemizi kullanarak, deneyiminizi iyileştirmek amacıyla çerez kullanımını kabul etmiş olursunuz.
-      Detaylar için <a href="{{ brand_route('pages.show', ['slug' => 'cerez-politikasi']) }}" class="underline hover:text-white">Çerez Politikası</a>'nı inceleyebilirsiniz.
+      Sitemizin çalışması için zorunlu çerezler kullanılır. Sitemizi iyileştirmek için analiz çerezlerini de kullanmak istiyoruz;
+      bunlar yalnızca <b class="text-white">Tümünü kabul et</b> derseniz cihazınıza kaydedilir.
+      Detaylar: <a href="{{ brand_route('pages.show', ['slug' => 'cerez-politikasi']) }}" class="underline hover:text-white">Çerez Politikası</a>.
     </p>
-    <div class="flex items-center gap-2 shrink-0">
-      <button type="button" id="js-cookie-decline" class="rounded-lg border border-white/20 px-4 py-2 text-xs font-bold text-white/80 hover:bg-white/10">Reddet</button>
-      <button type="button" id="js-cookie-accept" class="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white">Kabul Et</button>
+    <div class="flex flex-wrap items-center gap-2 shrink-0">
+      {{-- Ölçüm kaybını azaltmak için (kullanıcının talebi): "Tümünü kabul et" renkli ve büyük, "zorunlu" sade. Satır içi stil: Tailwind canlıda derlenmiyor. --}}
+      <button type="button" id="js-cookie-decline" style="background:transparent;border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.7);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;">Yalnızca zorunlu çerezler</button>
+      <button type="button" id="js-cookie-accept" class="bg-primary" style="color:#fff;border:0;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.35);">Tümünü kabul et</button>
     </div>
   </div>
 </div>
@@ -40,11 +44,14 @@
     try { localStorage.setItem(KEY, value); } catch (e) {}
     banner.classList.add('hidden');
     document.body.classList.remove('js-cookie-banner-open');
+    if (value === 'tumu') {
+      try { window.dispatchEvent(new Event('cerez-izni-verildi')); } catch (e) {}
+    }
   }
 
   var acceptBtn = document.getElementById('js-cookie-accept');
   var declineBtn = document.getElementById('js-cookie-decline');
-  if (acceptBtn) acceptBtn.addEventListener('click', function () { setConsent('accepted'); });
-  if (declineBtn) declineBtn.addEventListener('click', function () { setConsent('declined'); });
+  if (acceptBtn) acceptBtn.addEventListener('click', function () { setConsent('tumu'); });
+  if (declineBtn) declineBtn.addEventListener('click', function () { setConsent('zorunlu'); });
 })();
 </script>

@@ -154,6 +154,20 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  // 18 Kasım 2026: kullanıcının kararı - çerez bandı "Tümünü kabul et / Yalnızca zorunlu çerezler" (Reddet yok,
+  // seçim yapılmadan kapanmaz). Google Analytics HER İKİ durumda da çalışır; ancak "Tümünü kabul et" denmedikçe
+  // Google'ın izin modu (Consent Mode) ile ÇEREZSİZ çalışır - ziyaretçinin cihazına analiz çerezi bırakılmaz.
+  // Önceden band hiçbir şeyi değiştirmiyordu (Reddet'e basan da çerezle ölçülüyordu).
+  window.cerezIzniVar = function () {
+    try { var v = localStorage.getItem('cookie_consent'); return v === 'tumu' || v === 'accepted'; } catch (e) { return false; }
+  };
+  (function () {
+    var izin = window.cerezIzniVar() ? 'granted' : 'denied';
+    gtag('consent', 'default', { analytics_storage: izin, ad_storage: izin, ad_user_data: izin, ad_personalization: izin });
+    window.addEventListener('cerez-izni-verildi', function () {
+      gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted' });
+    });
+  })();
   gtag('js', new Date());
   gtag('config', @json($ga4MeasurementId), {
     page_title: document.title,
@@ -243,10 +257,10 @@
   if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
   n.queue=[];
   // 20 Ekim 2026: pixel dosyası da sayfa yüklendikten sonra eklenir (bkz. GA notu).
-  var ekle=function(){if(f.__fbqYuklendi)return;f.__fbqYuklendi=1;t=b.createElement(e);t.async=!0;
+  var ekle=function(){if(f.__fbqYuklendi||!f.cerezIzniVar||!f.cerezIzniVar())return;f.__fbqYuklendi=1;t=b.createElement(e);t.async=!0;
   t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)};
   ['scroll','pointerdown','keydown','touchstart'].forEach(function(x){f.addEventListener(x,ekle,{once:true,passive:true})});
-  f.addEventListener('load',function(){setTimeout(ekle,3000)})}(window, document,'script',
+  f.addEventListener('load',function(){setTimeout(ekle,3000)});f.addEventListener('cerez-izni-verildi',ekle)}(window, document,'script',
   'https://connect.facebook.net/en_US/fbevents.js');
   fbq('init', @json(config('services.meta_pixel.id')));
   fbq('track', 'PageView');
