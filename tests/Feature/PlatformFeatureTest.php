@@ -9233,6 +9233,45 @@ Metin {standart_fiyat}"])->assertRedirect();
         \Illuminate\Support\Carbon::setTestNow();
     }
 
+    // 18 Kasım 2026: SEO fırsatları - Search Console aranan kelime + sayfa verisinden iş yapılabilir listeler.
+    public function test_seo_firsatlari_listeleri_doktor_haric_eski_adres_bilgi(): void
+    {
+        $satir = fn ($sorgu, $sayfa, $tik, $gos, $sira) => ['keys' => [$sorgu, $sayfa], 'clicks' => $tik, 'impressions' => $gos, 'ctr' => $gos ? $tik / $gos : 0, 'position' => $sira];
+        $this->mock(\App\Services\GoogleVeriServisi::class, fn ($m) => $m->shouldReceive('aramaKonsolu')->andReturnUsing(fn ($site) => $site !== 'bakimevleri.com' ? [] : [
+            // genel arama, www'lu ve www'suz iki satır -> tek satırda birleşir
+            $satir('ankara huzurevi fiyatları', 'https://bakimevleri.com/fiyat-rehberi/yasli-bakim/ankara', 2, 60, 14),
+            $satir('ankara huzurevi fiyatları', 'https://www.bakimevleri.com/fiyat-rehberi/yasli-bakim/ankara/', 0, 40, 16),
+            // kurum adıyla arama, ilk sayfada ama tıklanmıyor
+            $satir('özel lotus kreş selçuklu', 'https://bakimevleri.com/kurumlar/ozel-lotus-kres', 0, 190, 8.3),
+            // kurum adı, 2. sayfa eşiği
+            $satir('avrupa ada rehabilitasyon', 'https://bakimevleri.com/kurumlar/avrupa-ada', 1, 110, 11.9),
+            // doktor sayfası: hiçbir listeye girmez
+            $satir('diş hekimi ferhat ağın', 'https://bakimevleri.com/doktor/dis-hekimi-ferhat-agin-iKppL', 0, 375, 9.5),
+            $satir('istanbul diş hekimi', 'https://bakimevleri.com/uzmanlar/istanbul/dis-hekimligi', 0, 62, 85),
+            // eski /site/ adresi: yalnız bilgi
+            $satir('duru engelli bakım merkezi', 'https://bakimevleri.com/site/bakimevibul/kurumlar/duru', 0, 486, 11.4),
+        ]));
+        $v = app(\App\Support\SeoFirsatlari::class)->cek();
+        $x = $v['siteler']['bakimevleri.com'];
+        $this->assertCount(1, $x['genel']);
+        $this->assertSame(['ankara huzurevi fiyatları', 100, 2, 14.8], [$x['genel'][0]['sorgu'], $x['genel'][0]['gos'], $x['genel'][0]['tik'], $x['genel'][0]['sira']]);
+        $this->assertStringContainsString('İlk sayfada değiliz', $x['genel'][0]['oneri']);
+        $this->assertSame(['özel lotus kreş selçuklu'], array_column($x['az_tik'], 'sorgu'));
+        $this->assertSame(['avrupa ada rehabilitasyon', 'ankara huzurevi fiyatları'], array_column($x['yakin'], 'sorgu'));   // az_tik'tekiler tekrar edilmez
+        $tum = json_encode($x, JSON_UNESCAPED_UNICODE);
+        $this->assertStringNotContainsString('ferhat', $tum);
+        $this->assertStringNotContainsString('/uzmanlar/', $tum);
+        $this->assertStringNotContainsString('duru', $tum);
+        $this->assertSame([1, 486], [$x['yanlis_adres_sayisi'], $x['yanlis_adres_gos']]);
+
+        $html = view('admin.site-stats._seo_firsat', ['seo' => $v, 'gaSite' => 'hepsi', 'kart' => '', 'h2' => '', 'acik' => '',
+            'sayi' => fn ($n) => number_format((float) $n, 0, ',', '.'), 'renk' => ['bakimevleri.com' => '#0b5d8c']])->render();
+        $this->assertStringContainsString('SEO Fırsatları', $html);
+        $this->assertStringContainsString('“ankara huzurevi fiyatları”', $html);
+        $this->assertStringContainsString('beklenen ~', $html);
+        $this->assertStringContainsString('486 görünme', $html);
+    }
+
     // 1 Kasım 2026: gerçek ziyaretçi sayacı ayrı tutulur; bot dahil sayaç korunur.
     public function test_gercek_ziyaretci_sayaci(): void
     {

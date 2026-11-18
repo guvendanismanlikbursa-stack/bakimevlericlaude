@@ -322,6 +322,12 @@ ScheduledJobMonitor::attach(
     'google:veri-yenile --son24',
     150
 );
+// 18 Kasım 2026: SEO fırsatları listesi her sabah 06:40.
+ScheduledJobMonitor::attach(
+    Schedule::command('google:veri-yenile --seo')->dailyAt('06:40'),
+    'google:veri-yenile --seo',
+    1500
+);
 foreach ([7 => '06:20', 30 => '06:25', 90 => '06:30', 365 => '06:35'] as $gun => $saat) {
     ScheduledJobMonitor::attach(
         Schedule::command('google:veri-yenile --gun='.$gun)->dailyAt($saat),

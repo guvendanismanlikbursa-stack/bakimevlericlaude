@@ -165,7 +165,7 @@ class SiteStatsController extends Controller
         $bolum = $request->filled('bolum') ? (string) $request->query('bolum') : null;
         $v = app(\App\Support\AnalitikPanelVerisi::class);
         $sonuc = ['gaDonemler' => $donemler, 'gaGun' => $gun, 'gaSite' => $site, 'gaIl' => $ilId, 'gaBolum' => $bolum,
-            'ga' => null, 'gaHam' => null, 'gaHata' => null, 'son24' => null, 'gaHazir' => app(\App\Services\GoogleVeriServisi::class)->hazirMi(),
+            'ga' => null, 'gaHam' => null, 'gaHata' => null, 'son24' => null, 'seo' => null, 'gaHazir' => app(\App\Services\GoogleVeriServisi::class)->hazirMi(),
             'gaIller' => \App\Models\City::orderBy('name')->get(['id', 'name'])];
         if (! $sonuc['gaHazir']) {
             return $sonuc;
@@ -183,6 +183,7 @@ class SiteStatsController extends Controller
             $sonuc['gaHam'] = ['tarih' => $ham['tarih'], 'bas' => $ham['bas'], 'son' => $ham['son'], 'sc_bas' => $ham['sc_bas'], 'sc_son' => $ham['sc_son']];
             $sonuc['ga'] = $v->hazirla($ham, $site, $ilId, $bolum);
             $sonuc['son24'] = $v->son24();
+            $sonuc['seo'] = app(\App\Support\SeoFirsatlari::class)->veri();
         } catch (\Throwable $e) {
             report($e);
             $sonuc['gaHata'] = $e->getMessage();

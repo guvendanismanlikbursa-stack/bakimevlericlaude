@@ -460,6 +460,8 @@
     </details>
   </div>
 
+  @include('admin.site-stats._seo_firsat')
+
   @php
     $gunler = array_keys($ga['gunluk']);
     $siteListe = $gaSite === 'hepsi' ? \App\Services\GoogleVeriServisi::SITELER : [$gaSite];
