@@ -154,7 +154,39 @@ class AnalitikPanelVerisi
             $siteler[$h]['sure'] += $r[7];
             $siteler[$h]['saat'][$saat] += $r[3];
         }
-        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'son' => $sonSaat ?? $bitis->format('YmdH'),
+        // 18 Kasım 2026: kullanıcının talebi - Google aramasından gelen tıklamalar (Search Console) da saat saat;
+        // Google'ın kendi Search Console ekranındaki rakamla aynı kaynaktır. Hata olursa kart yalnız Analytics ile çizilir.
+        $scEksik = null;
+        $scVar = false;
+        foreach ($siteler as $h => $x) {
+            $siteler[$h] += ['tik' => null, 'gos' => null, 'tik_saat' => $saatler];
+            try {
+                $sc = $this->g->aramaKonsoluSaatlik($h, now()->subDays(3)->toDateString(), now()->toDateString());
+            } catch (\Throwable $e) {
+                report($e);
+
+                continue;
+            }
+            $scVar = true;
+            $scEksik = $sc['eksik'] && (! $scEksik || $sc['eksik'] < $scEksik) ? $sc['eksik'] : $scEksik;
+            $siteler[$h]['tik'] = 0;
+            $siteler[$h]['gos'] = 0;
+            foreach ($sc['saatler'] as $k => $v) {
+                if (array_key_exists($k, $saatler)) {
+                    $siteler[$h]['tik_saat'][$k] = $v['tik'];
+                    $siteler[$h]['tik'] += $v['tik'];
+                    $siteler[$h]['gos'] += $v['gos'];
+                }
+            }
+            $siteler[$h]['tik_son'] = $sc['saatler'] ? max(array_map('strval', array_keys($sc['saatler']))) : null;
+        }
+        $scSon = null;
+        foreach ($siteler as $x) {
+            if (! empty($x['tik_son']) && ($scSon === null || $x['tik_son'] > $scSon)) {
+                $scSon = $x['tik_son'];
+            }
+        }
+        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
             'gecikme' => $sonSaat ? max(0, (int) floor(\Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone'))->addHour()->diffInHours(now(), true))) : null, 'siteler' => $siteler];
         Cache::forever('google_son24', $veri);
 

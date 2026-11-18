@@ -30,116 +30,143 @@
 @endphp
 
 @if(! empty($son24))
-  {{-- 16 Kasım 2026: kullanıcının talebi - günlük giriş sayıları (son 24 saat, saat saat), 3 site ayrı. Her saat yenilenir. --}}
+  {{-- 16 Kasım 2026: kullanıcının talebi - günlük giriş sayıları (son 24 saat, saat saat), 3 site ayrı. Her saat yenilenir.
+       18 Kasım 2026: kullanıcının talebi - Google'ın Search Console ekranıyla aynı rakam (aramadan tıklama) da gösterilir,
+       iki kaynağın ne saydığı kısaca açıklanır ("farklı sayılar kafa karıştırıyor"). --}}
   @php
     $s24 = $son24['siteler'];
-    $saatToplam = [];
-    foreach ($s24 as $sv) { foreach ($sv['saat'] as $k => $n) { $saatToplam[$k] = ($saatToplam[$k] ?? 0) + $n; } }
-    $saatEnCok = max(1, max($saatToplam ?: [0]));
+    $s24Bas = isset($son24['bas']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['bas']) : null;
+    $s24Bitis = $s24Bas ? $s24Bas->copy()->addHours(24) : null;
+    $scVar = ! empty($son24['sc_var']);
+    $saatBicim = fn ($k) => $k ? substr($k, 8, 2).':00' : '—';
+    $sonrakiSaat = fn ($k) => $k ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $k)->addHour()->format('H:00') : '—';
+    // Her grafik: [kimlik, başlık, açıklama, saat anahtarı, gelen son saat, kesinleşmemiş ilk saat]
+    $grafikler = [];
+    if ($scVar) {
+        $grafikler[] = ['sc', '🔍 Google aramasından tıklama — saat saat', 'Kaynak: Search Console. Soluk sütunlar: Google hâlâ sayıyor, rakam artabilir.', 'tik_saat', (string) ($son24['sc_son'] ?? ''), (string) ($son24['sc_eksik'] ?? '')];
+    }
+    $grafikler[] = ['ga', '👤 Siteye giren kişi — saat saat', 'Kaynak: Google Analytics.', 'saat', (string) ($son24['son'] ?? ''), ''];
   @endphp
   <div id="son24" style="{{ $kart }}">
-    <h2 style="{{ $h2 }}">🕒 Son 24 Saat — Günlük Giriş</h2>
-    @php
-      $s24Bas = isset($son24['bas']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['bas']) : null;
-      $s24Son = isset($son24['son']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['son'])->addHour() : null;
-      $s24Islenen = $son24['son'] ?? '';   // Google'ın işlediği son saat (YmdH); sonrası "henüz işlenmedi"
-      $s24Bitis = $s24Bas ? $s24Bas->copy()->addHours(24) : null;
-    @endphp
+    <h2 style="{{ $h2 }}">🕒 Son 24 Saat</h2>
     <p style="{{ $acik }}">@if($s24Bas && $s24Bitis){{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
-      Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir).
-      @if($s24Son)Google Analytics veriyi 2–3 saat gecikmeyle işler: şu an <b>{{ $s24Son->format('H:00') }}</b>'a kadarki saatler işlendi, sonrası grafikte gri kesikli kutu ("henüz işlenmedi") olarak görünür ve sonraki yenilemelerde dolar.@endif
-      Gece saatlerinde ziyaretçi doğal olarak azdır. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
-    <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:16px;">
+      Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir). Hong Kong/Çin bot trafiği sayılmaz.</p>
+
+    <details style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;margin-bottom:14px;" open>
+      <summary style="cursor:pointer;font-size:13.5px;font-weight:800;color:#0b5d8c;">Bu rakamlar nereden geliyor, neden farklı?</summary>
+      <div style="font-size:13px;color:#374151;line-height:1.65;margin-top:8px;">
+        @if($scVar)<div style="margin-bottom:6px;"><b>🔍 Google'dan tıklama</b> — kaynak <b>Google Search Console</b>. Google aramasında sitemize kaç kez tıklandığı. Search Console ekranında gördüğünüz rakamla <b>aynı kaynaktır</b>. SEO başarısını bu ölçer.</div>@endif
+        <div style="margin-bottom:6px;"><b>👤 Siteye giren kişi</b> — kaynak <b>Google Analytics</b>. Siteye girip ölçüme izin veren kişi sayısı (Google, sosyal medya, doğrudan giriş hepsi dahil). Çerezi reddedenler ve reklam engelleyici kullananlar sayılmaz; bu yüzden <b>gerçek sayıdan düşüktür</b>, tıklama sayısından da az çıkabilir. Hangi sayfalara bakıldığını, form ve telefon tıklamalarını bu gösterir.</div>
+        @if($scVar)<div style="margin-bottom:6px;"><b>👁 Google'da görünme</b> — sitemizin arama sonuçlarında <b>listelenme</b> sayısı. Ziyaretçi değildir; arananlarda ne kadar göründüğümüzü gösterir.</div>@endif
+        <div style="color:#6b7280;">Google iki kaynağı da 2–3 saat geriden gönderir. Henüz gelmeyen saatler grafikte gri kesikli kutu olarak görünür.</div>
+      </div>
+    </details>
+
+    <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-bottom:18px;">
       @foreach($s24 as $s => $x)
         <div style="border:1px solid #eef0f3;border-left:4px solid {{ $renk[$s] ?? '#6b7280' }};border-radius:12px;padding:12px 14px;">
           <div style="font-size:13px;font-weight:800;color:#374151;">{{ $s }}</div>
-          <div style="display:flex;align-items:baseline;gap:6px;margin-top:4px;"><span style="font-size:28px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};">{{ $sayi($x['kisi']) }}</span><span style="font-size:12.5px;color:#6b7280;">ziyaretçi</span></div>
-          <div style="font-size:12.5px;color:#4b5563;line-height:1.7;">
-            Etkileşimli ziyaret: <b>{{ $sayi($x['etk']) }}</b> · İlgi: <b>{{ $x['oturum'] ? $yuzde($x['etk'] / $x['oturum']) : '—' }}</b><br>
-            Bakılan sayfa: <b>{{ $sayi($x['sayfa']) }}</b> · Ort. süre: <b>{{ $x['kisi'] ? $sure($x['sure'] / $x['kisi']) : '—' }}</b>
+          <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:6px;">
+            @if($scVar)
+              <div><div style="font-size:26px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};line-height:1.1;">{{ ($x['tik'] ?? null) === null ? '—' : $sayi($x['tik']) }}</div><div style="font-size:12px;color:#6b7280;">🔍 Google'dan tıklama</div></div>
+            @endif
+            <div><div style="font-size:26px;font-weight:900;color:#374151;line-height:1.1;">{{ $sayi($x['kisi']) }}</div><div style="font-size:12px;color:#6b7280;">👤 siteye giren kişi</div></div>
+          </div>
+          <div style="font-size:12.5px;color:#4b5563;line-height:1.7;margin-top:6px;">
+            @if($scVar && ($x['gos'] ?? null) !== null)👁 Google'da görünme: <b>{{ $sayi($x['gos']) }}</b><br>@endif
+            Bakılan sayfa: <b>{{ $sayi($x['sayfa']) }}</b> · Ort. süre: <b>{{ $x['kisi'] ? $sure($x['sure'] / $x['kisi']) : '—' }}</b> · İlgi: <b>{{ $x['oturum'] ? $yuzde($x['etk'] / $x['oturum']) : '—' }}</b>
             @if($x['bot'])<br><span style="color:#b91c1c;">Ayıklanan bot (HK/Çin): {{ $sayi($x['bot']) }}</span>@endif
           </div>
         </div>
       @endforeach
     </div>
-    {{-- 17 Kasım 2026: kullanıcının talebi - renkli bloklara gelince (ya da dokununca) o saatte hangi siteye kaç kişi girdiği net gösterilir. --}}
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:8px;">
-      <span style="font-size:12.5px;font-weight:800;color:#6b7280;">Saat saat ziyaretçi (3 site)</span>
-      @foreach($s24 as $s => $x)
-        <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span style="width:10px;height:10px;border-radius:2px;background:{{ $renk[$s] ?? '#6b7280' }};"></span>{{ $s }}</span>
-      @endforeach
-      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span style="width:10px;height:10px;border-radius:2px;border:1.5px dashed #94a3b8;background:#f1f5f9;"></span>henüz işlenmedi</span>
-      <span style="font-size:11.5px;color:#9ca3af;">— sayıları görmek için sütunun üzerine gelin ya da dokunun</span>
-    </div>
-    <div id="js-saat-grafik" style="position:relative;">
-      <div style="display:flex;align-items:flex-end;gap:2px;height:110px;border-bottom:1px solid #e5e7eb;">
-        @foreach($saatToplam as $k => $n)
-          @php
-            $saatBas = (int) substr($k, 8, 2);
-            $detay = [];
-            foreach ($s24 as $s => $x) { $detay[] = [$s, $renk[$s] ?? '#6b7280', (int) ($x['saat'][$k] ?? 0)]; }
-          @endphp
-          @php $islenmedi = $s24Islenen === '' || $k > $s24Islenen; @endphp
-          <div class="js-saat-sutun" tabindex="0" data-baslik="{{ substr($k, 6, 2) }}.{{ substr($k, 4, 2) }} · {{ sprintf('%02d:00–%02d:00', $saatBas, ($saatBas + 1) % 24) }}" data-toplam="{{ $n }}" data-detay='@json($detay)' data-islenmedi="{{ $islenmedi ? 1 : 0 }}"
-               aria-label="{{ sprintf('%02d:00', $saatBas) }}: {{ $islenmedi ? 'Google henüz işlemedi' : $n.' ziyaretçi' }}" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer;border-radius:3px 3px 0 0;">
-            @if($islenmedi)
-              <div style="height:100%;border:1.5px dashed #cbd5e1;border-bottom:none;border-radius:3px 3px 0 0;background:repeating-linear-gradient(135deg,#f8fafc 0 4px,#eef2f7 4px 8px);"></div>
-            @elseif($n === 0)
-              <div style="height:3px;background:#d1d5db;"></div>
-            @else
-              @foreach($s24 as $s => $x)
-                @if(($x['saat'][$k] ?? 0) > 0)<div title="{{ $s }}: {{ $x['saat'][$k] }} ziyaretçi" style="height:{{ round($x['saat'][$k] / $saatEnCok * 100, 1) }}%;background:{{ $renk[$s] ?? '#6b7280' }};"></div>@endif
-              @endforeach
-            @endif
+
+    @foreach($grafikler as [$gid, $gBaslik, $gAciklama, $gAnahtar, $gSon, $gEksik])
+      @php
+        $saatToplam = [];
+        foreach ($s24 as $sv) { foreach ($sv[$gAnahtar] ?? [] as $k => $n) { $saatToplam[(string) $k] = ($saatToplam[(string) $k] ?? 0) + (int) $n; } }
+        $saatEnCok = max(1, max($saatToplam ?: [0]));
+        $birim = $gid === 'sc' ? 'tıklama' : 'kişi';
+      @endphp
+      {{-- 17 Kasım 2026: kullanıcının talebi - renkli bloklara gelince (ya da dokununca) o saatte hangi siteye kaç olduğu net gösterilir. --}}
+      <div style="margin-top:{{ $loop->first ? 0 : 22 }}px;">
+        <div style="font-size:13.5px;font-weight:800;color:#374151;">{{ $gBaslik }}</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">{{ $gAciklama }} @if($gSon)Son gelen saat: <b>{{ $saatBicim($gSon) }}–{{ $sonrakiSaat($gSon) }}</b>.@endif</div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:8px;">
+          @foreach($s24 as $s => $x)
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span style="width:10px;height:10px;border-radius:2px;background:{{ $renk[$s] ?? '#6b7280' }};"></span>{{ $s }}</span>
+          @endforeach
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span style="width:10px;height:10px;border-radius:2px;border:1.5px dashed #94a3b8;background:#f1f5f9;"></span>henüz gelmedi</span>
+          <span style="font-size:11.5px;color:#9ca3af;">— sayıları görmek için sütunun üzerine gelin ya da dokunun</span>
+        </div>
+        <div class="js-saat-grafik" style="position:relative;">
+          <div style="display:flex;align-items:flex-end;gap:2px;height:110px;border-bottom:1px solid #e5e7eb;">
+            @foreach($saatToplam as $k => $n)
+              @php
+                $saatBas = (int) substr($k, 8, 2);
+                $detay = [];
+                foreach ($s24 as $s => $x) { $detay[] = [$s, $renk[$s] ?? '#6b7280', (int) ($x[$gAnahtar][$k] ?? 0)]; }
+                $islenmedi = $gSon === '' || $k > $gSon;
+                $kesinDegil = ! $islenmedi && $gEksik !== '' && $k >= $gEksik;
+              @endphp
+              <div class="js-saat-sutun" tabindex="0" data-baslik="{{ substr($k, 6, 2) }}.{{ substr($k, 4, 2) }} · {{ sprintf('%02d:00–%02d:00', $saatBas, ($saatBas + 1) % 24) }}" data-toplam="{{ $n }}" data-birim="{{ $birim }}" data-detay='@json($detay)' data-islenmedi="{{ $islenmedi ? 1 : 0 }}" data-kesin-degil="{{ $kesinDegil ? 1 : 0 }}"
+                   aria-label="{{ sprintf('%02d:00', $saatBas) }}: {{ $islenmedi ? 'henüz gelmedi' : $n.' '.$birim }}" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer;border-radius:3px 3px 0 0;{{ $kesinDegil ? 'opacity:.45;' : '' }}">
+                @if($islenmedi)
+                  <div style="height:100%;border:1.5px dashed #cbd5e1;border-bottom:none;border-radius:3px 3px 0 0;background:repeating-linear-gradient(135deg,#f8fafc 0 4px,#eef2f7 4px 8px);"></div>
+                @elseif($n === 0)
+                  <div style="height:3px;background:#d1d5db;"></div>
+                @else
+                  @foreach($s24 as $s => $x)
+                    @if(($x[$gAnahtar][$k] ?? 0) > 0)<div style="height:{{ round($x[$gAnahtar][$k] / $saatEnCok * 100, 1) }}%;background:{{ $renk[$s] ?? '#6b7280' }};"></div>@endif
+                  @endforeach
+                @endif
+              </div>
+            @endforeach
           </div>
-        @endforeach
+          <div class="js-saat-kutu" role="status" style="display:none;position:absolute;bottom:118px;z-index:20;min-width:200px;background:#111827;color:#fff;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;"></div>
+        </div>
+        <div style="display:flex;gap:2px;font-size:10.5px;color:#9ca3af;margin-top:3px;">
+          @foreach($saatToplam as $k => $n)
+            <div style="flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:visible;">{{ (int) substr($k, 8, 2) % 3 === 0 ? substr($k, 8, 2) : '' }}</div>
+          @endforeach
+        </div>
       </div>
-      <div id="js-saat-kutu" role="status" style="display:none;position:absolute;bottom:118px;z-index:20;min-width:200px;background:#111827;color:#fff;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;"></div>
-    </div>
-    <div style="display:flex;gap:2px;font-size:10.5px;color:#9ca3af;margin-top:3px;">
-      @foreach($saatToplam as $k => $n)
-        <div style="flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:visible;">{{ (int) substr($k, 8, 2) % 3 === 0 ? substr($k, 8, 2) : '' }}</div>
-      @endforeach
-    </div>
+    @endforeach
     <script>
       (function () {
-        var kap = document.getElementById('js-saat-grafik'), kutu = document.getElementById('js-saat-kutu');
-        if (!kap || !kutu) { return; }
-        var secili = null;
         function yaz(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
-        function goster(el) {
-          var detay = []; try { detay = JSON.parse(el.getAttribute('data-detay') || '[]'); } catch (e) {}
-          var h = '<div style="font-weight:800;margin-bottom:4px;">' + yaz(el.getAttribute('data-baslik')) + '</div>';
-          if (el.getAttribute('data-islenmedi') === '1') {
-            h += '<div>Google bu saati henüz işlemedi.</div><div style="color:#cbd5e1;">2–3 saat içinde dolar.</div>';
+        document.querySelectorAll('#son24 .js-saat-grafik').forEach(function (kap) {
+          var kutu = kap.querySelector('.js-saat-kutu');
+          var secili = null;
+          function goster(el) {
+            var h = '<div style="font-weight:800;margin-bottom:4px;">' + yaz(el.getAttribute('data-baslik')) + '</div>';
+            if (el.getAttribute('data-islenmedi') === '1') {
+              h += '<div>Google bu saati henüz göndermedi.</div><div style="color:#cbd5e1;">2–3 saat içinde gelir.</div>';
+            } else {
+              var detay = []; try { detay = JSON.parse(el.getAttribute('data-detay') || '[]'); } catch (e) {}
+              detay.forEach(function (d) {
+                h += '<div style="display:flex;align-items:center;gap:7px;"><span style="width:10px;height:10px;border-radius:2px;flex:none;background:' + d[1] + ';"></span>'
+                  + '<span style="flex:1;">' + yaz(d[0]) + '</span><b>' + d[2] + '</b></div>';
+              });
+              h += '<div style="border-top:1px solid rgba(255,255,255,.2);margin-top:5px;padding-top:4px;display:flex;justify-content:space-between;gap:10px;"><span>Toplam</span><b>' + yaz(el.getAttribute('data-toplam')) + ' ' + yaz(el.getAttribute('data-birim')) + '</b></div>';
+              if (el.getAttribute('data-kesin-degil') === '1') { h += '<div style="color:#fcd34d;margin-top:3px;">Google hâlâ sayıyor, artabilir.</div>'; }
+            }
             kutu.innerHTML = h; kutu.style.display = 'block';
-            var kr0 = kap.getBoundingClientRect(), sr0 = el.getBoundingClientRect(), g0 = kutu.offsetWidth;
-            kutu.style.left = Math.max(0, Math.min(sr0.left - kr0.left + sr0.width / 2 - g0 / 2, kr0.width - g0)) + 'px';
+            var kr = kap.getBoundingClientRect(), sr = el.getBoundingClientRect(), g = kutu.offsetWidth;
+            kutu.style.left = Math.max(0, Math.min(sr.left - kr.left + sr.width / 2 - g / 2, kr.width - g)) + 'px';
             if (secili) { secili.style.outline = ''; }
             secili = el; el.style.outline = '2px solid #111827';
-            return;
           }
-          detay.forEach(function (d) {
-            h += '<div style="display:flex;align-items:center;gap:7px;"><span style="width:10px;height:10px;border-radius:2px;flex:none;background:' + d[1] + ';"></span>'
-              + '<span style="flex:1;">' + yaz(d[0]) + '</span><b>' + d[2] + '</b></div>';
+          function gizle() { kutu.style.display = 'none'; if (secili) { secili.style.outline = ''; secili = null; } }
+          kap.querySelectorAll('.js-saat-sutun').forEach(function (el) {
+            // Fare: üzerine gelince açılır, çıkınca kapanır. Dokunmatik ekran: dokununca açılır, dışarı dokununca kapanır.
+            el.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { goster(el); } });
+            el.addEventListener('focus', function () { goster(el); });
+            el.addEventListener('click', function (e) { e.stopPropagation(); goster(el); });
           });
-          h += '<div style="border-top:1px solid rgba(255,255,255,.2);margin-top:5px;padding-top:4px;display:flex;justify-content:space-between;"><span>Toplam</span><b>' + yaz(el.getAttribute('data-toplam')) + ' ziyaretçi</b></div>';
-          kutu.innerHTML = h; kutu.style.display = 'block';
-          var kr = kap.getBoundingClientRect(), sr = el.getBoundingClientRect(), g = kutu.offsetWidth;
-          var sol = sr.left - kr.left + sr.width / 2 - g / 2;
-          kutu.style.left = Math.max(0, Math.min(sol, kr.width - g)) + 'px';
-          if (secili) { secili.style.outline = ''; }
-          secili = el; el.style.outline = '2px solid #111827';
-        }
-        function gizle() { kutu.style.display = 'none'; if (secili) { secili.style.outline = ''; secili = null; } }
-        kap.querySelectorAll('.js-saat-sutun').forEach(function (el) {
-          // Fare: üzerine gelince açılır, çıkınca kapanır. Dokunmatik ekran: dokununca açılır, dışarı dokununca kapanır.
-          el.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { goster(el); } });
-          el.addEventListener('focus', function () { goster(el); });
-          el.addEventListener('click', function (e) { e.stopPropagation(); goster(el); });
+          kap.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { gizle(); } });
+          document.addEventListener('click', function (e) { if (!kap.contains(e.target)) { gizle(); } });
         });
-        kap.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { gizle(); } });
-        document.addEventListener('click', function (e) { if (!kap.contains(e.target)) { gizle(); } });
       })();
     </script>
   </div>

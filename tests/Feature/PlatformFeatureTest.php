@@ -9203,7 +9203,8 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->actingAsAdminForStats()->get('/admin')->assertOk()->assertSee('Son 24 saat:')->assertSee('1.234');
     }
 
-    // 18 Kasım 2026: saatlik grafik şu anki saate kadar uzanır; Google'ın henüz işlemediği saatler "henüz işlenmedi" görünür.
+    // 18 Kasım 2026: saatlik grafik şu anki saate kadar uzanır; Google'ın henüz işlemediği saatler "henüz gelmedi" görünür.
+    // Aynı gün: Search Console saatlik tıklamaları da (Google'ın kendi ekranındaki rakam) aynı pencereyle toplanır.
     public function test_son_24_saat_penceresi_simdiye_kadar_islenmeyen_saatler_isaretli(): void
     {
         \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-11-18 11:47', config('app.timezone')));
@@ -9212,13 +9213,23 @@ Metin {standart_fiyat}"])->assertRedirect();
             $satir('2026111712', 'bakimevleri.com', 5),
             $satir('2026111808', 'bakimevleri.com', 4),
             $satir('2026111809', 'bakimeviara.com', 2),
-        ]));
+        ])->shouldReceive('aramaKonsoluSaatlik')->andReturnUsing(fn ($site) => $site === 'bakimevleri.com'
+            ? ['saatler' => ['2026111711' => ['tik' => 50, 'gos' => 900], '2026111712' => ['tik' => 7, 'gos' => 300], '2026111808' => ['tik' => 3, 'gos' => 40]], 'eksik' => '2026111804']
+            : ['saatler' => [], 'eksik' => null]));
         $v = app(\App\Support\AnalitikPanelVerisi::class)->cekSon24();
         $this->assertEquals('2026111712', $v['bas']);
         $this->assertSame('2026111809', $v['son']);
         $this->assertSame(1, $v['gecikme']);
         $this->assertArrayHasKey('2026111811', $v['siteler']['bakimevleri.com']['saat']);
         $this->assertSame(9, $v['siteler']['bakimevleri.com']['kisi']);   // 17.11 12:00 – 18.11 12:00
+        // Search Console: pencere dışındaki 17.11 11:00 sayılmaz; saatlik dizi ve kesinleşmemiş saat tutulur
+        $this->assertTrue($v['sc_var']);
+        $this->assertSame(10, $v['siteler']['bakimevleri.com']['tik']);
+        $this->assertSame(340, $v['siteler']['bakimevleri.com']['gos']);
+        $this->assertSame(3, $v['siteler']['bakimevleri.com']['tik_saat']['2026111808']);
+        $this->assertSame(0, $v['siteler']['bakimevibul.com']['tik']);
+        $this->assertSame('2026111808', $v['sc_son']);
+        $this->assertSame('2026111804', $v['sc_eksik']);
         \Illuminate\Support\Carbon::setTestNow();
     }
 

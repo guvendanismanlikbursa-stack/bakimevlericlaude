@@ -87,6 +87,31 @@ class GoogleVeriServisi
         return $yanit->json('rows') ?? [];
     }
 
+    /**
+     * 18 Kasım 2026: Search Console saatlik tıklama/gösterim (Google son 10 günü saatlik verir).
+     * Saatler Pasifik saatiyle gelir ("2026-11-17T05:00:00-08:00"); Türkiye saatine (YmdH) çevrilir.
+     * 'eksik': Google'ın hâlâ saydığı ilk saat (bu saat ve sonrası artabilir), Türkiye saatiyle YmdH.
+     */
+    public function aramaKonsoluSaatlik(string $site, string $bas, string $son): array
+    {
+        $yanit = $this->http()->withToken($this->token('https://www.googleapis.com/auth/webmasters.readonly'))
+            ->post('https://www.googleapis.com/webmasters/v3/sites/'.urlencode('sc-domain:'.$site).'/searchAnalytics/query', [
+                'startDate' => $bas, 'endDate' => $son, 'dimensions' => ['hour'], 'dataState' => 'hourly_all', 'rowLimit' => 1000,
+            ]);
+        if (! $yanit->ok()) {
+            throw new \RuntimeException('Search Console hatası: '.$yanit->status().' '.mb_substr($yanit->body(), 0, 200));
+        }
+        $trSaat = fn (string $iso) => \Illuminate\Support\Carbon::parse($iso)->setTimezone(config('app.timezone'))->format('YmdH');
+        $saatler = [];
+        foreach ($yanit->json('rows') ?? [] as $r) {
+            $k = $trSaat($r['keys'][0]);
+            $saatler[$k] = ['tik' => (int) $r['clicks'], 'gos' => (int) $r['impressions']];
+        }
+        $eksik = $yanit->json('metadata.firstIncompleteHour');
+
+        return ['saatler' => $saatler, 'eksik' => $eksik ? $trSaat($eksik) : null];
+    }
+
     /** Aynı gün içinde tekrar Google'a gitmez; ?yenile ile temizlenir. */
     public function onbellekli(string $anahtar, \Closure $fn, bool $yenile = false)
     {
