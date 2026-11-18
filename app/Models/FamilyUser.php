@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class FamilyUser extends Model
 {
     protected $fillable = [
-        'registered_brand', 'name', 'email', 'phone', 'password', 'email_verified_at', 'status',
+        'registered_brand', 'name', 'email', 'phone', 'age', 'password', 'email_verified_at', 'status',
         'consent_accepted_at', 'consent_ip', 'marketing_consent_at', 'signup_lat', 'signup_lng', 'signup_city_name',
         'google_id', 'avatar_url', 'notification_preferences',
     ];
@@ -22,6 +22,7 @@ class FamilyUser extends Model
             'email_verified_at' => 'datetime',
             'signup_lat' => 'float',
             'signup_lng' => 'float',
+            'age' => 'integer',
             'notification_preferences' => 'array',
         ];
     }

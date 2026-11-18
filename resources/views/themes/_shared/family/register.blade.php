@@ -22,6 +22,14 @@
     <input type="email" id="family-reg-email" name="email" value="{{ old('email') }}" placeholder="E-posta" required class="border rounded-lg px-3 py-2 w-full">
     <label for="family-reg-phone" class="sr-only">Telefon</label>
     <input type="text" id="family-reg-phone" name="phone" value="{{ old('phone') }}" placeholder="Telefon" required class="border rounded-lg px-3 py-2 w-full">
+    {{-- 18 Kasım 2026: kullanıcının kararı - şehir ve yaş zorunlu. --}}
+    <label for="family-reg-city" class="sr-only">Şehir</label>
+    <select id="family-reg-city" name="signup_city" required class="border rounded-lg px-3 py-2 w-full bg-white">
+      <option value="">Şehriniz</option>
+      @foreach(\App\Models\City::cachedAll() as $sehir)<option value="{{ $sehir->name }}" @selected(old('signup_city') === $sehir->name)>{{ $sehir->name }}</option>@endforeach
+    </select>
+    <label for="family-reg-age" class="sr-only">Yaşınız</label>
+    <input type="number" id="family-reg-age" name="age" value="{{ old('age') }}" placeholder="Yaşınız" required min="18" max="100" inputmode="numeric" class="border rounded-lg px-3 py-2 w-full">
     <label for="family-reg-password" class="sr-only">Şifre</label>
     <input type="password" id="family-reg-password" name="password" placeholder="Şifre" required class="border rounded-lg px-3 py-2 w-full">
     <label for="family-reg-password-confirmation" class="sr-only">Şifre (tekrar)</label>

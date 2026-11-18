@@ -10,7 +10,7 @@
         <div class="min-w-0">
           <div class="font-bold text-gray-900 break-words">{{ $family->name }}</div>
           <div class="text-xs text-gray-500 mt-0.5">{{ $family->email }} · {{ $brands[$family->registered_brand]['name'] ?? $family->registered_brand }} · Kayıt: {{ $family->created_at->format('d.m.Y H:i') }}</div>
-          <div class="text-xs text-gray-500 mt-0.5">📍 {{ $family->signup_city_name ?: 'Şehri bilinmiyor' }} · Rıza: {{ $family->consent_accepted_at?->format('d.m.Y H:i') ?? '—' }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">📍 {{ $family->signup_city_name ?: 'Şehri bilinmiyor' }} · Yaş: {{ $family->age ?: '—' }} · Rıza: {{ $family->consent_accepted_at?->format('d.m.Y H:i') ?? '—' }}</div>
         </div>
         <div class="flex items-center gap-2 flex-wrap justify-end">
           @if($family->signup_lat && $family->signup_lng)

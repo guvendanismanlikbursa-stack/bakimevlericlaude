@@ -33,6 +33,9 @@ class AuthController extends Controller
             'name' => 'required|string|max:120',
             'email' => 'required|email|max:150|unique:family_users,email',
             'phone' => 'required|string|max:30',
+            // 18 Kasım 2026: kullanıcının kararı - şehir ve yaş zorunlu.
+            'signup_city' => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Models\City::cachedAll()->pluck('name')->all())],
+            'age' => 'required|integer|between:18,100',
             'password' => 'required|string|min:8|confirmed',
             'consent' => 'required|accepted',
             'signup_lat' => 'nullable|numeric|between:-90,90',
@@ -42,23 +45,26 @@ class AuthController extends Controller
         ], [
             'consent.required' => 'Açık rıza metnini onaylamadan hesap oluşturamazsınız.',
             'consent.accepted' => 'Açık rıza metnini onaylamadan hesap oluşturamazsınız.',
+            'signup_city.required' => 'Lütfen şehrinizi seçin.',
+            'signup_city.in' => 'Lütfen listeden bir şehir seçin.',
+            'age.required' => 'Lütfen yaşınızı yazın.',
+            'age.integer' => 'Yaşınızı rakamla yazın.',
+            'age.between' => 'Yaş 18 ile 100 arasında olmalıdır.',
         ]);
 
         if ($error = email_taken_by_other_account_type($data['email'])) {
             return back()->withErrors(['email' => $error])->withInput($request->except('password', 'password_confirmation'));
         }
 
-        $signupCityName = null;
-        if ($request->filled('signup_lat') && $request->filled('signup_lng')) {
-            $nearest = $geo->nearestCity((float) $data['signup_lat'], (float) $data['signup_lng']);
-            $signupCityName = $nearest['city'] ?? null;
-        }
+        // 18 Kasım 2026: şehir artık formda zorunlu seçiliyor; konumdan tahmin yerine ailenin seçtiği şehir kaydedilir.
+        $signupCityName = $data['signup_city'];
 
         $family = FamilyUser::create([
             'registered_brand' => $brand['slug'],
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'],
+            'age' => (int) $data['age'],
             'password' => Hash::make($data['password']),
             'consent_accepted_at' => now(),
             'consent_ip' => $request->ip(),

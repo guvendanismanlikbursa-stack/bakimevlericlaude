@@ -525,6 +525,9 @@ class CheckUserFlows extends Command
             'name' => 'QATEST Daily Aile',
             'email' => $email,
             'phone' => '05320000000',
+            // 18 Kasım 2026: aile kaydında şehir ve yaş zorunlu oldu - test formu da gönderir.
+            'signup_city' => 'İstanbul',
+            'age' => '40',
             'password' => 'QaTest12345!',
             'password_confirmation' => 'QaTest12345!',
             'consent' => '1',

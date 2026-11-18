@@ -2350,12 +2350,16 @@ class PlatformFeatureTest extends TestCase
             'name' => 'Yeni Aile',
             'email' => 'yeniaile@test.local',
             'phone' => '05559990000',
+            'signup_city' => $this->city->name,
+            'age' => '42',
             'password' => 'Sifre12345!',
             'password_confirmation' => 'Sifre12345!',
             'consent' => '1',
         ])->assertRedirect();
 
         $family = FamilyUser::where('email', 'yeniaile@test.local')->firstOrFail();
+        $this->assertSame($this->city->name, $family->signup_city_name);
+        $this->assertSame(42, $family->age);
 
         Mail::assertSent(FamilyEmailVerificationMail::class, fn ($mail) => $mail->family->is($family));
         Mail::assertSent(FamilyWelcomeMail::class, fn ($mail) => $mail->family->is($family));
@@ -2697,6 +2701,8 @@ class PlatformFeatureTest extends TestCase
 
         $this->post('/site/bakimevibul/aile/google-tamamla', [
             'phone' => '05551234567',
+            'signup_city' => $this->city->name,
+            'age' => '35',
             'consent' => '1',
         ])->assertRedirect('/site/bakimevibul/aile/panel');
 
@@ -2708,6 +2714,22 @@ class PlatformFeatureTest extends TestCase
         $this->assertNotNull($family->email_verified_at);
         $this->assertSame($family->id, session('family_user_id'));
         $this->assertNull(session('family_google_pending'));
+    }
+
+    // 18 Kasım 2026: şehir ve yaş zorunlu - eksikse hesap açılmaz.
+    public function test_aile_kaydi_sehir_ve_yas_olmadan_reddedilir(): void
+    {
+        $this->post('/site/bakimevibul/aile/kayit', [
+            'name' => 'Eksik Aile', 'email' => 'eksik@test.local', 'phone' => '05559990001',
+            'password' => 'Sifre12345!', 'password_confirmation' => 'Sifre12345!', 'consent' => '1',
+            'signup_city' => 'Olmayan Şehir', 'age' => '12',
+        ])->assertSessionHasErrors(['signup_city', 'age']);
+        $this->post('/site/bakimevibul/aile/kayit', [
+            'name' => 'Eksik Aile', 'email' => 'eksik@test.local', 'phone' => '05559990001',
+            'password' => 'Sifre12345!', 'password_confirmation' => 'Sifre12345!', 'consent' => '1',
+        ])->assertSessionHasErrors(['signup_city', 'age']);
+        $this->assertNull(FamilyUser::where('email', 'eksik@test.local')->first());
+        $this->get('/site/bakimevibul/aile/kayit')->assertOk()->assertSee('name="signup_city"', false)->assertSee('name="age"', false);
     }
 
     public function test_family_google_signup_without_consent_is_rejected(): void
@@ -7294,6 +7316,7 @@ class PlatformFeatureTest extends TestCase
         Mail::fake();
         $payload = fn ($email) => [
             'name' => 'Yeni Aile', 'email' => $email, 'phone' => '05321234567',
+            'signup_city' => $this->city->name, 'age' => '45',
             'password' => 'Guclu12345!', 'password_confirmation' => 'Guclu12345!', 'consent' => '1',
         ];
 

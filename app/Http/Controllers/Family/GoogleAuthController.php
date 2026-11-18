@@ -94,12 +94,20 @@ class GoogleAuthController extends AuthController
 
         $data = $request->validate([
             'phone' => 'required|string|max:30',
+            // 18 Kasım 2026: kullanıcının kararı - şehir ve yaş zorunlu.
+            'signup_city' => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Models\City::cachedAll()->pluck('name')->all())],
+            'age' => 'required|integer|between:18,100',
             'consent' => 'required|accepted',
             'signup_lat' => 'nullable|numeric|between:-90,90',
             'signup_lng' => 'nullable|numeric|between:-180,180',
         ], [
             'consent.required' => 'Açık rıza metnini onaylamadan hesap oluşturamazsınız.',
             'consent.accepted' => 'Açık rıza metnini onaylamadan hesap oluşturamazsınız.',
+            'signup_city.required' => 'Lütfen şehrinizi seçin.',
+            'signup_city.in' => 'Lütfen listeden bir şehir seçin.',
+            'age.required' => 'Lütfen yaşınızı yazın.',
+            'age.integer' => 'Yaşınızı rakamla yazın.',
+            'age.between' => 'Yaş 18 ile 100 arasında olmalıdır.',
         ]);
 
         if (FamilyUser::where('email', $pending['email'])->exists()) {
@@ -114,17 +122,15 @@ class GoogleAuthController extends AuthController
             return redirect(brand_route('family.register'))->with('error', $error);
         }
 
-        $signupCityName = null;
-        if ($request->filled('signup_lat') && $request->filled('signup_lng')) {
-            $nearest = app(\App\Services\GeoLookupService::class)->nearestCity((float) $data['signup_lat'], (float) $data['signup_lng']);
-            $signupCityName = $nearest['city'] ?? null;
-        }
+        // 18 Kasım 2026: şehir artık formda zorunlu seçiliyor; konumdan tahmin yerine ailenin seçtiği şehir kaydedilir.
+        $signupCityName = $data['signup_city'];
 
         $family = FamilyUser::create([
             'registered_brand' => $brand['slug'],
             'name' => $pending['name'],
             'email' => $pending['email'],
             'phone' => $data['phone'],
+            'age' => (int) $data['age'],
             'password' => Hash::make(Str::random(32)),
             'google_id' => $pending['google_id'],
             'avatar_url' => $pending['avatar_url'],
