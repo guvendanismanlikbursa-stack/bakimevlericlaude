@@ -43,16 +43,29 @@
 @php
   $fYil = now()->year;
   $fSayi = number_format($stats['total'], 0, ',', '.');
+  // 18 Kasım 2026: kullanıcının kararı - kreş/anaokulu için çevrimiçi ilan edilmiş aylık ücretlerin il/ilçe özeti.
+  $piyasa = ($section['slug'] ?? null) === 'cocuk' && (! $category || $category->brand_scope === 'cocuk-bakim')
+      ? piyasa_ucreti($city->slug, $districtName ?? null, $city->name) : null;
+  $pTl = fn ($v) => number_format((float) $v, 0, ',', '.').' TL';
+  if ($piyasa) {
+      $extraFaq = array_merge([[
+          $placeTitle.' '.mb_strtolower($topicTitle).' fiyatları '.$fYil.' ne kadar?',
+          ($piyasa['kapsam'] === 'il' && ($districtName ?? null) ? $city->name.' genelinde ' : $piyasa['yer'].' bölgesinde ').'özel anaokulu ve kreşlerin aylık ücreti ortalama '.$pTl($piyasa['ort']).'; okulların çoğu '.$pTl($piyasa['alt']).' ile '.$pTl($piyasa['ust']).' arasında ücret alıyor ('.$piyasa['n'].' okulun ilan ettiği ücretlerden). Ücret; yaş grubu, tam/yarım gün, yemek ve servis dahil olup olmamasına göre değişir.',
+      ]], $extraFaq);
+      $faqPreview = [...$extraFaq, ...(site_section_content($brand['slug'], $section['slug'])['faq_preview'] ?? [])];
+  }
 @endphp
-@section('title', $placeTitle.' '.$topicTitle.' Fiyatları '.$fYil.($stats['total'] > 0 ? ': '.$fSayi.' Kurum, Ücretler ve Yorumlar' : ''))
+@section('title', $placeTitle.' '.$topicTitle.' Fiyatları '.$fYil.($piyasa ? ': Aylık Ortalama '.$pTl($piyasa['ort']) : ($stats['total'] > 0 ? ': '.$fSayi.' Kurum, Ücretler ve Yorumlar' : '')))
 @section('og_title', $placeTitle.' '.$topicTitle.' Fiyatları '.$fYil)
 @php
   $__resmi = ($section['slug'] ?? null) === 'yasli-bakim' ? config('resmi_ucretler.yasli_bakim.'.$city->slug) : null;
 @endphp
 @section('meta_description', $__resmi
   ? $placeTitle.' huzurevi ve bakımevi fiyatları '.config('resmi_ucretler.yil').': resmi aylık ücret '.number_format($__resmi['taban'], 0, ',', '.').' – '.number_format($__resmi['tavan'], 0, ',', '.').' TL (KDV hariç). Kurumları karşılaştırın, ücretsiz fiyat isteyin.'
-  : $placeTitle.' '.mb_strtolower($topicTitle).' fiyatları '.$fYil.': '.$fSayi.' kurum'
-    .($stats['priced_count'] > 0 ? ', girilen ücretlerde ortalama '.number_format($stats['avg_min'], 0, ',', '.').' TL' : '')
+  : $placeTitle.' '.mb_strtolower($topicTitle).' fiyatları '.$fYil.': '
+    .($piyasa ? 'aylık ortalama '.$pTl($piyasa['ort']).', çoğu '.$pTl($piyasa['alt']).' – '.$pTl($piyasa['ust']).' arası. ' : '')
+    .$fSayi.' kurum'
+    .(! $piyasa && $stats['priced_count'] > 0 ? ', girilen ücretlerde ortalama '.number_format($stats['avg_min'], 0, ',', '.').' TL' : '')
     .(($stats['ort_puan'] ?? null) ? ', aile puanı ortalaması '.number_format($stats['ort_puan'], 1, ',', '.') : '')
     .'. İlçelere göre karşılaştırın, ücretsiz fiyat isteyin.')
 @section('og_image', seo_og_image($section))
@@ -87,6 +100,15 @@
     <div class="mb-8"></div>
   @endif
 
+  @if($piyasa)
+    {{-- 18 Kasım 2026: kreş/anaokulu aylık ücret özeti (bkz. config/piyasa_ucretleri.php). --}}
+    <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6">
+      <div class="text-xs text-gray-500">{{ $piyasa['kapsam'] === 'il' && ($districtName ?? null) ? $city->name.' geneli' : $piyasa['yer'] }} · özel anaokulu ve kreş aylık ücretleri ({{ now()->locale('tr')->translatedFormat('F Y') }})</div>
+      <div class="text-2xl font-black mt-1">Ortalama {{ $pTl($piyasa['ort']) }} <span class="text-sm font-semibold text-gray-500">/ ay</span></div>
+      <div class="text-sm text-gray-700 mt-1">Okulların çoğu <b>{{ $pTl($piyasa['alt']) }} – {{ $pTl($piyasa['ust']) }}</b> arasında ücret alıyor.</div>
+      <p class="text-sm text-gray-600 mt-2">{{ $piyasa['n'] }} özel okulun çevrimiçi ilan ettiği aylık ücretlerden derlenmiştir (aralık verilmişse ortası alınmıştır). Ücret; yaş grubu, tam/yarım gün, yemek ve servis dahil olup olmamasına göre değişir. Kesin ücret için aşağıdaki kurumlardan ücretsiz teklif isteyin.</p>
+    </div>
+  @endif
   @if($sectionCategories->isNotEmpty())
     <div class="flex flex-wrap gap-2 mb-8">
       <a href="{{ brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold {{ ! $category ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">Tümü</a>
@@ -104,7 +126,7 @@
         @foreach($ilceDagilim as $ilce)
           <a href="{{ $category ? brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug, 'districtSlug' => Str::slug($ilce['ad'])]) : brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => Str::slug($ilce['ad'])]) }}" class="bg-white rounded-xl shadow-sm border border-gray-100" style="display:block;padding:10px 12px;">
             <div class="font-black text-gray-950 text-sm">{{ $ilce['ad'] }}</div>
-            <div class="text-xs text-gray-600" style="margin-top:2px;">{{ $ilce['kurum'] }} kurum @if($ilce['ort_fiyat']) · ort. {{ number_format($ilce['ort_fiyat'], 0, ',', '.') }} TL @endif @if($ilce['puan'])· ★ {{ number_format($ilce['puan'], 1, ',', '.') }}@endif</div>
+            <div class="text-xs text-gray-600" style="margin-top:2px;">{{ $ilce['kurum'] }} kurum @if($piyasa && ($pi = piyasa_ucreti($city->slug, $ilce['ad'])) && $pi['kapsam'] === 'ilce') · ort. {{ number_format($pi['ort'], 0, ',', '.') }} TL/ay @endif @if(! $piyasa && $ilce['ort_fiyat']) · ort. {{ number_format($ilce['ort_fiyat'], 0, ',', '.') }} TL @endif @if($ilce['puan'])· ★ {{ number_format($ilce['puan'], 1, ',', '.') }}@endif</div>
           </a>
         @endforeach
       </div>
@@ -173,7 +195,7 @@
         @endforeach
       </div>
     @endif
-  @else
+  @elseif(! $piyasa)
     <div class="bg-amber-50 border border-amber-100 text-amber-800 text-sm rounded-xl p-4 mb-10">Bu il için henüz fiyat bilgisi girilmiş kurum yok. Aşağıdaki kurumlardan doğrudan teklif isteyebilirsiniz.</div>
   @endif
 

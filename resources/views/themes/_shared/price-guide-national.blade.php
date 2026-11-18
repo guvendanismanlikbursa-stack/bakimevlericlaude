@@ -17,6 +17,9 @@
   $resmiYasli = $section['slug'] === 'yasli-bakim' ? (config('resmi_ucretler.yasli_bakim') ?: []) : [];
   $meb = ($section['slug'] === 'rehabilitasyon' || ($category && $category->brand_scope === 'ozel-egitim')) ? config('resmi_ucretler.meb_ozel_egitim') : null;
   $sehirAdlari = \App\Models\City::cachedAll()->keyBy('slug');
+  // 18 Kasım 2026: kreş/anaokulu aylık ücret özeti (bkz. config/piyasa_ucretleri.php).
+  $piyasaGoster = $section['slug'] === 'cocuk' && (! $category || $category->brand_scope === 'cocuk-bakim');
+  $piyasaGenel = $piyasaGoster ? config('piyasa_ucretleri.genel') : null;
 
   $belirleyenler = [
     'cocuk' => [
@@ -44,18 +47,20 @@
 
   $sss = [
     [$konu.' fiyatları '.$yil.' yılında ne kadar?',
-      $fiyatliIl
+      $piyasaGenel
+        ? 'Özel anaokulu ve kreşlerin aylık ücreti Türkiye genelinde ortalama '.$tl($piyasaGenel['ort']).'; okulların çoğu '.$tl($piyasaGenel['alt']).' ile '.$tl($piyasaGenel['ust']).' arasında ücret alıyor ('.number_format($piyasaGenel['n'], 0, ',', '.').' okulun ilan ettiği ücretlerden). İl ve ilçeye göre fark büyüktür; ilinizin sayfasında o ilin ortalamasını görebilirsiniz.'
+        : ($fiyatliIl
         ? 'Platformumuzda fiyatını kendisi giren '.number_format($fiyat['n'], 0, ',', '.').' kurumun başlangıç ücreti ortalaması '.$tl($fiyat['ort']).'. Ücret ile, ilçeye ve hizmet kapsamına göre değişir; ilinizin sayfasında o ile ait kurumları ve girilmiş ücretleri görebilirsiniz.'
-        : 'Ücret ile, ilçeye ve hizmet kapsamına göre değişir. Kurumların çoğu fiyatını ilan etmediği için ilinizin sayfasından birkaç kuruma aynı anda ücretsiz fiyat talebi göndermenizi öneririz.'],
+        : 'Ücret ile, ilçeye ve hizmet kapsamına göre değişir. Kurumların çoğu fiyatını ilan etmediği için ilinizin sayfasından birkaç kuruma aynı anda ücretsiz fiyat talebi göndermenizi öneririz.')],
     [$konu.' fiyatlarını en hızlı nasıl öğrenirim?',
       'Aşağıdaki listeden ilinizi seçin; o ildeki kurumları puan ve konuma göre karşılaştırıp istediğiniz kurumlara ücretsiz bilgi ve fiyat talebi gönderebilirsiniz. Talebiniz doğrudan kuruma iletilir.'],
     ['Hangi ilde kaç '.$konuKucuk.' kurumu var?',
       'Türkiye genelinde '.$ilSayisi.' ilde toplam '.number_format($toplam, 0, ',', '.').' kurum listeleniyor. En çok kurum '.collect($iller)->take(3)->map(fn ($i) => $i['ad'].' ('.$i['kurum'].')')->implode(', ').' illerinde.'],
   ];
 @endphp
-@section('title', $konu.' Fiyatları '.$yil.': İllere Göre Ücretler ve Kurumlar')
+@section('title', $konu.' Fiyatları '.$yil.($piyasaGenel ? ': İllere Göre Aylık Ücretler, Ort. '.$tl($piyasaGenel['ort']) : ': İllere Göre Ücretler ve Kurumlar'))
 @section('og_title', $konu.' Fiyatları '.$yil.' – İllere Göre')
-@section('meta_description', 'Türkiye genelinde '.number_format($toplam, 0, ',', '.').' '.$konuKucuk.' kurumu: il il kurum sayısı, kurumların girdiği ücretler'.($resmiYasli ? ', resmi taban–tavan ücretler' : ($meb ? ', MEB desteği' : '')).' ve aile puanları. İlinizi seçin, ücretsiz fiyat isteyin.')
+@section('meta_description', ($piyasaGenel ? $konu.' fiyatları '.$yil.': aylık ortalama '.$tl($piyasaGenel['ort']).', çoğu '.$tl($piyasaGenel['alt']).' – '.$tl($piyasaGenel['ust']).' arası. ' : '').'Türkiye genelinde '.number_format($toplam, 0, ',', '.').' '.$konuKucuk.' kurumu: il il kurum sayısı, kurumların girdiği ücretler'.($resmiYasli ? ', resmi taban–tavan ücretler' : ($meb ? ', MEB desteği' : '')).' ve aile puanları. İlinizi seçin, ücretsiz fiyat isteyin.')
 @section('og_image', seo_og_image($section))
 @if($__sahipUrl = bolum_sahibi_url($section['slug'] ?? null))
   @section('canonical', $__sahipUrl)
@@ -105,7 +110,15 @@
       <p class="text-sm text-gray-600 mt-2">Özel eğitim raporu olan bireyler için MEB, izinli merkezlere ayda {{ $meb['bireysel_saat'] }} saat bireysel eğitimde {{ $tl($meb['bireysel']) }}, {{ $meb['grup_saat'] }} saat grup eğitiminde {{ $tl($meb['grup']) }} öder. Kaynak: {{ $meb['kaynak'] }}.</p>
     </div>
   @endif
-  @if($fiyat['n'] > 0)
+  @if($piyasaGenel)
+    <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6">
+      <div class="text-xs text-gray-500">Türkiye geneli · özel anaokulu ve kreş aylık ücretleri ({{ now()->locale('tr')->translatedFormat('F Y') }})</div>
+      <div class="text-2xl font-black mt-1">Ortalama {{ $tl($piyasaGenel['ort']) }} <span class="text-sm font-semibold text-gray-500">/ ay</span></div>
+      <div class="text-sm text-gray-700 mt-1">Okulların çoğu <b>{{ $tl($piyasaGenel['alt']) }} – {{ $tl($piyasaGenel['ust']) }}</b> arasında ücret alıyor.</div>
+      <p class="text-sm text-gray-600 mt-2">{{ number_format($piyasaGenel['n'], 0, ',', '.') }} özel okulun çevrimiçi ilan ettiği aylık ücretlerden derlenmiştir. İl ve ilçeye göre fark büyüktür; aşağıdan ilinizi seçin.</p>
+    </div>
+  @endif
+  @if(! $piyasaGenel && $fiyat['n'] > 0)
     <div class="grid sm:grid-cols-3 gap-4 mb-8">
       <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
         <div class="text-xs text-gray-500">Ortalama başlangıç ücreti ({{ number_format($fiyat['n'], 0, ',', '.') }} kurumun girdiği)</div>
@@ -129,7 +142,8 @@
         <div class="font-black text-gray-950">{{ $il['ad'] }} {{ $konu }} Fiyatları</div>
         <div class="text-sm text-gray-600" style="margin-top:2px;">
           {{ $il['kurum'] }} kurum
-          @if($il['ort_fiyat']) · ort. {{ $tl($il['ort_fiyat']) }} <span class="text-gray-500">({{ $il['fiyatli'] }} kurumun girdiği)</span>@endif
+          @if($piyasaGoster && ($pi = config('piyasa_ucretleri.iller.'.$il['slug']))) · ort. {{ $tl($pi['ort']) }}/ay @endif
+          @if(! $piyasaGoster && $il['ort_fiyat']) · ort. {{ $tl($il['ort_fiyat']) }} <span class="text-gray-500">({{ $il['fiyatli'] }} kurumun girdiği)</span>@endif
           @if($il['puan']) · ★ {{ number_format($il['puan'], 1, ',', '.') }}@endif
         </div>
       </a>

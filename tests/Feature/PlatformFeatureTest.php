@@ -9242,6 +9242,7 @@ Metin {standart_fiyat}"])->assertRedirect();
         $f->forceFill(['district' => 'Nilüfer', 'rating' => 4.6, 'price_min' => 12000, 'price_max' => 15000])->save();
         $bolum = service_section_for_scope($f->category->brand_scope)['slug'];
         $site = ['cocuk' => 'bakimevleri', 'yasli-bakim' => 'bakimevibul', 'rehabilitasyon' => 'bakimeviara'][$bolum];
+        config(['piyasa_ucretleri' => ['genel' => null, 'iller' => []]]);   // piyasa özeti kapalı: kurumun girdiği ücret görünür
         \Illuminate\Support\Facades\Cache::flush();
 
         // Ülke geneli sayfa: başlıkta yıl, ilin kartı ve il sayfasına bağlantı, SSS şeması
@@ -9266,6 +9267,33 @@ Metin {standart_fiyat}"])->assertRedirect();
         // Seçim ekranı ?bolum= ile açılınca asıl adres ülke geneli sayfa; site haritasında ülke geneli sayfa var
         $this->get('/site/bakimevleri/fiyat-rehberi?bolum=cocuk')->assertOk()->assertSee('/fiyat-rehberi/cocuk"', false);
         $this->get('http://bakimevleri.com/sitemap.xml')->assertOk()->assertSee('/fiyat-rehberi/cocuk</loc>', false);
+    }
+
+    // 18 Kasım 2026: kreş/anaokulu aylık ücret özeti (config/piyasa_ucretleri.php) - il/ilçe sayfası ve ülke geneli sayfa.
+    public function test_kres_piyasa_ucreti_ozeti_fiyat_sayfalarinda(): void
+    {
+        $sehir = $this->city;
+        $yil = (string) now()->year;
+        $ilce = districts_for_city($sehir->name)[0];
+        config(['piyasa_ucretleri' => ['tarih' => '2026-11', 'genel' => ['n' => 900, 'ort' => 27000, 'medyan' => 25000, 'alt' => 21000, 'ust' => 32000, 'en_az' => 9000, 'en_cok' => 90000],
+            'iller' => [$sehir->slug => ['n' => 40, 'ort' => 24500, 'medyan' => 24000, 'alt' => 20000, 'ust' => 28000, 'en_az' => 15000, 'en_cok' => 42000,
+                'ilceler' => [$ilce => ['n' => 12, 'ort' => 27500, 'medyan' => 27000, 'alt' => 24000, 'ust' => 31000, 'en_az' => 20000, 'en_cok' => 42000]]]]]]);
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $il = $this->get('/site/bakimevleri/fiyat-rehberi/cocuk/'.$sehir->slug)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/<title>[^<]*Fiyatları '.$yil.': Aylık Ortalama 24\.500 TL/u', $il);
+        $this->assertStringContainsString('20.000 TL – 28.000 TL', $il);
+        $this->assertStringContainsString('40 özel okulun', $il);
+        $this->assertStringContainsString('"FAQPage"', $il);
+        $this->assertStringNotContainsString('henüz fiyat bilgisi girilmiş kurum yok', $il);
+        // İlçe sayfası: ilçenin kendi özeti; özeti olmayan ilçede il geneli
+        $this->get('/site/bakimevleri/fiyat-rehberi/cocuk/'.$sehir->slug.'/'.\Illuminate\Support\Str::slug($ilce))->assertOk()->assertSee('Aylık Ortalama 27.500 TL', false);
+        // Ülke geneli sayfa
+        $this->get('/site/bakimevleri/fiyat-rehberi/cocuk')->assertOk()->assertSee('Ort. 27.000 TL', false)->assertSee('24.500 TL/ay', false);
+        // Başka bölümde (yaşlı bakım) ve verisi olmayan ilde gösterilmez
+        $this->get('/site/bakimevibul/fiyat-rehberi/yasli-bakim/'.$sehir->slug)->assertOk()->assertDontSee('Aylık Ortalama', false);
+        \App\Models\City::firstOrCreate(['slug' => 'erzurum'], ['name' => 'Erzurum']);
+        $this->get('/site/bakimevleri/fiyat-rehberi/cocuk/erzurum')->assertOk()->assertDontSee('Aylık Ortalama', false);
     }
 
     // 18 Kasım 2026: SEO fırsatları - Search Console aranan kelime + sayfa verisinden iş yapılabilir listeler.

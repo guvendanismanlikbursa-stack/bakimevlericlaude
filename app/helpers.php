@@ -296,6 +296,27 @@ if (! function_exists('bolum_sahibi_url')) {
     }
 }
 
+if (! function_exists('piyasa_ucreti')) {
+    /**
+     * 18 Kasım 2026: özel anaokulu/kreş aylık ücret özeti (bkz. config/piyasa_ucretleri.php). İlçe verisi yoksa
+     * il geneli döner ('kapsam' => 'il'); il verisi de yoksa null. Yalnız çocuk bölümü (kreş/anaokulu) için.
+     *
+     * @return array{n:int, ort:int, alt:int, ust:int, kapsam:string, yer:string}|null
+     */
+    function piyasa_ucreti(?string $citySlug, ?string $districtName = null, ?string $cityName = null): ?array
+    {
+        $il = $citySlug ? config('piyasa_ucretleri.iller.'.$citySlug) : null;
+        if (! $il) {
+            return null;
+        }
+        if ($districtName && isset($il['ilceler'][$districtName])) {
+            return $il['ilceler'][$districtName] + ['kapsam' => 'ilce', 'yer' => $districtName];
+        }
+
+        return $il + ['kapsam' => 'il', 'yer' => $cityName ?? $citySlug];
+    }
+}
+
 if (! function_exists('seo_og_image')) {
     function seo_og_image(?array $section = null): string
     {
