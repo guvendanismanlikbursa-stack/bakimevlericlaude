@@ -9,7 +9,9 @@
   $placeTitle = ($districtName ?? null) ? $city->name.' / '.$districtName : $city->name;
   $breadcrumbItems = [
       ['name' => $brand['name'], 'url' => brand_route('home')],
-      ['name' => $section['title'].' Fiyatları', 'url' => brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug])],
+      // 18 Kasım 2026: ülke geneli fiyat sayfası (bkz. price-guide-national.blade.php) yol izine eklendi.
+      ['name' => ($section['seo_title'] ?? $section['title']).' Fiyatları', 'url' => brand_route('price-guide.national', ['sectionSlug' => $section['slug']])],
+      ['name' => $city->name.' '.($section['seo_title'] ?? $section['title']).' Fiyatları', 'url' => brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug])],
   ];
   if ($category) {
       $breadcrumbItems[] = ['name' => $category->name.' Fiyatları', 'url' => brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug])];
@@ -36,14 +38,23 @@
   }
   $faqPreview = [...$extraFaq, ...(site_section_content($brand['slug'], $section['slug'])['faq_preview'] ?? [])];
 @endphp
-@section('title', $placeTitle.' '.$topicTitle.' Fiyatları - Ücret Rehberi')
-@section('og_title', $placeTitle.' '.$topicTitle.' Fiyatları')
+{{-- 18 Kasım 2026: kullanıcının talebi - "maksimum tıklama". Başlıkta yıl + kurum sayısı (aramada göze çarpan,
+     her ile özgü bilgi), açıklamada ilin gerçek rakamları. Uydurma fiyat yok: yalnız kurumların girdiği ücret ve resmi rakam. --}}
+@php
+  $fYil = now()->year;
+  $fSayi = number_format($stats['total'], 0, ',', '.');
+@endphp
+@section('title', $placeTitle.' '.$topicTitle.' Fiyatları '.$fYil.($stats['total'] > 0 ? ': '.$fSayi.' Kurum, Ücretler ve Yorumlar' : ''))
+@section('og_title', $placeTitle.' '.$topicTitle.' Fiyatları '.$fYil)
 @php
   $__resmi = ($section['slug'] ?? null) === 'yasli-bakim' ? config('resmi_ucretler.yasli_bakim.'.$city->slug) : null;
 @endphp
 @section('meta_description', $__resmi
   ? $placeTitle.' huzurevi ve bakımevi fiyatları '.config('resmi_ucretler.yil').': resmi aylık ücret '.number_format($__resmi['taban'], 0, ',', '.').' – '.number_format($__resmi['tavan'], 0, ',', '.').' TL (KDV hariç). Kurumları karşılaştırın, ücretsiz fiyat isteyin.'
-  : $placeTitle.' bölgesinde '.$topicTitle.' kurumlarının ortalama, en düşük ve en yüksek fiyat bilgileri.')
+  : $placeTitle.' '.mb_strtolower($topicTitle).' fiyatları '.$fYil.': '.$fSayi.' kurum'
+    .($stats['priced_count'] > 0 ? ', girilen ücretlerde ortalama '.number_format($stats['avg_min'], 0, ',', '.').' TL' : '')
+    .(($stats['ort_puan'] ?? null) ? ', aile puanı ortalaması '.number_format($stats['ort_puan'], 1, ',', '.') : '')
+    .'. İlçelere göre karşılaştırın, ücretsiz fiyat isteyin.')
 @section('og_image', seo_og_image($section))
 {{-- 9 Kasım 2026: bölümün sahibi başka siteyse asıl adres orası (bkz. bolum_sahibi_url). --}}
 @if($__sahipUrl = bolum_sahibi_url($section['slug'] ?? null))
@@ -64,7 +75,8 @@
 @section('content')
 <div class="max-w-6xl mx-auto px-4 py-10">
   <div class="text-xs font-black text-primary mb-2">Ücret Rehberi</div>
-  <h1 class="text-3xl font-black text-gray-950 mb-2">{{ $placeTitle }} {{ $topicTitle }} Fiyatları</h1>
+  <h1 class="text-3xl font-black text-gray-950 mb-2">{{ $placeTitle }} {{ $topicTitle }} Fiyatları {{ $fYil }}</h1>
+  <p class="text-sm text-gray-500 mb-3">Son güncelleme: {{ now()->locale('tr')->translatedFormat('j F Y') }}@if($stats['ort_puan'] ?? null) · {{ $stats['puanli'] }} kurumun aile puanı ortalaması ★ {{ number_format($stats['ort_puan'], 1, ',', '.') }}@endif</p>
   <p class="text-sm text-gray-500 mb-3">{{ $placeTitle }} bölgesinde yayında olan {{ $stats['total'] }} {{ $topicTitle }} kurumunun fiyat özeti. Fiyatlar kurumlar tarafından girilir, kesin ücret için kuruma teklif talebi gönderin.</p>
   @if(!empty($guideContent['intro']))
     <p class="text-sm text-gray-700 font-semibold mb-3">{{ $guideContent['intro'] }}</p>
@@ -84,7 +96,20 @@
     </div>
   @endif
 
-  @if(($nearDistricts ?? collect())->isNotEmpty())
+  @if(! empty($ilceDagilim))
+    {{-- 18 Kasım 2026: her ile özgü gerçek veri - ilçelere göre kurum sayısı, girilmiş ücret, puan; ilçe fiyat sayfasına bağlanır. --}}
+    <div class="mb-8">
+      <h2 class="font-black text-xl mb-3">İlçelere Göre {{ $city->name }} {{ $topicTitle }} Fiyatları</h2>
+      <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));">
+        @foreach($ilceDagilim as $ilce)
+          <a href="{{ $category ? brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug, 'districtSlug' => Str::slug($ilce['ad'])]) : brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => Str::slug($ilce['ad'])]) }}" class="bg-white rounded-xl shadow-sm border border-gray-100" style="display:block;padding:10px 12px;">
+            <div class="font-black text-gray-950 text-sm">{{ $ilce['ad'] }}</div>
+            <div class="text-xs text-gray-600" style="margin-top:2px;">{{ $ilce['kurum'] }} kurum @if($ilce['ort_fiyat']) · ort. {{ number_format($ilce['ort_fiyat'], 0, ',', '.') }} TL @endif @if($ilce['puan'])· ★ {{ number_format($ilce['puan'], 1, ',', '.') }}@endif</div>
+          </a>
+        @endforeach
+      </div>
+    </div>
+  @elseif(($nearDistricts ?? collect())->isNotEmpty())
     <div class="mb-8">
       <div class="text-xs font-black text-gray-500 mb-2">Yakın ilçe fiyat rehberleri</div>
       <div class="flex flex-wrap gap-2">
@@ -204,7 +229,7 @@
     <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mt-8">
       <h2 class="text-lg font-black text-gray-950 mb-1">{{ $topicTitle }} Seçerken Nelere Dikkat Etmeli?</h2>
       <p class="text-sm text-gray-500 mb-4">Fiyat tek başına yeterli bir kriter değildir — görüşme sırasında kuruma şu soruları sormanızı öneririz:</p>
-      <ul class="space-y-2.5">
+      <ul class="space-y-2.5" style="display:grid;gap:10px;">
         @foreach($kriterler as $kriter)
           <li class="flex items-start gap-2 text-sm text-gray-700">
             <span class="text-primary font-black mt-0.5">✓</span>
@@ -218,6 +243,17 @@
   {{-- 13 Ekim 2026: kullanicinin talebi - JSON-LD'deki SSS gorunur icerikle
        de eslesmeli (Google'in "gizli/sadece schema'da olan icerik" karsiti
        politikasina uymak icin), bkz. yukaridaki $faqPreview ayni tarihli yorum. --}}
+  @php $fYazilar = \App\Models\ContentPage::kapsamIcinYazilar($category->brand_scope ?? ($section['scopes'][0] ?? null), crc32($city->slug), 3); @endphp
+  <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mt-8">
+    <h2 class="text-lg font-black text-gray-950 mb-3">İlgili rehberler</h2>
+    <ul class="space-y-2.5" style="display:grid;gap:10px;">
+      <li class="text-sm"><a href="{{ brand_route('price-guide.national', ['sectionSlug' => $section['slug']]) }}" class="text-primary font-bold hover:underline">Türkiye geneli {{ $section['seo_title'] ?? $section['title'] }} fiyatları {{ $fYil }} – il il karşılaştırma</a></li>
+      @foreach($fYazilar as $y)
+        <li class="text-sm"><a href="{{ $y['url'] }}" class="text-primary font-bold hover:underline">{{ $y['baslik'] }}</a></li>
+      @endforeach
+    </ul>
+  </div>
+
   @if(!empty($faqPreview))
     <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mt-8">
       <h2 class="text-lg font-black text-gray-950 mb-4">Sıkça sorulan sorular</h2>

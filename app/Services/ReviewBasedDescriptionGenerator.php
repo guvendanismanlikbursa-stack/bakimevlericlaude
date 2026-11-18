@@ -52,6 +52,25 @@ class ReviewBasedDescriptionGenerator
      * verisiyle doldurulur - OpsController'daki elle-duzeltme yolunun da
      * AYNI havuzu/mantigi kullanmasi icin public (DRY, iki kopya riski olmasin).
      */
+    /**
+     * 18 Kasım 2026: form-yönlendirme cümlesinin tüm kalıplarını tanır. Eskiden yalnız "formu doldur" aranıyordu;
+     * "…formu kullanarak…" ve "…formu kullanabilirsiniz" kalıplarını alan kurumlara her gece aynı cümle yeniden
+     * ekleniyordu (1.239 kurumda tekrar, bkz. platform:aciklama-tekrar-temizle).
+     */
+    public const CTA_ISARETLERI = ['formu doldur', 'formu kullan', 'aşağıdaki form'];
+
+    public static function ctaIceriyorMu(?string $metin): bool
+    {
+        $m = mb_strtolower((string) $metin);
+        foreach (self::CTA_ISARETLERI as $i) {
+            if (str_contains($m, $i)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function ctaMetni(Facility $facility): string
     {
         $kalip = self::SADECE_CTA_KALIPLARI[$facility->id % count(self::SADECE_CTA_KALIPLARI)];
@@ -261,7 +280,6 @@ class ReviewBasedDescriptionGenerator
         // asagidaki hem $ctaKaliplari'nda - ORTAK gecen tek sabit metin)
         // aramak, hangi aciklamanin zaten yonlendirme icerdigini hangisinin
         // icermedigini AYIRT EDER.
-        $ctaMarker = 'formu doldur';
         $ctaOnlyFacilities = Facility::query()
             ->when($facilityIds, fn ($q) => $q->whereIn('id', $facilityIds), function ($q) use ($afterId, $cityId) {
                 $q->where('is_claimed', false)
@@ -269,7 +287,13 @@ class ReviewBasedDescriptionGenerator
                     ->where('id', '>', $afterId)
                     ->when($cityId, fn ($qq) => $qq->where('city_id', $cityId));
             })
-            ->where(fn ($q) => $q->whereNull('description')->orWhere('description', 'not like', "%{$ctaMarker}%"))
+            ->where(function ($q) {
+                $q->whereNull('description')->orWhere(function ($qq) {
+                    foreach (self::CTA_ISARETLERI as $isaret) {
+                        $qq->where('description', 'not like', "%{$isaret}%");
+                    }
+                });
+            })
             ->whereDoesntHave('googleReviews', fn ($q) => $q->where('rating', '>=', $minRating)->whereNotNull('body')->where('body', '!=', ''))
             ->with(['city', 'category'])
             ->orderBy('id')

@@ -96,6 +96,11 @@ class SitemapController extends Controller
             $urls->push($this->url($prefix.'?bolum='.$section['slug'], 'daily', '0.9'));
             $urls->push($this->url($prefix.'/kurumlar?bolum='.$section['slug'], 'daily', '0.9'));
             $urls->push($this->url($prefix.'/rehber/'.$section['slug'], 'weekly', '0.7'));
+            // 18 Kasım 2026: ülke geneli fiyat sayfaları ("kreş fiyatları", "fizik tedavi fiyatları" gibi il belirtilmeyen aramalar).
+            $urls->push($this->url($prefix.'/fiyat-rehberi/'.$section['slug'], 'weekly', '0.8'));
+            foreach ($categories as $category) {
+                $urls->push($this->url($prefix.'/fiyat-rehberi/'.$section['slug'].'/kategori/'.$category->slug, 'weekly', '0.7'));
+            }
 
             foreach ($cities as $city) {
                 // 15 Eylul 2026: selectRaw ile gelen MAX(updated_at) ham bir

@@ -193,6 +193,9 @@ $siteRoutes = function () {
 
     // Ucret rehberi
     Route::get('/fiyat-rehberi', [PriceGuideController::class, 'index'])->middleware('static.cache')->name('price-guide.index');
+    // 18 Kasım 2026: ülke geneli fiyat sayfaları ("kreş fiyatları", "fizik tedavi fiyatları" gibi il belirtilmeyen aramalar).
+    Route::get('/fiyat-rehberi/{sectionSlug}/kategori/{categorySlug}', [PriceGuideController::class, 'nationalCategory'])->middleware('static.cache')->name('price-guide.national-category');
+    Route::get('/fiyat-rehberi/{sectionSlug}', [PriceGuideController::class, 'national'])->middleware('static.cache')->name('price-guide.national');
     Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/kategori/{categorySlug}/{districtSlug?}', [PriceGuideController::class, 'showCategory'])->middleware('static.cache')->name('price-guide.category');
     Route::get('/fiyat-rehberi/{sectionSlug}/{citySlug}/{districtSlug?}', [PriceGuideController::class, 'show'])->middleware('static.cache')->name('price-guide.show');
 

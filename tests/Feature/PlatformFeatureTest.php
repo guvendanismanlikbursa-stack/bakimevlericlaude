@@ -9233,6 +9233,41 @@ Metin {standart_fiyat}"])->assertRedirect();
         \Illuminate\Support\Carbon::setTestNow();
     }
 
+    // 18 Kasım 2026: ülke geneli fiyat sayfaları + il sayfasında yıl/kurum sayılı başlık, ilçe dağılımı, son güncelleme.
+    public function test_ulke_geneli_fiyat_sayfasi_ve_il_sayfasi_seo(): void
+    {
+        $yil = (string) now()->year;
+        $sehir = $this->city;
+        $f = $this->facilityUser->facility->fresh(['city', 'category']);
+        $f->forceFill(['district' => 'Nilüfer', 'rating' => 4.6, 'price_min' => 12000, 'price_max' => 15000])->save();
+        $bolum = service_section_for_scope($f->category->brand_scope)['slug'];
+        $site = ['cocuk' => 'bakimevleri', 'yasli-bakim' => 'bakimevibul', 'rehabilitasyon' => 'bakimeviara'][$bolum];
+        \Illuminate\Support\Facades\Cache::flush();
+
+        // Ülke geneli sayfa: başlıkta yıl, ilin kartı ve il sayfasına bağlantı, SSS şeması
+        $html = $this->get("/site/{$site}/fiyat-rehberi/{$bolum}")->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/<title>[^<]*Fiyatları '.$yil.': İllere Göre/u', $html);
+        $this->assertStringContainsString('/fiyat-rehberi/'.$bolum.'/'.$sehir->slug, $html);
+        $this->assertStringContainsString($sehir->name, $html);
+        $this->assertStringContainsString('"FAQPage"', $html);
+        $this->assertStringContainsString('12.000 TL', $html);   // yalnız kurumun girdiği ücret
+        // Kategoriye göre ülke geneli sayfa
+        $this->get("/site/{$site}/fiyat-rehberi/{$bolum}/kategori/".$f->category->slug)->assertOk()->assertSee($f->category->name.' Fiyatları '.$yil, false);
+        $this->get("/site/{$site}/fiyat-rehberi/olmayan-bolum")->assertNotFound();
+
+        // İl sayfası: başlıkta yıl + kurum sayısı, ilçe dağılımı, son güncelleme, ülke geneli sayfaya bağlantı
+        $il = $this->get("/site/{$site}/fiyat-rehberi/{$bolum}/".$sehir->slug)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/<title>[^<]*Fiyatları '.$yil.': \d+ Kurum, Ücretler ve Yorumlar/u', $il);
+        $this->assertStringContainsString('İlçelere Göre', $il);
+        $this->assertStringContainsString('/fiyat-rehberi/'.$bolum.'/'.$sehir->slug.'/nilufer', $il);
+        $this->assertStringContainsString('Son güncelleme:', $il);
+        $this->assertStringContainsString('Türkiye geneli', $il);
+
+        // Seçim ekranı ?bolum= ile açılınca asıl adres ülke geneli sayfa; site haritasında ülke geneli sayfa var
+        $this->get('/site/bakimevleri/fiyat-rehberi?bolum=cocuk')->assertOk()->assertSee('/fiyat-rehberi/cocuk"', false);
+        $this->get('http://bakimevleri.com/sitemap.xml')->assertOk()->assertSee('/fiyat-rehberi/cocuk</loc>', false);
+    }
+
     // 18 Kasım 2026: SEO fırsatları - Search Console aranan kelime + sayfa verisinden iş yapılabilir listeler.
     public function test_seo_firsatlari_listeleri_doktor_haric_eski_adres_bilgi(): void
     {
@@ -9270,6 +9305,32 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->assertStringContainsString('“ankara huzurevi fiyatları”', $html);
         $this->assertStringContainsString('beklenen ~', $html);
         $this->assertStringContainsString('486 görünme', $html);
+    }
+
+    // 18 Kasım 2026: gece açıklama görevi "formu kullanarak" kalıbını tanımadığı için aynı cümleyi her gece ekliyordu.
+    public function test_aciklama_form_cumlesi_tekrar_eklenmez_ve_tekrarlar_temizlenir(): void
+    {
+        $this->assertTrue(\App\Services\ReviewBasedDescriptionGenerator::ctaIceriyorMu('Fiyat için aşağıdaki formu kullanarak kuruma ulaşabilirsiniz.'));
+        $this->assertTrue(\App\Services\ReviewBasedDescriptionGenerator::ctaIceriyorMu('Bilgi için aşağıdaki formu kullanabilirsiniz.'));
+        $this->assertFalse(\App\Services\ReviewBasedDescriptionGenerator::ctaIceriyorMu('Bahçeli, güvenli bir kreş.'));
+
+        $giris = 'Özel Deneme Kreşi, Selçuklu/Konya bölgesinde hizmet veren bir kurumdur.';
+        $cta1 = 'Fiyat ve kontenjan bilgisi almak için aşağıdaki formu kullanarak kuruma doğrudan ulaşabilirsiniz.';
+        $cta2 = 'Bu kurum hakkında şu an yeterli yorum bulunmamaktadır. Konya Selçuklu\'deki bu kreş için fiyat ve kontenjan bilgisi almak isterseniz, aşağıdaki formu kullanarak kuruma doğrudan ulaşabilirsiniz.';
+        $bozuk = implode("\n\n", [$giris, $cta1, $cta2, $cta2, $cta2, $cta2]);
+        $this->assertSame($giris."\n\n".$cta1, \App\Console\Commands\AciklamaTekrarTemizle::temizle($bozuk));
+
+        $f = \App\Models\Facility::query()->whereNull('deleted_at')->first();
+        $f->forceFill(['description' => $bozuk, 'is_claimed' => false, 'is_broker_managed' => false])->save();
+        $f->googleReviews()->delete();
+        // Gece görevi bu kuruma artık yeni cümle eklemez
+        app(\App\Services\ReviewBasedDescriptionGenerator::class)->run(50, 0, 3, null, [$f->id]);
+        $this->assertSame($bozuk, $f->fresh()->description);
+        // Temizleme komutu: önce deneme, sonra gerçek + yedek
+        $this->artisan('platform:aciklama-tekrar-temizle')->assertSuccessful();
+        $this->assertSame($bozuk, $f->fresh()->description);
+        $this->artisan('platform:aciklama-tekrar-temizle --gercek')->assertSuccessful();
+        $this->assertSame($giris."\n\n".$cta1, $f->fresh()->description);
     }
 
     // 1 Kasım 2026: gerçek ziyaretçi sayacı ayrı tutulur; bot dahil sayaç korunur.

@@ -1,6 +1,10 @@
 @extends('layouts.brand')
 @section('title', 'Ücret Rehberi - Şehre Göre Bakım Kurumu Fiyatları')
 @section('meta_description', current_brand()['name'].' ile şehir ve hizmet seçerek il bazlı fiyat rehberini görüntüleyin.')
+{{-- 18 Kasım 2026: ?bolum= ile açılan seçim ekranının asıl adresi ülke geneli fiyat sayfası (bkz. price-guide-national). --}}
+@if(request()->filled('bolum') && isset($sections[request()->query('bolum')]))
+  @section('canonical', bolum_sahibi_url(request()->query('bolum')) ?: brand_route('price-guide.national', ['sectionSlug' => request()->query('bolum')]))
+@endif
 @section('content')
 @php
   $brand = current_brand();

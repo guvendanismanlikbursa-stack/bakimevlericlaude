@@ -73,6 +73,62 @@ class PriceGuideController extends Controller
     }
 
     /**
+     * 18 Kasım 2026: kullanıcının talebi - "her aramada en az ilk sayfada çıkmalıyız". İl belirtilmeyen
+     * "kreş fiyatları", "bakımevi fiyatları", "fizik tedavi fiyatları" aramaları için ülke geneli sayfa yoktu
+     * (yalnız ?bolum= parametreli seçim ekranı vardı). Bu sayfa 81 ilin kurum sayısı, girilmiş ücret ve puan
+     * özetini tek tabloda verir; her il, il fiyat sayfasına bağlanır. Uydurma fiyat yok: yalnız kurumların
+     * kendi girdiği ücretler ve config/resmi_ucretler.php'deki resmi rakamlar.
+     */
+    public function national(Request $request)
+    {
+        $brand = current_brand();
+        $sectionSlug = $request->route('sectionSlug');
+        $section = active_service_section($sectionSlug, $brand);
+        abort_if(($section['slug'] ?? null) !== $sectionSlug, 404);
+
+        return $this->renderNational($brand, $section, null);
+    }
+
+    public function nationalCategory(Request $request)
+    {
+        $brand = current_brand();
+        $sectionSlug = $request->route('sectionSlug');
+        $section = active_service_section($sectionSlug, $brand);
+        abort_if(($section['slug'] ?? null) !== $sectionSlug, 404);
+        $category = FacilityCategory::findBySlugCached($request->route('categorySlug'), $brand['category_scope']) ?? abort(404);
+        abort_if((service_section_for_scope($category->brand_scope)['slug'] ?? null) !== $sectionSlug, 404);
+
+        return $this->renderNational($brand, $section, $category);
+    }
+
+    private function renderNational(array $brand, array $section, ?FacilityCategory $category)
+    {
+        $veri = Cache::remember('price-guide:ulke:v1:'.$section['slug'].':'.($category->id ?? '-'), now()->addHours(6), function () use ($section, $category) {
+            $q = Facility::discoverable()->when($category,
+                fn ($q) => $q->where('facility_category_id', $category->id),
+                fn ($q) => $q->forBrand($section['scopes']));
+            $sehirAd = City::cachedAll()->keyBy('id');
+            $iller = (clone $q)->selectRaw('city_id, COUNT(*) as kurum, SUM(CASE WHEN price_min > 0 THEN 1 ELSE 0 END) as fiyatli,
+                    AVG(CASE WHEN price_min > 0 THEN price_min END) as ort_fiyat, AVG(CASE WHEN rating > 0 THEN rating END) as puan')
+                ->groupBy('city_id')->orderByDesc('kurum')->get()
+                ->filter(fn ($r) => isset($sehirAd[$r->city_id]))
+                ->map(fn ($r) => ['ad' => $sehirAd[$r->city_id]->name, 'slug' => $sehirAd[$r->city_id]->slug, 'kurum' => (int) $r->kurum,
+                    'fiyatli' => (int) $r->fiyatli, 'ort_fiyat' => $r->ort_fiyat ? (int) round($r->ort_fiyat) : null, 'puan' => $r->puan ? round((float) $r->puan, 1) : null])
+                ->values()->all();
+            $fiyat = (clone $q)->where('price_min', '>', 0)->selectRaw('COUNT(*) as n, AVG(price_min) as ort, MIN(price_min) as en_az, MAX(price_max) as en_cok')->first();
+
+            return [
+                'iller' => $iller,
+                'toplam' => array_sum(array_column($iller, 'kurum')),
+                'fiyat' => ['n' => (int) $fiyat->n, 'ort' => $fiyat->ort ? (int) round($fiyat->ort) : null, 'en_az' => $fiyat->en_az, 'en_cok' => $fiyat->en_cok],
+                'kategoriler' => FacilityCategory::cachedPublic()->whereIn('brand_scope', $section['scopes'])->values()->map(fn ($c) => ['ad' => $c->name, 'slug' => $c->slug])->all(),
+            ];
+        });
+
+        return view('themes._shared.price-guide-national', ['brand' => $brand, 'section' => $section, 'category' => $category] + $veri);
+    }
+
+    /**
      * Bolum + il secim ekrani (hangi sehir/bolum icin rehber gormek istedigini secer).
      */
     public function index(Request $request)
@@ -98,7 +154,7 @@ class PriceGuideController extends Controller
         // icin ayni sayfa tekrar ziyaret edildiginde veritabanina hic
         // gidilmez.
         $page = (int) request()->query('page', 1);
-        $cacheKey = 'price-guide:v1:'.md5(implode('|', [
+        $cacheKey = 'price-guide:v2:'.md5(implode('|', [
             $brand['slug'], $section['slug'], $city->id, $districtName ?? '', $category->id ?? '', $page,
         ]));
 
@@ -149,11 +205,21 @@ class PriceGuideController extends Controller
             $categoryLabel = $category->name ?? ($section['title'].' kurumları');
             $guideContent = guide_page_content($brand, $city->name, $districtName, $categoryLabel, $stats['total']);
 
-            return compact('stats', 'tierCounts', 'facilities', 'sectionCategories', 'nearDistricts', 'guideContent');
+            // 18 Kasım 2026: il sayfasına her ile özgü gerçek veri - ilçelere göre kurum sayısı, girilmiş ücret ve puan.
+            $ilceDagilim = $districtName ? [] : (clone $baseQuery)->whereNotNull('district')->where('district', '!=', '')
+                ->selectRaw('district, COUNT(*) as kurum, AVG(CASE WHEN price_min > 0 THEN price_min END) as ort_fiyat, AVG(CASE WHEN rating > 0 THEN rating END) as puan')
+                ->groupBy('district')->orderByDesc('kurum')->limit(40)->get()
+                ->map(fn ($r) => ['ad' => $r->district, 'kurum' => (int) $r->kurum, 'ort_fiyat' => $r->ort_fiyat ? (int) round($r->ort_fiyat) : null, 'puan' => $r->puan ? round((float) $r->puan, 1) : null])
+                ->all();
+            $puanOzet = (clone $baseQuery)->where('rating', '>', 0)->selectRaw('COUNT(*) as n, AVG(rating) as ort')->first();
+            $stats['puanli'] = (int) $puanOzet->n;
+            $stats['ort_puan'] = $puanOzet->ort ? round((float) $puanOzet->ort, 1) : null;
+
+            return compact('stats', 'tierCounts', 'facilities', 'sectionCategories', 'nearDistricts', 'guideContent', 'ilceDagilim');
         });
 
         ['stats' => $stats, 'tierCounts' => $tierCounts, 'facilities' => $facilities,
-            'sectionCategories' => $sectionCategories, 'nearDistricts' => $nearDistricts, 'guideContent' => $guideContent] = $data;
+            'sectionCategories' => $sectionCategories, 'nearDistricts' => $nearDistricts, 'guideContent' => $guideContent, 'ilceDagilim' => $ilceDagilim] = $data;
 
         // 14 Agustos 2026: bkz. Public\FacilityController::index ayni yorum -
         // menzil disi sayfaya gidilince yanlis "sonuc yok" mesaji yerine
@@ -163,7 +229,7 @@ class PriceGuideController extends Controller
         }
 
         return view("themes.{$brand['theme']}.price-guide", compact(
-            'brand', 'section', 'city', 'districtName', 'category', 'stats', 'tierCounts', 'facilities', 'sectionCategories', 'nearDistricts', 'guideContent'
+            'brand', 'section', 'city', 'districtName', 'category', 'stats', 'tierCounts', 'facilities', 'sectionCategories', 'nearDistricts', 'guideContent', 'ilceDagilim'
         ));
     }
 
