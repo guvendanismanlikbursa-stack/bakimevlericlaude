@@ -9269,6 +9269,27 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->get('http://bakimevleri.com/sitemap.xml')->assertOk()->assertSee('/fiyat-rehberi/cocuk</loc>', false);
     }
 
+    // 18 Kasım 2026: Ocak/Temmuz otomatik yenileme - liste sayfasından yalnız ilçe+fiyat alınır, özet il/ilçe eşiğine uyar.
+    public function test_piyasa_ucret_yenile_ozet_hesabi(): void
+    {
+        $c = new \App\Console\Commands\PiyasaUcretYenile;
+        $html = '<p>12 okul bulundu.</p>'
+            .'<div>Güneş Kreşi Karşılaştır Nilüfer / Beşevler Mah. Seçildi 20.000 TL - 30.000 TL Hemen İncele</div>'
+            .'<div>Ay Kreşi Karşılaştır Nilüfer / Ataevler Mah. Seçildi 26.000 TL Hemen İncele</div>'
+            .'<div>Yıldız Kreşi Karşılaştır Osmangazi / Çekirge Mah. Seçildi Hemen İncele</div>';
+        $this->assertSame([['Nilüfer', 20000, 30000], ['Nilüfer', 26000, 26000], ['Osmangazi', null, null]], $c->kartlar($html));
+        $sehir = $this->city;
+        $ilce = districts_for_city($sehir->name)[0];
+        $kart = fn ($a) => [$ilce, $a, $a];
+        $o = $c->ozetCikar([$sehir->slug => ['sayfalar' => [[$kart(20000), $kart(22000), $kart(24000), $kart(24000), ['X', 30000, 30000], ['X', 1000, 1000], ['X', null, null]]]],
+            'yok-il' => ['yok' => true, 'sayfalar' => []]], '2027-01');
+        $this->assertSame('2027-01', $o['tarih']);
+        $this->assertSame(5, $o['iller'][$sehir->slug]['n'] ?? null);   // 1.000 TL uç değer ve fiyatsız kart sayılmaz
+        $this->assertSame(24000, $o['iller'][$sehir->slug]['ort']);
+        $this->assertSame(4, $o['iller'][$sehir->slug]['ilceler'][$ilce]['n']);
+        $this->assertArrayNotHasKey('yok-il', $o['iller']);
+    }
+
     // 18 Kasım 2026: kreş/anaokulu aylık ücret özeti (config/piyasa_ucretleri.php) - il/ilçe sayfası ve ülke geneli sayfa.
     public function test_kres_piyasa_ucreti_ozeti_fiyat_sayfalarinda(): void
     {

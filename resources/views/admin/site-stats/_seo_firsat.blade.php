@@ -20,7 +20,7 @@
   @endphp
   <div style="{{ $kart }}" id="seo-firsat">
     <h2 style="{{ $h2 }}">🚀 SEO Fırsatları <span style="font-size:12px;font-weight:700;color:#6b7280;">(Search Console)</span></h2>
-    <p style="{{ $acik }}">Kaynak: <b>Google Search Console</b>, {{ \Illuminate\Support\Carbon::parse($seo['bas'])->format('d.m.Y') }} – {{ \Illuminate\Support\Carbon::parse($seo['son'])->format('d.m.Y') }} (son 4 hafta; Google bu veriyi 2–3 gün geriden verir, her sabah yenilenir).
+    <p style="{{ $acik }}">Kaynak: <b>Google Search Console</b>, {{ \Illuminate\Support\Carbon::parse($seo['bas'])->format('d.m.Y') }} – {{ \Illuminate\Support\Carbon::parse($seo['son'])->format('d.m.Y') }} (son 4 hafta; Google bu veriyi 2–3 gün geriden verir; liste haftada bir, pazartesi sabahı yenilenir).
       İnsanların Google'da gerçekten yazdığı aramalar ve o aramada çıkan sayfamız. <b>Görünme</b>: aramada listelendiğimiz sayı, <b>Tıklama</b>: siteye gelen, <b>Sıra</b>: ortalama sıramız (1 = en üst, 10'dan sonrası 2. sayfa).
       Doktor sayfaları bilerek dahil değil.</p>
     @foreach($seoBolumler as [$tur, $baslik, $aciklama])

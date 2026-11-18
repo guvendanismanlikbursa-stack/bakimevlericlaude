@@ -3,7 +3,8 @@
 // 18 Kasım 2026: kullanıcının kararı - özel anaokulu/kreş aylık ücretlerinin il/ilçe ÖZETİ (okul adı ve tek tek fiyat yok).
 // Çevrimiçi ilan edilmiş aylık ücretlerden derlendi; her okul için aralığın orta noktası alındı, 500 TL'ye yuvarlandı.
 // alt/ust = okulların ortadaki yarısının aralığı (çeyrekler). İl en az 5, ilçe en az 3 ücretli okul.
-// Yenilemek için: scratchpad piyasa/okul_fiyat_topla.py + ozet_yap.py. Değişince canlıda config:cache şart.
+// İlk özet. Ocak ve Temmuz'da platform:piyasa-ucret-yenile yenisini storage/app/private/piyasa/ozet.json'a yazar;
+// o dosya varsa AppServiceProvider bunun yerine onu kullanır.
 return [
     'tarih' => '2026-11',
     'genel' => [

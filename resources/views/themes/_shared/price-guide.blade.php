@@ -103,7 +103,7 @@
   @if($piyasa)
     {{-- 18 Kasım 2026: kreş/anaokulu aylık ücret özeti (bkz. config/piyasa_ucretleri.php). --}}
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6">
-      <div class="text-xs text-gray-500">{{ $piyasa['kapsam'] === 'il' && ($districtName ?? null) ? $city->name.' geneli' : $piyasa['yer'] }} · özel anaokulu ve kreş aylık ücretleri ({{ now()->locale('tr')->translatedFormat('F Y') }})</div>
+      <div class="text-xs text-gray-500">{{ $piyasa['kapsam'] === 'il' && ($districtName ?? null) ? $city->name.' geneli' : $piyasa['yer'] }} · özel anaokulu ve kreş aylık ücretleri ({{ \Illuminate\Support\Carbon::parse((config('piyasa_ucretleri.tarih') ?: now()->format('Y-m')).'-01')->locale('tr')->translatedFormat('F Y') }})</div>
       <div class="text-2xl font-black mt-1">Ortalama {{ $pTl($piyasa['ort']) }} <span class="text-sm font-semibold text-gray-500">/ ay</span></div>
       <div class="text-sm text-gray-700 mt-1">Okulların çoğu <b>{{ $pTl($piyasa['alt']) }} – {{ $pTl($piyasa['ust']) }}</b> arasında ücret alıyor.</div>
       <p class="text-sm text-gray-600 mt-2">{{ $piyasa['n'] }} özel okulun çevrimiçi ilan ettiği aylık ücretlerden derlenmiştir (aralık verilmişse ortası alınmıştır). Ücret; yaş grubu, tam/yarım gün, yemek ve servis dahil olup olmamasına göre değişir. Kesin ücret için aşağıdaki kurumlardan ücretsiz teklif isteyin.</p>

@@ -322,11 +322,19 @@ ScheduledJobMonitor::attach(
     'google:veri-yenile --son24',
     150
 );
-// 18 Kasım 2026: SEO fırsatları listesi her sabah 06:40.
+// 18 Kasım 2026: SEO fırsatları listesi haftada bir (kullanıcının kararı): pazartesi 06:40.
 ScheduledJobMonitor::attach(
-    Schedule::command('google:veri-yenile --seo')->dailyAt('06:40'),
+    Schedule::command('google:veri-yenile --seo')->weeklyOn(1, '06:40'),
     'google:veri-yenile --seo',
     1500
+);
+// 18 Kasım 2026: kreş/anaokulu aylık ücret özeti her yıl Ocak ve Temmuz'da yenilenir (kullanıcının kararı).
+// Ayın ilk 5 günü saatte bir 4 dk çalışır, kaldığı yerden devam eder; dönem bitince hemen çıkar.
+ScheduledJobMonitor::attach(
+    Schedule::command('platform:piyasa-ucret-yenile --sure=240')->hourlyAt(17)
+        ->when(fn () => in_array(now()->month, [1, 7], true) && now()->day <= 5)->withoutOverlapping(30),
+    'platform:piyasa-ucret-yenile',
+    420
 );
 foreach ([7 => '06:20', 30 => '06:25', 90 => '06:30', 365 => '06:35'] as $gun => $saat) {
     ScheduledJobMonitor::attach(

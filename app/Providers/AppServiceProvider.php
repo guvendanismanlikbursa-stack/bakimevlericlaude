@@ -28,6 +28,13 @@ class AppServiceProvider extends ServiceProvider
         $this->registerRateLimiters();
         $this->registerTurkceArama();
 
+        // 18 Kasım 2026: kreş/anaokulu ücret özeti Ocak/Temmuz'da yenilenir (platform:piyasa-ucret-yenile);
+        // yeni özet dosyası varsa config/piyasa_ucretleri.php'deki ilk özetin yerine o kullanılır.
+        $piyasaOzet = storage_path('app/private/piyasa/ozet.json');
+        if (is_file($piyasaOzet) && ($p = json_decode((string) file_get_contents($piyasaOzet), true)) && ! empty($p['genel'])) {
+            config(['piyasa_ucretleri' => $p]);
+        }
+
         // Aktif markayi tum public view'larda kullanilabilir hale getir
         View::composer('themes.*', function ($view) {
             if (app()->bound('currentBrand')) {

@@ -112,7 +112,7 @@
   @endif
   @if($piyasaGenel)
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 mb-6">
-      <div class="text-xs text-gray-500">Türkiye geneli · özel anaokulu ve kreş aylık ücretleri ({{ now()->locale('tr')->translatedFormat('F Y') }})</div>
+      <div class="text-xs text-gray-500">Türkiye geneli · özel anaokulu ve kreş aylık ücretleri ({{ \Illuminate\Support\Carbon::parse((config('piyasa_ucretleri.tarih') ?: now()->format('Y-m')).'-01')->locale('tr')->translatedFormat('F Y') }})</div>
       <div class="text-2xl font-black mt-1">Ortalama {{ $tl($piyasaGenel['ort']) }} <span class="text-sm font-semibold text-gray-500">/ ay</span></div>
       <div class="text-sm text-gray-700 mt-1">Okulların çoğu <b>{{ $tl($piyasaGenel['alt']) }} – {{ $tl($piyasaGenel['ust']) }}</b> arasında ücret alıyor.</div>
       <p class="text-sm text-gray-600 mt-2">{{ number_format($piyasaGenel['n'], 0, ',', '.') }} özel okulun çevrimiçi ilan ettiği aylık ücretlerden derlenmiştir. İl ve ilçeye göre fark büyüktür; aşağıdan ilinizi seçin.</p>

@@ -52,7 +52,7 @@
     <p style="{{ $acik }}">@if($s24Bas && $s24Bitis){{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
       Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir). Hong Kong/Çin bot trafiği sayılmaz.</p>
 
-    <details style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;margin-bottom:14px;" open>
+    <details style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;margin-bottom:14px;">
       <summary style="cursor:pointer;font-size:13.5px;font-weight:800;color:#0b5d8c;">Bu rakamlar nereden geliyor, neden farklı?</summary>
       <div style="font-size:13px;color:#374151;line-height:1.65;margin-top:8px;">
         @if($scVar)<div style="margin-bottom:6px;"><b>🔍 Google'dan tıklama</b> — kaynak <b>Google Search Console</b>. Google aramasında sitemize kaç kez tıklandığı. Search Console ekranında gördüğünüz rakamla <b>aynı kaynaktır</b>. SEO başarısını bu ölçer.</div>@endif

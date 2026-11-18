@@ -29,7 +29,7 @@ class GoogleVeriYenile extends Command
 
             return self::SUCCESS;
         }
-        // 18 Kasım 2026: SEO fırsatları (Search Console aranan kelime + sayfa) her sabah ayrı görevle yenilenir.
+        // 18 Kasım 2026: SEO fırsatları (Search Console aranan kelime + sayfa) haftada bir ayrı görevle yenilenir.
         if ($this->option('seo')) {
             app(\App\Support\SeoFirsatlari::class)->cek();
             $this->info('seo fırsatları: tamam');
