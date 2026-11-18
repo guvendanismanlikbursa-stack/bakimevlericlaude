@@ -42,9 +42,13 @@
     @php
       $s24Bas = isset($son24['bas']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['bas']) : null;
       $s24Son = isset($son24['son']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['son'])->addHour() : null;
+      $s24Islenen = $son24['son'] ?? '';   // Google'ın işlediği son saat (YmdH); sonrası "henüz işlenmedi"
+      $s24Bitis = $s24Bas ? $s24Bas->copy()->addHours(24) : null;
     @endphp
-    <p style="{{ $acik }}">@if($s24Bas && $s24Son){{ $s24Bas->format('d.m H:00') }} – {{ $s24Son->format('d.m H:00') }} arası (Türkiye saati), Google Analytics'in işlediği son 24 saat.@endif
-      Google verileri birkaç saat gecikmeyle işler @if(isset($son24['gecikme'])) (şu an {{ $son24['gecikme'] }} saat geride)@endif; en yeni saatler sonraki yenilemelerde eklenir. Her saat yenilenir. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
+    <p style="{{ $acik }}">@if($s24Bas && $s24Bitis){{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
+      Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir).
+      @if($s24Son)Google Analytics veriyi 2–3 saat gecikmeyle işler: şu an <b>{{ $s24Son->format('H:00') }}</b>'a kadarki saatler işlendi, sonrası grafikte gri kesikli kutu ("henüz işlenmedi") olarak görünür ve sonraki yenilemelerde dolar.@endif
+      Gece saatlerinde ziyaretçi doğal olarak azdır. Hong Kong/Çin bot trafiği sayılmaz, ayrıca gösterilir.</p>
     <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:16px;">
       @foreach($s24 as $s => $x)
         <div style="border:1px solid #eef0f3;border-left:4px solid {{ $renk[$s] ?? '#6b7280' }};border-radius:12px;padding:12px 14px;">
@@ -64,6 +68,7 @@
       @foreach($s24 as $s => $x)
         <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span style="width:10px;height:10px;border-radius:2px;background:{{ $renk[$s] ?? '#6b7280' }};"></span>{{ $s }}</span>
       @endforeach
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span style="width:10px;height:10px;border-radius:2px;border:1.5px dashed #94a3b8;background:#f1f5f9;"></span>henüz işlenmedi</span>
       <span style="font-size:11.5px;color:#9ca3af;">— sayıları görmek için sütunun üzerine gelin ya da dokunun</span>
     </div>
     <div id="js-saat-grafik" style="position:relative;">
@@ -74,11 +79,18 @@
             $detay = [];
             foreach ($s24 as $s => $x) { $detay[] = [$s, $renk[$s] ?? '#6b7280', (int) ($x['saat'][$k] ?? 0)]; }
           @endphp
-          <div class="js-saat-sutun" tabindex="0" data-baslik="{{ substr($k, 6, 2) }}.{{ substr($k, 4, 2) }} · {{ sprintf('%02d:00–%02d:00', $saatBas, ($saatBas + 1) % 24) }}" data-toplam="{{ $n }}" data-detay='@json($detay)'
-               aria-label="{{ sprintf('%02d:00', $saatBas) }}: {{ $n }} ziyaretçi" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer;border-radius:3px 3px 0 0;">
-            @foreach($s24 as $s => $x)
-              @if(($x['saat'][$k] ?? 0) > 0)<div title="{{ $s }}: {{ $x['saat'][$k] }} ziyaretçi" style="height:{{ round($x['saat'][$k] / $saatEnCok * 100, 1) }}%;background:{{ $renk[$s] ?? '#6b7280' }};"></div>@endif
-            @endforeach
+          @php $islenmedi = $s24Islenen === '' || $k > $s24Islenen; @endphp
+          <div class="js-saat-sutun" tabindex="0" data-baslik="{{ substr($k, 6, 2) }}.{{ substr($k, 4, 2) }} · {{ sprintf('%02d:00–%02d:00', $saatBas, ($saatBas + 1) % 24) }}" data-toplam="{{ $n }}" data-detay='@json($detay)' data-islenmedi="{{ $islenmedi ? 1 : 0 }}"
+               aria-label="{{ sprintf('%02d:00', $saatBas) }}: {{ $islenmedi ? 'Google henüz işlemedi' : $n.' ziyaretçi' }}" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer;border-radius:3px 3px 0 0;">
+            @if($islenmedi)
+              <div style="height:100%;border:1.5px dashed #cbd5e1;border-bottom:none;border-radius:3px 3px 0 0;background:repeating-linear-gradient(135deg,#f8fafc 0 4px,#eef2f7 4px 8px);"></div>
+            @elseif($n === 0)
+              <div style="height:3px;background:#d1d5db;"></div>
+            @else
+              @foreach($s24 as $s => $x)
+                @if(($x['saat'][$k] ?? 0) > 0)<div title="{{ $s }}: {{ $x['saat'][$k] }} ziyaretçi" style="height:{{ round($x['saat'][$k] / $saatEnCok * 100, 1) }}%;background:{{ $renk[$s] ?? '#6b7280' }};"></div>@endif
+              @endforeach
+            @endif
           </div>
         @endforeach
       </div>
@@ -98,6 +110,15 @@
         function goster(el) {
           var detay = []; try { detay = JSON.parse(el.getAttribute('data-detay') || '[]'); } catch (e) {}
           var h = '<div style="font-weight:800;margin-bottom:4px;">' + yaz(el.getAttribute('data-baslik')) + '</div>';
+          if (el.getAttribute('data-islenmedi') === '1') {
+            h += '<div>Google bu saati henüz işlemedi.</div><div style="color:#cbd5e1;">2–3 saat içinde dolar.</div>';
+            kutu.innerHTML = h; kutu.style.display = 'block';
+            var kr0 = kap.getBoundingClientRect(), sr0 = el.getBoundingClientRect(), g0 = kutu.offsetWidth;
+            kutu.style.left = Math.max(0, Math.min(sr0.left - kr0.left + sr0.width / 2 - g0 / 2, kr0.width - g0)) + 'px';
+            if (secili) { secili.style.outline = ''; }
+            secili = el; el.style.outline = '2px solid #111827';
+            return;
+          }
           detay.forEach(function (d) {
             h += '<div style="display:flex;align-items:center;gap:7px;"><span style="width:10px;height:10px;border-radius:2px;flex:none;background:' + d[1] + ';"></span>'
               + '<span style="flex:1;">' + yaz(d[0]) + '</span><b>' + d[2] + '</b></div>';

@@ -9203,6 +9203,25 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->actingAsAdminForStats()->get('/admin')->assertOk()->assertSee('Son 24 saat:')->assertSee('1.234');
     }
 
+    // 18 Kasım 2026: saatlik grafik şu anki saate kadar uzanır; Google'ın henüz işlemediği saatler "henüz işlenmedi" görünür.
+    public function test_son_24_saat_penceresi_simdiye_kadar_islenmeyen_saatler_isaretli(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-11-18 11:47', config('app.timezone')));
+        $satir = fn ($saat, $host, $n) => [$saat, $host, 'Turkey', $n, $n, $n, $n * 2, $n * 30];
+        $this->mock(\App\Services\GoogleVeriServisi::class, fn ($m) => $m->shouldReceive('rapor')->andReturn([
+            $satir('2026111712', 'bakimevleri.com', 5),
+            $satir('2026111808', 'bakimevleri.com', 4),
+            $satir('2026111809', 'bakimeviara.com', 2),
+        ]));
+        $v = app(\App\Support\AnalitikPanelVerisi::class)->cekSon24();
+        $this->assertEquals('2026111712', $v['bas']);
+        $this->assertSame('2026111809', $v['son']);
+        $this->assertSame(1, $v['gecikme']);
+        $this->assertArrayHasKey('2026111811', $v['siteler']['bakimevleri.com']['saat']);
+        $this->assertSame(9, $v['siteler']['bakimevleri.com']['kisi']);   // 17.11 12:00 – 18.11 12:00
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
     // 1 Kasım 2026: gerçek ziyaretçi sayacı ayrı tutulur; bot dahil sayaç korunur.
     public function test_gercek_ziyaretci_sayaci(): void
     {

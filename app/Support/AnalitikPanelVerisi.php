@@ -124,7 +124,9 @@ class AnalitikPanelVerisi
                 $sonSaat = $r[0];
             }
         }
-        $bitis = $sonSaat ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone')) : now()->startOfHour();
+        // 18 Kasım 2026: pencere her zaman şu anki saatte biter; Google'ın henüz işlemediği saatler
+        // grafikte "henüz işlenmedi" olarak gösterilir (önceden hiç çizilmiyordu, veri donmuş sanılıyordu).
+        $bitis = now()->startOfHour();
         $saatler = [];
         for ($i = 23; $i >= 0; $i--) {
             $saatler[$bitis->copy()->subHours($i)->format('YmdH')] = 0;
@@ -153,7 +155,7 @@ class AnalitikPanelVerisi
             $siteler[$h]['saat'][$saat] += $r[3];
         }
         $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'son' => $sonSaat ?? $bitis->format('YmdH'),
-            'gecikme' => (int) floor($bitis->copy()->addHour()->diffInHours(now(), true)), 'siteler' => $siteler];
+            'gecikme' => $sonSaat ? max(0, (int) floor(\Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone'))->addHour()->diffInHours(now(), true))) : null, 'siteler' => $siteler];
         Cache::forever('google_son24', $veri);
 
         return $veri;
