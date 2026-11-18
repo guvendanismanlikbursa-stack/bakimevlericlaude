@@ -160,7 +160,8 @@
       {{-- 18 Kasım 2026: iki kaynak ayrı yazılır (Search Console tıklaması / Analytics kişi), ayrıntı İstatistikler sayfasında. --}}
       <span style="font-weight:800;">Son 24 saat:</span>
       @foreach($son24['siteler'] as $s => $x)
-        <span>{{ $s }}: @if(($x['tik'] ?? null) !== null)<b>{{ number_format($x['tik'], 0, ',', '.') }}</b> Google tıklaması · @endif<b>{{ number_format($x['kisi'], 0, ',', '.') }}</b> kişi</span>
+        @php $ortakVar = ! empty($son24['kanal_var']) && ! empty($son24['ortak_son']); @endphp
+        <span>{{ $s }}: @if(($x['tik'] ?? null) !== null)<b>{{ number_format($ortakVar ? ($x['o_tik'] ?? $x['tik']) : $x['tik'], 0, ',', '.') }}</b> Google tıklaması · @endif<b>{{ number_format($ortakVar ? ($x['o_giris'] ?? $x['kisi']) : $x['kisi'], 0, ',', '.') }}</b> {{ $ortakVar ? 'giriş' : 'kişi' }}</span>
       @endforeach
     </div>
   @endif

@@ -74,9 +74,14 @@ class AnalitikPanelVerisi
             'ozet' => $this->rapor(['dateRanges' => $iki, 'dimensions' => [['name' => 'hostName']], 'metrics' => $m(self::OZET), 'limit' => 50]),
             'toplam' => $this->rapor(['dateRanges' => $iki, 'metrics' => $m(self::OZET)]),
             // 16 Kasım 2026: GA saatleri fiilen ABD Pasifik saatinde (bkz. config/services.php) → günlük grafik saat saat çekilip
-            // Türkiye gününe göre toplanır (hazirla()). Ziyaretçi = saatlik tekil ziyaretçilerin toplamı (aynı kişi iki farklı saatte gelirse iki sayılır).
-            'gunluk' => $this->rapor(['dateRanges' => [['startDate' => now()->subDays($gun + 1)->toDateString(), 'endDate' => $son]],
-                'dimensions' => [['name' => 'dateHour'], ['name' => 'hostName']], 'metrics' => $m(['activeUsers', 'engagedSessions']), 'limit' => 100000]),
+            // Türkiye gününe göre toplanır (hazirla()).
+            // 18 Kasım 2026 (istatistik denetimi): eskiden saatlik "kişi" toplanıyordu - aynı kişi gün içinde birkaç saatte
+            // gelince birkaç kez sayılıyor, grafik toplamı üstteki Ziyaretçi kartını aşıyordu. Artık ZİYARET (oturum) sayılır;
+            // oturum saatlere bölünmez, toplamı doğrudur ve üstteki "Ziyaret" kartıyla tutar.
+            // Saatlik veride saat sınırını geçen ziyaret iki saatte de sayılıyordu (7 günde kart 1.942, grafik 2.063);
+            // bu yüzden günlük veri doğrudan Google'ın günlük kırılımından alınır, toplamı kartla aynı aralıktır.
+            'gunluk' => $this->rapor(['dateRanges' => $bir,
+                'dimensions' => [['name' => 'date'], ['name' => 'hostName']], 'metrics' => $m(['sessions', 'engagedSessions']), 'limit' => 100000]),
             'kanal' => $hostlu('sessionDefaultChannelGroup', ['sessions', 'engagedSessions', 'activeUsers'], 200),
             'kaynak' => $hostlu('sessionSourceMedium', ['sessions', 'engagedSessions', 'activeUsers'], 300),
             'sehir' => $hostlu('city', ['activeUsers', 'engagedSessions'], 500),
@@ -186,7 +191,40 @@ class AnalitikPanelVerisi
                 $scSon = $x['tik_son'];
             }
         }
-        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
+        // 18 Kasım 2026: kullanıcının şikâyeti - "Google'dan 35 tıklama, siteye giren 54 kişi, nasıl oluyor?".
+        // Gerçek sebep: (1) iki sayı farklı saatleri kapsıyordu (Analytics 2 saat daha ileri), (2) Analytics sayısı
+        // Google dışı girişleri de (Bing/Yandex, doğrudan, yapay zekâ) içeriyordu. Artık kart sayıları İKİ kaynağın da
+        // yayınladığı son saate kadar (ortak pencere) hesaplanır ve siteye girişler kaynağına göre ayrılır.
+        // Ölçüm (18 Kasım 2026, canlı veri): Search Console'un KESİNLEŞTİRDİĞİ saatlerde iki kaynak birebir tutuyor
+        // (ör. 30 tıklama / 29 Google girişi, 52 / 52). Fark yalnız Google'ın hâlâ saydığı son saatlerden geliyordu;
+        // bu yüzden kart sayıları Search Console'un kesinleştirdiği son saate kadar hesaplanır.
+        $scKesinSon = $scEksik ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $scEksik, config('app.timezone'))->subHour()->format('YmdH') : $scSon;
+        $ortakSon = $sonSaat ? min(array_filter([$sonSaat, $scSon, $scKesinSon])) : null;
+        $kanalSatir = [];
+        try {
+            $kanalSatir = $this->g->rapor(['dateRanges' => [['startDate' => '3daysAgo', 'endDate' => 'today']],
+                'dimensions' => [['name' => 'dateHour'], ['name' => 'hostName'], ['name' => 'country'], ['name' => 'sessionDefaultChannelGroup']],
+                'metrics' => [['name' => 'sessions']], 'limit' => 20000]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+        foreach ($siteler as $h => $x) {
+            $siteler[$h]['o_tik'] = $x['tik'] === null ? null : array_sum(array_filter($x['tik_saat'], fn ($k) => (string) $k <= (string) $ortakSon, ARRAY_FILTER_USE_KEY));
+            $siteler[$h]['o_giris'] = 0;
+            $siteler[$h]['o_kanal'] = ['arama' => 0, 'dogrudan' => 0, 'diger' => 0];
+        }
+        foreach ($kanalSatir as $r) {
+            [$saat, $host, $ulke, $kanal, $oturum] = $r;
+            $saat = self::gaSaati($saat)->format('YmdH');
+            $h = self::host($host);
+            if (! $h || $saat < $ilk || ! $ortakSon || $saat > $ortakSon || in_array($ulke, self::HARIC_ULKELER, true)) {
+                continue;
+            }
+            $tur = $kanal === 'Organic Search' ? 'arama' : ($kanal === 'Direct' ? 'dogrudan' : 'diger');
+            $siteler[$h]['o_giris'] += (int) $oturum;
+            $siteler[$h]['o_kanal'][$tur] += (int) $oturum;
+        }
+        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'ortak_son' => $ortakSon, 'kanal_var' => $kanalSatir !== [], 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
             'gecikme' => $sonSaat ? max(0, (int) floor(\Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone'))->addHour()->diffInHours(now(), true))) : null, 'siteler' => $siteler];
         Cache::forever('google_son24', $veri);
 
@@ -308,7 +346,9 @@ class AnalitikPanelVerisi
                 $q = $r['keys'][0];
                 $sorgular[$q]['tiklama'] = ($sorgular[$q]['tiklama'] ?? 0) + $r['clicks'];
                 $sorgular[$q]['gosterim'] = ($sorgular[$q]['gosterim'] ?? 0) + $r['impressions'];
-                $sorgular[$q]['sira'] = min($sorgular[$q]['sira'] ?? 999, $r['position']);
+                // 18 Kasım 2026 (denetim): birden çok sitede çıkan kelimede sıra, en iyi site değil gösterime göre ağırlıklı ortalama.
+                $sorgular[$q]['sira_top'] = ($sorgular[$q]['sira_top'] ?? 0) + $r['position'] * $r['impressions'];
+                $sorgular[$q]['sira'] = $sorgular[$q]['gosterim'] > 0 ? $sorgular[$q]['sira_top'] / $sorgular[$q]['gosterim'] : $r['position'];
             }
         }
         ksort($scGunluk);

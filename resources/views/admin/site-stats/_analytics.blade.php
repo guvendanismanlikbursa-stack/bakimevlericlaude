@@ -38,6 +38,8 @@
     $s24Bas = isset($son24['bas']) ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $son24['bas']) : null;
     $s24Bitis = $s24Bas ? $s24Bas->copy()->addHours(24) : null;
     $scVar = ! empty($son24['sc_var']);
+    // 18 Kasım 2026: kart sayıları iki kaynağın da yayınladığı son saate kadar (ortak pencere) - bkz. AnalitikPanelVerisi::cekSon24.
+    $ortak = ! empty($son24['kanal_var']) && ! empty($son24['ortak_son']);
     $saatBicim = fn ($k) => $k ? substr($k, 8, 2).':00' : '—';
     $sonrakiSaat = fn ($k) => $k ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $k)->addHour()->format('H:00') : '—';
     // Her grafik: [kimlik, başlık, açıklama, saat anahtarı, gelen son saat, kesinleşmemiş ilk saat]
@@ -51,12 +53,16 @@
     <h2 style="{{ $h2 }}">🕒 Son 24 Saat</h2>
     <p style="{{ $acik }}">@if($s24Bas && $s24Bitis){{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
       Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir). Hong Kong/Çin bot trafiği sayılmaz.</p>
+    @if($ortak && $s24Bas)
+      <p style="font-size:12.5px;color:#374151;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:8px 12px;margin:0 0 12px;">Kartlardaki sayılar <b>{{ $s24Bas->format('d.m H:00') }} – {{ $sonrakiSaat($son24['ortak_son']) }}</b> arasını kapsar: Google'ın tıklamaları <b>kesinleştirdiği</b> son saate kadar. Böylece tıklama ve giriş <b>aynı saatler</b> için karşılaştırılır. Daha yeni saatler aşağıdaki grafiklerde.</p>
+    @endif
 
     <details style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;margin-bottom:14px;">
       <summary style="cursor:pointer;font-size:13.5px;font-weight:800;color:#0b5d8c;">Bu rakamlar nereden geliyor, neden farklı?</summary>
       <div style="font-size:13px;color:#374151;line-height:1.65;margin-top:8px;">
         @if($scVar)<div style="margin-bottom:6px;"><b>🔍 Google'dan tıklama</b> — kaynak <b>Google Search Console</b>. Google aramasında sitemize kaç kez tıklandığı. Search Console ekranında gördüğünüz rakamla <b>aynı kaynaktır</b>. SEO başarısını bu ölçer.</div>@endif
-        <div style="margin-bottom:6px;"><b>👤 Siteye giren kişi</b> — kaynak <b>Google Analytics</b>. Siteye girip ölçüme izin veren kişi sayısı (Google, sosyal medya, doğrudan giriş hepsi dahil). Çerezi reddedenler ve reklam engelleyici kullananlar sayılmaz; bu yüzden <b>gerçek sayıdan düşüktür</b>, tıklama sayısından da az çıkabilir. Hangi sayfalara bakıldığını, form ve telefon tıklamalarını bu gösterir.</div>
+        <div style="margin-bottom:6px;"><b>👤 Siteye giriş</b> — kaynak <b>Google Analytics</b>. Siteye yapılan ziyaretlerin tamamı: Google'dan gelenler <b>ve</b> Bing/Yandex, doğrudan adres yazanlar, yapay zekâ asistanları, başka siteler. Bu yüzden Google tıklamasından <b>fazla</b> çıkabilir; altında kaynağına göre ayrılmış hali yazar. Çerezi reddedenler sayılmadığı için arama motorundan gelen giriş, Google tıklamasından <b>az</b> da çıkabilir.</div>
+        <div style="margin-bottom:6px;">Karşılaştırma doğru olsun diye kartlardaki iki sayı da <b>aynı saatleri</b> kapsar: Google'ın tıklamaları kesinleştirdiği son saate kadar. Bu saatlerde Google tıklaması ile Google'dan gelen giriş birbirine çok yakındır; giriş biraz az çıkarsa sebep çerezi reddeden ziyaretçilerdir.</div>
         @if($scVar)<div style="margin-bottom:6px;"><b>👁 Google'da görünme</b> — sitemizin arama sonuçlarında <b>listelenme</b> sayısı. Ziyaretçi değildir; arananlarda ne kadar göründüğümüzü gösterir.</div>@endif
         <div style="color:#6b7280;">Google iki kaynağı da 2–3 saat geriden gönderir. Henüz gelmeyen saatler grafikte gri kesikli kutu olarak görünür.</div>
       </div>
@@ -68,10 +74,17 @@
           <div style="font-size:13px;font-weight:800;color:#374151;">{{ $s }}</div>
           <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:6px;">
             @if($scVar)
-              <div><div style="font-size:26px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};line-height:1.1;">{{ ($x['tik'] ?? null) === null ? '—' : $sayi($x['tik']) }}</div><div style="font-size:12px;color:#6b7280;">🔍 Google'dan tıklama</div></div>
+              <div><div style="font-size:26px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};line-height:1.1;">{{ ($x['tik'] ?? null) === null ? '—' : $sayi($ortak ? ($x['o_tik'] ?? $x['tik']) : $x['tik']) }}</div><div style="font-size:12px;color:#6b7280;">🔍 Google'dan tıklama</div></div>
             @endif
-            <div><div style="font-size:26px;font-weight:900;color:#374151;line-height:1.1;">{{ $sayi($x['kisi']) }}</div><div style="font-size:12px;color:#6b7280;">👤 siteye giren kişi</div></div>
+            @if($ortak)
+              <div><div style="font-size:26px;font-weight:900;color:#374151;line-height:1.1;">{{ $sayi($x['o_giris']) }}</div><div style="font-size:12px;color:#6b7280;">👤 siteye giriş (tüm kaynaklar)</div></div>
+            @else
+              <div><div style="font-size:26px;font-weight:900;color:#374151;line-height:1.1;">{{ $sayi($x['kisi']) }}</div><div style="font-size:12px;color:#6b7280;">👤 siteye giren kişi</div></div>
+            @endif
           </div>
+          @if($ortak)
+            <div style="font-size:12px;color:#4b5563;margin-top:4px;">Girişlerin kaynağı: <b>{{ $sayi($x['o_kanal']['arama']) }}</b> arama motoru (Google, Bing, Yandex) · <b>{{ $sayi($x['o_kanal']['dogrudan']) }}</b> doğrudan · <b>{{ $sayi($x['o_kanal']['diger']) }}</b> diğer</div>
+          @endif
           <div style="font-size:12.5px;color:#4b5563;line-height:1.7;margin-top:6px;">
             @if($scVar && ($x['gos'] ?? null) !== null)👁 Google'da görünme: <b>{{ $sayi($x['gos']) }}</b><br>@endif
             Bakılan sayfa: <b>{{ $sayi($x['sayfa']) }}</b> · Ort. süre: <b>{{ $x['kisi'] ? $sure($x['sure'] / $x['kisi']) : '—' }}</b> · İlgi: <b>{{ $x['oturum'] ? $yuzde($x['etk'] / $x['oturum']) : '—' }}</b>
@@ -264,12 +277,14 @@
   {{-- Günlük grafik --}}
   <div style="{{ $kart }}">
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
-      <h2 style="{{ $h2 }}">Günlük Ziyaretçi</h2>
+      <h2 style="{{ $h2 }}">Günlük Ziyaret</h2>
       <div style="display:inline-flex;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;" id="gunluk-secim">
         <button type="button" data-m="etk" style="{{ $sec(true) }}border:0;cursor:pointer;">Etkileşimli ziyaret</button>
-        <button type="button" data-m="kisi" style="{{ $sec(false) }}border:0;cursor:pointer;">Ziyaretçi</button>
+        <button type="button" data-m="kisi" style="{{ $sec(false) }}border:0;cursor:pointer;">Tüm ziyaretler</button>
       </div>
     </div>
+    {{-- 18 Kasım 2026 (denetim): grafik ziyaret sayar; günlerin toplamı üstteki "Ziyaret (oturum)" kartıyla aynıdır. --}}
+    <p style="{{ $acik }}margin:8px 0 0;">Her gün siteye yapılan ziyaret sayısı (Türkiye saatine göre). Günlerin toplamı üstteki <b>Ziyaret</b> ve <b>Etkileşimli ziyaret</b> kartlarıyla aynıdır.</p>
     <div style="height:280px;margin-top:12px;"><canvas id="ga-gunluk"></canvas></div>
   </div>
 
