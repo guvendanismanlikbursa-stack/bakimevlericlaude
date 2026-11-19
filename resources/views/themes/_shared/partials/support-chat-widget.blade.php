@@ -33,7 +33,8 @@
 </button>
 
 <div id="js-chat-menu" role="dialog" aria-modal="true" aria-label="Sohbet secenekleri" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-  <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Size nasıl yardımcı olabiliriz?</div>
+  {{-- 19 Kasım 2026: kullanıcının talebi - açılan pencerelerde kapatma (×) olsun; formu doldurmadan çıkmak isteyen çıkamıyordu. --}}
+  <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>Size nasıl yardımcı olabiliriz?</span><button type="button" class="js-chat-mini-close" style="flex-shrink:0;margin:-4px -6px -4px 0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9999px;color:#fff;font-size:24px;line-height:1;background:rgba(255,255,255,.12);" aria-label="Kapat" title="Kapat">×</button></div>
   {{-- 30 Eylul 2026: kullanicinin talebi - "Sohbet"/"Dertlesme"/"Fikir"
        secenekleri kafa karistiriyordu, sadece 2 net secenek kaldi. --}}
   <div class="p-2">
@@ -55,7 +56,7 @@
 </div>
 
 <div id="js-chat-identity" role="dialog" aria-modal="true" aria-label="Nasil hitap edelim" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-  <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};">Size nasıl hitap edelim?</div>
+  <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>Size nasıl hitap edelim?</span><button type="button" class="js-chat-mini-close" style="flex-shrink:0;margin:-4px -6px -4px 0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9999px;color:#fff;font-size:24px;line-height:1;background:rgba(255,255,255,.12);" aria-label="Kapat" title="Kapat">×</button></div>
   {{-- 30 Eylul 2026: kullanicinin talebi - "bu botu kullanmak icin uyelik/
        giris yapmis olmak gerekmemeli". "Google ile devam et" ISTEGE BAGLI
        olsa da bir giris adimi gibi goruldugu icin PASIFE ALINDI (silinmedi -
@@ -189,9 +190,14 @@
     toggleBtn.focus();
   });
 
+  document.querySelectorAll('.js-chat-mini-close').forEach(function (b) {
+    b.addEventListener('click', function () { hideAllPanels(); toggleBtn.focus(); });
+  });
+
   toggleBtn.addEventListener('click', function () {
     if (!panelEl.classList.contains('hidden')) { hideAllPanels(); if (state.threadId) startPolling(); return; }
-    if (!menuEl.classList.contains('hidden')) { hideAllPanels(); return; }
+    // 19 Kasım 2026: isim/yaş penceresi açıkken yeşil ikona basmak da pencereyi kapatır (önceden menüyü açıyordu).
+    if (!menuEl.classList.contains('hidden') || !identityEl.classList.contains('hidden') || !genderEl.classList.contains('hidden')) { hideAllPanels(); return; }
 
     var savedToken = localStorage.getItem(storageKey);
     var savedIntent = localStorage.getItem(intentStorageKey);
@@ -222,15 +228,16 @@
   document.querySelectorAll('.js-intent-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       state.selectedIntent = btn.getAttribute('data-intent');
+      // 19 Kasım 2026: kullanıcının talebi - "Kiminle görüşmek istersiniz? (Bay/Bayan)" adımı kaldırıldı;
+      // canı sıkılan erkekler sohbet etmek için yazıyordu. Doğrudan isim/yaş adımına (ya da sohbete) geçilir.
+      // Seçim ekranı (#js-chat-gender) HTML'de gizli duruyor ama artık hiç açılmıyor.
+      state.selectedGender = null;
       hideAllPanels();
-      genderEl.classList.remove('hidden');
+      sohbeteGec();
     });
   });
 
-  document.querySelectorAll('.js-gender-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      state.selectedGender = btn.getAttribute('data-gender');
-      hideAllPanels();
+  function sohbeteGec() {
 
       // Bu tarayicida daha once hic sohbet baslatilmamissa (guest_token yok)
       // isim/yas sormadan devam edilemez - zaten taniyorsak (donen misafir)
@@ -243,8 +250,7 @@
       } else {
         startThread(state.guestToken, state.selectedIntent, state.selectedGender, null, null);
       }
-    });
-  });
+  }
 
   // 30 Eylul 2026: kullanicinin talebi - Google ile giris butonu pasife
   // alindi (HTML'den Blade yorumuna alindi, DOM'da yok), bu yuzden asagidaki
