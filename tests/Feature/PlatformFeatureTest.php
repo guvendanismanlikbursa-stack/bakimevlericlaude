@@ -2638,6 +2638,22 @@ class PlatformFeatureTest extends TestCase
         $this->postJson('/site/bakimeviara/destek/baslat', ['guest_token' => $tok, 'intent' => 'temsilci'])->assertOk();
     }
 
+    // 19 Kasım 2026: çerezsiz giriş sayacı - kaynağa göre saatlik sayım, botlar sayılmaz.
+    public function test_cerezsiz_giris_sayaci(): void
+    {
+        $this->post('/site/bakimeviara/giris-sayaci', ['r' => 'www.google.com.tr'])->assertNoContent();
+        $this->post('/site/bakimeviara/giris-sayaci', ['r' => 'www.google.com'])->assertNoContent();
+        $this->post('/site/bakimeviara/giris-sayaci', ['r' => ''])->assertNoContent();
+        $this->post('/site/bakimeviara/giris-sayaci', ['r' => 'l.facebook.com'])->assertNoContent();
+        $this->withHeader('User-Agent', 'Googlebot/2.1')->post('/site/bakimeviara/giris-sayaci', ['r' => 'www.google.com']);
+
+        $s = \App\Support\GirisSayaci::aralik(now()->format('YmdH'), now()->format('YmdH'));
+        $this->assertSame(['toplam' => 4, 'arama' => 2, 'dogrudan' => 1, 'diger' => 1], $s['bakimeviara.com']);
+        $this->assertSame('arama', \App\Support\GirisSayaci::kaynak('yandex.com.tr'));
+        $this->assertSame('diger', \App\Support\GirisSayaci::kaynak('chatgpt.com'));
+        $this->get('/site/bakimeviara')->assertSee('giris-sayaci', false);
+    }
+
     public function test_ip_geo_lookup_service_returns_city_for_public_ip(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'success', 'city' => 'Bursa'])]);

@@ -681,6 +681,23 @@ if (new URLSearchParams(window.location.search).has('page')) {
   } catch (e) {}
 })();
 </script>
+{{-- 19 Kasım 2026: çerezsiz giriş sayacı - siteye DIŞARIDAN girildiği anda bir kez (sayfa yenileme / geri tuşu sayılmaz).
+     Çerez ve yerel kayıt kullanmaz; yalnız nereden gelindiği (google.com gibi alan adı) sunucuya gider. --}}
+<script>
+(function () {
+  try {
+    var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+    if (nav && nav.type && nav.type !== 'navigate') return;
+    var ref = '';
+    try { ref = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
+    var kok = function (h) { return (h || '').replace(/^www\./, ''); };
+    if (ref && kok(ref) === kok(location.hostname)) return;   // site içi geçiş: giriş değil
+    var u = @json(brand_route('giris-sayaci'));
+    var f = new FormData(); f.append('r', ref);
+    if (navigator.sendBeacon) navigator.sendBeacon(u, f); else fetch(u, { method: 'POST', body: f, keepalive: true });
+  } catch (e) {}
+})();
+</script>
 
 </body>
 </html>

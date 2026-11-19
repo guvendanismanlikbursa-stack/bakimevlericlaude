@@ -199,7 +199,14 @@ class AnalitikPanelVerisi
         // (ör. 30 tıklama / 29 Google girişi, 52 / 52). Fark yalnız Google'ın hâlâ saydığı son saatlerden geliyordu;
         // bu yüzden kart sayıları Search Console'un kesinleştirdiği son saate kadar hesaplanır.
         $scKesinSon = $scEksik ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $scEksik, config('app.timezone'))->subHour()->format('YmdH') : $scSon;
-        $ortakSon = $sonSaat ? min(array_filter([$sonSaat, $scSon, $scKesinSon])) : null;
+        // 19 Kasım 2026 düzeltmesi: Search Console bazen "kesinleşmemiş ilk saat"i 1 gün öncesi olarak veriyor
+        // (ör. 18.11 11:00). O saat 24 saatlik pencerenin başından önceyse kart sayıları 0'a düşüyordu.
+        // Kesin saat pencere içinde değilse Google'ın yayınladığı son saat kullanılır.
+        $ortakKesin = $scKesinSon && (string) $scKesinSon >= (string) $ilk;
+        $ortakSon = $sonSaat ? min(array_filter([$sonSaat, $scSon, $ortakKesin ? $scKesinSon : null])) : null;
+        if ($ortakSon && (string) $ortakSon < (string) $ilk) {
+            $ortakSon = null;   // ortak pencere boş: kartlar eski (tam 24 saat) sayılara döner
+        }
         $kanalSatir = [];
         try {
             $kanalSatir = $this->g->rapor(['dateRanges' => [['startDate' => '3daysAgo', 'endDate' => 'today']],
@@ -224,7 +231,18 @@ class AnalitikPanelVerisi
             $siteler[$h]['o_giris'] += (int) $oturum;
             $siteler[$h]['o_kanal'][$tur] += (int) $oturum;
         }
-        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'ortak_son' => $ortakSon, 'kanal_var' => $kanalSatir !== [], 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
+        // 19 Kasım 2026: kendi çerezsiz giriş sayacımız, kartlarla aynı saatler için.
+        $sayacIlk = null;
+        try {
+            $sayacIlk = \App\Support\GirisSayaci::ilkSaat();
+            $sayac = $ortakSon ? \App\Support\GirisSayaci::aralik((string) $ilk, (string) $ortakSon) : [];
+            foreach ($siteler as $h => $x) {
+                $siteler[$h]['s_giris'] = $sayac[$h] ?? ['toplam' => 0, 'arama' => 0, 'dogrudan' => 0, 'diger' => 0];
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'sayac_ilk' => $sayacIlk, 'ortak_son' => $ortakSon, 'ortak_kesin' => $ortakKesin, 'kanal_var' => $kanalSatir !== [], 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
             'gecikme' => $sonSaat ? max(0, (int) floor(\Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone'))->addHour()->diffInHours(now(), true))) : null, 'siteler' => $siteler];
         Cache::forever('google_son24', $veri);
 
@@ -252,7 +270,7 @@ class AnalitikPanelVerisi
         return Cache::get(self::anahtar($gun)) ?? Cache::get('google_ham_'.$gun.'_son');
     }
 
-    private static function host(string $h): ?string
+    public static function host(string $h): ?string
     {
         $h = preg_replace('/^www\./', '', $h);
 

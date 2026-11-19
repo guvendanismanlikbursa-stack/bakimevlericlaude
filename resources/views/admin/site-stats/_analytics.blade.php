@@ -54,7 +54,7 @@
     <p style="{{ $acik }}">@if($s24Bas && $s24Bitis){{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
       Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir). Hong Kong/Çin bot trafiği sayılmaz.</p>
     @if($ortak && $s24Bas)
-      <p style="font-size:12.5px;color:#374151;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:8px 12px;margin:0 0 12px;">Kartlardaki sayılar <b>{{ $s24Bas->format('d.m H:00') }} – {{ $sonrakiSaat($son24['ortak_son']) }}</b> arasını kapsar: Google'ın tıklamaları <b>kesinleştirdiği</b> son saate kadar. Böylece tıklama ve giriş <b>aynı saatler</b> için karşılaştırılır. Daha yeni saatler aşağıdaki grafiklerde.</p>
+      <p style="font-size:12.5px;color:#374151;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:8px 12px;margin:0 0 12px;">Kartlardaki sayılar <b>{{ $s24Bas->format('d.m H:00') }} – {{ $sonrakiSaat($son24['ortak_son']) }}</b> arasını kapsar: Google'ın tıklamaları @if($son24['ortak_kesin'] ?? true)<b>kesinleştirdiği</b> son saate kadar.@else yayınladığı son saate kadar (Google bu saatleri henüz kesinleştirmedi, tıklama sayısı biraz artabilir).@endif Böylece tıklama ve giriş <b>aynı saatler</b> için karşılaştırılır. Daha yeni saatler aşağıdaki grafiklerde.</p>
     @endif
 
     <details style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;margin-bottom:14px;">
@@ -62,6 +62,7 @@
       <div style="font-size:13px;color:#374151;line-height:1.65;margin-top:8px;">
         @if($scVar)<div style="margin-bottom:6px;"><b>🔍 Google'dan tıklama</b> — kaynak <b>Google Search Console</b>. Google aramasında sitemize kaç kez tıklandığı. Search Console ekranında gördüğünüz rakamla <b>aynı kaynaktır</b>. SEO başarısını bu ölçer.</div>@endif
         <div style="margin-bottom:6px;"><b>👤 Siteye giriş</b> — kaynak <b>Google Analytics</b>. Siteye yapılan ziyaretlerin tamamı: Google'dan gelenler <b>ve</b> Bing/Yandex, doğrudan adres yazanlar, yapay zekâ asistanları, başka siteler. Bu yüzden Google tıklamasından <b>fazla</b> çıkabilir; altında kaynağına göre ayrılmış hali yazar. Çerez bandında "Yalnızca zorunlu çerezler" seçenler ve sayfa açılır açılmaz (3 sn içinde) çıkanlar Analytics'te görünmediği için arama motorundan gelen giriş, Google tıklamasından <b>az</b> da çıkabilir.</div>
+        <div style="margin-bottom:6px;"><b>📊 Kendi sayacımız</b> — kaynak <b>bizim sunucumuz</b>. Ziyaretçi siteye dışarıdan (Google, doğrudan adres, başka site) girdiği anda bir kez sayılır. Çerez kullanmaz, kimseyi tanımaz; bu yüzden çerezi kabul etmeyenleri ve 3 saniyeden önce çıkanları da sayar. Botlar (bot kalkanı) sayılmaz. Arama motorundan gelen giriş sayısının Google tıklamasına yakın çıkması beklenir.</div>
         <div style="margin-bottom:6px;">Karşılaştırma doğru olsun diye kartlardaki iki sayı da <b>aynı saatleri</b> kapsar: Google'ın tıklamaları kesinleştirdiği son saate kadar. Bu saatlerde Google tıklaması ile Google'dan gelen giriş birbirine çok yakındır; giriş biraz az çıkarsa sebep "Yalnızca zorunlu çerezler" seçen ya da sayfayı hemen kapatan ziyaretçilerdir.</div>
         @if($scVar)<div style="margin-bottom:6px;"><b>👁 Google'da görünme</b> — sitemizin arama sonuçlarında <b>listelenme</b> sayısı. Ziyaretçi değildir; arananlarda ne kadar göründüğümüzü gösterir.</div>@endif
         <div style="color:#6b7280;">Google iki kaynağı da 2–3 saat geriden gönderir. Henüz gelmeyen saatler grafikte gri kesikli kutu olarak görünür.</div>
@@ -84,6 +85,12 @@
           </div>
           @if($ortak)
             <div style="font-size:12px;color:#4b5563;margin-top:4px;">Girişlerin kaynağı: <b>{{ $sayi($x['o_kanal']['arama']) }}</b> arama motoru (Google, Bing, Yandex) · <b>{{ $sayi($x['o_kanal']['dogrudan']) }}</b> doğrudan · <b>{{ $sayi($x['o_kanal']['diger']) }}</b> diğer</div>
+            {{-- 19 Kasım 2026: kendi çerezsiz giriş sayacımız (Analytics'in göremediği girişler dahil). --}}
+            @if(isset($x['s_giris']) && ! empty($son24['sayac_ilk']))
+              <div style="font-size:12.5px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:6px 10px;margin-top:6px;">📊 Kendi sayacımız: <b>{{ $sayi($x['s_giris']['toplam']) }}</b> giriş · <b>{{ $sayi($x['s_giris']['arama']) }}</b> arama motoru · <b>{{ $sayi($x['s_giris']['dogrudan']) }}</b> doğrudan · <b>{{ $sayi($x['s_giris']['diger']) }}</b> diğer
+                @if((string) $son24['sayac_ilk'] > (string) ($son24['bas'] ?? ''))<br><span style="color:#6b7280;">Sayaç {{ \Illuminate\Support\Carbon::createFromFormat('YmdH', (string) $son24['sayac_ilk'])->format('d.m H:00') }}'dan beri sayıyor; ilk 24 saat dolana kadar bu sayı eksik görünür.</span>@endif
+              </div>
+            @endif
           @endif
           <div style="font-size:12.5px;color:#4b5563;line-height:1.7;margin-top:6px;">
             @if($scVar && ($x['gos'] ?? null) !== null)👁 Google'da görünme: <b>{{ $sayi($x['gos']) }}</b><br>@endif

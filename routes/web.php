@@ -126,6 +126,19 @@ $siteRoutes = function () {
 
         return response()->noContent();
     })->middleware('throttle:public-browse')->name('site-visit.beacon');
+    // 19 Kasım 2026: çerezsiz giriş sayacı - ziyaretçi siteye dışarıdan girdiği anda bir kez (bkz. App\Support\GirisSayaci).
+    Route::post('/giris-sayaci', function (\Illuminate\Http\Request $request) {
+        $site = \App\Support\AnalitikPanelVerisi::host((string) (current_brand()['domains'][0] ?? ''));
+        if ($site && ! session('admin_id') && ! preg_match('/bot|crawl|spider|headless|python|curl|wget|scrapy|lighthouse|phantom|selenium|preview/i', (string) $request->userAgent())) {
+            try {
+                \App\Support\GirisSayaci::kaydet($site, \App\Support\GirisSayaci::kaynak(substr((string) $request->input('r'), 0, 120)));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return response()->noContent();
+    })->middleware('throttle:public-browse')->name('giris-sayaci');
     // 25 Ekim 2026: Doktorlar bölümü arama motoru sayfaları - il / ilçe / branş açılışları ve doktor profili.
     Route::get('/uzmanlar/{il}/{a?}/{b?}', [\App\Http\Controllers\Public\ExpertSeoController::class, 'liste'])->where(['il' => '[a-z0-9-]+', 'a' => '[a-z0-9-]+', 'b' => '[a-z0-9-]+'])->middleware('throttle:public-browse')->name('experts.landing');
     Route::get('/doktor/{slug}', [\App\Http\Controllers\Public\ExpertSeoController::class, 'doktor'])->where('slug', '[A-Za-z0-9-]+')->middleware('throttle:public-browse')->name('experts.show');
