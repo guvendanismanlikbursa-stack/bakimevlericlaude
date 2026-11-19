@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Admin\Concerns\RedirectsOutOfRangePagination;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\ChatBlock;
 use App\Models\ChatMessage;
 use App\Models\ChatThread;
 use App\Services\ImageCompressionService;
@@ -21,9 +22,12 @@ class ChatController extends Controller
         $city = $request->get('city');
         $intent = $request->get('intent');
         $brand = $request->get('brand');
+        // 19 Kasım 2026: anlamlı mesaj yazılmamış (boş / "selam" gibi kısa) sohbetler ayrı listede durur.
+        $kisa = $request->boolean('kisa');
 
         $threads = ChatThread::query()
             ->withCount('siblingThreads')
+            ->where('bildirildi', ! $kisa)
             ->when($status !== 'all', fn ($q) => $q->where('status', $status))
             ->when($city, fn ($q) => $q->where('city_name', $city))
             ->when($intent, fn ($q) => $q->where('intent', $intent))
@@ -39,8 +43,11 @@ class ChatController extends Controller
 
         $cities = ChatThread::whereNotNull('city_name')->distinct()->orderBy('city_name')->pluck('city_name');
         $brands = ChatThread::distinct()->orderBy('brand')->pluck('brand');
+        $kisaSayisi = ChatThread::where('bildirildi', false)->where('created_at', '>=', now()->subDays(30))->count();
+        $engelliTokenlar = ChatBlock::whereIn('guest_token', $threads->pluck('guest_token')->filter())->pluck('guest_token')->all();
+        $engelliTelefonlar = ChatBlock::whereIn('phone', $threads->pluck('guest_phone')->filter())->pluck('phone')->all();
 
-        return view('admin.chat.index', compact('threads', 'status', 'city', 'intent', 'brand', 'cities', 'brands'));
+        return view('admin.chat.index', compact('threads', 'status', 'city', 'intent', 'brand', 'cities', 'brands', 'kisa', 'kisaSayisi', 'engelliTokenlar', 'engelliTelefonlar'));
     }
 
     public function show(ChatThread $thread)
@@ -58,7 +65,41 @@ class ChatController extends Controller
             ->orderByDesc('last_message_at')
             ->get();
 
-        return view('admin.chat.show', compact('thread', 'siblingThreads', 'alindi'));
+        $engelli = ChatBlock::engelliMi($thread->guest_token, $thread->guest_phone);
+
+        return view('admin.chat.show', compact('thread', 'siblingThreads', 'alindi', 'engelli'));
+    }
+
+    // 19 Kasım 2026: kullanıcının talebi - rahatsız eden ziyaretçi tek tıkla engellenir: o tarayıcıdan ve o
+    // telefon numarasıyla bir daha sohbet açamaz/mesaj gönderemez. Açık sohbetleri kapatılır.
+    public function block(ChatThread $thread)
+    {
+        ChatBlock::create([
+            'guest_token' => $thread->guest_token,
+            'phone' => $thread->guest_phone,
+            'chat_thread_id' => $thread->id,
+            'admin_id' => session('admin_id'),
+        ]);
+        ChatThread::where(function ($q) use ($thread) {
+            $q->where('guest_token', $thread->guest_token);
+            if ($thread->guest_phone) {
+                $q->orWhere('guest_phone', $thread->guest_phone);
+            }
+        })->update(['status' => 'closed', 'unread_by_admin' => false]);
+
+        return back()->with('success', 'Ziyaretçi engellendi. Bu tarayıcıdan ve bu telefon numarasıyla bir daha sohbet açamaz.');
+    }
+
+    public function unblock(ChatThread $thread)
+    {
+        ChatBlock::where(function ($q) use ($thread) {
+            $q->where('guest_token', $thread->guest_token);
+            if ($thread->guest_phone) {
+                $q->orWhere('phone', $thread->guest_phone);
+            }
+        })->delete();
+
+        return back()->with('success', 'Engel kaldırıldı.');
     }
 
     public function reply(Request $request, ChatThread $thread)

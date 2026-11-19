@@ -18,13 +18,31 @@
       </h1>
       <div class="text-sm text-gray-500 mt-1">
         {{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }}
-        · Tercih: {{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }}
-        · Şehir: {{ $thread->city_name ?? '—' }}
+        @if($thread->looking_for) · Arıyor: <b>{{ \App\Models\ChatThread::ARANANLAR[$thread->looking_for] ?? $thread->looking_for }}</b>@endif
+        · Şehir: {{ $thread->city_name ?? '—' }}{{ $thread->guest_age ? ' · Yaş: '.$thread->guest_age : '' }}
         · İlgilenen: {{ $thread->assignedAdmin->name ?? '—' }}
       </div>
+      @if($thread->guest_phone)
+        <div style="font-size:14px;margin-top:4px;">📞 <a href="tel:{{ $thread->guest_phone }}" style="font-weight:800;color:#1d4ed8;">{{ $thread->guest_phone }}</a>
+          · <a href="https://wa.me/9{{ $thread->guest_phone }}" target="_blank" rel="noopener" style="font-weight:700;color:#15803d;">WhatsApp</a></div>
+      @endif
     </div>
   </div>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+    {{-- 19 Kasım 2026: kullanıcının talebi - rahatsız eden ziyaretçiyi tek tıkla engelle. --}}
+    @if($engelli)
+      <span style="background:#fee2e2;color:#b91c1c;font-size:13px;font-weight:800;padding:8px 12px;border-radius:10px;">🚫 Engelli</span>
+      <form method="POST" action="{{ route('admin.chat.unblock', $thread) }}" onsubmit="return confirm('Bu ziyaretçinin engelini kaldırmak istediğinize emin misiniz?');">
+        @csrf
+        @method('DELETE')
+        <button style="font-size:13px;color:#374151;border:1px solid #d1d5db;border-radius:10px;padding:8px 12px;background:#fff;">Engeli kaldır</button>
+      </form>
+    @else
+      <form method="POST" action="{{ route('admin.chat.block', $thread) }}" onsubmit="return confirm('Bu ziyaretçi engellensin mi? Bu tarayıcıdan ve bu telefon numarasıyla bir daha sohbet açamaz.');">
+        @csrf
+        <button style="font-size:13px;color:#fff;background:#111827;border-radius:10px;padding:8px 12px;font-weight:700;">🚫 Engelle</button>
+      </form>
+    @endif
     @if($thread->status !== 'closed')
       <form method="POST" action="{{ route('admin.chat.close', $thread) }}" onsubmit="return confirm('Bu sohbeti kapatmak istediğinize emin misiniz?');">
         @csrf

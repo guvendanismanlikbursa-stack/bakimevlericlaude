@@ -663,6 +663,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/canli-sohbet/{thread}/yanitla', [AdminChatController::class, 'reply'])->name('chat.reply');
         Route::get('/canli-sohbet/{thread}/mesajlar', [AdminChatController::class, 'poll'])->name('chat.poll');
         Route::post('/canli-sohbet/{thread}/kapat', [AdminChatController::class, 'close'])->name('chat.close');
+        // 19 Kasım 2026: rahatsız eden ziyaretçiyi engelle / engeli kaldır.
+        Route::post('/canli-sohbet/{thread}/engelle', [AdminChatController::class, 'block'])->name('chat.block');
+        Route::delete('/canli-sohbet/{thread}/engelle', [AdminChatController::class, 'unblock'])->name('chat.unblock');
         Route::delete('/canli-sohbet/{thread}', [AdminChatController::class, 'destroy'])->name('chat.destroy');
         Route::get('/canli-sohbet-ayarlari', [AdminChatSettingsController::class, 'edit'])->name('chat-settings.edit');
         Route::put('/canli-sohbet-ayarlari', [AdminChatSettingsController::class, 'update'])->name('chat-settings.update');

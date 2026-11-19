@@ -2445,6 +2445,9 @@ class PlatformFeatureTest extends TestCase
             'operator_gender_preference' => 'kadin',
             'guest_name' => 'Ayşe',
             'guest_age' => 47,
+            'guest_phone' => '0532 111 22 33',
+            'looking_for' => 'huzurevi',
+            'guest_city' => 'İstanbul',
         ])->assertOk()->json();
 
         $this->assertNotEmpty($start['guest_token']);
@@ -2491,7 +2494,7 @@ class PlatformFeatureTest extends TestCase
     public function test_chat_thread_is_isolated_per_brand(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
-        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'] + $this->sohbetKimlik())->assertOk()->json();
 
         // Ayni thread'e baska bir marka uzerinden erisim 403 vermeli.
         $this->postJson("/site/bakimevleri/destek/{$start['thread_id']}/mesaj", [
@@ -2503,7 +2506,7 @@ class PlatformFeatureTest extends TestCase
     public function test_chat_send_rejects_wrong_guest_token(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
-        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'] + $this->sohbetKimlik())->assertOk()->json();
 
         $this->postJson("/site/bakimeviara/destek/{$start['thread_id']}/mesaj", [
             'guest_token' => 'yanlis-token',
@@ -2517,7 +2520,7 @@ class PlatformFeatureTest extends TestCase
         \App\Models\ChatWorkingHour::query()->update(['is_active' => false]);
         \App\Models\Setting::set('chat_offline_message', 'Test cevrimdisi mesaji.');
 
-        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'] + $this->sohbetKimlik())->assertOk()->json();
 
         $this->assertFalse($start['is_online']);
         $this->assertSame('Test cevrimdisi mesaji.', $start['offline_message']);
@@ -2526,16 +2529,16 @@ class PlatformFeatureTest extends TestCase
     public function test_admin_can_view_and_reply_to_chat_thread(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
-        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'])->assertOk()->json();
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'] + $this->sohbetKimlik())->assertOk()->json();
         $this->postJson("/site/bakimeviara/destek/{$start['thread_id']}/mesaj", [
             'guest_token' => $start['guest_token'],
-            'body' => 'Yardim lazim.',
+            'body' => 'Yardim lazim, fiyat bilgisi istiyorum.',
         ])->assertOk();
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/canli-sohbet')
             ->assertOk()
-            ->assertSee('Yardim lazim.', false);
+            ->assertSee('Yardim lazim, fiyat bilgisi istiyorum.', false);
 
         $this->withSession(['admin_id' => $this->admin->id])
             ->post("/admin/canli-sohbet/{$start['thread_id']}/yanitla", ['body' => 'Merhaba, yardimci oluyorum.'])
@@ -2553,7 +2556,7 @@ class PlatformFeatureTest extends TestCase
     public function test_canli_sohbet_tikleri_ve_genel_bakis_bildirimi(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
-        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci', 'guest_name' => 'Fatma'])->assertOk()->json();
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci', 'guest_name' => 'Fatma'] + $this->sohbetKimlik())->assertOk()->json();
         $tid = $start['thread_id'];
         $tok = $start['guest_token'];
         $mesaj = $this->postJson("/site/bakimeviara/destek/{$tid}/mesaj", ['guest_token' => $tok, 'body' => 'Fiyat bilgisi alabilir miyim?'])->assertOk()->json('message');
@@ -2586,6 +2589,55 @@ class PlatformFeatureTest extends TestCase
         $admin->get("/admin/canli-sohbet/{$tid}")->assertOk()->assertSee('title="Okundu"', false);
     }
 
+    /** 19 Kasım 2026: sohbet başlatmak için zorunlu bilgiler (telefon, ne aradığı, şehir). */
+    private function sohbetKimlik(string $telefon = '05321112233'): array
+    {
+        return ['guest_name' => 'Ziyaretçi', 'guest_age' => 40, 'guest_phone' => $telefon, 'looking_for' => 'huzurevi', 'guest_city' => 'İstanbul'];
+    }
+
+    // 19 Kasım 2026: kullanıcının talebi - telefon zorunlu, kısa mesaj bildirim göndermez, admin engelleyebilir.
+    public function test_sohbet_telefon_zorunlu_kisa_mesaj_bildirimsiz_ve_engelleme(): void
+    {
+        Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
+
+        // Telefonsuz / geçersiz telefonla sohbet açılmaz.
+        $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'])->assertStatus(422)->assertJson(['kimlik_gerekli' => true]);
+        $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'] + $this->sohbetKimlik('12345'))->assertStatus(422);
+
+        $start = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'] + $this->sohbetKimlik('+90 532 111 22 33'))->assertOk()->json();
+        $tid = $start['thread_id'];
+        $tok = $start['guest_token'];
+        $this->assertDatabaseHas('chat_threads', ['id' => $tid, 'guest_phone' => '05321112233', 'looking_for' => 'huzurevi', 'city_name' => 'İstanbul', 'unread_by_admin' => false]);
+
+        // Kısa mesaj: bildirim yok, okunmamış sayılmaz, ana listede değil "kısa" listesinde.
+        $this->postJson("/site/bakimeviara/destek/{$tid}/mesaj", ['guest_token' => $tok, 'body' => 'slm nbr'])->assertOk();
+        $this->assertDatabaseMissing('platform_notifications', ['notifiable_id' => $this->admin->id, 'type' => 'chat_message']);
+        $admin = $this->withSession(['admin_id' => $this->admin->id]);
+        $admin->get('/admin/canli-sohbet')->assertOk()->assertDontSee('slm nbr', false);
+        $admin->get('/admin/canli-sohbet?kisa=1&status=all')->assertOk()->assertSee('slm nbr', false);
+
+        // Yeterince yazınca bildirim gider ve ana listeye geçer.
+        $this->postJson("/site/bakimeviara/destek/{$tid}/mesaj", ['guest_token' => $tok, 'body' => 'Babam için huzurevi bakıyorum'])->assertOk();
+        $this->assertDatabaseHas('platform_notifications', ['notifiable_id' => $this->admin->id, 'type' => 'chat_message']);
+        $this->assertDatabaseHas('chat_threads', ['id' => $tid, 'bildirildi' => true, 'unread_by_admin' => true]);
+        $admin->get('/admin/canli-sohbet')->assertOk()->assertSee('05321112233', false);
+
+        // Aynı tarayıcı telefonu yeniden yazmadan başka konuda devam edebilir.
+        $this->postJson('/site/bakimeviara/destek/baslat', ['guest_token' => $tok, 'intent' => 'sohbet'])->assertOk();
+
+        // Engelle: aynı tarayıcı da, aynı telefonla başka tarayıcı da sohbet açamaz/mesaj gönderemez.
+        $admin->post("/admin/canli-sohbet/{$tid}/engelle")->assertRedirect();
+        $this->postJson("/site/bakimeviara/destek/{$tid}/mesaj", ['guest_token' => $tok, 'body' => 'tekrar yazıyorum'])->assertStatus(403)->assertJson(['engelli' => true]);
+        $this->postJson('/site/bakimeviara/destek/baslat', ['guest_token' => $tok, 'intent' => 'temsilci'])->assertStatus(403);
+        $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'] + $this->sohbetKimlik('05321112233'))->assertStatus(403);
+        $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'temsilci'] + $this->sohbetKimlik('05329998877'))->assertOk();
+        $admin->get("/admin/canli-sohbet/{$tid}")->assertOk()->assertSee('Engeli kaldır', false);
+
+        // Engeli kaldır.
+        $admin->delete("/admin/canli-sohbet/{$tid}/engelle")->assertRedirect();
+        $this->postJson('/site/bakimeviara/destek/baslat', ['guest_token' => $tok, 'intent' => 'temsilci'])->assertOk();
+    }
+
     public function test_ip_geo_lookup_service_returns_city_for_public_ip(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'success', 'city' => 'Bursa'])]);
@@ -2608,7 +2660,7 @@ class PlatformFeatureTest extends TestCase
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
         // Once "sohbet" niyetiyle baslayip mesaj yazar
-        $sohbet = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+        $sohbet = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'] + $this->sohbetKimlik())->assertOk()->json();
         $this->postJson("/site/bakimeviara/destek/{$sohbet['thread_id']}/mesaj", [
             'guest_token' => $sohbet['guest_token'],
             'body' => 'Sohbet mesaji',
@@ -2644,7 +2696,7 @@ class PlatformFeatureTest extends TestCase
     public function test_admin_sees_sibling_threads_for_same_guest(): void
     {
         Http::fake(['ip-api.com/*' => Http::response(['status' => 'fail'])]);
-        $sohbet = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'])->assertOk()->json();
+        $sohbet = $this->postJson('/site/bakimeviara/destek/baslat', ['intent' => 'sohbet'] + $this->sohbetKimlik())->assertOk()->json();
         $dertlesme = $this->postJson('/site/bakimeviara/destek/baslat', [
             'guest_token' => $sohbet['guest_token'],
             'intent' => 'dertlesme',

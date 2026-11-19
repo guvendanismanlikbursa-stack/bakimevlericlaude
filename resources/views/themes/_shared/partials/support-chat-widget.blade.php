@@ -12,6 +12,9 @@
     'bakimevleri' => '<path d="M12 3a7 7 0 0 0-7 7v5.2A2.8 2.8 0 0 0 7.8 18H9a1 1 0 0 0 1-1v-4.4a1 1 0 0 0-1-1H7.2V10a4.8 4.8 0 0 1 9.6 0v1.6H15a1 1 0 0 0-1 1V17a1 1 0 0 0 1 1h1.2a2.8 2.8 0 0 0 2.8-2.8V13a1 1 0 0 0-1-1v-2a7 7 0 0 0-7-7Z"/><circle cx="12" cy="20.5" r="1.1"/>',
   ];
   $chatIconSvg = $chatIcons[$brand['slug']] ?? $chatIcons['bakimevibul'];
+  // 19 Kasım 2026: sohbet formu için il listesi ve "ne arıyorsunuz" seçenekleri.
+  $chatIller = \App\Models\City::cachedAll()->pluck('name')->sortBy(fn ($n) => \Illuminate\Support\Str::ascii($n))->values();
+  $chatArananlar = \App\Models\ChatThread::ARANANLAR;
 @endphp
 {{-- Canli destek ikonu: tek ikon, WhatsApp'a erisim asagidaki menude --}}
 {{-- 12 Agustos 2026: kullanicinin talebi - sohbet ikonu yesil (canli/
@@ -56,7 +59,7 @@
 </div>
 
 <div id="js-chat-identity" role="dialog" aria-modal="true" aria-label="Nasil hitap edelim" class="fixed bottom-24 right-5 z-50 hidden w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-  <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>Size nasıl hitap edelim?</span><button type="button" class="js-chat-mini-close" style="flex-shrink:0;margin:-4px -6px -4px 0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9999px;color:#fff;font-size:24px;line-height:1;background:rgba(255,255,255,.12);" aria-label="Kapat" title="Kapat">×</button></div>
+  <div class="px-4 py-3 text-white text-sm font-black" style="background: {{ $brand['primary_color'] }};display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>Sohbete başlamadan önce</span><button type="button" class="js-chat-mini-close" style="flex-shrink:0;margin:-4px -6px -4px 0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9999px;color:#fff;font-size:24px;line-height:1;background:rgba(255,255,255,.12);" aria-label="Kapat" title="Kapat">×</button></div>
   {{-- 30 Eylul 2026: kullanicinin talebi - "bu botu kullanmak icin uyelik/
        giris yapmis olmak gerekmemeli". "Google ile devam et" ISTEGE BAGLI
        olsa da bir giris adimi gibi goruldugu icin PASIFE ALINDI (silinmedi -
@@ -71,6 +74,17 @@
   <div class="p-3 space-y-2">
     <input type="text" id="js-chat-identity-name" placeholder="Adınız" maxlength="80" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
     <input type="number" id="js-chat-identity-age" placeholder="Yaşınız" min="1" max="120" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+    {{-- 19 Kasım 2026: kullanıcının talebi - telefon zorunlu (şaka/rahatsız edici yazışmaları eler) + ne aradığı + şehri. --}}
+    <input type="tel" id="js-chat-identity-phone" placeholder="Cep telefonunuz (05XX XXX XX XX)" maxlength="20" autocomplete="tel" inputmode="tel" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+    <select id="js-chat-identity-looking" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+      <option value="">Ne arıyorsunuz?</option>
+      @foreach($chatArananlar as $k => $v)<option value="{{ $k }}">{{ $v }}</option>@endforeach
+    </select>
+    <select id="js-chat-identity-city" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+      <option value="">Hangi şehirdesiniz?</option>
+      @foreach($chatIller as $il)<option value="{{ $il }}">{{ $il }}</option>@endforeach
+    </select>
+    <p style="font-size:11px;color:#6b7280;line-height:1.35;margin:0;">Numaranız yalnızca size dönüş yapmak için kullanılır, kimseyle paylaşılmaz.</p>
     <div id="js-chat-identity-error" class="hidden text-xs text-red-600"></div>
     <button type="button" id="js-chat-identity-continue" class="w-full rounded-lg py-2.5 text-sm font-bold text-white" style="background: {{ $brand['primary_color'] }};">Devam Et</button>
   </div>
@@ -140,6 +154,9 @@
 
   var identityNameInput = document.getElementById('js-chat-identity-name');
   var identityAgeInput = document.getElementById('js-chat-identity-age');
+  var identityPhoneInput = document.getElementById('js-chat-identity-phone');
+  var identityLookingInput = document.getElementById('js-chat-identity-looking');
+  var identityCityInput = document.getElementById('js-chat-identity-city');
   var identityError = document.getElementById('js-chat-identity-error');
   var identityContinueBtn = document.getElementById('js-chat-identity-continue');
   var identityGoogleBtn = document.getElementById('js-chat-identity-google-btn');
@@ -237,6 +254,14 @@
     });
   });
 
+  // 19 Kasım 2026: telefon zorunlu - formu açar (sunucu "kimlik_gerekli" derse de buraya gelinir).
+  function kimlikFormunuAc(mesaj) {
+    hideAllPanels();
+    identityError.textContent = mesaj || '';
+    identityError.classList.toggle('hidden', !mesaj);
+    identityEl.classList.remove('hidden');
+  }
+
   function sohbeteGec() {
 
       // Bu tarayicida daha once hic sohbet baslatilmamissa (guest_token yok)
@@ -245,8 +270,10 @@
       if (!localStorage.getItem(storageKey)) {
         identityNameInput.value = '';
         identityAgeInput.value = '';
-        identityError.classList.add('hidden');
-        identityEl.classList.remove('hidden');
+        identityPhoneInput.value = '';
+        identityLookingInput.value = '';
+        identityCityInput.value = '';
+        kimlikFormunuAc('');
       } else {
         startThread(state.guestToken, state.selectedIntent, state.selectedGender, null, null);
       }
@@ -272,13 +299,21 @@
   identityContinueBtn.addEventListener('click', function () {
     var name = state.googleName || identityNameInput.value.trim();
     var age = identityAgeInput.value.trim();
-    if (!name || !age) {
-      identityError.textContent = 'Devam edebilmek için adınızı ve yaşınızı girmeniz gerekiyor.';
+    var phone = identityPhoneInput.value.trim();
+    var rakam = phone.replace(/\D/g, '').replace(/^90(?=5\d{9}$)/, '').replace(/^0(?=5\d{9}$)/, '');
+    var hata = '';
+    if (!name || !age || !phone || !identityLookingInput.value || !identityCityInput.value) hata = 'Devam edebilmek için tüm alanları doldurun.';
+    else if (!/^5\d{9}$/.test(rakam)) hata = 'Lütfen geçerli bir cep telefonu numarası yazın (05XX XXX XX XX).';
+    if (hata) {
+      identityError.textContent = hata;
       identityError.classList.remove('hidden');
       return;
     }
+    identityError.classList.add('hidden');
     hideAllPanels();
-    startThread(null, state.selectedIntent, state.selectedGender, name, age, state.googleAvatar);
+    // Sohbet zaten başlamışsa (kural öncesi açılmış sohbet) aynı kimlikle devam edilir.
+    startThread(localStorage.getItem(storageKey), state.selectedIntent, state.selectedGender, name, age, state.googleAvatar,
+      { guest_phone: phone, looking_for: identityLookingInput.value, guest_city: identityCityInput.value });
   });
 
   // Google OAuth turunden donusu yakalar: URL'de chat_google_name varsa,
@@ -323,7 +358,7 @@
   // tespiti sunucu tarafinda yapiliyor - bkz. IpGeoLookupService). guest_name/
   // guest_age sadece bu tarayicida ILK KEZ sohbet baslatilirken gonderilir;
   // donen misafirlerde/konu degisiminde sunucu onceki thread'den otomatik tasir.
-  function startThread(existingToken, intent, gender, guestName, guestAge, guestAvatarUrl) {
+  function startThread(existingToken, intent, gender, guestName, guestAge, guestAvatarUrl, ek) {
     var body = {
       guest_token: existingToken || undefined,
       intent: intent || undefined,
@@ -332,11 +367,23 @@
       guest_age: guestAge || undefined,
       guest_avatar_url: guestAvatarUrl || undefined,
     };
+    if (ek) { for (var k in ek) body[k] = ek[k]; }
     fetch(startUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
       body: JSON.stringify(body),
-    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
+    }).then(function (r) {
+      // 19 Kasım 2026: 422 kimlik_gerekli → form açılır; 403 engelli → sohbet kapalı mesajı.
+      if (r.status === 422 || r.status === 403) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (d && d.kimlik_gerekli) { kimlikFormunuAc(d.message); throw { islendi: true }; }
+          if (d && d.engelli) { engelliGoster(d.message); throw { islendi: true }; }
+          throw new Error('HTTP ' + r.status);
+        });
+      }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (data) {
       localStorage.setItem(storageKey, data.guest_token);
       localStorage.setItem(intentStorageKey, data.intent);
       if (gender) localStorage.setItem(genderStorageKey, gender);
@@ -348,10 +395,22 @@
       panelEl.classList.remove('hidden');
       startPolling();
       setupEyeTracking(gender);
-    }).catch(function () {
+    }).catch(function (e) {
+      if (e && e.islendi) return;
       statusEl.textContent = 'Bağlantı kurulamadı, lütfen tekrar deneyin.';
       panelEl.classList.remove('hidden');
     });
+  }
+
+  function engelliGoster(mesaj) {
+    hideAllPanels();
+    messagesEl.innerHTML = '';
+    statusEl.textContent = '';
+    offlineBanner.textContent = mesaj || 'Sohbet hizmeti şu an kullanılamıyor.';
+    offlineBanner.classList.remove('hidden');
+    inputEl.disabled = true;
+    sendBtn.disabled = true;
+    panelEl.classList.remove('hidden');
   }
 
   // Kayitli bir sohbeti (son aktif niyetiyle) sessizce, konum sormadan devam
@@ -463,10 +522,20 @@
       method: 'POST',
       headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
       body: formData,
-    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (data) {
+    }).then(function (r) {
+      if (r.status === 403) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (d && d.engelli) { engelliGoster(d.message); throw { islendi: true }; }
+          throw new Error('HTTP 403');
+        });
+      }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (data) {
       renderMessages([data.message], false);
       if (data.suggested_section) renderSuggestionCard(data.suggested_section);
-    }).catch(function () {
+    }).catch(function (e) {
+      if (e && e.islendi) return;
       alert('Mesaj gönderilemedi. Oturumunuz zaman aşımına uğramış olabilir, sayfayı yenileyip tekrar deneyin.');
       inputEl.value = text;
       if (fileToSend) pendingFile = fileToSend;

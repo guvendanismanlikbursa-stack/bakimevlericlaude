@@ -10,7 +10,17 @@
   </div>
 </div>
 
+{{-- 19 Kasım 2026: kullanıcının talebi - boş/kısa sohbetler ("selam", "nbr") bildirim göndermez, burada ayrı durur. --}}
+<div class="mb-4 flex flex-wrap gap-2 text-sm">
+  <a href="{{ route('admin.chat.index') }}" style="padding:6px 14px;border-radius:9999px;font-weight:700;{{ $kisa ? 'background:#f3f4f6;color:#374151;' : 'background:#2563eb;color:#fff;' }}">Sohbetler</a>
+  <a href="{{ route('admin.chat.index', ['kisa' => 1, 'status' => 'all']) }}" style="padding:6px 14px;border-radius:9999px;font-weight:700;{{ $kisa ? 'background:#2563eb;color:#fff;' : 'background:#f3f4f6;color:#374151;' }}">Kısa / boş sohbetler{{ $kisaSayisi ? ' ('.$kisaSayisi.')' : '' }}</a>
+</div>
+@if($kisa)
+  <p style="font-size:13px;color:#6b7280;margin:-6px 0 12px;">Hiç mesaj yazılmamış ya da yalnızca "selam", "nbr" gibi çok kısa mesaj yazılmış sohbetler. Bunlar için size bildirim gönderilmedi. Ziyaretçi daha uzun bir mesaj yazarsa sohbet kendiliğinden ana listeye geçer ve bildirim gelir. (Sayı: son 30 gün)</p>
+@endif
+
 <form method="GET" class="mb-4 flex flex-wrap gap-2">
+  @if($kisa)<input type="hidden" name="kisa" value="1">@endif
   <select name="status" onchange="this.form.submit()" class="border rounded-lg px-3 py-2 text-sm">
     <option value="open" @selected($status==='open')>Açık</option>
     <option value="assigned" @selected($status==='assigned')>Üstlenilmiş</option>
@@ -60,10 +70,18 @@
             <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $thread->sibling_threads_count }} sohbet</span>
           @endif
           @if($thread->unread_by_admin)<span class="bg-orange-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">yeni</span>@endif
+          @if(in_array($thread->guest_token, $engelliTokenlar, true) || ($thread->guest_phone && in_array($thread->guest_phone, $engelliTelefonlar, true)))
+            <span style="background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:700;padding:1px 8px;border-radius:9999px;">🚫 engelli</span>
+          @endif
         </div>
+        @if($thread->guest_phone || $thread->looking_for)
+          <div style="font-size:12.5px;color:#374151;margin-top:2px;">
+            @if($thread->guest_phone)📞 <a href="tel:{{ $thread->guest_phone }}" style="font-weight:700;color:#1d4ed8;">{{ $thread->guest_phone }}</a>@endif
+            @if($thread->looking_for) · Arıyor: <b>{{ \App\Models\ChatThread::ARANANLAR[$thread->looking_for] ?? $thread->looking_for }}</b>@endif
+          </div>
+        @endif
         <div class="text-xs text-gray-500 mt-0.5">
           {{ $thread->brand }} · {{ ['sohbet' => 'Sohbet', 'dertlesme' => 'Dertleşme', 'fikir' => 'Fikir', 'temsilci' => 'Temsilci'][$thread->intent] ?? $thread->intent }} ·
-          {{ ['erkek' => 'Bay', 'kadin' => 'Bayan', 'farketmez' => 'Farketmez'][$thread->operator_gender_preference] ?? '—' }} ·
           {{ $thread->city_name ?? '—' }} · İlgilenen: {{ $thread->assignedAdmin->name ?? '—' }} · {{ ($thread->last_message_at ?? $thread->created_at)->format('d.m.Y H:i') }}
         </div>
         <div class="text-xs text-gray-600 mt-1 break-words">{{ $thread->last_message_preview ?? '—' }}</div>
