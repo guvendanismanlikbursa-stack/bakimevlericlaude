@@ -9321,6 +9321,9 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->assertSame(0, $v['siteler']['bakimevibul.com']['tik']);
         $this->assertSame('2026111808', $v['sc_son']);
         $this->assertSame('2026111804', $v['sc_eksik']);
+        // 20 Kasım 2026: kart rakamları Search Console ekranındaki "24 saat" ile aynı pencere (son saat dahil geriye 23 saat)
+        $this->assertSame('2026111710', $v['sc24_bas']);
+        $this->assertSame(['tik' => 60, 'gos' => 1240], $v['siteler']['bakimevleri.com']['sc24']);
         \Illuminate\Support\Carbon::setTestNow();
     }
 

@@ -176,6 +176,7 @@ class AnalitikPanelVerisi
             $scEksik = $sc['eksik'] && (! $scEksik || $sc['eksik'] < $scEksik) ? $sc['eksik'] : $scEksik;
             $siteler[$h]['tik'] = 0;
             $siteler[$h]['gos'] = 0;
+            $siteler[$h]['sc_ham'] = $sc['saatler'];
             foreach ($sc['saatler'] as $k => $v) {
                 if (array_key_exists($k, $saatler)) {
                     $siteler[$h]['tik_saat'][$k] = $v['tik'];
@@ -231,18 +232,40 @@ class AnalitikPanelVerisi
             $siteler[$h]['o_giris'] += (int) $oturum;
             $siteler[$h]['o_kanal'][$tur] += (int) $oturum;
         }
+        // 20 Kasım 2026: kullanıcının şikâyeti - "Search Console 192 diyor, bizimki 143; neden farklı?".
+        // Ölçüm (20.11 15:23 canlı): Search Console ekranındaki "24 saat" = Google'ın yayınladığı son saat dahil
+        // geriye 23 saat (19.11 13:00 - 20.11 11:00 toplamı tam 192 tıklama / 13.581 görünme, ekranla birebir).
+        // Kartın büyük rakamları artık bu pencereden hesaplanır; siteye giriş de aynı saatler için kendi sayacımızdan.
+        $sc24Son = $scSon;
+        $sc24Bas = $scSon ? \Illuminate\Support\Carbon::createFromFormat('YmdH', (string) $scSon, config('app.timezone'))->subHours(22)->format('YmdH') : null;
+        foreach ($siteler as $h => $x) {
+            $siteler[$h]['sc24'] = null;
+            if ($sc24Son && isset($x['sc_ham'])) {
+                $t = ['tik' => 0, 'gos' => 0];
+                foreach ($x['sc_ham'] as $k => $v) {
+                    if ((string) $k >= $sc24Bas && (string) $k <= (string) $sc24Son) {
+                        $t['tik'] += $v['tik'];
+                        $t['gos'] += $v['gos'];
+                    }
+                }
+                $siteler[$h]['sc24'] = $t;
+            }
+            unset($siteler[$h]['sc_ham']);
+        }
         // 19 Kasım 2026: kendi çerezsiz giriş sayacımız, kartlarla aynı saatler için.
         $sayacIlk = null;
         try {
             $sayacIlk = \App\Support\GirisSayaci::ilkSaat();
             $sayac = $ortakSon ? \App\Support\GirisSayaci::aralik((string) $ilk, (string) $ortakSon) : [];
+            $sayac24 = $sc24Son ? \App\Support\GirisSayaci::aralik((string) $sc24Bas, (string) $sc24Son) : [];
             foreach ($siteler as $h => $x) {
                 $siteler[$h]['s_giris'] = $sayac[$h] ?? ['toplam' => 0, 'arama' => 0, 'dogrudan' => 0, 'diger' => 0];
+                $siteler[$h]['s24_giris'] = $sayac24[$h] ?? ['toplam' => 0, 'arama' => 0, 'dogrudan' => 0, 'diger' => 0];
             }
         } catch (\Throwable $e) {
             report($e);
         }
-        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'sayac_ilk' => $sayacIlk, 'ortak_son' => $ortakSon, 'ortak_kesin' => $ortakKesin, 'kanal_var' => $kanalSatir !== [], 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
+        $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'sayac_ilk' => $sayacIlk, 'ortak_son' => $ortakSon, 'ortak_kesin' => $ortakKesin, 'sc24_bas' => $sc24Bas, 'sc24_son' => $sc24Son, 'kanal_var' => $kanalSatir !== [], 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
             'gecikme' => $sonSaat ? max(0, (int) floor(\Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone'))->addHour()->diffInHours(now(), true))) : null, 'siteler' => $siteler];
         Cache::forever('google_son24', $veri);
 

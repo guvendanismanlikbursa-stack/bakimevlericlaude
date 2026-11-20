@@ -40,6 +40,7 @@
     $scVar = ! empty($son24['sc_var']);
     // 18 Kasım 2026: kart sayıları iki kaynağın da yayınladığı son saate kadar (ortak pencere) - bkz. AnalitikPanelVerisi::cekSon24.
     $ortak = ! empty($son24['kanal_var']) && ! empty($son24['ortak_son']);
+    $sc24 = $scVar && ! empty($son24['sc24_son']);
     $saatBicim = fn ($k) => $k ? substr($k, 8, 2).':00' : '—';
     $sonrakiSaat = fn ($k) => $k ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $k)->addHour()->format('H:00') : '—';
     // Her grafik: [kimlik, başlık, açıklama, saat anahtarı, gelen son saat, kesinleşmemiş ilk saat]
@@ -51,9 +52,12 @@
   @endphp
   <div id="son24" style="{{ $kart }}">
     <h2 style="{{ $h2 }}">🕒 Son 24 Saat</h2>
-    <p style="{{ $acik }}">@if($s24Bas && $s24Bitis){{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
+    <p style="{{ $acik }}">@if($s24Bas && $s24Bitis)@if($sc24)Grafikler: @endif{{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
       Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir). Hong Kong/Çin bot trafiği sayılmaz.</p>
-    @if($ortak && $s24Bas)
+    @if($sc24)
+      {{-- 20 Kasım 2026: kartlar Search Console'daki "24 saat" ekranıyla aynı saatleri sayar (bkz. AnalitikPanelVerisi::cekSon24). --}}
+      <p style="font-size:12.5px;color:#374151;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:8px 12px;margin:0 0 12px;">Kartlardaki sayılar <b>{{ \Illuminate\Support\Carbon::createFromFormat('YmdH', (string) $son24['sc24_bas'])->format('d.m H:00') }} – {{ \Illuminate\Support\Carbon::createFromFormat('YmdH', (string) $son24['sc24_son'])->addHour()->format('d.m H:00') }}</b> arasını kapsar: <b>Search Console'daki "24 saat" ekranıyla aynı saatler</b>, rakamlar orayla aynı çıkar. Google son 2–3 saati henüz göndermediği için pencere oraya kadardır; daha yeni saatler aşağıdaki grafiklerde.</p>
+    @elseif($ortak && $s24Bas)
       <p style="font-size:12.5px;color:#374151;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:8px 12px;margin:0 0 12px;">Kartlardaki sayılar <b>{{ $s24Bas->format('d.m H:00') }} – {{ $sonrakiSaat($son24['ortak_son']) }}</b> arasını kapsar: Google'ın tıklamaları @if($son24['ortak_kesin'] ?? true)<b>kesinleştirdiği</b> son saate kadar.@else yayınladığı son saate kadar (Google bu saatleri henüz kesinleştirmedi, tıklama sayısı biraz artabilir).@endif Böylece tıklama ve giriş <b>aynı saatler</b> için karşılaştırılır. Daha yeni saatler aşağıdaki grafiklerde.</p>
     @endif
 
@@ -63,7 +67,7 @@
         @if($scVar)<div style="margin-bottom:6px;"><b>🔍 Google'dan tıklama</b> — kaynak <b>Google Search Console</b>. Google aramasında sitemize kaç kez tıklandığı. Search Console ekranında gördüğünüz rakamla <b>aynı kaynaktır</b>. SEO başarısını bu ölçer.</div>@endif
         <div style="margin-bottom:6px;"><b>👤 Siteye giriş</b> — kaynak <b>Google Analytics</b>. Siteye yapılan ziyaretlerin tamamı: Google'dan gelenler <b>ve</b> Bing/Yandex, doğrudan adres yazanlar, yapay zekâ asistanları, başka siteler. Bu yüzden Google tıklamasından <b>fazla</b> çıkabilir; altında kaynağına göre ayrılmış hali yazar. Çerez bandında "Yalnızca zorunlu çerezler" seçenler ve sayfa açılır açılmaz (3 sn içinde) çıkanlar Analytics'te görünmediği için arama motorundan gelen giriş, Google tıklamasından <b>az</b> da çıkabilir.</div>
         <div style="margin-bottom:6px;"><b>📊 Kendi sayacımız</b> — kaynak <b>bizim sunucumuz</b>. Ziyaretçi siteye dışarıdan (Google, doğrudan adres, başka site) girdiği anda bir kez sayılır. Çerez kullanmaz, kimseyi tanımaz; bu yüzden çerezi kabul etmeyenleri ve 3 saniyeden önce çıkanları da sayar. Botlar (bot kalkanı) sayılmaz. Arama motorundan gelen giriş sayısının Google tıklamasına yakın çıkması beklenir.</div>
-        <div style="margin-bottom:6px;">Karşılaştırma doğru olsun diye kartlardaki iki sayı da <b>aynı saatleri</b> kapsar: Google'ın tıklamaları kesinleştirdiği son saate kadar. Bu saatlerde Google tıklaması ile Google'dan gelen giriş birbirine çok yakındır; giriş biraz az çıkarsa sebep "Yalnızca zorunlu çerezler" seçen ya da sayfayı hemen kapatan ziyaretçilerdir.</div>
+        <div style="margin-bottom:6px;">Kartlardaki tıklama, görünme ve giriş sayıları <b>aynı saatleri</b> kapsar: Search Console'daki "24 saat" ekranının saatleri. Google son saatleri sonradan biraz artırabilir; Search Console ekranı da aynı şekilde değişir.</div>
         @if($scVar)<div style="margin-bottom:6px;"><b>👁 Google'da görünme</b> — sitemizin arama sonuçlarında <b>listelenme</b> sayısı. Ziyaretçi değildir; arananlarda ne kadar göründüğümüzü gösterir.</div>@endif
         <div style="color:#6b7280;">Google iki kaynağı da 2–3 saat geriden gönderir. Henüz gelmeyen saatler grafikte gri kesikli kutu olarak görünür.</div>
       </div>
@@ -74,16 +78,23 @@
         <div style="border:1px solid #eef0f3;border-left:4px solid {{ $renk[$s] ?? '#6b7280' }};border-radius:12px;padding:12px 14px;">
           <div style="font-size:13px;font-weight:800;color:#374151;">{{ $s }}</div>
           <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:6px;">
-            @if($scVar)
+            @if($sc24 && isset($x['sc24']))
+              <div><div style="font-size:26px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};line-height:1.1;">{{ $sayi($x['sc24']['tik']) }}</div><div style="font-size:12px;color:#6b7280;">🔍 Google'dan tıklama</div></div>
+              <div><div style="font-size:26px;font-weight:900;color:#374151;line-height:1.1;">{{ $sayi($x['s24_giris']['toplam'] ?? 0) }}</div><div style="font-size:12px;color:#6b7280;">👤 siteye giriş (kendi sayacımız)</div></div>
+            @elseif($scVar)
               <div><div style="font-size:26px;font-weight:900;color:{{ $renk[$s] ?? '#111827' }};line-height:1.1;">{{ ($x['tik'] ?? null) === null ? '—' : $sayi($ortak ? ($x['o_tik'] ?? $x['tik']) : $x['tik']) }}</div><div style="font-size:12px;color:#6b7280;">🔍 Google'dan tıklama</div></div>
             @endif
-            @if($ortak)
+            @if($sc24 && isset($x['sc24']))
+            @elseif($ortak)
               <div><div style="font-size:26px;font-weight:900;color:#374151;line-height:1.1;">{{ $sayi($x['o_giris']) }}</div><div style="font-size:12px;color:#6b7280;">👤 siteye giriş (tüm kaynaklar)</div></div>
             @else
               <div><div style="font-size:26px;font-weight:900;color:#374151;line-height:1.1;">{{ $sayi($x['kisi']) }}</div><div style="font-size:12px;color:#6b7280;">👤 siteye giren kişi</div></div>
             @endif
           </div>
-          @if($ortak)
+          @if($sc24 && isset($x['sc24']))
+            <div style="font-size:12px;color:#4b5563;margin-top:4px;">Girişlerin kaynağı: <b>{{ $sayi($x['s24_giris']['arama'] ?? 0) }}</b> arama motoru (Google, Bing, Yandex) · <b>{{ $sayi($x['s24_giris']['dogrudan'] ?? 0) }}</b> doğrudan · <b>{{ $sayi($x['s24_giris']['diger'] ?? 0) }}</b> diğer</div>
+            @if(! empty($son24['sayac_ilk']) && (string) $son24['sayac_ilk'] > (string) $son24['sc24_bas'])<div style="font-size:11.5px;color:#6b7280;">Sayaç {{ \Illuminate\Support\Carbon::createFromFormat('YmdH', (string) $son24['sayac_ilk'])->format('d.m H:00') }}'dan beri sayıyor; o saatten önceki girişler bu sayıda yok.</div>@endif
+          @elseif($ortak)
             <div style="font-size:12px;color:#4b5563;margin-top:4px;">Girişlerin kaynağı: <b>{{ $sayi($x['o_kanal']['arama']) }}</b> arama motoru (Google, Bing, Yandex) · <b>{{ $sayi($x['o_kanal']['dogrudan']) }}</b> doğrudan · <b>{{ $sayi($x['o_kanal']['diger']) }}</b> diğer</div>
             {{-- 19 Kasım 2026: kendi çerezsiz giriş sayacımız (Analytics'in göremediği girişler dahil). --}}
             @if(isset($x['s_giris']) && ! empty($son24['sayac_ilk']))
@@ -93,7 +104,7 @@
             @endif
           @endif
           <div style="font-size:12.5px;color:#4b5563;line-height:1.7;margin-top:6px;">
-            @if($scVar && ($x['gos'] ?? null) !== null)👁 Google'da görünme: <b>{{ $sayi($x['gos']) }}</b><br>@endif
+            @if($sc24 && isset($x['sc24']))👁 Google'da görünme: <b>{{ $sayi($x['sc24']['gos']) }}</b><br>@elseif($scVar && ($x['gos'] ?? null) !== null)👁 Google'da görünme: <b>{{ $sayi($x['gos']) }}</b><br>@endif
             Bakılan sayfa: <b>{{ $sayi($x['sayfa']) }}</b> · Ort. süre: <b>{{ $x['kisi'] ? $sure($x['sure'] / $x['kisi']) : '—' }}</b> · İlgi: <b>{{ $x['oturum'] ? $yuzde($x['etk'] / $x['oturum']) : '—' }}</b>
             @if($x['bot'])<br><span style="color:#b91c1c;">Ayıklanan bot (HK/Çin): {{ $sayi($x['bot']) }}</span>@endif
           </div>
