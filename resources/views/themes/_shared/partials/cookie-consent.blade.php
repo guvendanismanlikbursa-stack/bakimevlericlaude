@@ -46,6 +46,9 @@
     document.body.classList.remove('js-cookie-banner-open');
     if (value === 'tumu') {
       try { window.dispatchEvent(new Event('cerez-izni-verildi')); } catch (e) {}
+    } else {
+      // 20 Kasım 2026: seçim yapılana kadar Analytics çerezli sayar; "zorunlu" seçilince çerezsize döner.
+      try { window.dispatchEvent(new Event('cerez-izni-reddedildi')); } catch (e) {}
     }
   }
 

@@ -161,11 +161,21 @@
   window.cerezIzniVar = function () {
     try { var v = localStorage.getItem('cookie_consent'); return v === 'tumu' || v === 'accepted'; } catch (e) { return false; }
   };
+  // 20 Kasım 2026: kullanıcının kararı (seçenek 1) - Analytics 18 Kasım'dan beri seçim yapmamış ziyaretçiyi de
+  // göremiyordu (19.11: Analytics 43 giriş, kendi sayacımız 9 saatte 125). Artık yalnız "Yalnızca zorunlu çerezler"
+  // seçen ziyaretçide Analytics çerezsiz çalışır; seçim yapmamış ziyaretçi eskisi gibi sayılır.
+  // Facebook pikseli değişmedi: yalnız "Tümünü kabul et" sonrası yüklenir (cerezIzniVar).
+  window.analitikReddedildi = function () {
+    try { var v = localStorage.getItem('cookie_consent'); return !! v && v !== 'tumu' && v !== 'accepted'; } catch (e) { return false; }
+  };
   (function () {
-    var izin = window.cerezIzniVar() ? 'granted' : 'denied';
+    var izin = window.analitikReddedildi() ? 'denied' : 'granted';
     gtag('consent', 'default', { analytics_storage: izin, ad_storage: izin, ad_user_data: izin, ad_personalization: izin });
     window.addEventListener('cerez-izni-verildi', function () {
       gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted' });
+    });
+    window.addEventListener('cerez-izni-reddedildi', function () {
+      gtag('consent', 'update', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
     });
   })();
   gtag('js', new Date());
