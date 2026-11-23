@@ -279,6 +279,9 @@ class FacilityController extends Controller
         if (array_key_exists('website_status', $data) && (($data['website_status'] ?? null) !== $facility->website_status || ($data['website_url'] ?? null) !== $facility->website_url)) {
             $data['website_checked_at'] = now();
         }
+        if ($request->has('opening_hours')) {
+            $data['opening_hours'] = Facility::formdanSaatler($data['opening_hours'] ?? null);
+        }
         $facility = Facility::create($data);
 
         $this->storeUploadedImages($request, $facility);
@@ -401,6 +404,10 @@ class FacilityController extends Controller
             $vacancyData = $this->vacancyFieldsFromRequest($request);
             $vacancyData['vacancy_updated_at'] = now();
             $data = array_merge($data, $vacancyData);
+        }
+
+        if ($request->has('opening_hours')) {
+            $data['opening_hours'] = Facility::formdanSaatler($data['opening_hours'] ?? null);
         }
 
         $facility->update($data);
@@ -1317,6 +1324,9 @@ class FacilityController extends Controller
             // 30 Ekim 2026: kullanıcının talebi - kurumun kendi internet sitesi.
             'website_status' => 'nullable|in:yok,sosyal,rehber,var',
             'website_url' => 'nullable|string|max:500',
+            // 23 Kasım 2026: kullanıcının talebi - çalışma saatleri adminden düzenlenebilsin.
+            'opening_hours' => 'nullable|array',
+            'opening_hours.*' => 'nullable|string|max:60',
         ]);
     }
 

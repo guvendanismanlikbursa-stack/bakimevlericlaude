@@ -282,6 +282,9 @@
     <p class="text-xs text-gray-500 mt-1">Adres yazıp durumu boş bırakırsanız "var" olarak kaydedilir.</p>
   </div>
 
+  {{-- 23 Kasım 2026: çalışma saatleri adminden düzenlenebilir. --}}
+  <div style="grid-column:1/-1;">@include('admin.partials.calisma-saatleri', ['kayit' => $facility])</div>
+
   <div class="md:col-span-2">
     <label class="text-sm font-medium">Adres</label>
     <input type="text" id="facility-form-address" name="address" value="{{ old('address', $facility->address) }}" class="border rounded-lg px-3 py-2 w-full mt-1">

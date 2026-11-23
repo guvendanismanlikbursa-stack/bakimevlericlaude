@@ -14,6 +14,24 @@ trait CalismaSaatleri
     public const GUN_KISA = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
     /**
+     * 23 Kasım 2026: admin formundan gelen 7 günlük saatleri kayda hazırlar (doktor + kurum ortak).
+     * Hepsi boşsa null (sitede saat görünmez). Bazı günler boşsa "Kapalı" yazılır; çünkü
+     * openingHoursRows() eksik günlü kaydı hatalı sayıp tabloyu tamamen gizliyor.
+     */
+    public static function formdanSaatler(?array $girdi): ?array
+    {
+        $saatler = [];
+        foreach (self::GUNLER as $gun) {
+            $saatler[$gun] = trim((string) ($girdi[$gun] ?? ''));
+        }
+        if (count(array_filter($saatler, fn ($v) => $v !== '')) === 0) {
+            return null;
+        }
+
+        return array_map(fn ($v) => $v === '' ? 'Kapalı' : $v, $saatler);
+    }
+
+    /**
      * Gün => saat metni (sıralı, sadeleştirilmiş). Veri eksikse ya da 7 günün
      * hepsi "Kapalı" ise (çoğunlukla hatalı kayıt) boş dizi döner.
      *

@@ -189,7 +189,13 @@ class ExpertController extends Controller
             'supporter_until' => 'nullable|date',
             'website_status' => 'nullable|in:yok,sosyal,rehber,var',
             'website_url' => 'nullable|string|max:500',
+            // 23 Kasım 2026: kullanıcının talebi - doktor "7/24 açığız" dedi, saatler adminden düzeltilebilsin.
+            'opening_hours' => 'nullable|array',
+            'opening_hours.*' => 'nullable|string|max:60',
         ]);
+        if ($request->has('opening_hours')) {
+            $data['opening_hours'] = Expert::formdanSaatler($data['opening_hours'] ?? null);
+        }
         // 30 Ekim 2026: internet sitesi adresi girilip durum boş bırakıldıysa "var" sayılır.
         if (filled($data['website_url'] ?? null) && ! filled($data['website_status'] ?? null)) {
             $data['website_status'] = 'var';

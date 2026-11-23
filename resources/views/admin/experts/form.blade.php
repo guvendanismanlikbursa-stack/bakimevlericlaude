@@ -98,6 +98,9 @@
     </div>
   @endif
 
+  {{-- 23 Kasım 2026: çalışma saatleri adminden düzenlenebilir (önceden yalnızca taramayla geliyordu). --}}
+  <div class="mb-5">@include('admin.partials.calisma-saatleri', ['kayit' => $expert])</div>
+
   {{-- 22 Ekim 2026: doktorun internet sitesi durumu (kurumlardakiyle aynı seçenekler). --}}
   <div class="mb-5 grid md:grid-cols-2 gap-3">
     <div>
