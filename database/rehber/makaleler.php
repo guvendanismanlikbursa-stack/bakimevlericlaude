@@ -208,6 +208,7 @@ return [
         'cocuk-kres-tekliflerini-karsilastirmak' => ['kayit-ve-ucretler', 'Kreş Tekliflerini Karşılaştırmak: Doğru Seçim İçin Rehber', 'Birden fazla kreşten alınan teklifleri karşılaştırmak: toplam maliyet, ücrete dahil hizmetler, eğitim programı, öğretmen oranı, konum, sözleşme koşulları ve karar tablosu.'],
     ],
     'bakimeviara' => [
+        'rehabilitasyon-fizik-tedavi-seansi-ucretli-mi' => ['raporlar-ve-haklar', 'Fizik Tedavi Seansı Ücretli mi? SGK, Özel Merkez ve Evde Fizik Tedavi', 'Fizik tedavi seanslarının ücreti nereye göre değişir? Devlet hastanesi ve SGK kapsamı, anlaşmalı özel kurumlarda fark ücreti, özel merkezler, evde fizik tedavi ve toplam maliyeti hesaplama.'],
         'rehabilitasyon-fizik-tedavi-ilk-seans' => ['rehabilitasyon-sureci', 'Fizik Tedavide İlk Seans: Neler Beklenmeli?', 'Fizik tedaviye ilk kez başlayacaklar için ilk değerlendirme, hedef belirleme, seansa hazırlık ve terapistle iletişim hakkında bilinmesi gerekenler.'],
         'rehabilitasyon-hedefleri-nasil-belirlenir' => ['rehabilitasyon-sureci', 'Rehabilitasyonda Hedefler Nasıl Belirlenir?', 'Rehabilitasyon sürecinde gerçekçi ve ölçülebilir hedefler nasıl konulur? Kısa ve uzun vadeli hedefler, aile katılımı ve hedeflerin güncellenmesi.'],
         'rehabilitasyon-ev-egzersiz-programi' => ['rehabilitasyon-sureci', 'Ev Egzersiz Programına Uyum Nasıl Sağlanır?', 'Fizik tedavide verilen ev egzersizlerini düzenli yapmanın yolları: rutin oluşturma, güvenlik, motivasyon ve ailenin desteği.'],
