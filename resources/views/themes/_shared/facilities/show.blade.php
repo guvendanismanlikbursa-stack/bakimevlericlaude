@@ -16,13 +16,28 @@
   }
   $seoYer = trim(($facility->district ? $facility->district.'/' : '').($facility->city->name ?? ''), '/');
   $seoPuan = ($facility->rating && $facility->rating > 0 && ! $facility->hidesPatientReviews()) ? number_format((float) $facility->rating, 1, ',', '') : null;
-  $seoBaslik = $seoAd.' '.($seoPuan ? 'Yorumları, Fiyatı ve İletişim' : 'Fiyat ve İletişim Bilgileri').($seoYer ? ' – '.$seoYer : '');
-  $seoSaatler = array_values(array_filter((array) ($facility->opening_hours ?? []), 'is_string'));
-  $seoYirmiDort = count($seoSaatler) === 7 && collect($seoSaatler)->every(fn ($s) => (bool) preg_match('/24\s*saat/u', $s));
+  // 23 Kasım 2026 (SEO fırsatları "görünüyoruz ama tıklanmıyoruz", kullanıcı onayı): başlıklar 80-98 karakterdi,
+  // Google ~60 karakterden sonrasını kesiyordu; ilçe ve "yorum/fiyat" kesilen kısımda kalıyordu. Artık ilçe adın
+  // hemen arkasında; ek, toplam 60 karakteri aşmayacak en uzun seçenekten seçilir. Ad ilçeyi zaten içeriyorsa
+  // ilçe tekrar yazılmaz (il yazılır).
+  $__sade = fn ($s) => str_replace(['ı', 'İ', 'ş', 'ğ', 'ü', 'ö', 'ç'], ['i', 'i', 's', 'g', 'u', 'o', 'c'], mb_strtolower((string) $s, 'UTF-8'));
+  $seoKisaYer = $facility->district && ! str_contains($__sade($seoAd), $__sade($facility->district))
+      ? $facility->district
+      : (($facility->city->name ?? null) && ! str_contains($__sade($seoAd), $__sade($facility->city->name)) ? $facility->city->name : null);
+  $seoBaslik = $seoAd.($seoKisaYer ? ' – '.$seoKisaYer : '');
+  foreach (($seoPuan ? [': Yorum, Fiyat, Telefon', ': Yorum ve Fiyat', ': Yorumlar'] : [': Fiyat ve Telefon', ': Fiyat']) as $__ek) {
+      if (mb_strlen($seoBaslik.$__ek) <= 60) {
+          $seoBaslik .= $__ek;
+          break;
+      }
+  }
+  // Açıklama: her kurumda aynı olan genel cümle yerine kuruma özgü gerçek bilgi (puan, çalışma saatleri).
+  $seoSaatOzet = method_exists($facility, 'openingHoursSummary') ? $facility->openingHoursSummary(3) : null;
+  $seoSaatOzet = $seoSaatOzet ? preg_replace('/\s*…$/u', '', $seoSaatOzet) : null;   // kısaltılmış özetin '…' sonu nokta ile çakışmasın
   $seoAciklama = $seoAd.($seoYer ? ', '.$seoYer.'.' : '.')
-    .($seoPuan ? ' '.$seoPuan.'/5 puan.' : '')
-    .($seoYirmiDort ? ' 7/24 açık.' : '')
-    .' Fotoğraflar, hizmetler, ziyaret bilgisi ve aile yorumları; ücretsiz bilgi ve fiyat talebi gönderin.';
+    .($seoPuan ? ' ★ '.$seoPuan.' aile puanı.' : '')
+    .($seoSaatOzet ? ' Çalışma saatleri: '.$seoSaatOzet.'.' : '')
+    .' '.($facility->phone ? 'Telefon, adres, ' : 'Adres, ').'fotoğraflar ve yorumlar; ücretsiz fiyat teklifi alın.';
 @endphp
 @section('title', $seoBaslik)
 @if(($serviceSection['slug'] ?? null) !== (current_brand()['default_section'] ?? null))
