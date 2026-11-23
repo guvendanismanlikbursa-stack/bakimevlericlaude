@@ -19,6 +19,9 @@ return [
             'short_title' => 'Yaşlı',
             'icon' => 'elderly-care',
             'scopes' => ['yasli-bakim'],
+            // 23 Kasım 2026 (SEO fırsatları): aileler 'huzurevi fiyatları' / 'yaşlı bakım evi fiyatları' diye arıyor; fiyat sayfası
+            // başlığında 'Bakımevi Fiyatları' bu kelimeleri içermiyordu (ör. 'erzurum huzurevi fiyatları' 6. sıra, 31 gösterim, 0 tıklama).
+            'fiyat_seo_title' => 'Huzurevi ve Yaşlı Bakımevi',
             'hero_title' => 'Bakımevi, huzurevi ve yaşlı bakım seçeneklerini güvenle karşılaştırın',
             'hero_subtitle' => 'Bakımevi, huzurevi, Alzheimer bakımı ve yaşlı yaşam merkezlerini tek ekranda inceleyin; aile ihtiyacınıza uygun kurumlardan teklif alın.',
             'search_label' => 'Bakımevi, huzurevi veya yaşlı bakım merkezi ara',
