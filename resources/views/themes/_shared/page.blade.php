@@ -66,6 +66,40 @@
     {!! $page->body !!}
   </article>
 
+  {{-- 23 Kasım 2026 (SEO, kullanıcı onayı): ücret/fiyat/maliyet konulu yazılar, aynı aramayı hedefleyen fiyat sayfalarına
+       güç aktarsın diye "X fiyatları 2026" sayfasına ve büyük şehirlerin fiyat sayfalarına açık metinli bağlantı verir. --}}
+  @php
+    $__fy = null;
+    if (($page->type ?? null) === 'guide' && preg_match('/ucret|fiyat|maliyet|butce|bebek-kresi/', (string) $page->slug)) {
+        $__bolum = str_starts_with($page->slug, 'cocuk-') ? 'cocuk' : (str_starts_with($page->slug, 'yasli-bakim-') ? 'yasli-bakim' : (str_starts_with($page->slug, 'rehabilitasyon-') ? 'rehabilitasyon' : (current_brand()['default_section'] ?? null)));
+        $__sec = $__bolum ? (service_sections()[$__bolum] ?? null) : null;
+        // Rehabilitasyon sitesinde fiyat sayfası 'Fizik Tedavi' fiyatlarıdır; özel eğitim ücret yazılarında kutu gösterilmez.
+        if ($__bolum === 'rehabilitasyon' && ! preg_match('/fizik|fizyo/', (string) $page->slug)) {
+            $__sec = null;
+        }
+        if ($__sec) {
+            $__host = 'https://'.bolum_sahibi_host($__bolum);
+            $__yol = fn ($ad, $p) => $__host.'/'.ltrim(preg_replace('#^/?site/[^/]+/?#', '', (string) parse_url(brand_route($ad, $p), PHP_URL_PATH)), '/');
+            $__konu = $__sec['fiyat_seo_title'] ?? $__sec['seo_title'] ?? $__sec['title'];
+            $__iller = collect(['istanbul', 'ankara', 'izmir', 'bursa', 'antalya', 'konya'])
+                ->map(fn ($s) => \App\Models\City::findBySlugCached($s))->filter()
+                ->map(fn ($c) => ['ad' => $c->name.' '.mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $__konu), 'UTF-8').' fiyatları', 'url' => $__yol('price-guide.show', ['sectionSlug' => $__bolum, 'citySlug' => $c->slug])]);
+            $__fy = ['konu' => $__konu, 'ulke' => $__yol('price-guide.national', ['sectionSlug' => $__bolum]), 'iller' => $__iller];
+        }
+    }
+  @endphp
+  @if($__fy)
+    <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-5 mt-6">
+      <div class="font-black text-gray-950 mb-2">📊 Güncel {{ $__fy['konu'] }} fiyatları {{ now()->year }}</div>
+      <p class="text-sm text-gray-700 mb-3"><a href="{{ $__fy['ulke'] }}" class="text-primary font-bold hover:underline">{{ $__fy['konu'] }} fiyatları {{ now()->year }}: 81 il karşılaştırması →</a></p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;">
+        @foreach($__fy['iller'] as $__il)
+          <a href="{{ $__il['url'] }}" class="text-gray-700 hover:underline">{{ $__il['ad'] }}</a>
+        @endforeach
+      </div>
+    </div>
+  @endif
+
   @if(isset($ilgili) && $ilgili->isNotEmpty())
     {{-- 5 Kasım 2026: aynı konudaki diğer rehber yazıları --}}
     <div class="mt-8">

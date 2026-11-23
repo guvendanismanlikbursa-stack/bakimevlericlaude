@@ -27,6 +27,16 @@ class PageController extends Controller
                 ->where('id', '!=', $page->id)->orderByRaw('cover_path is null')->orderByRaw('abs(cast(id as signed) - ?)', [$page->id])->limit(4)->get();
         }
 
+        // 23 Kasım 2026 (kullanıcı onayı): yanlış sitede duran şehir yazıları doğru siteye taşındı. Bu sitede olmayan
+        // ama başka sitede yayında olan rehber yazısı istenirse o sitedeki adrese kalıcı yönlendirilir.
+        if (! $page) {
+            $baskaSite = ContentPage::guides()->yayinda()->where('slug', $slug)->where('brand', '!=', $brand['slug'])->value('brand');
+            $alanAdi = $baskaSite ? (config('brands.brands.'.$baskaSite.'.domains')[0] ?? null) : null;
+            if ($alanAdi) {
+                return redirect()->away('https://'.$alanAdi.'/sayfa/'.$slug, 301);
+            }
+        }
+
         if (! $page) {
             $fallback = site_content_page($brand['slug'], $slug);
             abort_if(! $fallback, 404);
