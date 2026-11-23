@@ -58,6 +58,13 @@ return [
             'short_title' => 'Çocuk',
             'icon' => 'child-care',
             'scopes' => ['cocuk-bakim', 'ozel-egitim'],
+            // 23 Kasım 2026 (SEO fırsatları, kullanıcı onayı): "X kreş fiyatları" / "X kreş" sayfaları (kategorisiz il/ilçe
+            // fiyat + rehber sayfası, ülke geneli fiyat sayfası) yalnız kreş/çocuk bakım kurumlarını sayar ve listeler;
+            // özel eğitim merkezleri kendi kategori sayfalarında kalır (Gaziantep kreş sayfasının yarısı rehabilitasyondu).
+            'seo_scopes' => ['cocuk-bakim'],
+            // Bu kategorinin il/ilçe sayfası bölüm sayfasının kopyası sayılır: Google'a asıl adres olarak bölüm sayfası
+            // bildirilir ("bursa kreş fiyatları" için iki sayfamız 40-50. sırada birbiriyle yarışıyordu).
+            'ana_kategori' => 'kres-ve-anaokulu',
             'hero_title' => 'Kreş, anaokulu, gündüz bakımevi ve özel eğitim kurumlarını bulun',
             'hero_subtitle' => 'Kreş, gündüz bakım evi, anaokulu ve özel eğitim merkezlerini yaş grubu, şehir ve hizmetlere göre karşılaştırın.',
             'search_label' => 'Kreş, anaokulu veya özel eğitim merkezi ara',
@@ -113,6 +120,10 @@ return [
             'short_title' => 'Rehab',
             'icon' => 'rehab-care',
             'scopes' => ['rehabilitasyon', 'fizik-tedavi'],
+            // 23 Kasım 2026 (SEO fırsatları): aileler "fizik tedavi fiyatları / ücretleri" diye arıyor; fiyat sayfalarında
+            // konu adı "Rehabilitasyon Merkezi" yerine bu (yalnız fiyat rehberi; rehber/liste sayfaları değişmedi).
+            'fiyat_seo_title' => 'Fizik Tedavi',
+            'ana_kategori' => 'fizik-tedavi-ve-rehabilitasyon',
             'hero_title' => 'Rehabilitasyon ve fizik tedavi merkezlerini karşılaştırın',
             'hero_subtitle' => 'Fizik tedavi, nörolojik rehabilitasyon, özel terapi ve bakım desteklerini şehir/kategori bazında bulun.',
             'search_label' => 'Rehabilitasyon veya fizik tedavi merkezi ara',

@@ -5,7 +5,8 @@
      Not: canlıda Tailwind yeniden derlenmediği için yalnız price-guide.blade.php'de zaten kullanılan sınıflar + satır içi stil. --}}
 @php
   $yil = now()->year;
-  $konu = $category->name ?? $section['seo_title'] ?? $section['title'];
+  // 23 Kasım 2026: bkz. config/brands.php fiyat_seo_title.
+  $konu = $category->name ?? $section['fiyat_seo_title'] ?? $section['seo_title'] ?? $section['title'];
   $konuKucuk = mb_strtolower($konu);
   $tl = fn ($v) => number_format((float) $v, 0, ',', '.').' TL';
   $ilSayisi = count($iller);
@@ -68,7 +69,7 @@
 @section('breadcrumb_jsonld')
   @include('themes._shared.partials.breadcrumb-jsonld', ['items' => array_values(array_filter([
       ['name' => $brand['name'], 'url' => brand_route('home')],
-      ['name' => ($section['seo_title'] ?? $section['title']).' Fiyatları', 'url' => brand_route('price-guide.national', ['sectionSlug' => $section['slug']])],
+      ['name' => ($section['fiyat_seo_title'] ?? $section['seo_title'] ?? $section['title']).' Fiyatları', 'url' => brand_route('price-guide.national', ['sectionSlug' => $section['slug']])],
       $category ? ['name' => $category->name.' Fiyatları', 'url' => url()->current()] : null,
   ]))])
   @include('themes._shared.partials.faqpage-jsonld', ['questions' => $sss])

@@ -55,7 +55,7 @@ class LocationGuideController extends Controller
         // sorgu (sayim + liste) calisiyordu; sonuc 15 dakikalik kisa sureli
         // onbellege alindi - ayni il/ilce tekrar ziyaret edilirse veritabanina
         // hic gidilmiyor.
-        $guideCacheKey = 'location-guide:v1:'.md5(implode('|', [
+        $guideCacheKey = 'location-guide:v2:'.md5(implode('|', [
             $brand['slug'], $section['slug'], $city->id, $districtName ?? '',
         ]));
 
@@ -63,8 +63,9 @@ class LocationGuideController extends Controller
             $guideCacheKey, function () use ($section, $city, $districtName) {
                 // 30 Eylul 2026: paylasilan scope'a tasindi (bkz. Facility::
                 // scopeOrderByListingPriority ayni tarihli yorum).
+                // 23 Kasım 2026: bkz. config/brands.php seo_scopes ("Bursa Kreşleri" sayfasında yalnız kreşler).
                 $query = Facility::discoverable()
-                    ->forBrand($section['scopes'])
+                    ->forBrand($section['seo_scopes'] ?? $section['scopes'])
                     ->where('city_id', $city->id)
                     ->with(['city', 'category', 'images'])
                     ->orderByListingPriority();
@@ -75,7 +76,7 @@ class LocationGuideController extends Controller
 
                 $facilityCount = (clone $query)->count();
                 $facilities = $query->limit(12)->get();
-                $priceRange = $this->priceRangeFor($section['scopes'], $city->id, $districtName);
+                $priceRange = $this->priceRangeFor($section['seo_scopes'] ?? $section['scopes'], $city->id, $districtName);
 
                 return compact('facilityCount', 'facilities', 'priceRange');
             }

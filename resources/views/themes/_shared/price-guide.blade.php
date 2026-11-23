@@ -5,13 +5,15 @@
   // ("Bakimevi", "Kres" vb.) - $section['title'] ("Yasli Bakim" gibi)
   // kimsenin aramadigi bir terim. bkz. location-guide.blade.php ayni
   // tarihli/mantikli duzeltme.
-  $topicTitle = $category->name ?? $section['seo_title'] ?? $section['title'];
+  // 23 Kasım 2026: fiyat sayfasına özel konu adı (bkz. config/brands.php fiyat_seo_title).
+  $bolumKonu = $section['fiyat_seo_title'] ?? $section['seo_title'] ?? $section['title'];
+  $topicTitle = $category->name ?? $bolumKonu;
   $placeTitle = ($districtName ?? null) ? $city->name.' / '.$districtName : $city->name;
   $breadcrumbItems = [
       ['name' => $brand['name'], 'url' => brand_route('home')],
       // 18 Kasım 2026: ülke geneli fiyat sayfası (bkz. price-guide-national.blade.php) yol izine eklendi.
-      ['name' => ($section['seo_title'] ?? $section['title']).' Fiyatları', 'url' => brand_route('price-guide.national', ['sectionSlug' => $section['slug']])],
-      ['name' => $city->name.' '.($section['seo_title'] ?? $section['title']).' Fiyatları', 'url' => brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug])],
+      ['name' => $bolumKonu.' Fiyatları', 'url' => brand_route('price-guide.national', ['sectionSlug' => $section['slug']])],
+      ['name' => $city->name.' '.$bolumKonu.' Fiyatları', 'url' => brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug])],
   ];
   if ($category) {
       $breadcrumbItems[] = ['name' => $category->name.' Fiyatları', 'url' => brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug])];
@@ -70,7 +72,18 @@
     .'. İlçelere göre karşılaştırın, ücretsiz fiyat isteyin.')
 @section('og_image', seo_og_image($section))
 {{-- 9 Kasım 2026: bölümün sahibi başka siteyse asıl adres orası (bkz. bolum_sahibi_url). --}}
-@if($__sahipUrl = bolum_sahibi_url($section['slug'] ?? null))
+{{-- 23 Kasım 2026: bölümün ana kategorisinin sayfası, bölüm sayfasının kopyası - asıl adres bölüm sayfası
+     (sahibi başka siteyse o sitedeki bölüm sayfası; zincir canonical olmasın). bkz. config/brands.php ana_kategori. --}}
+@php
+  $__anaKopya = $category && $category->slug === ($section['ana_kategori'] ?? null);
+  $__sahipUrl = bolum_sahibi_url($section['slug'] ?? null);
+  if ($__anaKopya) {
+      $__yol = parse_url(brand_route('price-guide.show', array_filter(['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => ($districtName ?? null) ? \Illuminate\Support\Str::slug($districtName) : null])), PHP_URL_PATH);
+      $__yol = '/'.ltrim(preg_replace('#^/?site/[^/]+/?#', '', (string) $__yol), '/');
+      $__sahipUrl = 'https://'.bolum_sahibi_host($section['slug'] ?? null).$__yol;
+  }
+@endphp
+@if($__sahipUrl)
   @section('canonical', $__sahipUrl)
 @endif
 {{-- 12 Ekim 2026: kullanicinin acik talebi - "fiyat soranlara siteler
@@ -95,10 +108,12 @@
     <p class="text-sm text-gray-700 font-semibold mb-3">{{ $guideContent['intro'] }}</p>
   @endif
   @if($category && !empty($category->seo_description))
-    <p class="text-sm text-gray-600 mb-8">{{ $category->seo_description }}</p>
-  @else
-    <div class="mb-8"></div>
+    <p class="text-sm text-gray-600 mb-4">{{ $category->seo_description }}</p>
   @endif
+  {{-- 23 Kasım 2026 (SEO fırsatları): "bursa kreş", "bebek kreşi" gibi liste aramaları genel /kurumlar sayfasına
+       düşüyordu; il/ilçe liste sayfasına (rehber) açık metinli iç bağlantı. --}}
+  @php $__listeAd = kurum_turu_cogul($category->name ?? ($section['seo_title'] ?? $section['title'])); @endphp
+  <p class="text-sm mb-8"><a href="{{ $category && ! $__anaKopya ? brand_route('location-guide.category', array_filter(['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $category->slug, 'districtSlug' => ($districtName ?? null) ? \Illuminate\Support\Str::slug($districtName) : null])) : brand_route('location-guide.show', array_filter(['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => ($districtName ?? null) ? \Illuminate\Support\Str::slug($districtName) : null])) }}" class="text-primary font-bold hover:underline">📋 {{ $placeTitle }} {{ $__listeAd }}: tüm liste, yorumlar ve iletişim →</a></p>
 
   @if($piyasa)
     {{-- 18 Kasım 2026: kreş/anaokulu aylık ücret özeti (bkz. config/piyasa_ucretleri.php). --}}
@@ -111,7 +126,7 @@
   @endif
   @if($sectionCategories->isNotEmpty())
     <div class="flex flex-wrap gap-2 mb-8">
-      <a href="{{ brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold {{ ! $category ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">Tümü</a>
+      <a href="{{ brand_route('price-guide.show', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold {{ ! $category ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">{{ isset($section['seo_scopes']) ? $bolumKonu : 'Tümü' }}</a>
       @foreach($sectionCategories as $sectionCategory)
         <a href="{{ brand_route('price-guide.category', ['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'categorySlug' => $sectionCategory->slug]) }}" class="rounded-lg px-3 py-2 text-xs font-bold {{ $category?->id === $sectionCategory->id ? 'bg-primary text-white' : 'bg-gray-50 border border-gray-100 text-gray-700' }}">{{ $sectionCategory->name }}</a>
       @endforeach

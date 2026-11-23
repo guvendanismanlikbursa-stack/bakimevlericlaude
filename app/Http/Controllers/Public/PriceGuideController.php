@@ -27,8 +27,9 @@ class PriceGuideController extends Controller
         $city = (City::findBySlugCached($citySlug) ?? abort(404));
         $districtName = $this->resolveDistrict($city, $districtSlug);
 
+        // 23 Kasım 2026: bkz. config/brands.php seo_scopes.
         $baseQuery = Facility::discoverable()
-            ->forBrand($section['scopes'])
+            ->forBrand($section['seo_scopes'] ?? $section['scopes'])
             ->where('city_id', $city->id);
 
         if ($districtName) {
@@ -103,10 +104,10 @@ class PriceGuideController extends Controller
 
     private function renderNational(array $brand, array $section, ?FacilityCategory $category)
     {
-        $veri = Cache::remember('price-guide:ulke:v1:'.$section['slug'].':'.($category->id ?? '-'), now()->addHours(6), function () use ($section, $category) {
+        $veri = Cache::remember('price-guide:ulke:v2:'.$section['slug'].':'.($category->id ?? '-'), now()->addHours(6), function () use ($section, $category) {
             $q = Facility::discoverable()->when($category,
                 fn ($q) => $q->where('facility_category_id', $category->id),
-                fn ($q) => $q->forBrand($section['scopes']));
+                fn ($q) => $q->forBrand($section['seo_scopes'] ?? $section['scopes']));
             $sehirAd = City::cachedAll()->keyBy('id');
             $iller = (clone $q)->selectRaw('city_id, COUNT(*) as kurum, SUM(CASE WHEN price_min > 0 THEN 1 ELSE 0 END) as fiyatli,
                     AVG(CASE WHEN price_min > 0 THEN price_min END) as ort_fiyat, AVG(CASE WHEN rating > 0 THEN rating END) as puan')
@@ -154,7 +155,7 @@ class PriceGuideController extends Controller
         // icin ayni sayfa tekrar ziyaret edildiginde veritabanina hic
         // gidilmez.
         $page = (int) request()->query('page', 1);
-        $cacheKey = 'price-guide:v2:'.md5(implode('|', [
+        $cacheKey = 'price-guide:v3:'.md5(implode('|', [
             $brand['slug'], $section['slug'], $city->id, $districtName ?? '', $category->id ?? '', $page,
         ]));
 

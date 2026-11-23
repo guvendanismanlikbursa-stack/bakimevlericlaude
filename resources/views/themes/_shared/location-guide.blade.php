@@ -30,7 +30,16 @@
 @section('meta_description', $placeTitle.' bölgesindeki '.mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], $topicPlural), 'UTF-8').' için fiyatları ve yorumları karşılaştırın, ücretsiz teklif alın.')
 @section('og_image', seo_og_image($section))
 {{-- 9 Kasım 2026: bölümün sahibi başka siteyse asıl adres orası (bkz. bolum_sahibi_url). --}}
-@if($__sahipUrl = bolum_sahibi_url($section['slug'] ?? null))
+{{-- 23 Kasım 2026: ana kategori sayfası bölüm sayfasının kopyası (bkz. price-guide.blade.php aynı tarihli kural). --}}
+@php
+  $__sahipUrl = bolum_sahibi_url($section['slug'] ?? null);
+  if (isset($section['seo_scopes']) && $category && $category->slug === ($section['ana_kategori'] ?? null)) {
+      $__yol = parse_url(brand_route('location-guide.show', array_filter(['sectionSlug' => $section['slug'], 'citySlug' => $city->slug, 'districtSlug' => $districtName ? \Illuminate\Support\Str::slug($districtName) : null])), PHP_URL_PATH);
+      $__yol = '/'.ltrim(preg_replace('#^/?site/[^/]+/?#', '', (string) $__yol), '/');
+      $__sahipUrl = 'https://'.bolum_sahibi_host($section['slug'] ?? null).$__yol;
+  }
+@endphp
+@if($__sahipUrl)
   @section('canonical', $__sahipUrl)
 @endif
 {{-- 12 Ekim 2026: kullanicinin acik talebi - "il+kreş/anaokulu, il+rehabilitasyon,
