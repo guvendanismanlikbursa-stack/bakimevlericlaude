@@ -60,8 +60,8 @@ class AramaKarti
             'kurum' => self::kurum($f),
             'saat' => self::aramaSaati($f),
             'ilgi' => self::ilgi($f),
-            'bolge' => self::bolge($f),
-            'rakip' => self::rakipler($f),
+            'rakip' => $rakip = self::rakipler($f),
+            'bolge' => self::bolge($f, $rakip['ilce']),
             'yorum' => self::yorumlar($f),
             'eksik' => self::eksikler($f),
             'gecmis' => self::gecmis($f),
@@ -211,20 +211,21 @@ class AramaKarti
     }
 
     /** İl / ilçe genelinde aynı türde kurum arayan aile talebi. */
-    private static function bolge(Facility $f): array
+    private static function bolge(Facility $f, string $ilce = ''): array
     {
+        $ilce = $ilce !== '' ? $ilce : (string) $f->district;
         $taban = fn () => OfferRequest::query()->where('city_id', $f->city_id)->where('facility_category_id', $f->facility_category_id);
-        $ilceSor = function () use ($f, $taban) {
+        $ilceSor = function () use ($f, $taban, $ilce) {
             $q = $taban();
             if ($f->district_id) {
                 $q->where('district_id', $f->district_id);
             } else {
-                $q->whereHas('facility', fn ($x) => $x->where('district', $f->district));
+                $q->whereHas('facility', fn ($x) => $x->where('district', $ilce));
             }
 
             return $q;
         };
-        $ilceKurumlari = fn () => Facility::query()->where('city_id', $f->city_id)->where('district', $f->district)->where('facility_category_id', $f->facility_category_id);
+        $ilceKurumlari = fn () => Facility::query()->where('city_id', $f->city_id)->where('district', $ilce)->where('facility_category_id', $f->facility_category_id);
         $ilceUlasma = FacilityInterestLead::query()->whereIn('facility_id', $ilceKurumlari()->select('id'))->where('created_at', '>=', now()->subDays(30))->count();
         $arama = SearchQuery::query()->where('city_id', $f->city_id)->where('facility_category_id', $f->facility_category_id)
             ->where('search_date', '>=', now()->subDays(30)->toDateString())->sum('count');
@@ -232,9 +233,10 @@ class AramaKarti
         return [
             'il_30' => $taban()->where('created_at', '>=', now()->subDays(30))->count(),
             'il_90' => $taban()->where('created_at', '>=', now()->subDays(90))->count(),
-            'ilce_30' => $f->district ? $ilceSor()->where('created_at', '>=', now()->subDays(30))->count() : null,
-            'ilce_90' => $f->district ? $ilceSor()->where('created_at', '>=', now()->subDays(90))->count() : null,
-            'ilce_ulasma_30' => $f->district ? $ilceUlasma : null,
+            'ilce_30' => $ilce !== '' ? $ilceSor()->where('created_at', '>=', now()->subDays(30))->count() : null,
+            'ilce_90' => $ilce !== '' ? $ilceSor()->where('created_at', '>=', now()->subDays(90))->count() : null,
+            'ilce_ulasma_30' => $ilce !== '' ? $ilceUlasma : null,
+            'ilce' => $ilce,
             'il_arama_30' => (int) $arama,
             'butce' => self::butce($taban()->where('created_at', '>=', now()->subDays(180))),
         ];
@@ -252,39 +254,88 @@ class AramaKarti
         return trim(($b($r->a) ?? '').($r->b ? ' – '.$b($r->b) : '')).' (son 6 ayda bütçe yazan '.$r->n.' aile)';
     }
 
-    /** Aynı il + ilçe + türdeki rakipler; ilçede az kurum varsa il geneli. */
+    /**
+     * Rakipler 4 katmanda (24 Kasım 2026: kullanıcının talebi - "il yerine ilçe, büyük ilçelerde mahalle; il verisini silmeden ekle"):
+     * mahalle, 2 km çevre (kesin konum varsa), ilçe, il. Tek sorgu (il geneli) çekilir, dar katmanlar PHP'de süzülür.
+     * Kurumun ilçesi boşsa en yakın kurumların ilçesinden tahmin edilir.
+     */
     private static function rakipler(Facility $f): array
     {
-        $uyeKosul = function ($q) {
-            $q->where('is_claimed', true)->orWhere('is_broker_managed', true)
-                ->orWhere(fn ($s) => $s->where('is_subscribed', true)->where('subscription_paid_until', '>=', now()->startOfDay()));
-        };
-        $kapsam = 'ilçe';
-        $sor = fn () => Facility::query()->where('is_published', true)->where('name', 'not like', 'QATEST%')->where('city_id', $f->city_id)
-            ->where('facility_category_id', $f->facility_category_id)->where('district', $f->district);
-        if (! $f->district || $sor()->count() < 4) {
-            $kapsam = 'il';
-            $sor = fn () => Facility::query()->where('is_published', true)->where('name', 'not like', 'QATEST%')->where('city_id', $f->city_id)->where('facility_category_id', $f->facility_category_id);
+        $hepsi = Facility::query()->where('is_published', true)->where('name', 'not like', 'QATEST%')
+            ->where('city_id', $f->city_id)->where('facility_category_id', $f->facility_category_id)
+            ->withCount(['images', 'googleReviews', 'approvedReviews'])
+            ->get(['id', 'name', 'slug', 'rating', 'price_min', 'views_count', 'website_status', 'website_url', 'is_claimed', 'is_broker_managed', 'is_subscribed', 'subscription_paid_until', 'district', 'neighborhood', 'lat', 'lng']);
+        if (! $hepsi->contains('id', $f->id)) {
+            $ben = Facility::query()->whereKey($f->id)->withCount(['images', 'googleReviews', 'approvedReviews'])
+                ->first(['id', 'name', 'slug', 'rating', 'price_min', 'views_count', 'website_status', 'website_url', 'is_claimed', 'is_broker_managed', 'is_subscribed', 'subscription_paid_until', 'district', 'neighborhood', 'lat', 'lng']);
+            $hepsi->push($ben);
         }
-        $hepsi = $sor()->withCount(['images', 'googleReviews', 'approvedReviews'])
-            ->get(['id', 'name', 'slug', 'rating', 'price_min', 'price_max', 'views_count', 'website_status', 'website_url', 'is_claimed', 'is_broker_managed', 'is_subscribed', 'subscription_paid_until', 'district']);
-        $uyeId = $sor()->where($uyeKosul)->pluck('id')->all();
-        $digerleri = $hepsi->where('id', '!=', $f->id);
+        $bugun = now()->startOfDay();
+        $hepsi->each(function ($x) use ($bugun) {
+            $x->yorum_toplam = $x->google_reviews_count + $x->approved_reviews_count;
+            $x->uye_mi = $x->is_claimed || $x->is_broker_managed || ($x->is_subscribed && $x->subscription_paid_until && $x->subscription_paid_until->gte($bugun));
+        });
+        $norm = fn ($s) => trim(mb_strtolower(str_replace(['İ', 'I'], ['i', 'ı'], (string) $s)));
+        $mesafe = function ($x) use ($f) {
+            if (! $f->lat || ! $f->lng || ! $x->lat || ! $x->lng) {
+                return null;
+            }
+            $r = 6371;
+            $dLat = deg2rad($x->lat - $f->lat);
+            $dLng = deg2rad($x->lng - $f->lng);
+            $h = sin($dLat / 2) ** 2 + cos(deg2rad($f->lat)) * cos(deg2rad($x->lat)) * sin($dLng / 2) ** 2;
+
+            return 2 * $r * asin(min(1, sqrt($h)));
+        };
+        // İlçe: kayıtlı değilse en yakın 7 kurumun en sık ilçesi
+        $ilce = trim((string) $f->district);
+        $ilceTahmin = false;
+        if ($ilce === '' && $f->hasPreciseLocation()) {
+            $yakin = $hepsi->filter(fn ($x) => $x->id !== $f->id && trim((string) $x->district) !== '' && $mesafe($x) !== null)
+                ->sortBy(fn ($x) => $mesafe($x))->take(7);
+            $ilce = (string) ($yakin->countBy(fn ($x) => trim($x->district))->sortDesc()->keys()->first() ?? '');
+            $ilceTahmin = $ilce !== '';
+        }
+        $seviyeler = [];
+        $mahalle = trim((string) $f->neighborhood);
+        if ($mahalle !== '') {
+            $m = $hepsi->filter(fn ($x) => $norm($x->neighborhood) === $norm($mahalle)
+                && (($ilce !== '' && $norm($x->district) === $norm($ilce)) || (($d = $mesafe($x)) !== null && $d <= 5) || $x->id === $f->id));
+            $seviyeler[] = self::seviye($m, $f, 'mahalle', $mahalle);
+        }
+        if ($f->hasPreciseLocation()) {
+            $seviyeler[] = self::seviye($hepsi->filter(fn ($x) => $x->id === $f->id || (($d = $mesafe($x)) !== null && $d <= 2)), $f, 'çevre', '2 km çevre');
+        }
+        if ($ilce !== '') {
+            $seviyeler[] = self::seviye($hepsi->filter(fn ($x) => $x->id === $f->id || $norm($x->district) === $norm($ilce)), $f, 'ilçe', $ilce.($ilceTahmin ? ' (konuma göre)' : ''));
+        }
+        $seviyeler[] = self::seviye($hepsi, $f, 'il', $f->city->name ?? 'İl');
+        // Ana karşılaştırma: en az 4 kurum olan en dar katman; "bizimle çalışan" cümlesi: üyesi olan en dar katman
+        $ana = collect($seviyeler)->first(fn ($s) => $s['toplam'] >= 4) ?? end($seviyeler);
+        $uyeli = collect($seviyeler)->first(fn ($s) => $s['uye_sayisi'] > 0);
+
+        return $ana + ['seviyeler' => $seviyeler, 'uye_kapsam' => $uyeli, 'ilce' => $ilce, 'ilce_tahmin' => $ilceTahmin];
+    }
+
+    private static function seviye($grup, Facility $f, string $kapsam, string $etiket): array
+    {
+        $grup = $grup->values();
+        $digerleri = $grup->where('id', '!=', $f->id);
         $ort = fn ($c) => $c->count() ? round($c->avg(), 1) : null;
-        $siraBul = function ($alan) use ($hepsi, $f) {
-            $sirali = $hepsi->sortByDesc($alan)->values();
-            $i = $sirali->search(fn ($x) => $x->id === $f->id);
+        $siraBul = function ($alan) use ($grup, $f) {
+            $i = $grup->sortByDesc($alan)->values()->search(fn ($x) => $x->id === $f->id);
 
             return $i === false ? null : $i + 1;
         };
-        $hepsi->each(fn ($x) => $x->yorum_toplam = $x->google_reviews_count + $x->approved_reviews_count);
         $siteVar = $digerleri->filter(fn ($x) => $x->website_url || ($x->website_status && ! in_array($x->website_status, Facility::WEBSITE_MISSING_STATUSES, true)))->count();
+        $uyeler = $digerleri->where('uye_mi', true);
 
         return [
             'kapsam' => $kapsam,
-            'toplam' => $hepsi->count(),
-            'uye_sayisi' => count($uyeId),
-            'uyeler' => $hepsi->whereIn('id', $uyeId)->where('id', '!=', $f->id)->sortByDesc('rating')->take(6)
+            'etiket' => $etiket,
+            'toplam' => $grup->count(),
+            'uye_sayisi' => $uyeler->count(),
+            'uyeler' => $uyeler->sortByDesc('rating')->take(6)
                 ->map(fn ($x) => ['ad' => $x->name, 'puan' => $x->rating, 'foto' => $x->images_count, 'yorum' => $x->yorum_toplam, 'ilce' => $x->district])->values()->all(),
             'ort_puan' => $ort($digerleri->pluck('rating')->filter()),
             'ort_yorum' => $ort($digerleri->pluck('yorum_toplam')),
@@ -294,7 +345,7 @@ class AramaKarti
             'sira_puan' => $siraBul('rating'),
             'sira_yorum' => $siraBul('yorum_toplam'),
             'sira_ilgi' => $siraBul('views_count'),
-            'en_iyi' => $digerleri->sortByDesc('yorum_toplam')->take(3)->map(fn ($x) => ['ad' => $x->name, 'puan' => $x->rating, 'yorum' => $x->yorum_toplam, 'uye' => in_array($x->id, $uyeId, true)])->values()->all(),
+            'en_iyi' => $digerleri->sortByDesc('yorum_toplam')->take(3)->map(fn ($x) => ['ad' => $x->name, 'puan' => $x->rating, 'yorum' => $x->yorum_toplam, 'uye' => (bool) $x->uye_mi])->values()->all(),
         ];
     }
 

@@ -21,6 +21,7 @@
   .ak-itiraz{border:1.5px solid #eef0f3;border-radius:12px;padding:10px 12px;margin-bottom:8px}
   .ak-itiraz summary{cursor:pointer;font-weight:900;color:#111827;font-size:14px}
   .ak-itiraz div{font-size:14px;color:#374151;line-height:1.6;margin-top:6px}
+  .ak-katman{border:1.5px solid #eef0f3;border-radius:12px;padding:10px 12px;min-width:0}
   .ak-etk{display:block;font-size:12.5px;font-weight:800;color:#6b7280;margin-bottom:3px}
   .ak-girdi{width:100%;box-sizing:border-box;border:1.5px solid #d6dde0;border-radius:10px;padding:7px 10px;font-size:14px;background:#fff;color:#111827}
   .ak-btn{border:0;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:900;background:#111827;color:#fff;cursor:pointer}
@@ -37,6 +38,9 @@
   $sahipsiz = ! $f->is_claimed && ! $f->is_broker_managed;
   $turKucuk = mb_strtolower($kr['tur']);
   $bolge90 = $bo['ilce_90'] ?? $bo['il_90'];
+  $kapsamAdi = ['mahalle' => 'Mahalle', 'çevre' => 'Yakın çevre', 'ilçe' => 'İlçe', 'il' => 'İl'];
+  $kapsamde = ['mahalle' => 'Mahallenizde', 'çevre' => '2 km çevrenizde', 'ilçe' => 'İlçenizde', 'il' => 'İlinizde'];
+  $uk = $ra['uye_kapsam'];
   // Açılış cümleleri: yalnız gerçek ve sıfırdan büyük rakamlar
   $soz = [];
   if ($ziyaret > 0) {
@@ -50,8 +54,8 @@
   } elseif ($bo['il_30'] > 0) {
       $soz[] = 'Son 30 günde ilinizde <b>'.$s($bo['il_30']).' aile</b> '.e($turKucuk).' için fiyat teklifi istedi.';
   }
-  if ($ra['uye_sayisi'] > 0) {
-      $soz[] = ($ra['kapsam'] === 'ilçe' ? 'İlçenizdeki' : 'İlinizdeki').' <b>'.$s($ra['uye_sayisi']).' kurum</b> bizimle çalışıyor; aileler listede önce onları görüyor.';
+  if ($uk) {
+      $soz[] = $kapsamde[$uk['kapsam']].'ki <b>'.$s($uk['uye_sayisi']).' kurum</b> ('.e($uk['etiket']).') bizimle çalışıyor; aileler listede önce onları görüyor.';
   }
   if ($yo['ovgu']) {
       $soz[] = 'Ailelerin yorumlarda en çok övdüğü şey: <b>'.e(mb_strtolower($yo['ovgu'][0]['ad'])).'</b>. Bunu sayfanızda öne çıkaralım.';
@@ -195,22 +199,37 @@
   @if($bo['butce'])<div class="ak-satir" style="margin-top:8px;">💰 Ailelerin yazdığı ortalama bütçe: <b>{{ $bo['butce'] }}</b>@if($kr['fiyat']) · Kurumun fiyatı: <b>{{ $kr['fiyat'] }}</b>@endif</div>@endif
 </div>
 
-{{-- 5. Rakipler --}}
+{{-- 5. Rakipler: mahalle / 2 km çevre / ilçe / il (24 Kasım 2026: kullanıcının talebi - il verisi silinmeden dar katmanlar eklendi) --}}
 <div class="ak-kart">
-  <h2 class="ak-h">5 · Rakipler ({{ $ra['kapsam'] === 'ilçe' ? 'aynı ilçe' : 'aynı il' }}, {{ $s($ra['toplam']) }} kurum)</h2>
-  <div class="ak-satir">
-    Bizimle çalışan: <b>{{ $s($ra['uye_sayisi']) }}</b> ·
-    Bu kurumun sırası: puanda <b>{{ $ra['sira_puan'] ?? '—' }}.</b>, yorum sayısında <b>{{ $ra['sira_yorum'] ?? '—' }}.</b>, ilgide <b>{{ $ra['sira_ilgi'] ?? '—' }}.</b><br>
-    Rakip ortalaması: puan <b>{{ $ra['ort_puan'] !== null ? $p1($ra['ort_puan']) : '—' }}</b> · yorum <b>{{ $ra['ort_yorum'] !== null ? $s($ra['ort_yorum']) : '—' }}</b> · fotoğraf <b>{{ $ra['ort_foto'] !== null ? $s($ra['ort_foto']) : '—' }}</b>@if($ra['ort_fiyat']) · başlangıç fiyatı <b>{{ $s($ra['ort_fiyat']) }} ₺</b>@endif @if($ra['site_orani'] !== null) · kendi sitesi olan <b>%{{ $ra['site_orani'] }}</b>@endif
+  <h2 class="ak-h">5 · Rakipler (mahalle, çevre, ilçe ve il)</h2>
+  @if($ra['ilce_tahmin'])<div class="ak-satir" style="font-size:12.5px;color:#92400e;margin-bottom:8px;">Bu kurumun ilçesi kayıtlı değil; ilçe, en yakın kurumların ilçesinden tahmin edildi: <b>{{ $ra['ilce'] }}</b>.</div>@endif
+  <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
+    @foreach($ra['seviyeler'] as $sv)
+      <div class="ak-katman" style="{{ $sv['kapsam'] === $ra['kapsam'] ? 'border-color:#111827;' : '' }}">
+        <div style="font-size:12.5px;font-weight:900;color:#6b7280;text-transform:uppercase;">{{ $kapsamAdi[$sv['kapsam']] ?? $sv['kapsam'] }}</div>
+        <div style="font-weight:900;color:#111827;font-size:15px;">{{ $sv['etiket'] }}</div>
+        <div class="ak-satir" style="font-size:13.5px;margin-top:4px;">
+          Kurum: <b>{{ $s($sv['toplam']) }}</b> · bizimle çalışan: <b>{{ $s($sv['uye_sayisi']) }}</b><br>
+          Bu kurumun sırası: puan <b>{{ $sv['sira_puan'] ?? '—' }}.</b> · yorum <b>{{ $sv['sira_yorum'] ?? '—' }}.</b> · ilgi <b>{{ $sv['sira_ilgi'] ?? '—' }}.</b><br>
+          Rakip ort.: puan <b>{{ $sv['ort_puan'] !== null ? $p1($sv['ort_puan']) : '—' }}</b> · yorum <b>{{ $sv['ort_yorum'] !== null ? $s($sv['ort_yorum']) : '—' }}</b> · foto <b>{{ $sv['ort_foto'] !== null ? $s($sv['ort_foto']) : '—' }}</b>@if($sv['ort_fiyat']) · fiyat <b>{{ $s($sv['ort_fiyat']) }} ₺</b>@endif @if($sv['site_orani'] !== null) · sitesi olan <b>%{{ $sv['site_orani'] }}</b>@endif
+        </div>
+        @if($sv['uyeler'] || $sv['en_iyi'])
+          <details style="margin-top:6px;" @if($sv['kapsam'] === $ra['kapsam']) open @endif>
+            <summary style="cursor:pointer;font-size:13px;font-weight:800;color:#0d6e6a;">İsimler</summary>
+            @if($sv['uyeler'])
+              <div style="font-size:12.5px;font-weight:800;color:#374151;margin-top:6px;">Bizimle çalışanlar:</div>
+              <ul class="ak-liste" style="font-size:13px;">@foreach($sv['uyeler'] as $u)<li><b>{{ $u['ad'] }}</b>{{ $sv['kapsam'] === 'il' && $u['ilce'] ? ' ('.$u['ilce'].')' : '' }} · ★ {{ $u['puan'] ? $p1($u['puan']) : '—' }} · {{ $u['yorum'] }} yorum · {{ $u['foto'] }} foto</li>@endforeach</ul>
+            @endif
+            @if($sv['en_iyi'])
+              <div style="font-size:12.5px;font-weight:800;color:#374151;margin-top:6px;">En çok yorum alanlar:</div>
+              <ul class="ak-liste" style="font-size:13px;">@foreach($sv['en_iyi'] as $u)<li>{{ $u['ad'] }} · ★ {{ $u['puan'] ? $p1($u['puan']) : '—' }} · {{ $u['yorum'] }} yorum{{ $u['uye'] ? ' · bizimle' : '' }}</li>@endforeach</ul>
+            @endif
+          </details>
+        @endif
+      </div>
+    @endforeach
   </div>
-  @if($ra['uyeler'])
-    <div style="font-size:13px;font-weight:800;color:#374151;margin-top:10px;">Bizimle çalışan rakipler:</div>
-    <ul class="ak-liste">@foreach($ra['uyeler'] as $u)<li><b>{{ $u['ad'] }}</b>{{ $ra['kapsam'] === 'il' && $u['ilce'] ? ' ('.$u['ilce'].')' : '' }} · ★ {{ $u['puan'] ? $p1($u['puan']) : '—' }} · {{ $u['yorum'] }} yorum · {{ $u['foto'] }} fotoğraf</li>@endforeach</ul>
-  @endif
-  @if($ra['en_iyi'])
-    <div style="font-size:13px;font-weight:800;color:#374151;margin-top:10px;">En çok yorum alan rakipler:</div>
-    <ul class="ak-liste">@foreach($ra['en_iyi'] as $u)<li>{{ $u['ad'] }} · ★ {{ $u['puan'] ? $p1($u['puan']) : '—' }} · {{ $u['yorum'] }} yorum{{ $u['uye'] ? ' · bizimle çalışıyor' : '' }}</li>@endforeach</ul>
-  @endif
+  <div class="ak-satir" style="font-size:12.5px;color:#6b7280;margin-top:8px;">Siyah çerçeveli katman, en az 4 kurum bulunan en dar bölgedir; itiraz cevaplarındaki ortalamalar ondan gelir.</div>
 </div>
 
 {{-- 6. Yorumlar --}}
@@ -285,7 +304,7 @@
   </div></details>
   <details class="ak-itiraz"><summary>"Düşüneyim / sonra dönerim"</summary><div>
     Hedef tek arama: o an karar verdirecek adım. <b>Teklif sayfasını şimdi WhatsApp'tan gönderin</b> ve birlikte bakın; sayfasındaki ziyaretçi ve aile talebi rakamları orada canlı yazıyor.
-    @if($ra['uye_sayisi']) "{{ $ra['kapsam'] === 'ilçe' ? 'İlçenizde' : 'İlinizde' }} {{ $s($ra['uye_sayisi']) }} kurum şu an bizimle; öne çıkmak için bugün başlamanız yeterli."@endif
+    @if($uk) "{{ $kapsamde[$uk['kapsam']] }} {{ $s($uk['uye_sayisi']) }} kurum şu an bizimle; öne çıkmak için bugün başlamanız yeterli."@endif
   </div></details>
   <details class="ak-itiraz"><summary>"Bize zaten tavsiyeyle geliyorlar"</summary><div>
     Tavsiyeyle gelen aile de önce internetten bakıyor: bu ay sayfanıza <b>{{ $s($ziyaret) }} kişi</b> baktı.

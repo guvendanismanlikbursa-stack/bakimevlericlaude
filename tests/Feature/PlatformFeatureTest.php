@@ -9056,7 +9056,7 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Arama kartı', false)->assertSee($f->name, false)
             ->assertSee('Temizlik ve hijyen', false)->assertSee('Yemek ve beslenme', false)
             ->assertSee('Rakip Bir', false)                       // bizimle çalışan rakip
-            ->assertSee('İlçenizdeki <b>1 kurum</b> bizimle çalışıyor', false)
+            ->assertSee('<b>1 kurum</b>', false)->assertSee('bizimle çalışıyor', false)
             ->assertSee('<b>1 aile</b> size ulaşmak istedi', false)
             ->assertSee('İtiraz gelirse', false)
             ->assertSee(route('admin.crm.offer-page', $f), false)
@@ -9066,8 +9066,25 @@ class PlatformFeatureTest extends TestCase
             ->getContent();
         $this->assertStringContainsString('En uygun arama saati', $html);
         $k = \App\Support\AramaKarti::hazirla($f->fresh());
-        $this->assertSame('ilçe', $k['rakip']['kapsam']);
-        $this->assertSame(5, $k['rakip']['toplam']);
+        // 4 katman: mahalle / 2 km çevre (konum varsa) / ilçe / il - il silinmez
+        $katman = collect($k['rakip']['seviyeler'])->keyBy('kapsam');
+        $this->assertSame(5, $katman['ilçe']['toplam']);
+        $this->assertSame(1, $katman['ilçe']['uye_sayisi']);
+        $this->assertTrue($katman->has('il'));
+        $this->assertSame('Nilüfer', $k['rakip']['ilce']);
+        // İlçesi boş kurumda ilçe, en yakın kurumların ilçesinden tahmin edilir; mahalle katmanı oluşur
+        \App\Models\Facility::where('city_id', $f->city_id)->where('facility_category_id', $f->facility_category_id)
+            ->update(['lat' => 40.2100, 'lng' => 28.9800, 'neighborhood' => 'Ataevler Mahallesi']);
+        $f->forceFill(['district' => '', 'district_id' => null, 'lat' => 40.2105, 'lng' => 28.9805])->save();
+        $k2 = \App\Support\AramaKarti::hazirla($f->fresh());
+        $this->assertSame('Nilüfer', $k2['rakip']['ilce']);
+        $this->assertTrue($k2['rakip']['ilce_tahmin']);
+        $katman2 = collect($k2['rakip']['seviyeler'])->keyBy('kapsam');
+        $this->assertSame(['mahalle', 'çevre', 'ilçe', 'il'], $katman2->keys()->all());
+        $this->assertSame(5, $katman2['mahalle']['toplam']);
+        $this->assertSame('mahalle', $k2['rakip']['kapsam']);
+        $this->assertNotNull($k2['bolge']['ilce_30']);
+        $f->forceFill(['district' => 'Nilüfer'])->save();
         $this->assertSame(1, $k['ilgi']['ulasamayan_90']);
         $this->assertSame(1, $k['bolge']['il_30']);
         // Sahip bilgileri kaydedilir ve kartta görünür; boş gönderilince silinir
