@@ -21,6 +21,10 @@
   .ak-itiraz{border:1.5px solid #eef0f3;border-radius:12px;padding:10px 12px;margin-bottom:8px}
   .ak-itiraz summary{cursor:pointer;font-weight:900;color:#111827;font-size:14px}
   .ak-itiraz div{font-size:14px;color:#374151;line-height:1.6;margin-top:6px}
+  .ak-etk{display:block;font-size:12.5px;font-weight:800;color:#6b7280;margin-bottom:3px}
+  .ak-girdi{width:100%;box-sizing:border-box;border:1.5px solid #d6dde0;border-radius:10px;padding:7px 10px;font-size:14px;background:#fff;color:#111827}
+  .ak-btn{border:0;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:900;background:#111827;color:#fff;cursor:pointer}
+  .ak-aile{border-bottom:1px dashed #e5e7eb;padding:8px 0;font-size:14px;color:#374151;line-height:1.55}
 </style>
 @php
   $kr = $k['kurum']; $il = $k['ilgi']; $bo = $k['bolge']; $ra = $k['rakip']; $yo = $k['yorum']; $ek = $k['eksik']; $ge = $k['gecmis']; $te = $k['teklif'];
@@ -76,7 +80,7 @@
   </div>
 </div>
 
-@if($k['saglik'])<div class="ak-uyari" style="margin-bottom:14px;">⚕️ Sağlık kuruluşu: bu kuruma üyelik teklif edilmez. Sadece site hizmeti konuşulabilir.</div>@endif
+@if($k['saglik'])<div class="ak-uyari" style="margin-bottom:14px;">⚕️ Sağlık kuruluşu: CRM'de bu kurumlara normalde üyelik teklif edilmiyor (sağlık reklam kuralları). Paketler yine de aşağıda; teklif ederken dikkatli olun.</div>@endif
 
 {{-- 1. Kimi, ne zaman --}}
 <div class="ak-kart">
@@ -92,6 +96,42 @@
     @if($kr['eposta'])✉️ {{ $kr['eposta'] }}<br>@endif
     @if($kr['adres'])📍 {{ $kr['adres'] }}@endif
   </div>
+</div>
+
+{{-- 1b. Sahip / yetkili hakkında (24 Kasım 2026: kullanıcının talebi - elle girilir, otomatik toplanmaz) --}}
+@php $sp = $k['sahip']['profil']; @endphp
+<div class="ak-kart" id="sahip">
+  <h2 class="ak-h">👤 Kurum sahibi / yetkili hakkında</h2>
+  @if($sp)
+    <div class="ak-satir" style="margin-bottom:10px;">
+      @foreach(\App\Support\AramaKarti::SAHIP_ALANLARI as $alan => $etiket)
+        @if(! empty($sp[$alan]))<div><b>{{ $etiket }}:</b> <span style="white-space:pre-line;">{{ $sp[$alan] }}</span></div>@endif
+      @endforeach
+      @if(! empty($sp['guncelleme']))<div style="font-size:12px;color:#9ca3af;margin-top:4px;">Son güncelleme: {{ $sp['guncelleme'] }}</div>@endif
+    </div>
+  @else
+    <div class="ak-satir" style="margin-bottom:8px;color:#6b7280;">Henüz bilgi girilmemiş. Aşağıdaki bağlantılarla araştırıp bulduklarınızı kaydedin.</div>
+  @endif
+  <div style="font-size:13px;font-weight:800;color:#374151;margin-bottom:4px;">🔎 Araştırma bağlantıları (yeni sekmede açılır)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+    @foreach($k['sahip']['baglantilar'] as $b)<a href="{{ $b['url'] }}" target="_blank" rel="noopener noreferrer" class="ak-dg" style="font-size:12.5px;padding:5px 10px;">{{ $b['ad'] }}</a>@endforeach
+  </div>
+  <details @if(! $sp) open @endif>
+    <summary style="cursor:pointer;font-size:14px;font-weight:900;color:#0d6e6a;">✍️ {{ $sp ? 'Bilgileri düzenle' : 'Bilgi ekle' }}</summary>
+    <form method="POST" action="{{ route('admin.crm.owner-profile', $f) }}" style="margin-top:10px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
+      @csrf
+      @foreach(\App\Support\AramaKarti::SAHIP_ALANLARI as $alan => $etiket)
+        <label style="display:block;min-width:0;"><span class="ak-etk">{{ $etiket }}</span>
+          @if(in_array($alan, ['ad', 'gorev'], true))
+            <input name="{{ $alan }}" value="{{ old($alan, $sp[$alan] ?? ($alan === 'ad' ? ($k['sahip']['adlar'][0] ?? '') : '')) }}" maxlength="2000" class="ak-girdi">
+          @else
+            <textarea name="{{ $alan }}" rows="2" maxlength="2000" class="ak-girdi">{{ old($alan, $sp[$alan] ?? '') }}</textarea>
+          @endif
+        </label>
+      @endforeach
+      <div style="grid-column:1/-1;"><button type="submit" class="ak-btn">💾 Kaydet</button> <span style="font-size:12px;color:#6b7280;">Yalnız admin görür. Alanı boşaltıp kaydederseniz silinir.</span></div>
+    </form>
+  </details>
 </div>
 
 {{-- 2. Açılış --}}
@@ -120,6 +160,23 @@
     <div class="ak-sayi"><b>{{ $s($il['foto_bakilma']) }}</b><span>Fotoğraflarına bakılma</span></div>
   </div>
   <div class="ak-satir" style="font-size:12.5px;color:#6b7280;margin-top:8px;">Ziyaretçi sayısı gerçek tarayıcı ölçümüdür ({{ $il['olcum_basi'] }}'den beri), şişirilmiş görüntülenme kullanılmaz. Tüm zamanlarda teklif isteği: {{ $s($il['teklif_istegi']) }}, kurumun verdiği teklif: {{ $s($il['verilen_teklif']) }}.</div>
+</div>
+
+{{-- 3b. Kuruma ulaşmak isteyen aileler (24 Kasım 2026: kullanıcının talebi - ad ve telefon da görünür) --}}
+<div class="ak-kart">
+  <h2 class="ak-h">👨‍👩‍👧 Bu kuruma ulaşmak / teklif almak isteyen aileler (son 6 ay)</h2>
+  @forelse($k['aileler'] as $a)
+    <div class="ak-aile">
+      <b>{{ $a['tarih'] }}</b> · <span class="ak-rozet" style="{{ $a['tur'] === 'Ulaşmak istedi' ? 'background:#fef3c7;color:#92400e;' : 'background:#e0f2fe;color:#075985;' }}">{{ $a['tur'] }}</span>
+      <b>{{ $a['ad'] ?: '—' }}</b>
+      @if($a['telefon']) · <a href="tel:{{ preg_replace('/\s+/', '', $a['telefon']) }}" style="color:#1d4ed8;font-weight:800;">{{ $a['telefon'] }}</a>@endif
+      @if($a['eposta']) · {{ $a['eposta'] }}@endif
+      @if($a['iletildi']) · <span style="color:#166534;">kuruma iletildi {{ $a['iletildi'] }}</span>@else · <span style="color:#b91c1c;">kuruma iletilmedi</span>@endif
+      @if($a['mesaj'])<div style="color:#6b7280;font-size:13px;">“{{ $a['mesaj'] }}”</div>@endif
+    </div>
+  @empty
+    <div class="ak-satir" style="color:#6b7280;">Son 6 ayda bu kuruma doğrudan talep yok.</div>
+  @endforelse
 </div>
 
 {{-- 4. Bölge talebi --}}
@@ -260,5 +317,31 @@
     @if($kr['sistemde'])Sistemde {{ $kr['sistemde'] }} tarihinden beri @endif
     @if($kr['bakiye'] > 0) · Bakiye: {{ $s($kr['bakiye']) }} ₺@endif
   </div>
+</div>
+
+{{-- 11. Görüşme notu ve takip (24 Kasım 2026: kullanıcının talebi; CRM'deki görüşme kaydıyla aynı tablo) --}}
+<div class="ak-kart" id="k{{ $f->id }}">
+  <h2 class="ak-h">11 · Görüşme notu ve takip</h2>
+  <form method="POST" action="{{ route('admin.crm.store-note', $f) }}" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+    @csrf
+    <label style="min-width:0;"><span class="ak-etk">Sonuç</span>
+      <select name="status" required class="ak-girdi">@foreach(\App\Http\Controllers\Marketer\CrmController::STATUSES as $sv => $sl)<option value="{{ $sv }}" @selected(($ge['durum'] ?: 'called') === $sv)>{{ $sl }}</option>@endforeach</select>
+    </label>
+    <label style="min-width:0;"><span class="ak-etk">Görüşülen kişi</span><input name="contact_name" maxlength="120" class="ak-girdi" value="{{ $k['sahip']['profil']['ad'] ?? '' }}"></label>
+    <label style="min-width:0;"><span class="ak-etk">Görevi</span>
+      <select name="contact_role" class="ak-girdi"><option value="">—</option><option value="sahibi">Sahibi</option><option value="mudur">Müdür</option><option value="calisan">Çalışan</option></select>
+    </label>
+    <label style="min-width:0;"><span class="ak-etk">Tekrar aranacak zaman</span><input type="datetime-local" name="callback_at" class="ak-girdi"></label>
+    <label style="grid-column:1/-1;"><span class="ak-etk">Not</span><textarea name="note" rows="3" maxlength="2000" class="ak-girdi" placeholder="Ne konuşuldu, ne dedi, neye ilgi gösterdi…"></textarea></label>
+    <div style="grid-column:1/-1;"><button type="submit" class="ak-btn">💾 Görüşmeyi kaydet</button></div>
+  </form>
+  @if($k['notlar'])
+    <div style="font-size:13px;font-weight:800;color:#374151;margin-top:14px;">Görüşme geçmişi</div>
+    @foreach($k['notlar'] as $n)
+      <div class="ak-aile"><b>{{ $n['durum'] }}</b> · {{ $n['tarih'] }} · {{ $n['kim'] }}@if($n['kisi']) · 👤 {{ $n['kisi'] }}@endif @if($n['tekrar']) · 📅 {{ $n['tekrar'] }}@endif
+        @if($n['not'])<div style="color:#111827;white-space:pre-line;">“{{ $n['not'] }}”</div>@endif
+      </div>
+    @endforeach
+  @endif
 </div>
 @endsection

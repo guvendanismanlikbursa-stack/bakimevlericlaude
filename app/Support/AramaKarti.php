@@ -16,9 +16,10 @@ use Illuminate\Support\Facades\DB;
  * "mümkün olan maksimum bilgi" tek sayfada: kurumun durumu, sayfasına gelen gerçek ilgi, bölgedeki aile talebi, rakipler,
  * yorumlardan güçlü/zayıf yanlar, eksikler, kuruma uygun teklif, itiraz cevapları ve görüşmede gönderilecek bağlantılar.
  *
- * Kullanıcının kararları: görüşme sonrası not/takip YOK (tek arama); kurum sahibinin ÖZEL hayatı araştırılmaz
- * (KVKK - yalnızca işle ilgili, sistemde zaten olan yetkili bilgisi). Her açılışta canlı veriyle hesaplanır.
- * Ailelerin adı/telefonu gösterilmez - yalnızca sayı ve tarih (satış konuşmasında kişisel veri kullanılmaz).
+ * Her açılışta canlı veriyle hesaplanır. Aynı gün kullanıcının ikinci kararı: "buradan yazan her şeyi ekleyelim" -
+ * görüşme notu/takip, kurum sahibi hakkında ELLE girilen bilgiler (ilgi alanı, kişisel notlar; otomatik toplama YOK,
+ * admin kendisi araştırıp yazar), kuruma ulaşmak isteyen ailelerin adı/telefonu ve sağlık kuruluşlarına da üyelik
+ * paketleri (uyarıyla) kartta gösterilir. Sayfa yalnız admin içindir.
  */
 class AramaKarti
 {
@@ -37,6 +38,19 @@ class AramaKarti
         'yonetim' => ['Yönetim ve kurum sahibi', ['müdür', 'yönetim', 'sahibi', 'kurucu', 'hanım', 'bey']],
     ];
 
+    /** Kurum sahibi / yetkili hakkında elle girilen alanlar (facilities.sahip_profili). */
+    public const SAHIP_ALANLARI = [
+        'ad' => 'Adı soyadı',
+        'gorev' => 'Görevi (sahibi, müdür, ortak…)',
+        'meslek' => 'Mesleği / geçmişi',
+        'ilgi' => 'İlgi alanları, hobileri',
+        'onem' => 'Önem verdiği konular (iş)',
+        'kisisel' => 'Kişisel notlar (aile, memleket, takım…)',
+        'iletisim' => 'Nasıl konuşmayı sever (kısa/detaylı, resmi/samimi)',
+        'sosyal' => 'Sosyal medya / web bağlantıları',
+        'not' => 'Diğer notlar',
+    ];
+
     public static function hazirla(Facility $f): array
     {
         $f->loadMissing(['city', 'category', 'images', 'website', 'facilityUsers', 'claims', 'subscriptionPackage']);
@@ -51,9 +65,72 @@ class AramaKarti
             'yorum' => self::yorumlar($f),
             'eksik' => self::eksikler($f),
             'gecmis' => self::gecmis($f),
-            'teklif' => $saglik ? null : self::teklif($f),
+            'teklif' => self::teklif($f),
             'saglik' => $saglik,
+            'sahip' => self::sahip($f),
+            'aileler' => self::aileler($f),
+            'notlar' => self::notlar($f),
         ];
+    }
+
+    /** Kayıtlı sahip bilgileri + elle araştırma için hazır arama bağlantıları. */
+    private static function sahip(Facility $f): array
+    {
+        $profil = is_array($f->sahip_profili) ? $f->sahip_profili : [];
+        $adlar = collect([$profil['ad'] ?? null])
+            ->merge($f->facilityUsers->pluck('name'))
+            ->merge($f->claims->pluck('applicant_name'))
+            ->merge(FacilityMarketingNote::where('facility_id', $f->id)->whereNotNull('contact_name')->pluck('contact_name'))
+            ->filter()->map(fn ($x) => trim($x))->unique()->take(3)->values();
+        $yer = $f->city->name ?? '';
+        $g = fn ($q) => 'https://www.google.com/search?q='.rawurlencode($q);
+        $baglantilar = [];
+        foreach ($adlar as $ad) {
+            $baglantilar[] = ['ad' => $ad.' · Google', 'url' => $g('"'.$ad.'" '.$f->name)];
+            $baglantilar[] = ['ad' => $ad.' · LinkedIn', 'url' => 'https://www.linkedin.com/search/results/all/?keywords='.rawurlencode($ad.' '.$yer)];
+            $baglantilar[] = ['ad' => $ad.' · Facebook', 'url' => 'https://www.facebook.com/search/top?q='.rawurlencode($ad.' '.$yer)];
+            $baglantilar[] = ['ad' => $ad.' · Instagram', 'url' => $g('site:instagram.com "'.$ad.'"')];
+            $baglantilar[] = ['ad' => $ad.' · Haberler', 'url' => 'https://www.google.com/search?tbm=nws&q='.rawurlencode('"'.$ad.'"')];
+        }
+        $baglantilar[] = ['ad' => 'Kurum · Google', 'url' => $g('"'.$f->name.'" '.$yer)];
+        $baglantilar[] = ['ad' => 'Kurum · Instagram', 'url' => $g('site:instagram.com "'.$f->name.'"')];
+        $baglantilar[] = ['ad' => 'Kurum · Facebook', 'url' => 'https://www.facebook.com/search/top?q='.rawurlencode($f->name)];
+        $baglantilar[] = ['ad' => 'Kurum · Haberler', 'url' => 'https://www.google.com/search?tbm=nws&q='.rawurlencode('"'.$f->name.'"')];
+        $baglantilar[] = ['ad' => 'Kurum sahibi kim? · Google', 'url' => $g('"'.$f->name.'" kurucu OR sahibi OR müdür')];
+
+        return ['profil' => $profil, 'adlar' => $adlar->all(), 'baglantilar' => $baglantilar];
+    }
+
+    /** Kuruma ulaşmak isteyen / teklif isteyen aileler (son 180 gün, en yeni 20). */
+    private static function aileler(Facility $f): array
+    {
+        $kisa = fn ($m, $n) => mb_strimwidth(preg_replace('/\s+/', ' ', (string) $m), 0, $n, '…');
+        $liste = collect();
+        foreach (FacilityInterestLead::where('facility_id', $f->id)->where('created_at', '>=', now()->subDays(180))->latest()->limit(20)->get() as $x) {
+            $liste->push(['an' => $x->created_at, 'tur' => 'Ulaşmak istedi', 'ad' => $x->full_name, 'telefon' => $x->phone, 'eposta' => $x->email,
+                'mesaj' => $x->message ? $kisa($x->message, 180) : null, 'iletildi' => $x->sent_to_facility_at?->format('d.m.Y')]);
+        }
+        foreach ($f->offerRequests()->where('created_at', '>=', now()->subDays(180))->latest()->limit(20)->get() as $x) {
+            $ek = array_filter([$x->care_for, $x->patient_age ? $x->patient_age.' yaş' : null, $x->budget_max ? 'bütçe ≤ '.number_format((float) $x->budget_max, 0, ',', '.').' ₺' : null, $x->message ? $kisa($x->message, 150) : null]);
+            $liste->push(['an' => $x->created_at, 'tur' => 'Fiyat teklifi istedi', 'ad' => $x->full_name, 'telefon' => $x->phone, 'eposta' => $x->email,
+                'mesaj' => $ek ? implode(' · ', $ek) : null, 'iletildi' => $x->sent_to_facility_at?->format('d.m.Y')]);
+        }
+
+        return $liste->sortByDesc('an')->take(20)->map(fn ($x) => ['tarih' => $x['an']?->format('d.m.Y H:i')] + $x)->values()->all();
+    }
+
+    /** CRM görüşme geçmişi (en yeni 15). */
+    private static function notlar(Facility $f): array
+    {
+        return FacilityMarketingNote::where('facility_id', $f->id)->with(['marketer', 'admin'])->latest()->limit(15)->get()
+            ->map(fn ($n) => [
+                'tarih' => $n->created_at?->format('d.m.Y H:i'),
+                'durum' => \App\Http\Controllers\Marketer\CrmController::STATUSES[$n->status] ?? $n->status,
+                'kim' => $n->marketer?->name ?: ($n->admin?->name ?? 'Admin'),
+                'kisi' => $n->contactLabel(),
+                'not' => $n->sozlesme ? "Site sözleşmesi WhatsApp'tan gönderildi." : $n->note,
+                'tekrar' => $n->callback_at?->format('d.m.Y H:i'),
+            ])->all();
     }
 
     private static function kurum(Facility $f): array

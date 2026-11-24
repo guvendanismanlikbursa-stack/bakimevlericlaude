@@ -781,6 +781,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/crm/kurum/{facility}/teklif-sayfasi', [\App\Http\Controllers\Admin\CrmController::class, 'offerPage'])->name('crm.offer-page');
         // 24 Kasım 2026: kullanıcının talebi - ilk aramada satışı kapatmak için kuruma özel arama kartı.
         Route::get('/crm/kurum/{facility}/arama-karti', [\App\Http\Controllers\Admin\CrmController::class, 'aramaKarti'])->name('crm.call-card');
+        Route::post('/crm/kurum/{facility}/sahip-profili', [\App\Http\Controllers\Admin\CrmController::class, 'sahipProfili'])->name('crm.owner-profile');
         Route::post('/crm/doktor/{expert}/not', [\App\Http\Controllers\Admin\CrmController::class, 'storeDoctorNote'])->name('crm.doctors.store-note');
         // 2 Kasım 2026: görüşme kaydı silme (tek kayıt kalmışsa silinemez).
         Route::post('/crm/kurum/{facility}/not/{note}/sil', [\App\Http\Controllers\Admin\CrmController::class, 'destroyNote'])->whereNumber('note')->name('crm.destroy-note');

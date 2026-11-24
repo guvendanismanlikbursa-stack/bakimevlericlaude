@@ -9060,7 +9060,9 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('<b>1 aile</b> size ulaşmak istedi', false)
             ->assertSee('İtiraz gelirse', false)
             ->assertSee(route('admin.crm.offer-page', $f), false)
-            ->assertDontSee('Gizli Aile', false)                  // ailelerin kişisel bilgisi gösterilmez
+            ->assertSee('Gizli Aile', false)->assertSee('05320000000', false)   // 24 Kasım 2026 ikinci karar: aileler adıyla görünür
+            ->assertSee('Kurum sahibi / yetkili hakkında', false)->assertSee('linkedin.com/search', false)
+            ->assertSee('Görüşme notu ve takip', false)
             ->getContent();
         $this->assertStringContainsString('En uygun arama saati', $html);
         $k = \App\Support\AramaKarti::hazirla($f->fresh());
@@ -9068,6 +9070,18 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame(5, $k['rakip']['toplam']);
         $this->assertSame(1, $k['ilgi']['ulasamayan_90']);
         $this->assertSame(1, $k['bolge']['il_30']);
+        // Sahip bilgileri kaydedilir ve kartta görünür; boş gönderilince silinir
+        $this->post(route('admin.crm.owner-profile', $f), ['ad' => 'Ayşe Yılmaz', 'ilgi' => 'Bahçecilik, Bursaspor', 'kisisel' => ''])
+            ->assertRedirect(route('admin.crm.call-card', $f).'#sahip');
+        $this->assertSame(['ad' => 'Ayşe Yılmaz', 'ilgi' => 'Bahçecilik, Bursaspor'], \Illuminate\Support\Arr::except($f->fresh()->sahip_profili, 'guncelleme'));
+        $this->get(route('admin.crm.call-card', $f))->assertSee('Bahçecilik, Bursaspor', false)->assertSee(rawurlencode('"Ayşe Yılmaz"'), false);
+        $this->post(route('admin.crm.owner-profile', $f), ['ad' => '', 'ilgi' => '']);
+        $this->assertNull($f->fresh()->sahip_profili);
+        // Görüşme notu karttan kaydedilir, geçmişte görünür
+        $this->from(route('admin.crm.call-card', $f))->post(route('admin.crm.store-note', $f), ['status' => 'interested', 'note' => 'Yeni şube düşünüyor'])->assertRedirect();
+        $this->get(route('admin.crm.call-card', $f))->assertSee('Yeni şube düşünüyor', false);
+        // Sağlık kuruluşunda da paketler görünür (uyarıyla)
+        $this->assertNotNull(\App\Support\AramaKarti::hazirla($this->rehabFacility->fresh())['teklif']);
     }
 
     // 30 Ekim 2026: adminin ayrıntılı CRM'i - pazarlamacıyla aynı notlar, kapsam/arama/kim filtresi.

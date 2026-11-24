@@ -46,6 +46,7 @@ class Facility extends Model
             'menu_image_updated_at' => 'datetime',
             'website_checked_at' => 'datetime',
             'opening_hours' => 'array',
+            'sahip_profili' => 'array',
             'opening_hours_fetched_at' => 'datetime',
             // 28 Temmuz 2026: OfferRequest::city_id/facility_category_id
             // ZATEN integer'a cast'li (bkz. o model), Facility tarafinda

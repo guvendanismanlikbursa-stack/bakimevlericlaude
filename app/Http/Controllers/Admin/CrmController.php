@@ -204,6 +204,17 @@ REHBER;
         return view('admin.crm.arama-karti', ['f' => $facility, 'k' => \App\Support\AramaKarti::hazirla($facility)]);
     }
 
+    /** 24 Kasım 2026: arama kartındaki kurum sahibi / yetkili bilgileri (elle girilir, yalnız admin görür). */
+    public function sahipProfili(Request $request, Facility $facility)
+    {
+        $data = $request->validate(collect(\App\Support\AramaKarti::SAHIP_ALANLARI)->mapWithKeys(fn ($ad, $k) => [$k => 'nullable|string|max:2000'])->all());
+        $data = array_filter(array_map(fn ($v) => $v === null ? null : trim($v), $data), fn ($v) => $v !== null && $v !== '');
+        $facility->forceFill(['sahip_profili' => $data ? $data + ['guncelleme' => now()->format('d.m.Y H:i')] : null])->save();
+        log_admin_event('admin_crm_owner_profile', $facility, ['alanlar' => array_keys($data)]);
+
+        return redirect()->to(route('admin.crm.call-card', $facility).'#sahip')->with('success', 'Sahip bilgileri kaydedildi.');
+    }
+
     public function offerPage(Facility $facility)
     {
         return redirect()->away(membership_signed_preview_url('membership.offer', ['token' => $facility->ensureOfferToken()]));
