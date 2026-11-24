@@ -209,7 +209,7 @@
      Performans grafiği gibi çizgi grafik (sütun değil), 3 site aynı grafikte ayrı çizgi. Veri: AnalitikPanelVerisi::durumGrafigi. --}}
 @if(! empty($durum))
   @php
-    $durumDonem = [1 => '24 saat', 7 => '7 gün', 30 => '30 gün', 90 => '3 ay', 365 => '1 yıl'];
+    $durumDonem = [1 => '24 saat', 7 => '7 gün', 30 => '30 gün', 90 => '3 ay', 180 => '6 ay', 365 => '1 yıl'];
     $durumIlk = isset($durum[30]) ? 30 : array_key_first($durum);
   @endphp
   <div id="site-durumu" style="{{ $kart }}">

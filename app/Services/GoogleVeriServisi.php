@@ -105,7 +105,7 @@ class GoogleVeriServisi
         $saatler = [];
         foreach ($yanit->json('rows') ?? [] as $r) {
             $k = $trSaat($r['keys'][0]);
-            $saatler[$k] = ['tik' => (int) $r['clicks'], 'gos' => (int) $r['impressions']];
+            $saatler[$k] = ['tik' => (int) $r['clicks'], 'gos' => (int) $r['impressions'], 'sira' => (float) ($r['position'] ?? 0)];
         }
         $eksik = $yanit->json('metadata.firstIncompleteHour');
 

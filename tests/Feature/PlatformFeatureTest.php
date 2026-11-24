@@ -9350,9 +9350,11 @@ Metin {standart_fiyat}"])->assertRedirect();
                 'bakimevibul.com' => ['gunluk' => []], 'bakimeviara.com' => ['gunluk' => [$sc('2026-10-01', 3, 30, 8.0)]]]];
         \Illuminate\Support\Facades\Cache::forever('google_ham_365_son', $ham);
         $saat = ['2026112309' => 2, '2026112408' => 5];
-        $son24 = ['siteler' => ['bakimevleri.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat], 'bakimevibul.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat], 'bakimeviara.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat]]];
+        $sira = ['2026112309' => 4.0, '2026112408' => 10.0];
+        $son24 = ['siteler' => ['bakimevleri.com' => ['g_tik' => $saat, 'g_gos' => ['2026112309' => 20, '2026112408' => 80], 'g_sira' => $sira, 'g_saat' => $saat, 'g_etk' => ['2026112309' => 1, '2026112408' => 3]], 'bakimevibul.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat], 'bakimeviara.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat]]];
         $d = app(\App\Support\AnalitikPanelVerisi::class)->durumGrafigi($son24);
-        $this->assertSame([1, 7, 30, 90, 365], array_keys($d));
+        $this->assertSame([1, 7, 30, 90, 180, 365], array_keys($d));
+        $this->assertCount(180, $d[180]['tik']['etiket']);
         $this->assertCount(7, $d[7]['tik']['etiket']);
         $this->assertSame('21.11', end($d[7]['tik']['etiket']));
         $this->assertSame(30, $d[7]['tik']['toplam']['bakimevleri.com']);
@@ -9367,8 +9369,13 @@ Metin {standart_fiyat}"])->assertRedirect();
         $this->assertSame(35, $d[30]['etk']['toplam']['bakimevleri.com']);
         $this->assertCount(365, $d[365]['giris']['etiket']);
         $this->assertSame(['09:00', '08:00'], $d[1]['tik']['etiket']);
-        $this->assertSame(7, $d[1]['gos']['toplam']['bakimevleri.com']);
-        $this->assertArrayNotHasKey('ctr', $d[1]);
+        $this->assertSame(100, $d[1]['gos']['toplam']['bakimevleri.com']);
+        // 24 saatte oran, sıra ve etkileşimli ziyaret de var (sıra gösterimle ağırlıklı ortalama)
+        $this->assertSame(7.0, $d[1]['ctr']['toplam']['bakimevleri.com']);
+        $this->assertSame(8.8, $d[1]['sira']['toplam']['bakimevleri.com']);   // (4*20 + 10*80) / 100
+        $this->assertSame([4.0, 10.0], $d[1]['sira']['seri']['bakimevleri.com']);
+        $this->assertSame(4, $d[1]['etk']['toplam']['bakimevleri.com']);
+        $this->assertSame(['09:00', '08:00'], $d[1]['sira']['etiket']);
         \Illuminate\Support\Carbon::setTestNow();
     }
 

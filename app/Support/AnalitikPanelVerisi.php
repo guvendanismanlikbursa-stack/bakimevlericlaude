@@ -287,10 +287,13 @@ class AnalitikPanelVerisi
             $siteler[$h]['g_saat'] = $gaPencere;
             $siteler[$h]['g_tik'] = $scPencere;
             $siteler[$h]['g_gos'] = $scPencere;
+            $siteler[$h]['g_sira'] = $scPencere;   // saatlik ortalama sıra (24 Kasım 2026)
+            $siteler[$h]['g_etk'] = $gaPencere;    // saatlik etkileşimli ziyaret (24 Kasım 2026)
             foreach ($scHam[$h] ?? [] as $k => $v) {
                 if (array_key_exists((string) $k, $scPencere)) {
                     $siteler[$h]['g_tik'][(string) $k] = $v['tik'];
                     $siteler[$h]['g_gos'][(string) $k] = $v['gos'];
+                    $siteler[$h]['g_sira'][(string) $k] = round((float) ($v['sira'] ?? 0), 1);
                 }
             }
         }
@@ -299,6 +302,7 @@ class AnalitikPanelVerisi
             $h = self::host($host);
             if ($h && array_key_exists((string) $saat, $gaPencere) && ! in_array($ulke, self::HARIC_ULKELER, true)) {
                 $siteler[$h]['g_saat'][(string) $saat] += $r[3];
+                $siteler[$h]['g_etk'][(string) $saat] += $r[5];
             }
         }
         $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'sayac_ilk' => $sayacIlk, 'ortak_son' => $ortakSon, 'ortak_kesin' => $ortakKesin, 'sc24_bas' => $sc24Bas, 'sc24_son' => $sc24Son, 'kanal_var' => $kanalSatir !== [], 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
@@ -383,6 +387,10 @@ class AnalitikPanelVerisi
                 };
             }
 
+            if ($bicim === null) {   // saatlik: etiket/aralık çağıran tarafından yazılır
+                return ['seri' => $seri, 'toplam' => $toplam];
+            }
+
             return ['etiket' => array_map(fn ($g) => \Illuminate\Support\Carbon::parse($g)->format($bicim), $gunler),
                 'aralik' => $gunler ? \Illuminate\Support\Carbon::parse($gunler[0])->format('d.m.Y').' – '.\Illuminate\Support\Carbon::parse(end($gunler))->format('d.m.Y') : '',
                 'seri' => $seri, 'toplam' => $toplam];
@@ -390,7 +398,7 @@ class AnalitikPanelVerisi
         $scGun = $tarihler($ham['sc_bas'], $ham['sc_son']);
         $gaGun = $tarihler($ham['bas'], $ham['son']);
         $donem = [];
-        foreach ([7, 30, 90, 365] as $n) {
+        foreach ([7, 30, 90, 180, 365] as $n) {   // 24 Kasım 2026: 6 ay eklendi (kullanıcının talebi)
             $b = $n > 90 ? 'd.m.Y' : 'd.m';
             foreach (['tik', 'gos', 'ctr', 'sira'] as $m) {
                 $donem[$n][$m] = $olcu(array_slice($scGun, -$n), $sc, $m, $b);
@@ -400,22 +408,37 @@ class AnalitikPanelVerisi
             }
         }
         // Son 24 saat: saat saat (yukarıdaki saatlik grafiklerle aynı pencere). Analytics saatlik dizisi kişi sayar.
+        // 24 Kasım 2026: kullanıcının şikâyeti - 24 saatte oran / sıra / etkileşimli ziyaret düğmeleri pasifti; artık
+        // saatlik tıklama-gösterimden oran, Google'ın saatlik sırasından (gösterimle ağırlıklı) sıra, Analytics'ten etkileşim.
         $x = $son24['siteler'] ?? [];
-        foreach (['tik' => 'g_tik', 'gos' => 'g_gos', 'giris' => 'g_saat'] as $m => $anahtar) {
+        $saatSeri = function (string $anahtar, string $sabit) use ($x, $siteler): ?array {
             $ilk = $x[$siteler[0]][$anahtar] ?? null;
             if (! $ilk) {
-                continue;
+                return null;
             }
             $saatler = array_map('strval', array_keys($ilk));
-            $seri = [];
+            $kaynak = [];
             foreach ($siteler as $s) {
-                $seri[$s] = array_map('intval', array_values($x[$s][$anahtar] ?? []));
+                foreach ($saatler as $k) {
+                    $kaynak[$k][$s] = match ($sabit) {
+                        'sc' => [(int) ($x[$s]['g_tik'][$k] ?? 0), (int) ($x[$s]['g_gos'][$k] ?? 0), (float) ($x[$s]['g_sira'][$k] ?? 0) * (int) ($x[$s]['g_gos'][$k] ?? 0)],
+                        'ga' => [(int) ($x[$s]['g_saat'][$k] ?? 0), (int) ($x[$s]['g_etk'][$k] ?? 0)],
+                    };
+                }
             }
-            $donem[1][$m] = [
-                'etiket' => array_map(fn ($k) => substr($k, 8, 2).':00', $saatler),
-                'aralik' => \Illuminate\Support\Carbon::createFromFormat('YmdH', $saatler[0])->format('d.m H:00').' – '.\Illuminate\Support\Carbon::createFromFormat('YmdH', end($saatler))->addHour()->format('d.m H:00'),
-                'seri' => $seri, 'toplam' => array_map('array_sum', $seri),
-            ];
+
+            return [$saatler, $kaynak];
+        };
+        $saatOlculer = ['tik' => ['g_tik', 'sc'], 'gos' => ['g_gos', 'sc'], 'ctr' => ['g_gos', 'sc'], 'sira' => ['g_sira', 'sc'], 'giris' => ['g_saat', 'ga'], 'etk' => ['g_etk', 'ga']];
+        foreach ($saatOlculer as $m => [$anahtar, $tur]) {
+            if (! $s = $saatSeri($anahtar, $tur)) {
+                continue;
+            }
+            [$saatler, $kaynak] = $s;
+            $o = $olcu($saatler, $kaynak, $m, null);
+            $o['etiket'] = array_map(fn ($k) => substr($k, 8, 2).':00', $saatler);
+            $o['aralik'] = \Illuminate\Support\Carbon::createFromFormat('YmdH', $saatler[0])->format('d.m H:00').' – '.\Illuminate\Support\Carbon::createFromFormat('YmdH', end($saatler))->addHour()->format('d.m H:00');
+            $donem[1][$m] = $o;
         }
         ksort($donem);
 
