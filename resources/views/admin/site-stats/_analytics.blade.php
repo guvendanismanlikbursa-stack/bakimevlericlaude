@@ -205,6 +205,87 @@
   </div>
 @endif
 
+{{-- 24 Kasım 2026: kullanıcının talebi - sitenin durumu tek bakışta: 24 saat / 7 gün / 30 gün / 3 ay / 1 yıl, Search Console'daki
+     Performans grafiği gibi çizgi grafik (sütun değil), 3 site aynı grafikte ayrı çizgi. Veri: AnalitikPanelVerisi::durumGrafigi. --}}
+@if(! empty($durum))
+  @php
+    $durumDonem = [1 => '24 saat', 7 => '7 gün', 30 => '30 gün', 90 => '3 ay', 365 => '1 yıl'];
+    $durumIlk = isset($durum[30]) ? 30 : array_key_first($durum);
+  @endphp
+  <div id="site-durumu" style="{{ $kart }}">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+      <h2 style="{{ $h2 }}">📈 Sitelerin Durumu</h2>
+    </div>
+    {{-- 24 Kasım 2026: kullanıcının talebi - "gösterim ve tıklama başta olacak, diğer hususlar olabildiğince görünmeli". --}}
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;" id="durum-olcu">
+      @foreach(['tik' => "🔍 Tıklama", 'gos' => '👁 Gösterim', 'ctr' => '% Tıklama oranı', 'sira' => '🏁 Ort. sıra', 'giris' => '👤 Siteye giriş', 'etk' => '✅ Etkileşimli ziyaret'] as $o => $ad)
+        <button type="button" data-o="{{ $o }}" style="padding:7px 12px;font-size:13px;font-weight:800;border-radius:10px;cursor:pointer;border:1px solid {{ $o === 'tik' ? '#0b5d8c' : '#e5e7eb' }};background:{{ $o === 'tik' ? '#0b5d8c' : '#fff' }};color:{{ $o === 'tik' ? '#fff' : '#374151' }};">{{ $ad }}</button>
+      @endforeach
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 6px;" id="durum-donem">
+      @foreach($durumDonem as $n => $ad)
+        @if(isset($durum[$n]))<button type="button" data-d="{{ $n }}" style="padding:6px 12px;font-size:13px;font-weight:800;border-radius:999px;cursor:pointer;border:1px solid {{ $n === $durumIlk ? '#0b5d8c' : '#e5e7eb' }};background:{{ $n === $durumIlk ? '#0b5d8c' : '#fff' }};color:{{ $n === $durumIlk ? '#fff' : '#374151' }};">{{ $ad }}</button>@endif
+      @endforeach
+    </div>
+    <div id="durum-toplam" style="display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:#374151;margin-bottom:2px;"></div>
+    <div id="durum-aralik" style="font-size:12px;color:#6b7280;margin-bottom:8px;"></div>
+    <div style="height:280px;"><canvas id="durum-grafik"></canvas></div>
+    <p style="{{ $acik }}margin:8px 0 0;"><b>Tıklama, gösterim, tıklama oranı, ortalama sıra</b>: Google Search Console (günlük görünümde Google 2-3 gün geriden verir; sıra 1 = en üst, grafikte yukarısı daha iyi). <b>Siteye giriş / etkileşimli ziyaret</b>: Google Analytics (aramadan, doğrudan ve diğer kaynaklardan gelenler birlikte; 24 saatte kişi sayısı). Soluk düğme: o dönem için veri yok.</p>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var D = @json($durum), renk = @json($renk), olcu = 'tik', donem = '{{ $durumIlk }}', grafik = null;
+      var bicim = function (v) { return Number(v).toLocaleString('tr-TR'); };
+      var adlar = { tik: 'Toplam tıklama', gos: 'Toplam gösterim', ctr: 'Tıklama oranı', sira: 'Ortalama sıra', giris: 'Toplam giriş', etk: 'Etkileşimli ziyaret' };
+      var deger = function (v) { if (v === null || v === undefined) { return '—'; } return olcu === 'ctr' ? '%' + Number(v).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 2 }) : (olcu === 'sira' ? Number(v).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : bicim(v)); };
+      function dugmeler() {
+        document.querySelectorAll('#durum-olcu button').forEach(function (x) {
+          var var_ = !!(D[donem] || {})[x.dataset.o];
+          x.style.opacity = var_ ? '1' : '.35'; x.disabled = !var_;
+          var sec = x.dataset.o === olcu;
+          x.style.background = sec ? '#0b5d8c' : '#fff'; x.style.color = sec ? '#fff' : '#374151'; x.style.borderColor = sec ? '#0b5d8c' : '#e5e7eb';
+        });
+      }
+      function ciz() {
+        if (!(D[donem] || {})[olcu]) { olcu = 'tik'; }
+        dugmeler();
+        var v = (D[donem] || {})[olcu];
+        if (!v) { return; }
+        var ds = Object.keys(v.seri).map(function (s) {
+          return { label: s, data: v.seri[s], borderColor: renk[s] || '#6b7280', backgroundColor: renk[s] || '#6b7280', fill: false, tension: v.etiket.length > 90 ? 0 : .3, pointRadius: v.etiket.length > 40 ? 0 : 2, pointHoverRadius: 4, borderWidth: 2 };
+        });
+        var top = Object.keys(v.seri).map(function (s) {
+          return '<span><span style="display:inline-block;width:10px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px;background:' + (renk[s] || '#6b7280') + ';"></span>' + s + ': <b>' + deger((v.toplam || {})[s]) + '</b></span>';
+        });
+        document.getElementById('durum-toplam').innerHTML = '<b style="color:#111827;">' + adlar[olcu] + '</b> — ' + top.join('');
+        document.getElementById('durum-aralik').textContent = v.aralik + ' (Türkiye saati)';
+        if (!window.Chart) { return; }
+        var ters = olcu === 'sira';
+        if (grafik) { grafik.data.labels = v.etiket; grafik.data.datasets = ds; grafik.options.scales.y.reverse = ters; grafik.options.scales.y.beginAtZero = !ters; grafik.update(); return; }
+        grafik = new Chart(document.getElementById('durum-grafik'), {
+          type: 'line', data: { labels: v.etiket, datasets: ds },
+          options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            spanGaps: true,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + deger(c.parsed.y); } } } },
+            scales: { y: { beginAtZero: !ters, reverse: ters, ticks: { callback: function (x) { return deger(x); } } }, x: { ticks: { maxTicksLimit: 8, maxRotation: 0 }, grid: { display: false } } } }
+        });
+      }
+      document.querySelectorAll('#durum-olcu button').forEach(function (b) {
+        b.addEventListener('click', function () { olcu = b.dataset.o; ciz(); });
+      });
+      document.querySelectorAll('#durum-donem button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          document.querySelectorAll('#durum-donem button').forEach(function (x) { x.style.background = '#fff'; x.style.color = '#374151'; x.style.borderColor = '#e5e7eb'; });
+          b.style.background = '#0b5d8c'; b.style.color = '#fff'; b.style.borderColor = '#0b5d8c'; donem = b.dataset.d; ciz();
+        });
+      });
+      if (window.Chart) { ciz(); } else {
+        var sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js'; sc.onload = ciz; document.head.appendChild(sc); ciz();
+      }
+    });
+  </script>
+@endif
+
 <div id="analytics" style="{{ $kart }}">
   <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
     <div>

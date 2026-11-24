@@ -9339,6 +9339,39 @@ Metin {standart_fiyat}"])->assertRedirect();
         \Illuminate\Support\Carbon::setTestNow();
     }
 
+    // 24 Kasım 2026: "Sitelerin Durumu" çizgi grafiği - 24 saat / 7 / 30 / 90 / 365 gün, 3 site ayrı; oran ve sıra ortalama alınır.
+    public function test_site_durumu_grafigi_donemleri_ve_olculeri(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-11-24 10:00', config('app.timezone')));
+        $sc = fn ($tarih, $tik, $gos, $sira) => ['keys' => [$tarih], 'clicks' => $tik, 'impressions' => $gos, 'ctr' => 0, 'position' => $sira];
+        $ham = ['bas' => '2025-11-24', 'son' => '2026-11-23', 'sc_bas' => '2025-11-22', 'sc_son' => '2026-11-21',
+            'gunluk' => [['20261123', 'bakimevleri.com', 40, 30], ['20261122', 'www.bakimevibul.com', 10, 6], ['20261101', 'bakimevleri.com', 5, 5]],
+            'sc' => ['bakimevleri.com' => ['gunluk' => [$sc('2026-11-21', 20, 400, 5.0), $sc('2026-11-20', 10, 100, 10.0)]],
+                'bakimevibul.com' => ['gunluk' => []], 'bakimeviara.com' => ['gunluk' => [$sc('2026-10-01', 3, 30, 8.0)]]]];
+        \Illuminate\Support\Facades\Cache::forever('google_ham_365_son', $ham);
+        $saat = ['2026112309' => 2, '2026112408' => 5];
+        $son24 = ['siteler' => ['bakimevleri.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat], 'bakimevibul.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat], 'bakimeviara.com' => ['g_tik' => $saat, 'g_gos' => $saat, 'g_saat' => $saat]]];
+        $d = app(\App\Support\AnalitikPanelVerisi::class)->durumGrafigi($son24);
+        $this->assertSame([1, 7, 30, 90, 365], array_keys($d));
+        $this->assertCount(7, $d[7]['tik']['etiket']);
+        $this->assertSame('21.11', end($d[7]['tik']['etiket']));
+        $this->assertSame(30, $d[7]['tik']['toplam']['bakimevleri.com']);
+        $this->assertSame(500, $d[7]['gos']['toplam']['bakimevleri.com']);
+        $this->assertSame(6.0, $d[7]['ctr']['toplam']['bakimevleri.com']);   // 30 / 500
+        $this->assertSame(6.0, $d[7]['sira']['toplam']['bakimevleri.com']);  // (5*400 + 10*100) / 500
+        $this->assertNull($d[7]['sira']['toplam']['bakimevibul.com']);
+        $this->assertSame(3, $d[90]['tik']['toplam']['bakimeviara.com']);
+        $this->assertSame(0, $d[30]['tik']['toplam']['bakimeviara.com']);
+        $this->assertSame(40, $d[7]['giris']['toplam']['bakimevleri.com']);
+        $this->assertSame(10, $d[7]['giris']['toplam']['bakimevibul.com']);   // www. kırpılır
+        $this->assertSame(35, $d[30]['etk']['toplam']['bakimevleri.com']);
+        $this->assertCount(365, $d[365]['giris']['etiket']);
+        $this->assertSame(['09:00', '08:00'], $d[1]['tik']['etiket']);
+        $this->assertSame(7, $d[1]['gos']['toplam']['bakimevleri.com']);
+        $this->assertArrayNotHasKey('ctr', $d[1]);
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
     // 18 Kasım 2026: ülke geneli fiyat sayfaları + il sayfasında yıl/kurum sayılı başlık, ilçe dağılımı, son güncelleme.
     public function test_ulke_geneli_fiyat_sayfasi_ve_il_sayfasi_seo(): void
     {

@@ -286,9 +286,11 @@ class AnalitikPanelVerisi
         foreach ($siteler as $h => $x) {
             $siteler[$h]['g_saat'] = $gaPencere;
             $siteler[$h]['g_tik'] = $scPencere;
+            $siteler[$h]['g_gos'] = $scPencere;
             foreach ($scHam[$h] ?? [] as $k => $v) {
                 if (array_key_exists((string) $k, $scPencere)) {
                     $siteler[$h]['g_tik'][(string) $k] = $v['tik'];
+                    $siteler[$h]['g_gos'][(string) $k] = $v['gos'];
                 }
             }
         }
@@ -319,6 +321,105 @@ class AnalitikPanelVerisi
         }
 
         return $veri;
+    }
+
+    /**
+     * 24 Kasım 2026: kullanıcının talebi - "sitenin durumunu günlük, haftalık, aylık, 3 aylık ve yıllık anlık görebilmek",
+     * Search Console'daki Performans grafiği gibi çizgi grafik, 3 site ayrı çizgi. Yeni Google sorgusu yok: 1 yıllık
+     * önbellekteki günlük tıklama (Search Console) ve günlük ziyaret (Analytics) dilimlenir; 24 saat son24'ten gelir.
+     */
+    public function durumGrafigi(?array $son24): ?array
+    {
+        $ham = $this->ham(365);
+        if (! $ham) {
+            return null;
+        }
+        $siteler = GoogleVeriServisi::SITELER;
+        $tarihler = function (string $bas, string $son): array {
+            $l = [];
+            for ($t = \Illuminate\Support\Carbon::parse($bas); $t->toDateString() <= $son; $t->addDay()) {
+                $l[] = $t->toDateString();
+            }
+
+            return $l;
+        };
+        // Günlük ham değerler: [tarih][site] = [tik, gos, sira*gos] / [oturum, etk]
+        $sc = [];
+        foreach ($siteler as $s) {
+            foreach ($ham['sc'][$s]['gunluk'] ?? [] as $r) {
+                $sc[$r['keys'][0]][$s] = [(int) ($r['clicks'] ?? 0), (int) ($r['impressions'] ?? 0), (float) ($r['position'] ?? 0) * (int) ($r['impressions'] ?? 0)];
+            }
+        }
+        $ga = [];
+        foreach ($ham['gunluk'] ?? [] as [$tarih, $h, $oturum, $etk]) {
+            if (! $h = self::host($h)) {
+                continue;
+            }
+            $g = strlen((string) $tarih) === 10 ? self::gaSaati((string) $tarih)->toDateString() : substr($tarih, 0, 4).'-'.substr($tarih, 4, 2).'-'.substr($tarih, 6, 2);
+            $ga[$g][$h][0] = ($ga[$g][$h][0] ?? 0) + (int) $oturum;
+            $ga[$g][$h][1] = ($ga[$g][$h][1] ?? 0) + (int) $etk;
+        }
+        // Bir dönem için ölçü: günlük seri + dönem toplamı (oran ve sıra toplanmaz, dönem ortalaması alınır)
+        $olcu = function (array $gunler, array $kaynak, string $m, ?string $bicim) use ($siteler): array {
+            $seri = [];
+            $toplam = [];
+            foreach ($siteler as $s) {
+                $tt = [0, 0, 0];
+                foreach ($gunler as $g) {
+                    $v = $kaynak[$g][$s] ?? [0, 0, 0];
+                    $tt = [$tt[0] + $v[0], $tt[1] + ($v[1] ?? 0), $tt[2] + ($v[2] ?? 0)];
+                    $seri[$s][] = match ($m) {
+                        'tik', 'giris' => $v[0],
+                        'gos', 'etk' => $v[1] ?? 0,
+                        'ctr' => $v[1] ? round($v[0] / $v[1] * 100, 2) : null,
+                        'sira' => $v[1] ? round($v[2] / $v[1], 1) : null,
+                    };
+                }
+                $toplam[$s] = match ($m) {
+                    'tik', 'giris' => $tt[0],
+                    'gos', 'etk' => $tt[1],
+                    'ctr' => $tt[1] ? round($tt[0] / $tt[1] * 100, 2) : null,
+                    'sira' => $tt[1] ? round($tt[2] / $tt[1], 1) : null,
+                };
+            }
+
+            return ['etiket' => array_map(fn ($g) => \Illuminate\Support\Carbon::parse($g)->format($bicim), $gunler),
+                'aralik' => $gunler ? \Illuminate\Support\Carbon::parse($gunler[0])->format('d.m.Y').' – '.\Illuminate\Support\Carbon::parse(end($gunler))->format('d.m.Y') : '',
+                'seri' => $seri, 'toplam' => $toplam];
+        };
+        $scGun = $tarihler($ham['sc_bas'], $ham['sc_son']);
+        $gaGun = $tarihler($ham['bas'], $ham['son']);
+        $donem = [];
+        foreach ([7, 30, 90, 365] as $n) {
+            $b = $n > 90 ? 'd.m.Y' : 'd.m';
+            foreach (['tik', 'gos', 'ctr', 'sira'] as $m) {
+                $donem[$n][$m] = $olcu(array_slice($scGun, -$n), $sc, $m, $b);
+            }
+            foreach (['giris', 'etk'] as $m) {
+                $donem[$n][$m] = $olcu(array_slice($gaGun, -$n), $ga, $m, $b);
+            }
+        }
+        // Son 24 saat: saat saat (yukarıdaki saatlik grafiklerle aynı pencere). Analytics saatlik dizisi kişi sayar.
+        $x = $son24['siteler'] ?? [];
+        foreach (['tik' => 'g_tik', 'gos' => 'g_gos', 'giris' => 'g_saat'] as $m => $anahtar) {
+            $ilk = $x[$siteler[0]][$anahtar] ?? null;
+            if (! $ilk) {
+                continue;
+            }
+            $saatler = array_map('strval', array_keys($ilk));
+            $seri = [];
+            foreach ($siteler as $s) {
+                $seri[$s] = array_map('intval', array_values($x[$s][$anahtar] ?? []));
+            }
+            $donem[1][$m] = [
+                'etiket' => array_map(fn ($k) => substr($k, 8, 2).':00', $saatler),
+                'aralik' => \Illuminate\Support\Carbon::createFromFormat('YmdH', $saatler[0])->format('d.m H:00').' – '.\Illuminate\Support\Carbon::createFromFormat('YmdH', end($saatler))->addHour()->format('d.m H:00'),
+                'seri' => $seri, 'toplam' => array_map('array_sum', $seri),
+            ];
+        }
+        ksort($donem);
+
+        return $donem;
     }
 
     /** Önbellekteki veri (yoksa en son başarılı veri; o da yoksa null). */
