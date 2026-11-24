@@ -183,6 +183,7 @@
         <a href="{{ route('admin.experts.website.edit', $k) }}" target="_blank" class="crm-dg">🖥 Site ayarları</a>
         <a href="{{ route('admin.expert-websites.demo', $k) }}" target="_blank" class="crm-dg" style="border-color:#86efac;color:#166534;">💬 Demo site gönder</a>
       @else
+        <a href="{{ route('admin.crm.call-card', $k) }}" target="_blank" class="crm-dg" style="border-color:#111827;background:#111827;color:#fff;">🎯 Arama kartı</a>
         <a href="{{ route('admin.facilities.edit', $k) }}" target="_blank" class="crm-dg">📝 Kaydı aç</a>
         <a href="{{ url('/kurumlar/'.$k->slug) }}" target="_blank" rel="noopener" class="crm-dg">👁 Sayfası</a>
         <a href="{{ route('admin.facility-websites.edit', $k) }}" target="_blank" class="crm-dg">🖥 Site ayarları</a>

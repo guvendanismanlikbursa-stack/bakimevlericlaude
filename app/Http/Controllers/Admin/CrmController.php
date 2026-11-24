@@ -198,6 +198,12 @@ REHBER;
     }
 
     /** Kuruma özel İyilik Hareketi teklif sayfası (pazarlamacıdaki gibi süreli imzalı link). */
+    /** 24 Kasım 2026: kurumu aramadan önce "maksimum bilgi" kartı (bkz. App\Support\AramaKarti). */
+    public function aramaKarti(Facility $facility)
+    {
+        return view('admin.crm.arama-karti', ['f' => $facility, 'k' => \App\Support\AramaKarti::hazirla($facility)]);
+    }
+
     public function offerPage(Facility $facility)
     {
         return redirect()->away(membership_signed_preview_url('membership.offer', ['token' => $facility->ensureOfferToken()]));

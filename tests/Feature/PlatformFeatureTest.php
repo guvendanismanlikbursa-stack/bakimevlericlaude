@@ -9035,6 +9035,41 @@ class PlatformFeatureTest extends TestCase
         $this->assertSame('drsite.com', \App\Models\ExpertWebsite::displayAddress('https://drsite.com'));
     }
 
+    // 24 Kasım 2026: arama kartı - ilk aramada satış için canlı rakamlar, rakipler, yorum konuları, teklif ve itirazlar.
+    public function test_admin_crm_arama_karti(): void
+    {
+        $f = $this->facilityUser->facility->fresh(['city', 'category']);
+        $f->forceFill(['district' => 'Nilüfer', 'is_claimed' => false, 'is_broker_managed' => false, 'is_subscribed' => false, 'is_published' => true,
+            'phone' => '0532 777 88 99', 'rating' => 4.6, 'price_min' => 30000, 'opening_hours' => ['Pazartesi' => '08:00–18:00']])->save();
+        foreach (['Rakip Bir', 'Rakip İki', 'Rakip Üç', 'Rakip Dört'] as $i => $ad) {
+            $r = $f->replicate(['slug', 'offer_token']);
+            $r->forceFill(['name' => $ad, 'slug' => 'rakip-'.$i, 'is_claimed' => $i === 0, 'rating' => 4.0 + $i / 10])->save();
+        }
+        $f->googleReviews()->create(['author_name' => 'A', 'rating' => 5, 'body' => 'Çok temiz bir yer, personel çok ilgili ve güler yüzlü, annemiz burada çok mutlu.', 'position' => 1, 'fetched_at' => now()]);
+        $f->googleReviews()->create(['author_name' => 'B', 'rating' => 1, 'body' => 'Yemek kötüydü, porsiyonlar küçük ve menü hep aynı, bunu düzeltmeleri lazım.', 'position' => 2, 'fetched_at' => now()]);
+        \App\Models\FacilityInterestLead::create(['facility_id' => $f->id, 'brand' => 'bakimevleri', 'full_name' => 'Gizli Aile', 'phone' => '05320000000', 'status' => 'new']);
+        \App\Models\OfferRequest::create(['facility_id' => $f->id, 'brand' => 'bakimevleri', 'full_name' => 'Gizli Aile 2', 'phone' => '05321111111', 'status' => 'new',
+            'city_id' => $f->city_id, 'facility_category_id' => $f->facility_category_id, 'district_id' => $f->district_id]);
+        $this->withSession(['admin_id' => $this->admin->id]);
+        $this->get(route('admin.facilities.edit', $f))->assertOk()->assertSee(route('admin.crm.call-card', $f), false);
+        $html = $this->get(route('admin.crm.call-card', $f))->assertOk()
+            ->assertSee('Arama kartı', false)->assertSee($f->name, false)
+            ->assertSee('Temizlik ve hijyen', false)->assertSee('Yemek ve beslenme', false)
+            ->assertSee('Rakip Bir', false)                       // bizimle çalışan rakip
+            ->assertSee('İlçenizdeki <b>1 kurum</b> bizimle çalışıyor', false)
+            ->assertSee('<b>1 aile</b> size ulaşmak istedi', false)
+            ->assertSee('İtiraz gelirse', false)
+            ->assertSee(route('admin.crm.offer-page', $f), false)
+            ->assertDontSee('Gizli Aile', false)                  // ailelerin kişisel bilgisi gösterilmez
+            ->getContent();
+        $this->assertStringContainsString('En uygun arama saati', $html);
+        $k = \App\Support\AramaKarti::hazirla($f->fresh());
+        $this->assertSame('ilçe', $k['rakip']['kapsam']);
+        $this->assertSame(5, $k['rakip']['toplam']);
+        $this->assertSame(1, $k['ilgi']['ulasamayan_90']);
+        $this->assertSame(1, $k['bolge']['il_30']);
+    }
+
     // 30 Ekim 2026: adminin ayrıntılı CRM'i - pazarlamacıyla aynı notlar, kapsam/arama/kim filtresi.
     public function test_admin_crm_site_sozlesmesi_whatsapp(): void
     {

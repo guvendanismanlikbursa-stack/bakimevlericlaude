@@ -20,6 +20,8 @@
   <a href="{{ $returnTo }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-800 mb-3">← Listeye dön</a>
 @endisset
 <h1 class="text-2xl font-bold mb-6">{{ $facility->exists ? 'Kurumu Düzenle' : 'Yeni Kurum' }}</h1>
+{{-- 24 Kasım 2026: arama kartı kısayolu --}}
+@if($facility->exists)<div style="margin:-12px 0 16px;"><a href="{{ route('admin.crm.call-card', $facility) }}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:7px 14px;font-size:14px;font-weight:800;text-decoration:none;background:#111827;color:#fff;">🎯 Arama kartı</a></div>@endif
 {{-- 23 Ekim 2026: kullanıcının talebi - kurumun internet sitesini düzenleme. --}}
 @if($facility->exists)
   <div style="margin:-12px 0 18px;"><a href="{{ route('admin.facility-websites.edit', $facility) }}" style="display:inline-block;border:2px solid #0d6e6a;color:#0d6e6a;font-weight:800;border-radius:10px;padding:7px 14px;text-decoration:none;font-size:14px;">🌐 Kurum sitesini düzenle</a></div>
