@@ -4,7 +4,7 @@
 @section('content')
 <div class="flex items-center justify-between mb-3">
   <div class="flex items-center gap-3">
-    <h1 class="text-2xl font-bold">{{ request('status') === 'pre_registered' ? 'Sahiplenilmemiş Kurumlar' : (request('status') === 'broker_managed' ? 'Anlaşmalı Kurumlar' : (request('status') === 'claimed' ? 'Sahipli Kurumlar' : 'Kurumlar')) }}</h1>
+    <h1 id="js-kurum-baslik" class="text-2xl font-bold">{{ request('status') === 'pre_registered' ? 'Sahiplenilmemiş Kurumlar' : (request('status') === 'broker_managed' ? 'Anlaşmalı Kurumlar' : (request('status') === 'claimed' ? 'Sahiplenilmiş Kurumlar' : 'Kurumlar')) }}</h1>
     <span class="inline-flex items-center rounded-full bg-gray-900 text-white text-sm font-semibold px-3 py-1"><span id="js-result-count">{{ number_format($facilities->total(), 0, ',', '.') }}</span> kurum bulundu</span>
   </div>
   <div class="flex items-center gap-3">
@@ -83,8 +83,16 @@
     <option value="">Kurum Durumu: Tümü</option>
     <option value="pre_registered" @selected(request('status')==='pre_registered')>Sahiplenilmemiş</option>
     <option value="broker_managed" @selected(request('status')==='broker_managed')>Anlaşmalı</option>
-    <option value="claimed" @selected(request('status')==='claimed')>Sahipli</option>
+    <option value="claimed" @selected(request('status')==='claimed')>Sahiplenilmiş</option>
   </select>
+  {{-- 24 Kasım 2026: filtre sayfa yenilenmeden çalıştığı için başlık eski kalıyordu ("Kurumlar" yazarken liste Sahiplenilmemiş'ti) --}}
+  <script>
+  (function () {
+    var s = document.currentScript.previousElementSibling, h = document.getElementById('js-kurum-baslik');
+    var ad = { pre_registered: 'Sahiplenilmemiş Kurumlar', broker_managed: 'Anlaşmalı Kurumlar', claimed: 'Sahiplenilmiş Kurumlar' };
+    if (s && h) s.addEventListener('change', function () { h.textContent = ad[s.value] || 'Kurumlar'; });
+  })();
+  </script>
   {{-- 1 Ekim 2026: kullanicinin talebi - "kamu/belediye kurumlari zaten
        veritabaninda yok" varsayimiyla 3 Eylul'de kaldirilan bu filtre,
        TOKI/BUSMEK/YUVAMIZ ice aktarimlariyla bu varsayimin yanlis oldugu
