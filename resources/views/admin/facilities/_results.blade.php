@@ -81,11 +81,9 @@
             @if($quality['missing'])<span>· Eksik: {{ implode(', ', array_slice($quality['missing'], 0, 2)) }}</span>@endif
           </div>
 
-          {{-- 24 Kasım 2026: kurum paneli hesabı olan kurum da sahiplenilmiş sayılır (filtreyle aynı kural, bkz. FacilityController::filteredQuery()) --}}
-          @php($sahibiVar = $f->is_claimed || $f->facilityUsers->isNotEmpty())
           @if($f->is_broker_managed)
-            <span class="text-amber-700 font-semibold">🤝 Anlaşmalı{{ $sahibiVar ? ' · sahibi var' : '' }}</span>
-          @elseif($sahibiVar)
+            <span class="text-amber-700 font-semibold">🤝 Anlaşmalı</span>
+          @elseif($f->is_claimed)
             <span class="text-green-700 font-semibold">✓ Sahiplenilmiş</span>
           @else
             <span>Sahiplenilmemiş</span>

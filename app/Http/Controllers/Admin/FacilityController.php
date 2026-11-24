@@ -115,19 +115,11 @@ class FacilityController extends Controller
         // BAGIMSIZ oldugu icin (bkz. Admin\BrokerController::toggleFacility()
         // yorumu) "Anlaşmalı" her iki durumda da (sahiplenilmis veya
         // sahiplenilmemis) olabilir - bu yuzden once o kontrol edilir.
-        //
-        // 24 Kasım 2026: kullanıcının bildirdiği hata - "sahiplenilmiş kurumlar
-        // filtrelenmiyor". Kök neden: kurum paneli hesabı açılmış (sahibi
-        // giriş yapabilen) ama is_claimed işareti düşmemiş kurumlar (canlıda
-        // ör. #7078 Hepbahar) "Sahiplenilmemiş" filtresinde çıkıyor,
-        // "Sahiplenilmiş"te çıkmıyordu. Artık kurum paneli hesabı olan kurum
-        // da sahiplenilmiş sayılır (rozet de aynı kuralla, bkz. _results).
         if ($request->filled('status')) {
-            $sahipli = fn ($q) => $q->where('is_claimed', true)->orWhereHas('facilityUsers');
             match ($request->status) {
                 'broker_managed' => $query->where('is_broker_managed', true),
-                'claimed' => $query->where($sahipli)->where('is_broker_managed', false),
-                'pre_registered' => $query->where('is_claimed', false)->whereDoesntHave('facilityUsers')->where('is_broker_managed', false),
+                'claimed' => $query->where('is_claimed', true)->where('is_broker_managed', false),
+                'pre_registered' => $query->where('is_claimed', false)->where('is_broker_managed', false),
                 default => null,
             };
         }

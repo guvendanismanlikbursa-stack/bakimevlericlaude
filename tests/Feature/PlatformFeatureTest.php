@@ -3579,21 +3579,6 @@ class PlatformFeatureTest extends TestCase
             ->assertSee('Cocuk Kurum', false)
             ->assertDontSee('Rehab Kurum Onayli', false);
 
-        // 24 Kasım 2026: kurum paneli hesabı olan ama is_claimed işareti
-        // düşmemiş kurum "Sahiplenilmiş"te çıkmalı, "Sahiplenilmemiş"te çıkmamalı.
-        $this->rehabFacility->update(['name' => 'Hesapli Rehab Test']);
-        \App\Models\FacilityUser::create(['facility_id' => $this->rehabFacility->id, 'name' => 'Hesap Sahibi', 'email' => 'hesap.sahibi@test.local', 'password' => 'Gizli12345!']);
-        $this->assertFalse($this->rehabFacility->fresh()->is_claimed);
-        $this->withSession(['admin_id' => $this->admin->id])
-            ->get('/admin/kurumlar?status=claimed')
-            ->assertOk()
-            ->assertSee('Hesapli Rehab Test', false)
-            ->assertSee('Sahiplenilmiş Kurumlar', false);
-        $this->withSession(['admin_id' => $this->admin->id])
-            ->get('/admin/kurumlar?status=pre_registered')
-            ->assertOk()
-            ->assertDontSee('Hesapli Rehab Test', false);
-
         // Eski "Kuruluş Türleri" filtresi (ozel/kamu/belediye/vakif) artik yok.
         $this->withSession(['admin_id' => $this->admin->id])
             ->get('/admin/kurumlar')
