@@ -44,15 +44,17 @@
     $saatBicim = fn ($k) => $k ? substr($k, 8, 2).':00' : '—';
     $sonrakiSaat = fn ($k) => $k ? \Illuminate\Support\Carbon::createFromFormat('YmdH', $k)->addHour()->format('H:00') : '—';
     // Her grafik: [kimlik, başlık, açıklama, saat anahtarı, gelen son saat, kesinleşmemiş ilk saat]
+    // 24 Kasım 2026: grafikler Google'ın gönderdiği son saatten geriye 24 saat (g_tik / g_saat); eski önbellekte yoksa eski diziler.
+    $g24 = collect($s24)->contains(fn ($x) => isset($x['g_saat']));
     $grafikler = [];
     if ($scVar) {
-        $grafikler[] = ['sc', '🔍 Google aramasından tıklama — saat saat', 'Kaynak: Search Console. Soluk sütunlar: Google hâlâ sayıyor, rakam artabilir.', 'tik_saat', (string) ($son24['sc_son'] ?? ''), (string) ($son24['sc_eksik'] ?? '')];
+        $grafikler[] = ['sc', '🔍 Google aramasından tıklama — saat saat', 'Kaynak: Search Console. Soluk sütunlar: Google hâlâ sayıyor, rakam artabilir.', $g24 ? 'g_tik' : 'tik_saat', (string) ($son24['sc_son'] ?? ''), (string) ($son24['sc_eksik'] ?? '')];
     }
-    $grafikler[] = ['ga', '👤 Siteye giren kişi — saat saat', 'Kaynak: Google Analytics.', 'saat', (string) ($son24['son'] ?? ''), ''];
+    $grafikler[] = ['ga', '👤 Siteye giren kişi — saat saat', 'Kaynak: Google Analytics.', $g24 ? 'g_saat' : 'saat', (string) ($son24['son'] ?? ''), ''];
   @endphp
   <div id="son24" style="{{ $kart }}">
     <h2 style="{{ $h2 }}">🕒 Son 24 Saat</h2>
-    <p style="{{ $acik }}">@if($s24Bas && $s24Bitis)@if($sc24)Grafikler: @endif{{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
+    <p style="{{ $acik }}">@if($g24)Grafikler, Google'ın gönderdiği son saatten geriye 24 saati gösterir (Türkiye saati).@elseif($s24Bas && $s24Bitis)@if($sc24)Grafikler: @endif{{ $s24Bas->format('d.m H:00') }} – {{ $s24Bitis->format('d.m H:00') }} arası (Türkiye saati).@endif
       Son yenileme: <b>{{ \Illuminate\Support\Carbon::parse($son24['tarih'])->format('H:i') }}</b> (her saat başını 5 geçe yenilenir). Hong Kong/Çin bot trafiği sayılmaz.</p>
     @if($sc24)
       {{-- 20 Kasım 2026: kartlar Search Console'daki "24 saat" ekranıyla aynı saatleri sayar (bkz. AnalitikPanelVerisi::cekSon24). --}}

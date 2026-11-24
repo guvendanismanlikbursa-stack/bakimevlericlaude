@@ -162,6 +162,7 @@ class AnalitikPanelVerisi
         // 18 Kasım 2026: kullanıcının talebi - Google aramasından gelen tıklamalar (Search Console) da saat saat;
         // Google'ın kendi Search Console ekranındaki rakamla aynı kaynaktır. Hata olursa kart yalnız Analytics ile çizilir.
         $scEksik = null;
+        $scHam = [];
         $scVar = false;
         foreach ($siteler as $h => $x) {
             $siteler[$h] += ['tik' => null, 'gos' => null, 'tik_saat' => $saatler];
@@ -177,6 +178,7 @@ class AnalitikPanelVerisi
             $siteler[$h]['tik'] = 0;
             $siteler[$h]['gos'] = 0;
             $siteler[$h]['sc_ham'] = $sc['saatler'];
+            $scHam[$h] = $sc['saatler'];   // grafik için (sc_ham aşağıda siliniyor)
             foreach ($sc['saatler'] as $k => $v) {
                 if (array_key_exists($k, $saatler)) {
                     $siteler[$h]['tik_saat'][$k] = $v['tik'];
@@ -264,6 +266,38 @@ class AnalitikPanelVerisi
             }
         } catch (\Throwable $e) {
             report($e);
+        }
+        // 24 Kasım 2026: kullanıcının talebi - "son 24 saati göstersin grafikler". Grafikler artık şu anki saate kadar
+        // boş ("henüz gelmedi") sütunlarla değil, Google'ın gönderdiği son saatten geriye tam 24 saat çizilir:
+        // arama grafiği Search Console'un son saatinden, giriş grafiği Analytics'in son saatinden. Kart sayıları değişmez.
+        $grafikPencere = function (?string $son): array {
+            $p = [];
+            if ($son) {
+                $b = \Illuminate\Support\Carbon::createFromFormat('YmdH', $son, config('app.timezone'));
+                for ($i = 23; $i >= 0; $i--) {
+                    $p[$b->copy()->subHours($i)->format('YmdH')] = 0;
+                }
+            }
+
+            return $p;
+        };
+        $gaPencere = $grafikPencere($sonSaat ? (string) $sonSaat : null);
+        $scPencere = $grafikPencere($scSon ? (string) $scSon : null);
+        foreach ($siteler as $h => $x) {
+            $siteler[$h]['g_saat'] = $gaPencere;
+            $siteler[$h]['g_tik'] = $scPencere;
+            foreach ($scHam[$h] ?? [] as $k => $v) {
+                if (array_key_exists((string) $k, $scPencere)) {
+                    $siteler[$h]['g_tik'][(string) $k] = $v['tik'];
+                }
+            }
+        }
+        foreach ($satirlar as $r) {
+            [$saat, $host, $ulke] = $r;
+            $h = self::host($host);
+            if ($h && array_key_exists((string) $saat, $gaPencere) && ! in_array($ulke, self::HARIC_ULKELER, true)) {
+                $siteler[$h]['g_saat'][(string) $saat] += $r[3];
+            }
         }
         $veri = ['tarih' => now()->toDateTimeString(), 'bas' => $ilk, 'sayac_ilk' => $sayacIlk, 'ortak_son' => $ortakSon, 'ortak_kesin' => $ortakKesin, 'sc24_bas' => $sc24Bas, 'sc24_son' => $sc24Son, 'kanal_var' => $kanalSatir !== [], 'sc_var' => $scVar, 'sc_son' => $scSon, 'sc_eksik' => $scEksik, 'son' => $sonSaat ?? $bitis->format('YmdH'),
             'gecikme' => $sonSaat ? max(0, (int) floor(\Illuminate\Support\Carbon::createFromFormat('YmdH', $sonSaat, config('app.timezone'))->addHour()->diffInHours(now(), true))) : null, 'siteler' => $siteler];

@@ -9324,6 +9324,18 @@ Metin {standart_fiyat}"])->assertRedirect();
         // 20 Kasım 2026: kart rakamları Search Console ekranındaki "24 saat" ile aynı pencere (son saat dahil geriye 23 saat)
         $this->assertSame('2026111710', $v['sc24_bas']);
         $this->assertSame(['tik' => 60, 'gos' => 1240], $v['siteler']['bakimevleri.com']['sc24']);
+        // 24 Kasım 2026: grafikler son gelen saatten geriye tam 24 saat (boş sütun yok)
+        $gTik = $v['siteler']['bakimevleri.com']['g_tik'];
+        $this->assertCount(24, $gTik);
+        $this->assertSame('2026111709', (string) array_key_first($gTik));
+        $this->assertSame('2026111808', (string) array_key_last($gTik));
+        $this->assertSame(3, $gTik['2026111808']);
+        $this->assertSame(7, $gTik['2026111712']);
+        $gSaat = $v['siteler']['bakimevleri.com']['g_saat'];
+        $this->assertCount(24, $gSaat);
+        $this->assertSame('2026111809', (string) array_key_last($gSaat));
+        $this->assertSame(5, $gSaat['2026111712']);
+        $this->assertSame(4, $gSaat['2026111808']);
         \Illuminate\Support\Carbon::setTestNow();
     }
 
