@@ -638,7 +638,7 @@ if (new URLSearchParams(window.location.search).has('page')) {
       </ul>
     </div>
   </div>
-  <div class="text-center text-xs py-4 {{ $theme === 'bakimeviara' ? 'border-t border-gray-200' : 'border-t border-white/10' }}">© {{ date('Y') }} {{ $brand['logo_text'] }}. Tüm hakları saklıdır.</div>
+  <div class="text-center text-xs py-4 {{ $theme === 'bakimeviara' ? 'border-t border-gray-200' : 'border-t border-white/10' }}">© {{ date('Y') }} {{ $brand['logo_text'] }}. Tüm hakları saklıdır. <span aria-hidden="true">·</span> Web tasarım: <a href="https://guvenwebhizmetleri.com/" rel="noopener" style="text-decoration:underline">Güven Web Hizmetleri</a></div>
 </footer>
 
 {{-- Pusula'nın kendi sayfasındayken aynı sayfaya giden kayan butonu
