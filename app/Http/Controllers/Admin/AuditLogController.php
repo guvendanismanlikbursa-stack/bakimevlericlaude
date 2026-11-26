@@ -23,6 +23,11 @@ class AuditLogController extends Controller
             $query->where('entity_type', $request->entity_type);
         }
 
+        // 26 Kasım 2026: kurum/uzman düzenleme sayfasındaki "Değişiklik geçmişi" bağlantısı.
+        if ($request->filled('entity_id')) {
+            $query->where('entity_id', (int) $request->entity_id);
+        }
+
         $events = $query->paginate(30)->withQueryString();
 
         if ($redirect = $this->redirectIfPageOutOfRange($request, $events)) {

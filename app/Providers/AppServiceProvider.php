@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
         $this->registerRateLimiters();
         $this->registerTurkceArama();
 
+        // 26 Kasım 2026: kurum/uzman alan değişiklikleri işlem günlüğüne (eski → yeni).
+        \App\Models\Facility::observe(\App\Observers\AlanDegisiklikGozlemcisi::class);
+        \App\Models\Expert::observe(\App\Observers\AlanDegisiklikGozlemcisi::class);
+
         // 18 Kasım 2026: kreş/anaokulu ücret özeti Ocak/Temmuz'da yenilenir (platform:piyasa-ucret-yenile);
         // yeni özet dosyası varsa config/piyasa_ucretleri.php'deki ilk özetin yerine o kullanılır.
         $piyasaOzet = storage_path('app/private/piyasa/ozet.json');

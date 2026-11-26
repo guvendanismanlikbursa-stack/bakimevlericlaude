@@ -3,6 +3,9 @@
 
 @section('content')
 <h1 class="text-2xl font-bold mb-6">{{ $expert->exists ? 'Doktor Düzenle' : 'Yeni Doktor Ekle' }}</h1>
+@if($expert->exists && Route::has('admin.audit-log.index'))
+  <a href="{{ route('admin.audit-log.index', ['entity_type' => 'Expert', 'entity_id' => $expert->id]) }}" class="inline-block -mt-4 mb-6 text-sm text-blue-600" style="text-decoration:underline">Değişiklik geçmişi →</a>
+@endif
 {{-- 23 Ekim 2026: kullanıcının talebi - doktorun internet sitesini düzenleme. --}}
 @if($expert->exists)
   <div style="margin:-12px 0 18px;"><a href="{{ route('admin.experts.website.edit', $expert) }}" style="display:inline-block;border:2px solid #0d6e6a;color:#0d6e6a;font-weight:800;border-radius:10px;padding:7px 14px;text-decoration:none;font-size:14px;">🌐 Doktor sitesini düzenle</a></div>
