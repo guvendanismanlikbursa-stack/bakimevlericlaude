@@ -326,7 +326,8 @@ ScheduledJobMonitor::attach(
 ScheduledJobMonitor::attach(
     Schedule::command('google:veri-yenile --seo')->weeklyOn(1, '06:40'),
     'google:veri-yenile --seo',
-    1500
+    // 26 Kasım 2026: haftalık iş - 1500 dk kalınca sağlık ekranı her gün "gecikmede" diyordu.
+    60 * 24 * 7
 );
 // 18 Kasım 2026: kreş/anaokulu aylık ücret özeti her yıl Ocak ve Temmuz'da yenilenir (kullanıcının kararı).
 // Ayın ilk 5 günü saatte bir 4 dk çalışır, kaldığı yerden devam eder; dönem bitince hemen çıkar.
