@@ -13,6 +13,17 @@ class FacilityClaimController extends Controller
     public function create(Request $request)
     {
         $brand = current_brand();
+
+        // 26 Kasım 2026: Uzmanlar bölümüne taşınan doktor/fizyoterapistlerin eski
+        // "sahiplen" adresleri Google'da 404 veriyordu; uzman sayfasına 301 olur.
+        $slug = (string) $request->route('slug');
+        if (! Facility::where('slug', $slug)->exists() && \Illuminate\Support\Facades\Schema::hasTable('expert_slug_redirects')) {
+            $uzmanId = \Illuminate\Support\Facades\DB::table('expert_slug_redirects')->where('old_slug', $slug)->value('expert_id');
+            if ($uzmanId && ($uzman = \App\Models\Expert::where('is_published', true)->find($uzmanId))) {
+                return redirect(brand_route('experts.show', ['slug' => $uzman->slug]), 301);
+            }
+        }
+
         $facility = $this->facilityForRequest($request, $brand['category_scope']);
 
         abort_if($facility->is_claimed, 404, 'Bu kurum zaten sahiplenilmis.');
