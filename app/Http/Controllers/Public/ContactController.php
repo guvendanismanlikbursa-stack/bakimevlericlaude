@@ -30,6 +30,18 @@ class ContactController extends Controller
         $brand = app('currentBrand');
         $validated['brand'] = $brand['slug'];
 
+        // 27 Kasım 2026: bakimeviara'da bir ziyaretçi Gönder'e art arda basınca aynı mesaj
+        // 25 saniyede 20 kez kaydedildi (40 bildirim). Aynı kişinin aynı mesajı 10 dakika
+        // içinde tekrar gelirse yeni kayıt ve bildirim oluşturulmaz; 3 sitede de geçerli.
+        $tekrar = ContactMessage::where('brand', $validated['brand'])
+            ->where('email', $validated['email'])
+            ->where('message', $validated['message'])
+            ->where('created_at', '>=', now()->subMinutes(10))
+            ->exists();
+        if ($tekrar) {
+            return back()->with('success', 'Mesajınız iletildi, teşekkür ederiz.');
+        }
+
         $message = ContactMessage::create($validated);
 
         // 28 Temmuz 2026: guvenlik taramasi sirasinda bulundu - bu form

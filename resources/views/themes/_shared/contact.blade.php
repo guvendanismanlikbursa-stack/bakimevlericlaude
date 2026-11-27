@@ -58,7 +58,7 @@
   <div class="bg-white p-6 md:p-7 rounded-2xl shadow-sm border border-gray-100">
     <h2 class="font-black text-gray-950 text-lg mb-1">Mesaj Formu</h2>
     <p class="text-gray-500 text-sm mb-5">Formu doldurun, e-posta adresinize dönüş yapalım.</p>
-    <form method="POST" action="{{ brand_route('contact.store') }}" class="space-y-4">
+    <form method="POST" action="{{ brand_route('contact.store') }}" class="space-y-4" onsubmit="if(this.dataset.gonderildi){return false;}this.dataset.gonderildi='1';var b=this.querySelector('button');if(b){b.disabled=true;b.style.opacity='0.6';b.textContent='Gönderiliyor...';}">
       @csrf
       @include('themes._shared.partials.honeypot')
       <label for="contact-name" class="sr-only">Ad Soyad</label>
