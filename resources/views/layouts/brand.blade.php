@@ -708,6 +708,28 @@ if (new URLSearchParams(window.location.search).has('page')) {
   } catch (e) {}
 })();
 </script>
+<script>
+// 27 Kasım 2026: ziyaretçiler Gönder'e art arda basınca aynı form defalarca kaydediliyordu
+// (iletişimde 20, kurum kaydında 3 başvuru). Gönderilen her POST formunun düğmesi kilitlenir;
+// kendi JavaScript'iyle gönderen (preventDefault) formlara dokunulmaz, geri tuşuyla dönülünce kilit açılır.
+(function () {
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (e.defaultPrevented || !f || (f.getAttribute('method') || 'get').toLowerCase() !== 'post' || f.target === '_blank' || f.hasAttribute('data-coklu-gonderim')) return;
+    if (f.dataset.kilit === '1') { e.preventDefault(); return; }
+    f.dataset.kilit = '1';
+    setTimeout(function () {
+      f.querySelectorAll('button[type=submit], button:not([type]), input[type=submit]').forEach(function (b) { b.disabled = true; b.style.opacity = '0.6'; });
+    }, 0);
+    setTimeout(function () { kilidiAc(f); }, 20000);
+  });
+  function kilidiAc(f) {
+    delete f.dataset.kilit;
+    f.querySelectorAll('button[type=submit], button:not([type]), input[type=submit]').forEach(function (b) { b.disabled = false; b.style.opacity = ''; });
+  }
+  window.addEventListener('pageshow', function () { document.querySelectorAll('form[data-kilit]').forEach(kilidiAc); });
+})();
+</script>
 
 </body>
 </html>

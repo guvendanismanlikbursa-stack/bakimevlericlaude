@@ -58,6 +58,19 @@ class FacilityRegistrationController extends Controller
                 ->with('info', 'Kurumunuz "'.$duplicate->name.'" adıyla sistemimizde zaten ön-kayıtlı görünüyor. Yeni bir başvuru oluşturmak yerine bu kaydı sahiplenerek panelinize hemen erişebilirsiniz.');
         }
 
+        // 27 Kasım 2026: aynı kişi aynı kurumu art arda (çift tık) ya da diğer sitelerimizden
+        // yeniden başvurunca admin listesinde 3 aynı başvuru birikiyordu. Aynı e-posta + aynı kurum
+        // adıyla 7 gün içinde bekleyen başvuru varsa yenisi açılmaz (3 site ortak tablo).
+        $bekleyenAyni = FacilityRegistration::where('status', 'pending')
+            ->where('applicant_email', $data['applicant_email'])
+            ->where('name', trim((string) ($data['name'] ?? '')))   // MySQL karşılaştırması büyük/küçük harf duyarsız (Türkçe İ dahil)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->exists();
+        if ($bekleyenAyni) {
+            return redirect(brand_route('facility-registration.received'))
+                ->with('success', 'Kurum kaydı başvurunuz alındı. Admin incelemesinden sonra e-posta ile bilgilendirileceksiniz.');
+        }
+
         $applicantLat = $data['lat'] ?? null;
         $applicantLng = $data['lng'] ?? null;
         unset($data['lat'], $data['lng'], $data['consent']);
